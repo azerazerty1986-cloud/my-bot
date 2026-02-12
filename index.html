@@ -2,63 +2,66 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>لوحة تحكم روبوتي</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background-color: #121212; color: white; font-family: sans-serif; text-align: center; padding: 15px; margin: 0; }
-        .header { background: #1e1e1e; padding: 15px; border-radius: 0 0 20px 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        .score-box { font-size: 32px; color: #ffd700; font-weight: bold; }
-        .coin-container { margin: 30px auto; width: 180px; height: 180px; position: relative; }
-        .coin { width: 100%; cursor: pointer; transition: transform 0.1s; filter: drop-shadow(0 0 15px #ff9900); }
-        .coin:active { transform: scale(0.92); }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
-        button { background: #248bcf; color: white; border: none; padding: 16px; border-radius: 14px; font-size: 14px; cursor: pointer; font-weight: bold; transition: 0.2s; }
-        button:active { background: #1a6699; }
-        .full-btn { grid-column: span 2; background: #28a745; font-size: 16px; }
-        .footer { margin-top: 30px; font-size: 11px; color: #666; letter-spacing: 1px; }
+        body { background-color: #000; color: white; font-family: sans-serif; margin: 0; text-align: center; }
+        .header { background: linear-gradient(180deg, #1a1a1a 0%, #000 100%); padding: 25px; border-bottom: 1px solid #333; }
+        .balance-val { font-size: 38px; color: #00ffa3; font-weight: bold; margin: 5px 0; }
+        .radar-status { font-size: 12px; color: #ff9900; margin-top: 10px; font-weight: bold; }
+        .input-box { padding: 15px; }
+        input { width: 90%; padding: 14px; border-radius: 12px; border: 1px solid #333; background: #0a0a0a; color: #fff; text-align: center; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px 20px; }
+        button { background: #1a1a1a; color: white; border: 1px solid #333; padding: 15px; border-radius: 14px; font-weight: bold; cursor: pointer; }
+        .btn-main { grid-column: span 2; background: #248bcf; border: none; font-size: 16px; }
+        .btn-radar { grid-column: span 2; background: #e63946; border: none; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="score-box">🪙 <span id="balance">0</span></div>
-        <p style="margin: 5px 0 0; color: #aaa;">رصيدك من النقاط</p>
+        <div style="color: #888;">رصيد المحفظة المرتبط 💰</div>
+        <div class="balance-val">10.00 SOL</div>
+        <div class="radar-status" id="radarStat">الرادار: متوقف 🔴</div>
     </div>
 
-    <div class="coin-container">
-        <img src="https://raw.githubusercontent.com/azerazerty1986-cloud/my-bot/main/coin.png" class="coin" onclick="tapCoin()">
+    <div class="input-box">
+        <input type="text" id="ca_input" placeholder="لصق عنوان العقد (CA) للفحص...">
     </div>
-    
-    <h3 style="text-align: right; margin-right: 10px;">أدوات التداول:</h3>
+
     <div class="grid">
-        <button class="full-btn" onclick="sendCmd('تحليل شامل')">📊 تحليل شامل (3 في 1)</button>
-        <button onclick="sendCmd('المحفظة')">💰 المحفظة</button>
-        <button onclick="sendCmd('إضافة للرادار')">➕ إضافة للرادار</button>
-        <button onclick="sendCmd('المضارب المحترف')">⚡ المضارب</button>
-        <button onclick="sendCmd('المدافع الحكيم')">🛡️ المدافع</button>
-        <button onclick="sendCmd('تشغيل الرادار')">🟢 تشغيل الرادار</button>
-        <button onclick="sendCmd('قائمة المراقبة')">📜 القائمة</button>
+        <button class="btn-main" onclick="sendAction('تحليل:' + document.getElementById('ca_input').value)">📊 تحليل فني شامل (3 في 1)</button>
+        <button class="btn-radar" id="radarBtn" onclick="toggleRadar()">🟢 تشغيل الرادار التلقائي</button>
+        <button onclick="sendAction('connect_wallet')">🔗 إنشاء محفظة</button>
+        <button onclick="sendAction('show_keys')">🔑 عرض المفاتيح</button>
+        <button onclick="sendAction('المحفظة')">💳 تفاصيل الحساب</button>
+        <button onclick="sendAction('تحديث')">🔄 تحديث البيانات</button>
     </div>
-
-    <div class="footer">POWERED BY AZERAZERTY1986</div>
 
     <script>
         let tg = window.Telegram.WebApp;
-        tg.expand(); 
-        tg.headerColor = '#1e1e1e';
+        tg.expand();
+        let radarOn = false;
 
-        let score = localStorage.getItem('userScore') || 0;
-        document.getElementById('balance').innerText = score;
-
-        function tapCoin() {
-            score++;
-            document.getElementById('balance').innerText = score;
-            localStorage.setItem('userScore', score);
-            tg.HapticFeedback.impactOccurred('light');
+        function toggleRadar() {
+            radarOn = !radarOn;
+            const btn = document.getElementById('radarBtn');
+            const stat = document.getElementById('radarStat');
+            if(radarOn) {
+                btn.innerText = "🔴 إيقاف الرادار"; btn.style.background = "#444";
+                stat.innerText = "الرادار: يمسح الشبكة الآن... 🛰️";
+                tg.sendData("start_radar");
+            } else {
+                btn.innerText = "🟢 تشغيل الرادار التلقائي"; btn.style.background = "#e63946";
+                stat.innerText = "الرادار: متوقف 🔴";
+                tg.sendData("stop_radar");
+            }
         }
 
-        function sendCmd(cmdText) {
-            tg.sendData(cmdText); // يرسل النص للبوت ويغلق الواجهة
+        function sendAction(data) {
+            if(data.startsWith('تحليل:') && data.length < 15) {
+                tg.showAlert("يرجى إدخال عنوان عقد صحيح أولاً!"); return;
+            }
+            tg.sendData(data);
         }
     </script>
 </body>
