@@ -1,41 +1,36 @@
-<div id="result-display" style="display:none; margin: 15px; padding: 15px; background: #111; border-radius: 10px; border: 1px solid #333;">
-    <h4 style="color: #00ffa3; margin: 0 0 10px 0;">📊 نتائج الفحص المباشر:</h4>
-    <div id="res-content" style="font-size: 14px; color: #ccc; line-height: 1.6;"></div>
-</div>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background-color: #000; color: white; font-family: sans-serif; margin: 0; text-align: center; }
+        .header { background: linear-gradient(180deg, #1a1a1a 0%, #000 100%); padding: 25px; border-bottom: 1px solid #333; }
+        .balance-val { font-size: 38px; color: #00ffa3; font-weight: bold; margin: 5px 0; }
+        .radar-status { font-size: 12px; color: #ff9900; margin-top: 10px; font-weight: bold; }
+        .input-box { padding: 15px; }
+        input { width: 90%; padding: 14px; border-radius: 12px; border: 1px solid #333; background: #0a0a0a; color: #fff; text-align: center; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 20px 20px; }
+        button { background: #1a1a1a; color: white; border: 1px solid #333; padding: 15px; border-radius: 14px; font-weight: bold; cursor: pointer; }
+        .btn-main { grid-column: span 2; background: #248bcf; border: none; font-size: 16px; }
+        .btn-radar { grid-column: span 2; background: #e63946; border: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div style="color: #888;">رصيد المحفظة المرتبط 💰</div>
+        <div class="balance-val">10.00 SOL</div>
+        <div class="radar-status" id="radarStat">الرادار: متوقف 🔴</div>
+    </div>
 
-<script>
-    async function performAnalysis() {
-        const caInput = document.getElementById('ca_input').value;
-        const resBox = document.getElementById('result-display');
-        const resContent = document.getElementById('res-content');
+    <div class="input-box">
+        <input type="text" id="ca_input" placeholder="لصق عنوان العقد (CA) للفحص...">
+    </div>
 
-        if (!caInput || caInput.length < 20) {
-            alert("يرجى إدخال عنوان عقد صحيح أولاً!");
-            return;
-        }
-
-        // إظهار مربع النتائج وحالة التحميل
-        resBox.style.display = "block";
-        resContent.innerHTML = "⏳ جاري فحص الشبكة واستخراج البيانات...";
-
-        try {
-            // استبدل LOCALHOST_IP برقم IP جهازك أو الخادم إذا كنت ترفعه أونلاين
-            const response = await fetch('http://localhost:5000/api/analyze', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ ca: caInput })
-            });
-            
-            const data = await response.json();
-            
-            // عرض النتائج النهائية في الواجهة
-            resContent.innerHTML = `
-                🔹 <b>الأمان:</b> ${data.security}<br>
-                🔹 <b>السيولة:</b> ${data.liquidity}<br>
-                🔹 <b>درجة الثقة:</b> <span style="color:#00ffa3">${data.trust}</span>
-            `;
-        } catch (error) {
-            resContent.innerHTML = "❌ فشل الاتصال بالخادم. تأكد من تشغيل ملف Python.";
-        }
-    }
-</script>
+    <div class="grid">
+        <button class="btn-main" onclick="sendAction('تحليل:' + document.getElementById('ca_input').value)">📊 تحليل فني شامل (3 في 1)</button>
+        <button class="btn-radar" id="radarBtn" onclick="toggleRadar()">🟢 تشغيل الرادار التلقائي</button>
+        <button onclick="sendAction('connect_wallet')">🔗 إنشاء محفظة</button>
+        <button onclick="sendAction('show_keys')">🔑 عرض المفاتيح</button>
+        <button onclick="sendAction('المحفظة')">💳 تفاصيل الحساب</button>
