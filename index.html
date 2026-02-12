@@ -3,152 +3,159 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام سوبيرات الشامل | لوحة التحكم</title>
+    <title>سوبيرات برو - نظام محمي</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-        :root { --main-color: #1a237e; --accent-color: #ffd600; }
-        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
-        .sidebar { background: var(--main-color); min-height: 100vh; color: white; transition: 0.3s; }
-        .nav-link { color: #e8eaf6; cursor: pointer; border-radius: 8px; margin: 5px 0; }
-        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); color: white; }
-        .card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        :root { --main-blue: #1a237e; }
+        body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        
+        /* تصميم شاشة القفل */
+        #lock-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--main-blue); color: white;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            z-index: 9999; transition: 0.5s;
+        }
+        .login-box { background: white; padding: 30px; border-radius: 20px; color: #333; width: 320px; text-align: center; }
+
+        /* التصميم العام */
+        .sidebar { background: var(--main-blue); min-height: 100vh; color: white; position: sticky; top: 0; }
+        .nav-link { color: #c5cae9; cursor: pointer; border-radius: 10px; margin-bottom: 5px; }
+        .nav-link.active { background: rgba(255,255,255,0.15); color: white; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
         .section { display: none; padding: 20px; }
-        .active-section { display: block; animation: fadeIn 0.5s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .active-section { display: block; }
+        #scanner-container { width: 100%; height: 300px; background: #000; display: none; border-radius: 15px; overflow: hidden; }
     </style>
 </head>
-<body>
+<body onload="checkLock()">
+
+<div id="lock-screen">
+    <div class="login-box shadow-lg">
+        <span class="material-icons-round fs-1 text-primary mb-3">lock</span>
+        <h5 class="mb-4">أدخل كلمة المرور للدخول</h5>
+        <input type="password" id="pass-input" class="form-control mb-3 text-center" placeholder="****">
+        <button class="btn btn-primary w-100" onclick="unlock()">دخول</button>
+        <p id="error-msg" class="text-danger mt-2 small" style="display:none">كلمة السر غير صحيحة!</p>
+    </div>
+</div>
 
 <div class="container-fluid">
     <div class="row">
-        <nav class="col-md-2 sidebar p-3 shadow">
-            <div class="text-center mb-4">
-                <span class="material-icons-round fs-1">inventory</span>
-                <h5 class="mt-2">سوبيرات برو</h5>
-            </div>
+        <nav class="col-md-2 sidebar p-4">
+            <h4 class="text-center mb-5">🛒 سوبيرات برو</h4>
             <ul class="nav flex-column">
-                <li class="nav-item"><a class="nav-link active" onclick="showSection('dash')"><span class="material-icons-round align-middle me-2">dashboard</span> الرئيسية</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="showSection('inv')"><span class="material-icons-round align-middle me-2">list_alt</span> المخزن</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="showSection('sale')"><span class="material-icons-round align-middle me-2">point_of_sale</span> المبيعات</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="showSection('debt')"><span class="material-icons-round align-middle me-2">account_balance</span> الديون</a></li>
+                <li class="nav-item"><a class="nav-link active" id="link-inv" onclick="showSection('inv')"><span class="material-icons-round align-middle me-2">inventory</span> المخزن</a></li>
+                <li class="nav-item"><a class="nav-link" id="link-bulk" onclick="showSection('bulk')"><span class="material-icons-round align-middle me-2">receipt</span> فاتورة جماعية</a></li>
+                <li class="nav-item mt-5"><a class="nav-link text-danger" onclick="lockApp()"><span class="material-icons-round align-middle me-2">logout</span> تسجيل خروج</a></li>
             </ul>
         </nav>
 
         <main class="col-md-10">
-            
-            <div id="dash" class="section active-section">
-                <h2 class="mb-4">إحصائيات اليوم</h2>
-                <div class="row g-3">
-                    <div class="col-md-4"><div class="card p-4 bg-primary text-white"><h6>إجمالي المبيعات</h6><h2 id="total-sales-val">0 ر.س</h2></div></div>
-                    <div class="col-md-4"><div class="card p-4 bg-danger text-white"><h6>إجمالي الديون</h6><h2 id="total-debts-val">0 ر.س</h2></div></div>
-                    <div class="col-md-4"><div class="card p-4 bg-success text-white"><h6>منتجات بالمخزن</h6><h2 id="total-items-val">0</h2></div></div>
-                </div>
-            </div>
-
-            <div id="inv" class="section">
-                <div class="d-flex justify-content-between mb-3">
-                    <h2>📦 إدارة المخزن</h2>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#prodModal">إضافة منتج</button>
-                </div>
-                <div class="card p-3"><table class="table table-hover"><thead><tr><th>اسم المنتج</th><th>الكمية</th><th>السعر</th><th>إجراء</th></tr></thead><tbody id="inv-table"></tbody></table></div>
-            </div>
-
-            <div id="sale" class="section">
-                <h2>🛒 تسجيل مبيعة</h2>
-                <div class="card p-4 mb-4">
-                    <div class="row g-2">
-                        <div class="col-md-5"><select id="sale-select" class="form-select"></select></div>
-                        <div class="col-md-3"><input type="number" id="sale-qty" class="form-control" placeholder="الكمية"></div>
-                        <div class="col-md-4"><button class="btn btn-success w-100" onclick="processSale()">إتمام العملية</button></div>
+            <div id="bulk" class="section">
+                <div class="d-flex justify-content-between mb-4">
+                    <h2>🧾 إدخال فاتورة جماعية</h2>
+                    <div>
+                        <button class="btn btn-outline-danger me-2" onclick="startVoice()"><span class="material-icons-round align-middle" id="voice-icon">mic</span> إدخال صوتي</button>
                     </div>
                 </div>
-                <h4>سجل المبيعات</h4>
-                <div class="card p-3"><table class="table"><thead><tr><th>المنتج</th><th>الكمية</th><th>الإجمالي</th></tr></thead><tbody id="sales-history"></tbody></table></div>
-            </div>
-
-            <div id="debt" class="section">
-                <div class="d-flex justify-content-between mb-3">
-                    <h2>💳 سجل الديون</h2>
-                    <button class="btn btn-dark" onclick="addDebt()">إضافة مدين</button>
+                <div class="card p-4">
+                    <div class="row g-2 mb-3">
+                        <div class="col-md-4"><input type="text" id="b-name" class="form-control" placeholder="اسم المنتج"></div>
+                        <div class="col-md-3"><input type="number" id="b-qty" class="form-control" placeholder="الكمية"></div>
+                        <div class="col-md-3"><input type="number" id="b-price" class="form-control" placeholder="السعر"></div>
+                        <div class="col-md-2"><button class="btn btn-primary w-100" onclick="addToTempList()">أضف</button></div>
+                    </div>
+                    <table class="table">
+                        <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th></tr></thead>
+                        <tbody id="temp-list-body"></tbody>
+                    </table>
+                    <button class="btn btn-success w-100 mt-3" onclick="saveBulk()">حفظ في المخزن</button>
                 </div>
-                <div class="card p-3"><table class="table"><thead><tr><th>الاسم</th><th>المبلغ</th><th>الحالة</th></tr></thead><tbody id="debt-table"></tbody></table></div>
             </div>
 
+            <div id="inv" class="section active-section">
+                <h2 class="mb-4">📦 حالة المخزن</h2>
+                <div class="card p-3">
+                    <table class="table">
+                        <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th></tr></thead>
+                        <tbody id="inv-body"></tbody>
+                    </table>
+                </div>
+            </div>
         </main>
     </div>
 </div>
 
-<div class="modal fade" id="prodModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content p-4">
-            <h5>بيانات المنتج الجديد</h5>
-            <input type="text" id="n-name" class="form-control mb-2" placeholder="اسم المنتج">
-            <input type="number" id="n-qty" class="form-control mb-2" placeholder="الكمية">
-            <input type="number" id="n-price" class="form-control mb-2" placeholder="سعر البيع">
-            <button class="btn btn-primary mt-2" onclick="saveNewProduct()">حفظ في المخزن</button>
-        </div>
-    </div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // نظام البيانات (LocalStorage)
-    let data = JSON.parse(localStorage.getItem('shopData')) || { inv: [], sales: [], debts: [] };
+    // --- إعدادات الأمان ---
+    const CORRECT_PASSWORD = "1234"; // يمكنك تغيير كلمة السر من هنا
+
+    function unlock() {
+        const input = document.getElementById('pass-input').value;
+        if (input === CORRECT_PASSWORD) {
+            document.getElementById('lock-screen').style.opacity = "0";
+            setTimeout(() => {
+                document.getElementById('lock-screen').style.display = "none";
+            }, 500);
+            sessionStorage.setItem('isLoggedIn', 'true');
+        } else {
+            document.getElementById('error-msg').style.display = "block";
+        }
+    }
+
+    function checkLock() {
+        if (sessionStorage.getItem('isLoggedIn') === 'true') {
+            document.getElementById('lock-screen').style.display = "none";
+        }
+    }
+
+    function lockApp() {
+        sessionStorage.removeItem('isLoggedIn');
+        location.reload();
+    }
+
+    // --- بقية وظائف النظام السابقة ---
+    let products = JSON.parse(localStorage.getItem('products')) || [];
+    let tempList = [];
 
     function showSection(id) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
         document.getElementById(id).classList.add('active-section');
-        updateUI();
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        event.currentTarget.classList.add('active');
     }
 
-    function saveNewProduct() {
-        data.inv.push({
-            id: Date.now(),
-            name: document.getElementById('n-name').value,
-            qty: parseInt(document.getElementById('n-qty').value),
-            price: parseFloat(document.getElementById('n-price').value)
-        });
-        sync();
+    function addToTempList() {
+        const name = document.getElementById('b-name').value;
+        const qty = parseInt(document.getElementById('b-qty').value);
+        const price = parseFloat(document.getElementById('b-price').value);
+        if(name && qty && price) {
+            tempList.push({ name, qty, price });
+            renderTemp();
+            document.getElementById('b-name').value = '';
+        }
     }
 
-    function processSale() {
-        const id = document.getElementById('sale-select').value;
-        const q = parseInt(document.getElementById('sale-qty').value);
-        const item = data.inv.find(i => i.id == id);
-        if(item && item.qty >= q) {
-            item.qty -= q;
-            data.sales.push({ name: item.name, qty: q, total: q * item.price });
-            sync();
-        } else { alert('الكمية غير كافية!'); }
+    function renderTemp() {
+        document.getElementById('temp-list-body').innerHTML = tempList.map(item => `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.price}</td></tr>`).join('');
     }
 
-    function addDebt() {
-        const name = prompt("اسم المدين:");
-        const amount = prompt("المبلغ:");
-        if(name && amount) { data.debts.push({ name, amount: parseFloat(amount), status: 'معلق' }); sync(); }
+    function saveBulk() {
+        products = [...products, ...tempList];
+        localStorage.setItem('products', JSON.stringify(products));
+        tempList = [];
+        renderTemp();
+        renderInv();
+        alert("تم الحفظ!");
     }
 
-    function sync() {
-        localStorage.setItem('shopData', JSON.stringify(data));
-        updateUI();
+    function renderInv() {
+        document.getElementById('inv-body').innerHTML = products.map(p => `<tr><td>${p.name}</td><td>${p.qty}</td><td>${p.price}</td></tr>`).join('');
     }
 
-    function updateUI() {
-        // تحديث الأرقام
-        document.getElementById('total-sales-val').innerText = data.sales.reduce((a,b) => a + b.total, 0) + " ر.س";
-        document.getElementById('total-debts-val').innerText = data.debts.reduce((a,b) => a + b.amount, 0) + " ر.س";
-        document.getElementById('total-items-val').innerText = data.inv.length;
-
-        // تحديث الجداول
-        document.getElementById('inv-table').innerHTML = data.inv.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.price}</td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteItem(${i.id})">حذف</button></td></tr>`).join('');
-        document.getElementById('sale-select').innerHTML = data.inv.map(i => `<option value="${i.id}">${i.name} (${i.qty})</option>`).join('');
-        document.getElementById('sales-history').innerHTML = data.sales.map(s => `<tr><td>${s.name}</td><td>${s.qty}</td><td>${s.total} ر.س</td></tr>`).join('');
-        document.getElementById('debt-table').innerHTML = data.debts.map(d => `<tr><td>${d.name}</td><td>${d.amount} ر.س</td><td><span class="badge bg-warning text-dark">${d.status}</span></td></tr>`).join('');
-    }
-
-    function deleteItem(id) { data.inv = data.inv.filter(i => i.id != id); sync(); }
-    updateUI();
+    renderInv();
 </script>
 </body>
 </html>
