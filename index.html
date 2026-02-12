@@ -3,194 +3,152 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام سوبيرات الشامل</title>
+    <title>نظام سوبيرات الشامل | لوحة التحكم</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-        :root { --primary-blue: #1a237e; --bg-light: #f4f7fe; }
-        body { background-color: var(--bg-light); font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .sidebar { background: var(--primary-blue); min-height: 100vh; color: white; position: sticky; top: 0; }
-        .nav-link { color: #c5cae9; transition: 0.3s; cursor: pointer; }
-        .nav-link:hover, .nav-link.active { color: white; background: rgba(255,255,255,0.1); border-radius: 10px; }
-        .card { border: none; border-radius: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .stat-card { border-right: 5px solid var(--primary-blue); }
-        .section { display: none; }
-        .section.active { display: block; }
+        :root { --main-color: #1a237e; --accent-color: #ffd600; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; }
+        .sidebar { background: var(--main-color); min-height: 100vh; color: white; transition: 0.3s; }
+        .nav-link { color: #e8eaf6; cursor: pointer; border-radius: 8px; margin: 5px 0; }
+        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.1); color: white; }
+        .card { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .section { display: none; padding: 20px; }
+        .active-section { display: block; animation: fadeIn 0.5s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="container-fluid">
     <div class="row">
-        <nav class="col-md-2 d-none d-md-block sidebar p-4">
-            <h4 class="text-center mb-4">🛒 سوبيرات برو</h4>
-            <ul class="nav flex-column gap-2">
-                <li class="nav-item"><a class="nav-link active" onclick="showSection('dashboard')"><span class="material-icons-round align-middle me-2">dashboard</span> الرئيسية</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="showSection('inventory')"><span class="material-icons-round align-middle me-2">inventory</span> المخزن</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="showSection('sales')"><span class="material-icons-round align-middle me-2">shopping_basket</span> المبيعات</a></li>
-                <li class="nav-item"><a class="nav-link" onclick="showSection('debts')"><span class="material-icons-round align-middle me-2">account_balance</span> الديون</a></li>
+        <nav class="col-md-2 sidebar p-3 shadow">
+            <div class="text-center mb-4">
+                <span class="material-icons-round fs-1">inventory</span>
+                <h5 class="mt-2">سوبيرات برو</h5>
+            </div>
+            <ul class="nav flex-column">
+                <li class="nav-item"><a class="nav-link active" onclick="showSection('dash')"><span class="material-icons-round align-middle me-2">dashboard</span> الرئيسية</a></li>
+                <li class="nav-item"><a class="nav-link" onclick="showSection('inv')"><span class="material-icons-round align-middle me-2">list_alt</span> المخزن</a></li>
+                <li class="nav-item"><a class="nav-link" onclick="showSection('sale')"><span class="material-icons-round align-middle me-2">point_of_sale</span> المبيعات</a></li>
+                <li class="nav-item"><a class="nav-link" onclick="showSection('debt')"><span class="material-icons-round align-middle me-2">account_balance</span> الديون</a></li>
             </ul>
         </nav>
 
-        <main class="col-md-10 p-4">
+        <main class="col-md-10">
             
-            <div id="dashboard" class="section active">
-                <h2 class="mb-4">نظرة عامة</h2>
+            <div id="dash" class="section active-section">
+                <h2 class="mb-4">إحصائيات اليوم</h2>
                 <div class="row g-3">
-                    <div class="col-md-3"><div class="card p-3 stat-card"><h6>إجمالي المبيعات</h6><h3 id="stat-sales">0 ر.س</h3></div></div>
-                    <div class="col-md-3"><div class="card p-3 stat-card text-danger"><h6>إجمالي الديون</h6><h3 id="stat-debts">0 ر.س</h3></div></div>
-                    <div class="col-md-3"><div class="card p-3 stat-card text-success"><h6>عدد المنتجات</h6><h3 id="stat-products">0</h3></div></div>
-                    <div class="col-md-3"><div class="card p-3 stat-card text-warning"><h6>نواقص المخزن</h6><h3 id="stat-low">0</h3></div></div>
+                    <div class="col-md-4"><div class="card p-4 bg-primary text-white"><h6>إجمالي المبيعات</h6><h2 id="total-sales-val">0 ر.س</h2></div></div>
+                    <div class="col-md-4"><div class="card p-4 bg-danger text-white"><h6>إجمالي الديون</h6><h2 id="total-debts-val">0 ر.س</h2></div></div>
+                    <div class="col-md-4"><div class="card p-4 bg-success text-white"><h6>منتجات بالمخزن</h6><h2 id="total-items-val">0</h2></div></div>
                 </div>
             </div>
 
-            <div id="inventory" class="section">
+            <div id="inv" class="section">
                 <div class="d-flex justify-content-between mb-3">
                     <h2>📦 إدارة المخزن</h2>
-                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProdModal">إضافة منتج</button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#prodModal">إضافة منتج</button>
                 </div>
-                <div class="card p-3">
-                    <table class="table">
-                        <thead><tr><th>المنتج</th><th>الفئة</th><th>الكمية</th><th>السعر</th><th>إجراء</th></tr></thead>
-                        <tbody id="inventory-list"></tbody>
-                    </table>
-                </div>
+                <div class="card p-3"><table class="table table-hover"><thead><tr><th>اسم المنتج</th><th>الكمية</th><th>السعر</th><th>إجراء</th></tr></thead><tbody id="inv-table"></tbody></table></div>
             </div>
 
-            <div id="sales" class="section">
-                <h2>🛒 تسجيل مبيعة جديدة</h2>
-                <div class="card p-4">
-                    <div class="row g-3">
-                        <div class="col-md-6">
-                            <select id="sale-product" class="form-select"></select>
-                        </div>
-                        <div class="col-md-3">
-                            <input type="number" id="sale-qty" class="form-control" placeholder="الكمية">
-                        </div>
-                        <div class="col-md-3">
-                            <button class="btn btn-success w-100" onclick="recordSale()">إتمام البيع</button>
-                        </div>
+            <div id="sale" class="section">
+                <h2>🛒 تسجيل مبيعة</h2>
+                <div class="card p-4 mb-4">
+                    <div class="row g-2">
+                        <div class="col-md-5"><select id="sale-select" class="form-select"></select></div>
+                        <div class="col-md-3"><input type="number" id="sale-qty" class="form-control" placeholder="الكمية"></div>
+                        <div class="col-md-4"><button class="btn btn-success w-100" onclick="processSale()">إتمام العملية</button></div>
                     </div>
                 </div>
-                <h4 class="mt-4">سجل المبيعات الأخيرة</h4>
-                <div class="card p-3"><table class="table"><tbody id="sales-log"></tbody></table></div>
+                <h4>سجل المبيعات</h4>
+                <div class="card p-3"><table class="table"><thead><tr><th>المنتج</th><th>الكمية</th><th>الإجمالي</th></tr></thead><tbody id="sales-history"></tbody></table></div>
             </div>
 
-            <div id="debts" class="section">
+            <div id="debt" class="section">
                 <div class="d-flex justify-content-between mb-3">
-                    <h2>💳 إدارة الديون</h2>
-                    <button class="btn btn-danger" onclick="addDebtPrompt()">إضافة دين جديد</button>
+                    <h2>💳 سجل الديون</h2>
+                    <button class="btn btn-dark" onclick="addDebt()">إضافة مدين</button>
                 </div>
-                <div class="card p-3">
-                    <table class="table">
-                        <thead><tr><th>العميل</th><th>المبلغ</th><th>الحالة</th><th>إجراء</th></tr></thead>
-                        <tbody id="debts-list"></tbody>
-                    </table>
-                </div>
+                <div class="card p-3"><table class="table"><thead><tr><th>الاسم</th><th>المبلغ</th><th>الحالة</th></tr></thead><tbody id="debt-table"></tbody></table></div>
             </div>
 
         </main>
     </div>
 </div>
 
-<div class="modal fade" id="addProdModal" tabindex="-1">
+<div class="modal fade" id="prodModal" tabindex="-1">
     <div class="modal-dialog">
-        <div class="modal-content p-3">
-            <input type="text" id="p-name" class="form-control mb-2" placeholder="اسم المنتج">
-            <input type="text" id="p-cat" class="form-control mb-2" placeholder="الفئة">
-            <input type="number" id="p-qty" class="form-control mb-2" placeholder="الكمية">
-            <input type="number" id="p-price" class="form-control mb-2" placeholder="سعر البيع">
-            <button class="btn btn-primary" onclick="addProduct()">حفظ</button>
+        <div class="modal-content p-4">
+            <h5>بيانات المنتج الجديد</h5>
+            <input type="text" id="n-name" class="form-control mb-2" placeholder="اسم المنتج">
+            <input type="number" id="n-qty" class="form-control mb-2" placeholder="الكمية">
+            <input type="number" id="n-price" class="form-control mb-2" placeholder="سعر البيع">
+            <button class="btn btn-primary mt-2" onclick="saveNewProduct()">حفظ في المخزن</button>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // تهيئة البيانات
-    let products = JSON.parse(localStorage.getItem('products')) || [];
-    let sales = JSON.parse(localStorage.getItem('sales')) || [];
-    let debts = JSON.parse(localStorage.getItem('debts')) || [];
+    // نظام البيانات (LocalStorage)
+    let data = JSON.parse(localStorage.getItem('shopData')) || { inv: [], sales: [], debts: [] };
 
-    // التبديل بين الأقسام
     function showSection(id) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        event.target.classList.add('active');
-        renderAll();
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
+        document.getElementById(id).classList.add('active-section');
+        updateUI();
     }
 
-    // إضافة منتج
-    function addProduct() {
-        const p = {
+    function saveNewProduct() {
+        data.inv.push({
             id: Date.now(),
-            name: document.getElementById('p-name').value,
-            category: document.getElementById('p-cat').value,
-            qty: parseInt(document.getElementById('p-qty').value),
-            price: parseFloat(document.getElementById('p-price').value)
-        };
-        products.push(p);
-        saveAndRefresh();
+            name: document.getElementById('n-name').value,
+            qty: parseInt(document.getElementById('n-qty').value),
+            price: parseFloat(document.getElementById('n-price').value)
+        });
+        sync();
     }
 
-    // تسجيل مبيعة
-    function recordSale() {
-        const pId = document.getElementById('sale-product').value;
-        const qty = parseInt(document.getElementById('sale-qty').value);
-        const p = products.find(prod => prod.id == pId);
-
-        if(p && p.qty >= qty) {
-            p.qty -= qty;
-            sales.push({ name: p.name, qty: qty, total: qty * p.price, date: new Date().toLocaleString() });
-            saveAndRefresh();
-            alert("تمت المبيعة بنجاح!");
-        } else {
-            alert("الكمية غير كافية!");
-        }
+    function processSale() {
+        const id = document.getElementById('sale-select').value;
+        const q = parseInt(document.getElementById('sale-qty').value);
+        const item = data.inv.find(i => i.id == id);
+        if(item && item.qty >= q) {
+            item.qty -= q;
+            data.sales.push({ name: item.name, qty: q, total: q * item.price });
+            sync();
+        } else { alert('الكمية غير كافية!'); }
     }
 
-    // إضافة دين
-    function addDebtPrompt() {
-        const name = prompt("اسم العميل:");
+    function addDebt() {
+        const name = prompt("اسم المدين:");
         const amount = prompt("المبلغ:");
-        if(name && amount) {
-            debts.push({ name, amount: parseFloat(amount), status: 'معلق' });
-            saveAndRefresh();
-        }
+        if(name && amount) { data.debts.push({ name, amount: parseFloat(amount), status: 'معلق' }); sync(); }
     }
 
-    function saveAndRefresh() {
-        localStorage.setItem('products', JSON.stringify(products));
-        localStorage.setItem('sales', JSON.stringify(sales));
-        localStorage.setItem('debts', JSON.stringify(debts));
-        renderAll();
+    function sync() {
+        localStorage.setItem('shopData', JSON.stringify(data));
+        updateUI();
     }
 
-    function renderAll() {
-        // تحديث إحصائيات الرئيسية
-        document.getElementById('stat-sales').innerText = sales.reduce((a,b) => a + b.total, 0) + " ر.س";
-        document.getElementById('stat-debts').innerText = debts.reduce((a,b) => a + b.amount, 0) + " ر.س";
-        document.getElementById('stat-products').innerText = products.length;
+    function updateUI() {
+        // تحديث الأرقام
+        document.getElementById('total-sales-val').innerText = data.sales.reduce((a,b) => a + b.total, 0) + " ر.س";
+        document.getElementById('total-debts-val').innerText = data.debts.reduce((a,b) => a + b.amount, 0) + " ر.س";
+        document.getElementById('total-items-val').innerText = data.inv.length;
 
-        // تحديث قائمة المخزن
-        const invList = document.getElementById('inventory-list');
-        invList.innerHTML = products.map(p => `<tr><td>${p.name}</td><td>${p.category}</td><td>${p.qty}</td><td>${p.price}</td><td><button class="btn btn-sm btn-danger" onclick="deleteProd(${p.id})">حذف</button></td></tr>`).join('');
-
-        // تحديث قائمة المبيعات (الخيارات)
-        document.getElementById('sale-product').innerHTML = products.map(p => `<option value="${p.id}">${p.name} (${p.qty})</option>`).join('');
-
-        // سجل المبيعات
-        document.getElementById('sales-log').innerHTML = sales.map(s => `<tr><td>${s.name}</td><td>${s.qty} قطع</td><td>${s.total} ر.س</td><td class="small">${s.date}</td></tr>`).join('');
-
-        // قائمة الديون
-        document.getElementById('debts-list').innerHTML = debts.map((d, i) => `<tr><td>${d.name}</td><td>${d.amount}</td><td>${d.status}</td><td><button class="btn btn-sm btn-success" onclick="payDebt(${i})">تم السداد</button></td></tr>`).join('');
+        // تحديث الجداول
+        document.getElementById('inv-table').innerHTML = data.inv.map(i => `<tr><td>${i.name}</td><td>${i.qty}</td><td>${i.price}</td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteItem(${i.id})">حذف</button></td></tr>`).join('');
+        document.getElementById('sale-select').innerHTML = data.inv.map(i => `<option value="${i.id}">${i.name} (${i.qty})</option>`).join('');
+        document.getElementById('sales-history').innerHTML = data.sales.map(s => `<tr><td>${s.name}</td><td>${s.qty}</td><td>${s.total} ر.س</td></tr>`).join('');
+        document.getElementById('debt-table').innerHTML = data.debts.map(d => `<tr><td>${d.name}</td><td>${d.amount} ر.س</td><td><span class="badge bg-warning text-dark">${d.status}</span></td></tr>`).join('');
     }
 
-    function deleteProd(id) { products = products.filter(p => p.id != id); saveAndRefresh(); }
-    function payDebt(i) { debts.splice(i, 1); saveAndRefresh(); }
-
-    renderAll();
+    function deleteItem(id) { data.inv = data.inv.filter(i => i.id != id); sync(); }
+    updateUI();
 </script>
 </body>
 </html>
