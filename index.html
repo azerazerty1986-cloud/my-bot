@@ -3,157 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سوبيرات برو - نظام محمي</title>
+    <title>سوبيرات برو | النظام الشامل</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-        :root { --main-blue: #1a237e; }
-        body { background: #f0f2f5; font-family: 'Segoe UI', sans-serif; overflow-x: hidden; }
+        :root { --primary-blue: #1a237e; --accent-gold: #ffd600; }
+        body { background: #f4f7fe; font-family: 'Segoe UI', Tahoma, sans-serif; overflow-x: hidden; }
         
-        /* تصميم شاشة القفل */
+        /* شاشة القفل */
         #lock-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: var(--main-blue); color: white;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            z-index: 9999; transition: 0.5s;
+            background: var(--primary-blue); z-index: 10000;
+            display: flex; align-items: center; justify-content: center;
         }
-        .login-box { background: white; padding: 30px; border-radius: 20px; color: #333; width: 320px; text-align: center; }
+        .login-card { background: white; padding: 40px; border-radius: 25px; width: 350px; text-align: center; }
 
-        /* التصميم العام */
-        .sidebar { background: var(--main-blue); min-height: 100vh; color: white; position: sticky; top: 0; }
-        .nav-link { color: #c5cae9; cursor: pointer; border-radius: 10px; margin-bottom: 5px; }
-        .nav-link.active { background: rgba(255,255,255,0.15); color: white; }
-        .card { border: none; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        .section { display: none; padding: 20px; }
-        .active-section { display: block; }
-        #scanner-container { width: 100%; height: 300px; background: #000; display: none; border-radius: 15px; overflow: hidden; }
+        /* التصميم الداخلي */
+        .sidebar { background: var(--primary-blue); min-height: 100vh; color: white; transition: 0.3s; }
+        .nav-link { color: #c5cae9; cursor: pointer; border-radius: 12px; margin: 8px 0; transition: 0.3s; }
+        .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.15); color: white; }
+        .card { border: none; border-radius: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); }
+        .section { display: none; padding: 25px; }
+        .active-section { display: block; animation: slideIn 0.4s ease-out; }
+        
+        /* أدوات التصوير */
+        #scanner-view { width: 100%; height: 250px; background: #000; border-radius: 15px; display: none; overflow: hidden; position: relative; }
+        .mic-on { color: #f44336 !important; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
-<body onload="checkLock()">
+<body onload="checkAuth()">
 
 <div id="lock-screen">
-    <div class="login-box shadow-lg">
-        <span class="material-icons-round fs-1 text-primary mb-3">lock</span>
-        <h5 class="mb-4">أدخل كلمة المرور للدخول</h5>
-        <input type="password" id="pass-input" class="form-control mb-3 text-center" placeholder="****">
-        <button class="btn btn-primary w-100" onclick="unlock()">دخول</button>
-        <p id="error-msg" class="text-danger mt-2 small" style="display:none">كلمة السر غير صحيحة!</p>
+    <div class="login-card shadow-lg">
+        <div class="mb-4"><span class="material-icons-round fs-1 text-primary">security</span></div>
+        <h4 class="mb-3">نظام سوبيرات برو</h4>
+        <input type="password" id="main-pass" class="form-control mb-3 text-center fs-4" placeholder="رمز الدخول">
+        <button class="btn btn-primary w-100 py-2 fs-5" onclick="login()">دخول</button>
+        <div id="login-err" class="text-danger mt-3 small" style="display:none">الرمز غير صحيح!</div>
     </div>
 </div>
 
 <div class="container-fluid">
     <div class="row">
-        <nav class="col-md-2 sidebar p-4">
-            <h4 class="text-center mb-5">🛒 سوبيرات برو</h4>
+        <nav class="col-md-2 sidebar p-4 shadow">
+            <div class="text-center mb-5">
+                <span class="material-icons-round fs-1 text-warning">storefront</span>
+                <h5 class="mt-2 text-white">لوحة الإدارة</h5>
+            </div>
             <ul class="nav flex-column">
-                <li class="nav-item"><a class="nav-link active" id="link-inv" onclick="showSection('inv')"><span class="material-icons-round align-middle me-2">inventory</span> المخزن</a></li>
-                <li class="nav-item"><a class="nav-link" id="link-bulk" onclick="showSection('bulk')"><span class="material-icons-round align-middle me-2">receipt</span> فاتورة جماعية</a></li>
-                <li class="nav-item mt-5"><a class="nav-link text-danger" onclick="lockApp()"><span class="material-icons-round align-middle me-2">logout</span> تسجيل خروج</a></li>
+                <li class="nav-item"><a class="nav-link active" onclick="showSection('inv')"><span class="material-icons-round align-middle me-2">inventory_2</span> المخزن</a></li>
+                <li class="nav-item"><a class="nav-link" onclick="showSection('bulk')"><span class="material-icons-round align-middle me-2">post_add</span> فاتورة جديدة</a></li>
+                <li class="nav-item mt-5"><a class="nav-link text-warning" onclick="logout()"><span class="material-icons-round align-middle me-2">power_settings_new</span> خروج</a></li>
             </ul>
         </nav>
 
         <main class="col-md-10">
+            
             <div id="bulk" class="section">
-                <div class="d-flex justify-content-between mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2>🧾 إدخال فاتورة جماعية</h2>
-                    <div>
-                        <button class="btn btn-outline-danger me-2" onclick="startVoice()"><span class="material-icons-round align-middle" id="voice-icon">mic</span> إدخال صوتي</button>
+                    <div class="btn-group">
+                        <button class="btn btn-outline-danger" id="mic-btn" onclick="startVoice()"><span class="material-icons-round align-middle">mic</span> صوت</button>
+                        <button class="btn btn-outline-primary" onclick="toggleScanner()"><span class="material-icons-round align-middle">qr_code_scanner</span> باركود</button>
                     </div>
                 </div>
+
+                <div id="scanner-view" class="mb-3"></div>
+
                 <div class="card p-4">
-                    <div class="row g-2 mb-3">
-                        <div class="col-md-4"><input type="text" id="b-name" class="form-control" placeholder="اسم المنتج"></div>
-                        <div class="col-md-3"><input type="number" id="b-qty" class="form-control" placeholder="الكمية"></div>
-                        <div class="col-md-3"><input type="number" id="b-price" class="form-control" placeholder="السعر"></div>
-                        <div class="col-md-2"><button class="btn btn-primary w-100" onclick="addToTempList()">أضف</button></div>
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="small text-muted">اسم المنتج</label><input type="text" id="in-name" class="form-control"></div>
+                        <div class="col-md-3"><label class="small text-muted">الكمية</label><input type="number" id="in-qty" class="form-control"></div>
+                        <div class="col-md-3"><label class="small text-muted">سعر البيع</label><input type="number" id="in-price" class="form-control"></div>
+                        <div class="col-md-2 d-flex align-items-end"><button class="btn btn-primary w-100" onclick="addToBill()">إضافة</button></div>
                     </div>
-                    <table class="table">
-                        <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th></tr></thead>
-                        <tbody id="temp-list-body"></tbody>
-                    </table>
-                    <button class="btn btn-success w-100 mt-3" onclick="saveBulk()">حفظ في المخزن</button>
+
+                    <div class="table-responsive mt-4">
+                        <table class="table align-middle">
+                            <thead class="table-light"><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th><th>-</th></tr></thead>
+                            <tbody id="bill-body"></tbody>
+                        </table>
+                    </div>
+                    <button class="btn btn-success btn-lg w-100 mt-3" onclick="confirmBill()">حفظ الفاتورة النهائية</button>
                 </div>
             </div>
 
             <div id="inv" class="section active-section">
-                <h2 class="mb-4">📦 حالة المخزن</h2>
+                <h2 class="mb-4">📦 المنتجات المتوفرة</h2>
                 <div class="card p-3">
-                    <table class="table">
-                        <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th></tr></thead>
-                        <tbody id="inv-body"></tbody>
+                    <table class="table table-hover">
+                        <thead class="table-light"><tr><th>اسم المنتج</th><th>الكمية</th><th>السعر</th><th>إجراء</th></tr></thead>
+                        <tbody id="inv-table-body"></tbody>
                     </table>
                 </div>
             </div>
+
         </main>
     </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+
 <script>
-    // --- إعدادات الأمان ---
-    const CORRECT_PASSWORD = "1234"; // يمكنك تغيير كلمة السر من هنا
+    // --- 🔐 الأمان ---
+    const APP_PASS = "1234"; // عدل كلمة السر هنا
 
-    function unlock() {
-        const input = document.getElementById('pass-input').value;
-        if (input === CORRECT_PASSWORD) {
-            document.getElementById('lock-screen').style.opacity = "0";
-            setTimeout(() => {
-                document.getElementById('lock-screen').style.display = "none";
-            }, 500);
-            sessionStorage.setItem('isLoggedIn', 'true');
-        } else {
-            document.getElementById('error-msg').style.display = "block";
-        }
+    function login() {
+        if(document.getElementById('main-pass').value === APP_PASS) {
+            document.getElementById('lock-screen').style.display = 'none';
+            sessionStorage.setItem('auth', 'true');
+        } else { document.getElementById('login-err').style.display = 'block'; }
     }
 
-    function checkLock() {
-        if (sessionStorage.getItem('isLoggedIn') === 'true') {
-            document.getElementById('lock-screen').style.display = "none";
-        }
+    function checkAuth() {
+        if(sessionStorage.getItem('auth') === 'true') document.getElementById('lock-screen').style.display = 'none';
     }
 
-    function lockApp() {
-        sessionStorage.removeItem('isLoggedIn');
-        location.reload();
-    }
+    function logout() { sessionStorage.clear(); location.reload(); }
 
-    // --- بقية وظائف النظام السابقة ---
-    let products = JSON.parse(localStorage.getItem('products')) || [];
-    let tempList = [];
+    // --- 🛒 إدارة البيانات ---
+    let db = JSON.parse(localStorage.getItem('superetteDB')) || [];
+    let tempBill = [];
 
     function showSection(id) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
         document.getElementById(id).classList.add('active-section');
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        event.currentTarget.classList.add('active');
     }
 
-    function addToTempList() {
-        const name = document.getElementById('b-name').value;
-        const qty = parseInt(document.getElementById('b-qty').value);
-        const price = parseFloat(document.getElementById('b-price').value);
-        if(name && qty && price) {
-            tempList.push({ name, qty, price });
-            renderTemp();
-            document.getElementById('b-name').value = '';
+    function addToBill() {
+        const n = document.getElementById('in-name').value;
+        const q = parseInt(document.getElementById('in-qty').value);
+        const p = parseFloat(document.getElementById('in-price').value);
+        if(n && q && p) {
+            tempBill.push({ n, q, p });
+            renderBill();
+            document.getElementById('in-name').value = '';
         }
     }
 
-    function renderTemp() {
-        document.getElementById('temp-list-body').innerHTML = tempList.map(item => `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.price}</td></tr>`).join('');
+    function renderBill() {
+        document.getElementById('bill-body').innerHTML = tempBill.map((item, i) => 
+            `<tr><td>${item.n}</td><td>${item.q}</td><td>${item.p}</td><td>${item.q * item.p}</td>
+            <td><button class="btn btn-sm text-danger" onclick="tempBill.splice(${i},1);renderBill()">❌</button></td></tr>`).join('');
     }
 
-    function saveBulk() {
-        products = [...products, ...tempList];
-        localStorage.setItem('products', JSON.stringify(products));
-        tempList = [];
-        renderTemp();
-        renderInv();
-        alert("تم الحفظ!");
+    function confirmBill() {
+        db = [...db, ...tempBill];
+        localStorage.setItem('superetteDB', JSON.stringify(db));
+        tempBill = [];
+        renderBill(); renderInv();
+        showSection('inv');
+        alert("تم تحديث المخزن بنجاح!");
     }
 
     function renderInv() {
-        document.getElementById('inv-body').innerHTML = products.map(p => `<tr><td>${p.name}</td><td>${p.qty}</td><td>${p.price}</td></tr>`).join('');
+        document.getElementById('inv-table-body').innerHTML = db.map((p, i) => 
+            `<tr><td><b>${p.n}</b></td><td>${p.q}</td><td>${p.p} ر.س</td>
+            <td><button class="btn btn-sm btn-outline-danger" onclick="deleteItem(${i})">حذف</button></td></tr>`).join('');
     }
+
+    function deleteItem(i) { db.splice(i, 1); localStorage.setItem('superetteDB', JSON.stringify(db)); renderInv(); }
+
+    // --- 🎤 الصوت ---
+    function startVoice() {
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = 'ar-SA';
+        recognition.onstart = () => document.getElementById('mic-btn').classList.add('mic-on');
+        recognition.onend = () => document.getElementById('mic-btn').classList.remove('mic-on');
+        recognition.onresult = (e) => {
+            document.getElementById('in-name').value = e.results[0][0].transcript;
+        };
+        recognition.start();
+    }
+
+    // --- 📷 الباركود ---
+    let scannerActive = false;
+    function toggleScanner() {
+        const view = document.getElementById('scanner-view');
+        if(!scannerActive) {
+            view.style.display = 'block';
+            Quagga.init({ inputStream: { name: "Live", type: "LiveStream", target: view },
+                decoder: { readers: ["ean_reader", "code_128_reader"] }
+            }, (err) => { if(!err) Quagga.start(); });
+            scannerActive = true;
+        } else {
+            Quagga.stop(); view.style.display = 'none'; scannerActive = false;
+        }
+    }
+
+    Quagga.onDetected((res) => {
+        document.getElementById('in-name').value = "Barcode: " + res.codeResult.code;
+        toggleScanner();
+    });
 
     renderInv();
 </script>
