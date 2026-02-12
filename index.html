@@ -1,135 +1,65 @@
-import telebot
-from telebot import types
-import json, os, time, threading, requests, random, base64
-from datetime import datetime
-import statistics
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة تحكم روبوتي</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background-color: #121212; color: white; font-family: sans-serif; text-align: center; padding: 15px; margin: 0; }
+        .header { background: #1e1e1e; padding: 15px; border-radius: 0 0 20px 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .score-box { font-size: 32px; color: #ffd700; font-weight: bold; }
+        .coin-container { margin: 30px auto; width: 180px; height: 180px; position: relative; }
+        .coin { width: 100%; cursor: pointer; transition: transform 0.1s; filter: drop-shadow(0 0 15px #ff9900); }
+        .coin:active { transform: scale(0.92); }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+        button { background: #248bcf; color: white; border: none; padding: 16px; border-radius: 14px; font-size: 14px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        button:active { background: #1a6699; }
+        .full-btn { grid-column: span 2; background: #28a745; font-size: 16px; }
+        .footer { margin-top: 30px; font-size: 11px; color: #666; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="score-box">🪙 <span id="balance">0</span></div>
+        <p style="margin: 5px 0 0; color: #aaa;">رصيدك من النقاط</p>
+    </div>
 
-# --- إعدادات تطبيق الويب الخاص بك ---
-MY_WEBAPP_URL = 'https://azerazerty1986-cloud.github.io/my-bot/'
-
-# محاولة استيراد مكتبات Solana
-SOLANA_SUPPORT = False
-try:
-    from solana.rpc.api import Client
-    from solders.keypair import Keypair
-    from solders.transaction import VersionedTransaction
-    from solders.pubkey import Pubkey
-    SOLANA_SUPPORT = True
-except ImportError:
-    pass
-
-# ================= [ 1. الإعدادات والبيانات ] =================
-TOKEN = '8576673096:AAHCg7pM2MyzmVuCqWdK-ZbrDQy7zAR09x4'
-DB_FILE = "trading_master_unified.json"
-MY_PASSWORD = "123" 
-SOLANA_RPC = "https://api.mainnet-beta.solana.com"
-
-bot = telebot.TeleBot(TOKEN)
-solana_client = Client(SOLANA_RPC) if SOLANA_SUPPORT else None
-
-MINTS = {
-    "SOL": "So11111111111111111111111111111111111111112",
-    "USDT": "Es9vMFrzaCERmJfrF4H2FYD4CoNkY11McCe8En2vQK"
-}
-
-# [ دوال قاعدة البيانات المذكورة في كودك ]
-def load_db():
-    if os.path.exists(DB_FILE):
-        try:
-            with open(DB_FILE, 'r') as f: 
-                db = json.load(f)
-                db.setdefault("balance", 10.0)
-                db.setdefault("tokens", {})
-                db.setdefault("chat_id", None)
-                db.setdefault("radar_active", True)
-                db.setdefault("trade_history", [])
-                db.setdefault("wallets", {"phantom": None, "trust": None})
-                db.setdefault("private_keys", {"phantom": None, "trust": None})
-                db.setdefault("assets", {"SOL": 0.0, "USDT": 0.0})
-                db.setdefault("preferred_wallet", "phantom")
-                return db
-        except: pass
-    return {
-        "tokens": {}, "chat_id": None, "balance": 10.0, "radar_active": True,
-        "trade_history": [], "wallets": {"phantom": None, "trust": None},
-        "private_keys": {"phantom": None, "trust": None},
-        "assets": {"SOL": 0.0, "USDT": 0.0},
-        "preferred_wallet": "phantom"
-    }
-
-def save_db(data):
-    with open(DB_FILE, 'w') as f: 
-        json.dump(data, f, indent=4, ensure_ascii=False)
-
-# ================= [ 2. القائمة الرئيسية المدمجة ] =================
-def main_menu():
-    db = load_db()
-    markup = types.InlineKeyboardMarkup(row_width=2)
+    <div class="coin-container">
+        <img src="https://raw.githubusercontent.com/azerazerty1986-cloud/my-bot/main/coin.png" class="coin" onclick="tapCoin()">
+    </div>
     
-    # إضافة زر تطبيق النقر (Web App) في الأعلى
-    webapp_info = types.WebAppInfo(MY_WEBAPP_URL)
-    markup.add(types.InlineKeyboardButton("🎮 فتح لعبة النقر 🪙", web_app=webapp_info))
-    
-    radar_btn = "🔴 إيقاف الرادار" if db.get('radar_active') else "🟢 تشغيل الرادار"
-    markup.add(types.InlineKeyboardButton("📊 تحليل شامل (3 في 1)", callback_data="triple_analyze"))
-    markup.add(types.InlineKeyboardButton("🧠 الثالوث الذكي", callback_data="menu_smart"),
-               types.InlineKeyboardButton("⚡ المضارب المحترف", callback_data="menu_scalper"))
-    markup.add(types.InlineKeyboardButton("🛡️ المدافع الحكيم", callback_data="menu_defender"),
-               types.InlineKeyboardButton("💰 المحفظة", callback_data="portfolio"))
-    markup.add(types.InlineKeyboardButton("➕ إضافة للرادار", callback_data="add_radar"),
-               types.InlineKeyboardButton("📜 قائمة المراقبة", callback_data="watchlist"))
-    markup.add(types.InlineKeyboardButton(radar_btn, callback_data="toggle_radar"))
-    return markup
+    <h3 style="text-align: right; margin-right: 10px;">أدوات التداول:</h3>
+    <div class="grid">
+        <button class="full-btn" onclick="sendCmd('تحليل شامل')">📊 تحليل شامل (3 في 1)</button>
+        <button onclick="sendCmd('المحفظة')">💰 المحفظة</button>
+        <button onclick="sendCmd('إضافة للرادار')">➕ إضافة للرادار</button>
+        <button onclick="sendCmd('المضارب المحترف')">⚡ المضارب</button>
+        <button onclick="sendCmd('المدافع الحكيم')">🛡️ المدافع</button>
+        <button onclick="sendCmd('تشغيل الرادار')">🟢 تشغيل الرادار</button>
+        <button onclick="sendCmd('قائمة المراقبة')">📜 القائمة</button>
+    </div>
 
-# [ بقية دوال الحسابات والتحليل الفني من كودك الأصلي... ]
-# (تم اختصارها هنا لسهولة النسخ ولكنها تعمل داخل الكود)
+    <div class="footer">POWERED BY AZERAZERTY1986</div>
 
-def get_technical_data(ca):
-    try:
-        resp = requests.get(f"https://api.dexscreener.com/latest/dex/tokens/{ca}", timeout=10).json()
-        if resp.get('pairs'):
-            pair = max(resp['pairs'], key=lambda x: float(x.get('liquidity', {}).get('usd', 0)) if x.get('liquidity') else 0)
-            change_24h = float(pair.get('priceChange', {}).get('h24', 0))
-            rsi = 50 + (change_24h * 0.5) 
-            liq = pair.get('liquidity', {}).get('usd', 0)
-            pair['safe_liquidity'] = float(liq) if liq else 0
-            return min(max(rsi, 10), 90), pair
-    except: pass
-    return 50, None
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand(); 
+        tg.headerColor = '#1e1e1e';
 
-def check_security(ca):
-    try:
-        res = requests.get(f"https://api.honeypot.is/v2/?address={ca}", timeout=8).json()
-        is_hp = res.get("honeypotResult", {}).get("isHoneypot", False)
-        tax = res.get("simulationResult", {}).get("sellTax", 0)
-        return ("🔴 Honeypot" if is_hp else "🟢 Safe"), tax
-    except: return "⚠️ Unknown", 0
+        let score = localStorage.getItem('userScore') || 0;
+        document.getElementById('balance').innerText = score;
 
-# ================= [ 3. معالجة الرسائل والطلبات ] =================
+        function tapCoin() {
+            score++;
+            document.getElementById('balance').innerText = score;
+            localStorage.setItem('userScore', score);
+            tg.HapticFeedback.impactOccurred('light');
+        }
 
-@bot.message_handler(commands=['start'])
-def start(message):
-    msg = bot.send_message(message.chat.id, "🔐 **نظام التداول المطور**\nأدخل كلمة السر للدخول:")
-    bot.register_next_step_handler(msg, verify_password)
-
-def verify_password(message):
-    if message.text == MY_PASSWORD:
-        db = load_db(); db["chat_id"] = message.chat.id; save_db(db)
-        bot.send_message(message.chat.id, "✅ تم الدخول بنجاح!\nيمكنك الآن التداول أو لعب لعبة النقر.", reply_markup=main_menu())
-    else:
-        bot.send_message(message.chat.id, "❌ كلمة السر خاطئة.")
-
-@bot.callback_query_handler(func=lambda call: True)
-def handle_queries(call):
-    # سيتم تنفيذ كل أوامر التداول التي كانت في كودك هنا
-    if call.data == "back_main":
-        bot.edit_message_text("📱 **نظام التداول المتكامل المطور**", call.message.chat.id, call.message.message_id, reply_markup=main_menu())
-    # ... (يمكنك إضافة بقية معالجات الـ callback هنا كما في كودك الأصلي)
-    bot.answer_callback_query(call.id)
-
-# تشغيل البوت
-if __name__ == "__main__":
-    print("البوت يعمل الآن مع واجهة الويب...")
-    bot.infinity_polling()
-
-
+        function sendCmd(cmdText) {
+            tg.sendData(cmdText); // يرسل النص للبوت ويغلق الواجهة
+        }
+    </script>
+</body>
+</html>
