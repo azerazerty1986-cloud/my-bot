@@ -34,3 +34,35 @@
         <button onclick="sendAction('connect_wallet')">🔗 إنشاء محفظة</button>
         <button onclick="sendAction('show_keys')">🔑 عرض المفاتيح</button>
         <button onclick="sendAction('المحفظة')">💳 تفاصيل الحساب</button>
+        <button onclick="sendAction('تحديث')">🔄 تحديث البيانات</button>
+    </div>
+
+    <script>
+        let tg = window.Telegram.WebApp;
+        tg.expand();
+        let radarOn = false;
+
+        function toggleRadar() {
+            radarOn = !radarOn;
+            const btn = document.getElementById('radarBtn');
+            const stat = document.getElementById('radarStat');
+            if(radarOn) {
+                btn.innerText = "🔴 إيقاف الرادار"; btn.style.background = "#444";
+                stat.innerText = "الرادار: يمسح الشبكة الآن... 🛰️";
+                tg.sendData("start_radar");
+            } else {
+                btn.innerText = "🟢 تشغيل الرادار التلقائي"; btn.style.background = "#e63946";
+                stat.innerText = "الرادار: متوقف 🔴";
+                tg.sendData("stop_radar");
+            }
+        }
+
+        function sendAction(data) {
+            if(data.startsWith('تحليل:') && data.length < 15) {
+                tg.showAlert("يرجى إدخال عنوان عقد صحيح أولاً!"); return;
+            }
+            tg.sendData(data);
+        }
+    </script>
+</body>
+</html>
