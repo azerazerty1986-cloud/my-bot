@@ -3,101 +3,99 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سوبيرات ريان - النظام المتكامل</title>
+    <title>سوبيرات ريان - النسخة الاحترافية</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-        :root { --nardo-grey: #6c7c7c; --dark-nardo: #545e5e; --light-nardo: #e1e5e5; --danger-red: #ff4d4d; --success-green: #1a5d38; }
-        body { background-color: var(--light-nardo); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 90px; }
-        .app-container { max-width: 500px; margin: 0 auto; background: white; min-height: 100vh; position: relative; box-shadow: 0 0 20px rgba(0,0,0,0.1); }
+        :root { --nardo-grey: #6c7c7c; --dark-nardo: #545e5e; --light-red: #fff5f5; --main-red: #ff6b6b; --danger-red: #ff4d4d; }
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 90px; }
         
         /* الهيدر */
-        .app-header { background: var(--dark-nardo); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; sticky: top; z-index: 1000; }
+        .app-header { background: var(--dark-nardo); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
         
-        /* شاشة المبيعات (مثل الصورة) */
-        .invoice-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 12px; border: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-        .price-tag { background: var(--success-green); color: white; padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 14px; }
-        
-        /* واجهة المشتريات (مثل الصورة) */
-        .purchase-table { width: 100%; background: #f9f9f9; border-radius: 10px; overflow: hidden; }
-        .purchase-table th { background: #e8eeee; color: var(--dark-nardo); padding: 10px; font-size: 13px; }
-        .purchase-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 13px; }
+        /* واجهة المبيعات المخصصة (باللون الأحمر الفاتح) */
+        #sales { background-color: var(--light-red); min-height: 80vh; border-radius: 25px 25px 0 0; margin-top: 10px; }
+        .sales-nav-tabs { display: flex; background: white; border-radius: 50px; padding: 5px; margin-bottom: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        .sales-tab { flex: 1; text-align: center; padding: 8px; border-radius: 50px; cursor: pointer; font-size: 13px; color: #777; transition: 0.3s; }
+        .sales-tab.active { background: var(--main-red); color: white; font-weight: bold; }
 
-        /* الأزرار والتنبيهات */
-        .nav-add-btn { background: var(--dark-nardo); color: white !important; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: -35px; border: 5px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        /* البحث والبطاقات */
+        .search-box { background: white; border-radius: 15px; padding: 10px 15px; display: flex; align-items: center; margin-bottom: 15px; border: 1px solid #eee; }
+        .search-box input { border: none; outline: none; width: 100%; margin-right: 10px; font-size: 14px; }
+        .client-card { background: white; border-radius: 15px; padding: 15px; margin-bottom: 10px; display: flex; align-items: center; border: 1px solid #ffeaea; transition: 0.2s; }
+        .client-avatar { width: 45px; height: 45px; background: #ffeaea; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--main-red); margin-left: 15px; }
+
+        /* التنبيهات والأزرار السفلية */
         .stock-alert { border-right: 5px solid var(--danger-red) !important; background: #fff5f5 !important; }
-        
-        /* القائمة السفلية */
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; max-width: 500px; background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #eee; z-index: 2000; }
-        .nav-item { text-align: center; color: #888; cursor: pointer; font-size: 11px; flex: 1; }
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #eee; z-index: 2000; }
+        .nav-item { text-align: center; color: #888; font-size: 11px; flex: 1; cursor: pointer; }
         .nav-item.active { color: var(--dark-nardo); font-weight: bold; }
-        .nav-item i { display: block; font-size: 24px; }
+        .nav-add-btn { background: var(--dark-nardo); color: white !important; width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: -35px; border: 5px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
 
         .section { display: none; padding: 15px; animation: fadeIn 0.3s; }
         .active-section { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         #scanner-view { width: 100%; height: 200px; background: #000; border-radius: 15px; display: none; margin-bottom: 15px; }
-        .mic-active { color: var(--danger-red) !important; animation: pulse 1s infinite; }
     </style>
 </head>
 <body>
 
-<div class="app-container">
+<div class="app-container" style="max-width: 500px; margin: 0 auto; background: white; min-height: 100vh;">
     <div class="app-header">
         <i class="material-icons-round">menu</i>
-        <span id="header-title" class="fw-bold">سوبيرات ريان</span>
+        <span class="fw-bold">سوبيرات ريان</span>
         <i class="material-icons-round" onclick="location.reload()">refresh</i>
     </div>
 
-    <div id="reports" class="section active-section text-center">
+    <div id="reports" class="section active-section">
         <div class="row g-3">
-            <div class="col-6" onclick="showPage('inventory', 'inv-nav')"><div class="card p-4 border-0 shadow-sm rounded-4"><i class="material-icons-round fs-1 text-secondary">inventory_2</i><br>المخزن</div></div>
-            <div class="col-6" onclick="showPage('sales', 'sales-nav')"><div class="card p-4 border-0 shadow-sm rounded-4"><i class="material-icons-round fs-1 text-secondary">analytics</i><br>المبيعات</div></div>
-        </div>
-        <div class="mt-4 p-3 bg-light rounded-4 border">
-            <h6>رفع صورة فاتورة</h6>
-            <input type="file" id="bill-img" hidden accept="image/*" onchange="processInvoice()">
-            <button class="btn btn-secondary rounded-pill w-100" style="background:var(--nardo-grey)" onclick="document.getElementById('bill-img').click()">إختيار صورة</button>
-            <div id="upload-status" class="mt-2 small"></div>
+            <div class="col-6" onclick="showPage('inventory', 'inv-nav')"><div class="card p-4 border-0 shadow-sm text-center rounded-4"><i class="material-icons-round fs-1 text-secondary">warehouse</i><br>المخزن</div></div>
+            <div class="col-6" onclick="showPage('sales', 'sales-nav')"><div class="card p-4 border-0 shadow-sm text-center rounded-4"><i class="material-icons-round fs-1 text-secondary">point_of_sale</i><br>المبيعات</div></div>
         </div>
     </div>
 
     <div id="sales" class="section">
-        <div class="input-group mb-3 rounded-pill overflow-hidden border">
-            <span class="input-group-text bg-white border-0"><i class="material-icons-round">search</i></span>
-            <input type="text" class="form-control border-0" placeholder="ابحث برقم الفاتورة أو العميل">
+        <div class="sales-nav-tabs">
+            <div class="sales-tab" onclick="switchSalesSubPage('pos', this)">عملية بيع</div>
+            <div class="sales-tab" onclick="switchSalesSubPage('invoices', this)">الفواتير</div>
+            <div class="sales-tab active" onclick="switchSalesSubPage('clients', this)">العملاء</div>
         </div>
-        <div id="sales-list">
-            <div class="invoice-card shadow-sm">
-                <div>
-                    <div class="fw-bold">فاتورة بيع #320</div>
-                    <div class="text-muted small">عميل غير محدد | منذ 2 أسبوع</div>
+
+        <div id="sales-clients-content">
+            <div class="search-box shadow-sm">
+                <i class="material-icons-round text-muted">search</i>
+                <input type="text" id="client-search" placeholder="ابحث عن عميل بالاسم أو الهاتف..." onkeyup="filterClients()">
+            </div>
+            
+            <button class="btn btn-danger w-100 rounded-pill mb-4 shadow-sm" style="background: var(--main-red); border:none;" onclick="addNewClient()">+ إضافة عميل جديد</button>
+            
+            <div id="clients-list">
+                <div class="client-card shadow-sm">
+                    <div class="client-avatar"><i class="material-icons-round">person</i></div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">محمد أحمد</div>
+                        <div class="text-muted small">0555-123-456</div>
+                    </div>
+                    <i class="material-icons-round text-muted">chevron_left</i>
                 </div>
-                <div class="price-tag">75.0 دج</div>
+                <div class="client-card shadow-sm">
+                    <div class="client-avatar"><i class="material-icons-round">person</i></div>
+                    <div class="flex-grow-1">
+                        <div class="fw-bold">علي بن يوسف</div>
+                        <div class="text-muted small">0661-888-999</div>
+                    </div>
+                    <i class="material-icons-round text-muted">chevron_left</i>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div id="purchases" class="section">
-        <h6 class="fw-bold mb-3">تفاصيل عملية شراء جديدة</h6>
-        <div class="card p-3 border-0 shadow-sm mb-3">
-            <div class="small mb-1 text-muted">تاريخ الفاتورة</div>
-            <input type="date" class="form-control mb-3" value="2026-02-13">
-            <div class="small mb-1 text-muted">المورد</div>
-            <select class="form-select mb-3"><option>مهندس يوسف</option></select>
-            
-            <table class="purchase-table">
-                <thead><tr><th>المنتج</th><th>السعر</th><th>الكمية</th></tr></thead>
-                <tbody id="purchase-items-list">
-                    <tr><td>زبادي</td><td>5.0</td><td>5.0</td></tr>
-                    <tr><td>فريسيكا</td><td>6.0</td><td>8.0</td></tr>
-                </tbody>
-            </table>
+        <div id="sales-other-content" style="display:none;" class="text-center p-5 text-muted">
+            <i class="material-icons-round fs-1">construction</i><br>قيد التطوير الفني
         </div>
-        <button class="btn btn-success w-100 rounded-pill py-2" style="background:var(--success-green)">إتمام الشراء</button>
     </div>
 
     <div id="add" class="section">
+        <h5 class="fw-bold mb-3">إضافة منتج سريع</h5>
         <div id="scanner-view"></div>
         <div class="card p-3 border-0 shadow-sm rounded-4">
             <div class="input-group mb-2">
@@ -106,12 +104,13 @@
                 <button class="btn btn-outline-secondary" onclick="toggleScanner()"><i class="material-icons-round">qr_code_scanner</i></button>
             </div>
             <input type="number" id="p-qty" class="form-control mb-2" placeholder="الكمية">
-            <input type="number" id="p-price" class="form-control mb-3" placeholder="سعر البيع">
+            <input type="number" id="p-price" class="form-control mb-3" placeholder="السعر">
             <button class="btn btn-secondary w-100 rounded-pill" style="background:var(--dark-nardo)" onclick="saveItem()">حفظ في المخزن</button>
         </div>
     </div>
 
     <div id="inventory" class="section">
+        <h5 class="fw-bold mb-3">حالة المخزن</h5>
         <div id="inventory-list"></div>
     </div>
 
@@ -120,23 +119,55 @@
         <div id="inv-nav" class="nav-item" onclick="showPage('inventory', this)"><i class="material-icons-round">inventory_2</i>المخزن</div>
         <div class="nav-item" onclick="showPage('add', this)"><div class="nav-add-btn"><i class="material-icons-round">add</i></div>إضافة</div>
         <div id="sales-nav" class="nav-item" onclick="showPage('sales', this)"><i class="material-icons-round">assignment</i>المبيعات</div>
-        <div class="nav-item" onclick="showPage('purchases', this)"><i class="material-icons-round">shopping_cart</i>المشتريات</div>
+        <div class="nav-item"><i class="material-icons-round">settings</i>الإعدادات</div>
     </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <script>
-    let db = JSON.parse(localStorage.getItem('ryan_final_db')) || [];
-
-    function showPage(pageId, el) {
+    // نظام التبديل بين الصفحات الأساسية
+    function showPage(id, el) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
-        document.getElementById(pageId).classList.add('active-section');
+        document.getElementById(id).classList.add('active-section');
         document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
         if(typeof el === 'string') document.getElementById(el).classList.add('active');
         else el.classList.add('active');
-        if(pageId === 'inventory') renderInventory();
+        if(id === 'inventory') renderInventory();
     }
 
+    // نظام التبديل داخل واجهة المبيعات
+    function switchSalesSubPage(type, el) {
+        document.querySelectorAll('.sales-tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+        const clientsContent = document.getElementById('sales-clients-content');
+        const otherContent = document.getElementById('sales-other-content');
+        
+        if(type === 'clients') {
+            clientsContent.style.display = 'block';
+            otherContent.style.display = 'none';
+        } else {
+            clientsContent.style.display = 'none';
+            otherContent.style.display = 'block';
+        }
+    }
+
+    // وظيفة البحث عن العملاء
+    function filterClients() {
+        let input = document.getElementById('client-search').value.toLowerCase();
+        let cards = document.querySelectorAll('.client-card');
+        cards.forEach(card => {
+            let name = card.querySelector('.fw-bold').innerText.toLowerCase();
+            card.style.display = name.includes(input) ? 'flex' : 'none';
+        });
+    }
+
+    function addNewClient() {
+        let name = prompt("أدخل اسم العميل الجديد:");
+        if(name) alert("تمت إضافة العميل: " + name);
+    }
+
+    // الحفاظ على وظائف الصوت والباركود والمخزن
+    let db = JSON.parse(localStorage.getItem('ryan_final_db')) || [];
     function saveItem() {
         const n = document.getElementById('p-name').value;
         const q = parseInt(document.getElementById('p-qty').value);
@@ -144,7 +175,7 @@
         if(n && q && p) {
             db.push({name: n, qty: q, price: p});
             localStorage.setItem('ryan_final_db', JSON.stringify(db));
-            alert("تم الحفظ");
+            alert("تم حفظ السلعة");
             document.getElementById('p-name').value = '';
             showPage('inventory', 'inv-nav');
         }
@@ -153,14 +184,10 @@
     function renderInventory() {
         const list = document.getElementById('inventory-list');
         list.innerHTML = db.map((item, i) => `
-            <div class="invoice-card shadow-sm ${item.qty <= 5 ? 'stock-alert' : ''}">
-                <div>
-                    <div class="fw-bold">${item.name} ${item.qty <= 5 ? '<span class="text-danger small">⚠️ ناقص</span>' : ''}</div>
-                    <div class="small text-muted">الكمية: ${item.qty} | السعر: ${item.price} دج</div>
-                </div>
+            <div class="card mb-2 p-3 border-0 shadow-sm d-flex flex-row justify-content-between align-items-center ${item.qty <= 5 ? 'stock-alert' : ''}">
+                <div><div class="fw-bold">${item.name}</div><div class="small text-muted">الكمية: ${item.qty} | السعر: ${item.price} دج</div></div>
                 <i class="material-icons-round text-danger" onclick="deleteItem(${i})">delete</i>
-            </div>
-        `).join('');
+            </div>`).join('');
     }
 
     function deleteItem(i) { db.splice(i, 1); localStorage.setItem('ryan_final_db', JSON.stringify(db)); renderInventory(); }
