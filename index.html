@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سوبيرات ريان - النظام المتكامل v4</title>
+    <title>سوبيرات ريان - نظام الطباعة المتكامل</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
@@ -13,127 +13,130 @@
             --light-green: #f0fff4; --main-green: #27ae60;
         }
         body { background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 110px; }
-        .app-header { background: var(--dark-nardo); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
         
-        /* الواجهات الملونة */
+        /* إخفاء العناصر عند الطباعة */
+        @media print {
+            .app-header, .nav-tabs-custom, .card, .bottom-nav, #scanner-container, .btn-no-print, .material-icons-round {
+                display: none !important;
+            }
+            body { background: white; padding: 0; }
+            .receipt-print { display: block !important; }
+            .app-container { max-width: 100% !important; border: none !important; }
+        }
+
+        .receipt-print { display: none; padding: 20px; border: 1px dashed #ccc; text-align: center; }
+        .receipt-print table { width: 100%; margin-top: 15px; border-collapse: collapse; }
+        .receipt-print th, .receipt-print td { border-bottom: 1px solid #eee; padding: 8px; text-align: right; }
+
+        .app-header { background: var(--dark-nardo); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
         .section-sales { background-color: var(--light-red) !important; min-height: 85vh; border-radius: 20px; padding: 15px; }
         .section-purchases { background-color: var(--light-green) !important; min-height: 85vh; border-radius: 20px; padding: 15px; }
         
-        /* التبويبات */
-        .nav-tabs-custom { display: flex; background: white; border-radius: 50px; padding: 5px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        .tab-item { flex: 1; text-align: center; padding: 8px; border-radius: 50px; cursor: pointer; font-size: 13px; }
-        .tab-item.active-red { background: var(--main-red); color: white; }
-        .tab-item.active-green { background: var(--main-green); color: white; }
+        .table-custom { background: white; border-radius: 15px; overflow: hidden; font-size: 13px; margin-top: 10px; }
+        .summary-bar { background: var(--dark-nardo); color: white; padding: 15px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
 
-        /* كاميرا الباركود */
-        #scanner-container { width: 100%; height: 200px; background: #000; border-radius: 15px; display: none; margin-bottom: 15px; overflow: hidden; border: 3px solid var(--dark-nardo); }
-
-        /* شريط المجموع والطباعة */
-        .summary-bar { background: var(--dark-nardo); color: white; padding: 15px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-top: 15px; font-weight: bold; }
-        .btn-print { background: #34495e; color: white; border: none; padding: 5px 15px; border-radius: 50px; font-size: 12px; }
-
-        .stock-alert { border-right: 8px solid #e74c3c !important; background: #fff5f5 !important; }
-        .mic-active { color: #e74c3c !important; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
-
-        /* الشريط السفلي */
         .bottom-nav { position: fixed; bottom: 0; width: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; z-index: 2000; }
         .nav-item { text-align: center; color: #888; font-size: 11px; flex: 1; cursor: pointer; }
         .nav-item.active { color: var(--dark-nardo); font-weight: bold; }
         .nav-add-btn { background: var(--dark-nardo); color: white !important; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: -35px; border: 5px solid white; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 
-        .section { display: none; animation: fadeIn 0.3s; }
-        .active-section { display: block; }
+        .section { display: none; }
+        .active-section { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
 
 <div class="app-container" style="max-width: 500px; margin: 0 auto; background: white; min-height: 100vh;">
+    
+    <div id="print-area" class="receipt-print">
+        <h3>سوبيرات ريان</h3>
+        <p>وصل مبيعات</p>
+        <p id="print-date" style="font-size: 12px;"></p>
+        <hr>
+        <table>
+            <thead><tr><th>السلعة</th><th>الكمية</th><th>السعر</th></tr></thead>
+            <tbody id="print-items"></tbody>
+        </table>
+        <hr>
+        <h4 id="print-total"></h4>
+        <p>شكراً لزيارتكم!</p>
+    </div>
+
     <div class="app-header shadow-sm">
         <i class="material-icons-round">menu</i>
-        <span class="fw-bold">سوبيرات ريان</span>
-        <i class="material-icons-round" onclick="window.print()">print</i>
+        <span class="fw-bold">سوبيرات ريان v6</span>
+        <i class="material-icons-round">settings</i>
     </div>
 
     <div id="scanner-container"></div>
 
-    <div id="sales" class="section section-sales">
-        <div class="nav-tabs-custom"><div class="tab-item">عملية بيع</div><div class="tab-item">الفواتير</div><div class="tab-item active-red">العملاء</div></div>
-        <div class="card p-3 border-0 shadow-sm mb-3">
-            <h6 class="fw-bold mb-3">تسجيل مبيعات</h6>
+    <div id="sales" class="section section-sales active-section">
+        <h6 class="fw-bold mb-3">عملية بيع جديدة</h6>
+        <div class="card p-3 border-0 shadow-sm">
             <div class="input-group mb-2">
-                <select id="sale-product-select" class="form-select rounded-start-pill"></select>
-                <button class="btn btn-dark" onclick="startScanner('sale')"><i class="material-icons-round align-middle">qr_code_scanner</i></button>
+                <select id="sale-product-select" class="form-select rounded-pill-start"></select>
+                <button class="btn btn-dark" onclick="startScanner('sale')"><i class="material-icons-round">qr_code_scanner</i></button>
             </div>
             <div class="row g-2">
                 <div class="col-6"><input type="number" id="sale-qty-input" class="form-control" placeholder="الكمية"></div>
-                <div class="col-6"><button class="btn btn-danger w-100 rounded-pill" onclick="handleSale()">تأكيد الخصم</button></div>
+                <div class="col-6"><button class="btn btn-danger w-100 rounded-pill" onclick="addToCart('sale')">إضافة للجدول</button></div>
             </div>
         </div>
+
+        <div class="table-custom">
+            <table class="table mb-0 text-center">
+                <thead><tr><th>المنتج</th><th>الكمية</th><th>المجموع</th><th>-</th></tr></thead>
+                <tbody id="sale-table-body"></tbody>
+            </table>
+        </div>
+
         <div class="summary-bar">
             <div>المجموع: <span id="sales-total-val">0.00</span> دج</div>
-            <button class="btn-print" onclick="window.print()">طباعة</button>
+            <button class="btn btn-light btn-sm rounded-pill fw-bold text-danger" onclick="printReceipt('sale')">إنهاء وطباعة</button>
         </div>
     </div>
 
-    <div id="purchases" class="section section-purchases">
-        <div class="nav-tabs-custom"><div class="tab-item active-green">عملية شراء</div><div class="tab-item">الفواتير</div><div class="tab-item">الموردين</div></div>
-        <div class="card p-3 border-0 shadow-sm mb-3">
-            <h6 class="fw-bold mb-3">دخول سلع للمخزن</h6>
-            <div class="input-group mb-2">
-                <select id="purchase-product-select" class="form-select rounded-start-pill"></select>
-                <button class="btn btn-dark" onclick="startScanner('purchase')"><i class="material-icons-round align-middle">qr_code_scanner</i></button>
-            </div>
-            <div class="row g-2">
-                <div class="col-6"><input type="number" id="purchase-qty-input" class="form-control" placeholder="الكمية"></div>
-                <div class="col-6"><button class="btn btn-success w-100 rounded-pill" onclick="handlePurchase()">تأكيد الإضافة</button></div>
-            </div>
+    <div id="purchases" class="section section-purchases p-3">
+        <h6 class="fw-bold mb-3 text-success">دخول سلع للمخزن</h6>
+        <div class="card p-3 border-0 mb-3 shadow-sm">
+            <select id="purchase-product-select" class="form-select mb-2"></select>
+            <input type="number" id="purchase-qty-input" class="form-control mb-2" placeholder="الكمية المضافة">
+            <button class="btn btn-success w-100 rounded-pill" onclick="addToCart('purchase')">تأكيد الإضافة</button>
         </div>
-        <div class="summary-bar" style="background:var(--main-green)">
-            <div>المجموع: <span id="purchase-total-val">0.00</span> دج</div>
-            <button class="btn-print" onclick="window.print()">طباعة</button>
+        <div class="table-custom">
+            <table class="table mb-0 text-center" id="purchase-table-body"></table>
         </div>
     </div>
 
     <div id="add" class="section p-3">
-        <div class="card p-4 border-0 shadow-sm rounded-4">
-            <h6 class="fw-bold mb-4 text-center">تعريف سلع سوبيرات ريان</h6>
-            <div class="input-group mb-3">
-                <input type="text" id="new-p-name" class="form-control" placeholder="اسم المنتج">
-                <button class="btn btn-outline-danger" onclick="startVoice()"><i class="material-icons-round align-middle" id="mic-icon">mic</i></button>
-            </div>
-            <div class="input-group mb-3">
-                <input type="text" id="new-p-barcode" class="form-control" placeholder="الباركود">
-                <button class="btn btn-outline-dark" onclick="startScanner('add')"><i class="material-icons-round align-middle">qr_code_scanner</i></button>
-            </div>
-            <div class="row g-2 mb-3">
-                <div class="col-6"><input type="number" id="new-p-price" class="form-control" placeholder="سعر البيع"></div>
-                <div class="col-6"><select id="new-p-unit" class="form-select"><option>قطعة</option><option>كغ</option><option>لتر</option></select></div>
-            </div>
-            <button class="btn btn-dark w-100 rounded-pill py-2" onclick="registerProduct()">حفظ في النظام</button>
+        <div class="card p-4 border-0 shadow-sm text-center">
+            <h6>تعريف منتج جديد</h6>
+            <input type="text" id="new-p-name" class="form-control mb-2" placeholder="اسم المنتج">
+            <input type="text" id="new-p-barcode" class="form-control mb-2" placeholder="الباركود (اختياري)">
+            <input type="number" id="new-p-price" class="form-control mb-3" placeholder="سعر البيع">
+            <button class="btn btn-dark w-100 rounded-pill" onclick="registerProduct()">حفظ في النظام</button>
         </div>
     </div>
 
     <div id="inventory" class="section p-3">
-        <h5 class="fw-bold mb-3">الجرد والمخزن</h5>
+        <h5 class="fw-bold mb-3">المخزن الحالي</h5>
         <div id="inventory-display"></div>
     </div>
 
     <div class="bottom-nav shadow-lg">
-        <div class="nav-item" onclick="showPage('sales', this)"><i class="material-icons-round">payments</i>المبيعات</div>
-        <div class="nav-item" onclick="showPage('purchases', this)"><i class="material-icons-round">local_shipping</i>المشتريات</div>
+        <div class="nav-item active" onclick="showPage('sales', this)"><i class="material-icons-round">payments</i>بيع</div>
+        <div class="nav-item" onclick="showPage('purchases', this)"><i class="material-icons-round">local_shipping</i>شراء</div>
         <div class="nav-item" onclick="showPage('add', this)"><div class="nav-add-btn"><i class="material-icons-round">add</i></div>إضافة</div>
-        <div class="nav-item" onclick="showPage('inventory', this)" id="inv-tab"><i class="material-icons-round">inventory_2</i>المخزن</div>
-        <div class="nav-item" onclick="showPage('reports', this)"><i class="material-icons-round">dashboard</i>التقارير</div>
+        <div class="nav-item" onclick="showPage('inventory', this)"><i class="material-icons-round">inventory_2</i>مخزن</div>
+        <div class="nav-item" onclick="showPage('reports', this)"><i class="material-icons-round">bar_chart</i>تقارير</div>
     </div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
 <script>
-    // قاعدة البيانات المركزية
     let ryanStock = JSON.parse(localStorage.getItem('ryan_v4_system')) || [];
-    let scannerType = '';
+    let cart = { sale: [], purchase: [] };
 
     function showPage(id, el) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
@@ -143,106 +146,98 @@
         refreshLists();
     }
 
-    // --- 1. التعرف على الصوت ---
-    function startVoice() {
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        recognition.lang = 'ar-SA';
-        recognition.onstart = () => document.getElementById('mic-icon').classList.add('mic-active');
-        recognition.onresult = (e) => {
-            document.getElementById('new-p-name').value = e.results[0][0].transcript;
-            document.getElementById('mic-icon').classList.remove('mic-active');
-        };
-        recognition.start();
-    }
-
-    // --- 2. نظام الباركود ---
-    function startScanner(type) {
-        scannerType = type;
-        const container = document.getElementById('scanner-container');
-        container.style.display = 'block';
-        Quagga.init({
-            inputStream: { name: "Live", type: "LiveStream", target: container },
-            decoder: { readers: ["ean_reader", "code_128_reader"] }
-        }, (err) => { if(!err) Quagga.start(); });
-    }
-
-    Quagga.onDetected((res) => {
-        const code = res.codeResult.code;
-        if(scannerType === 'add') document.getElementById('new-p-barcode').value = code;
-        else {
-            const idx = ryanStock.findIndex(p => p.barcode === code);
-            if(idx !== -1) {
-                document.getElementById(scannerType === 'sale' ? 'sale-product-select' : 'purchase-product-select').value = idx;
-            } else { alert("المنتج غير موجود!"); }
-        }
-        Quagga.stop(); document.getElementById('scanner-container').style.display = 'none';
-    });
-
-    // --- 3. العمليات الأساسية ---
     function registerProduct() {
         const n = document.getElementById('new-p-name').value;
         const b = document.getElementById('new-p-barcode').value;
-        const p = document.getElementById('new-p-price').value;
-        const u = document.getElementById('new-p-unit').value;
+        const p = parseFloat(document.getElementById('new-p-price').value);
         if(n && p) {
-            ryanStock.push({ name: n, barcode: b, price: parseFloat(p), qty: 0, unit: u });
-            saveData(); alert("تم تعريف المنتج");
+            ryanStock.push({ name: n, barcode: b, price: p, qty: 0, unit: 'قطعة' });
+            saveData(); alert("تم الحفظ بنجاح");
             document.getElementById('new-p-name').value = '';
         }
     }
 
-    function handleSale() {
-        const idx = document.getElementById('sale-product-select').value;
-        const q = parseFloat(document.getElementById('sale-qty-input').value);
-        if(ryanStock[idx].qty >= q) {
-            ryanStock[idx].qty -= q;
-            const cost = q * ryanStock[idx].price;
-            document.getElementById('sales-total-val').innerText = cost.toFixed(2);
-            saveData(); alert("تم البيع وخصم الكمية");
-            showPage('inventory', document.getElementById('inv-tab'));
-        } else { alert("الكمية لا تكفي!"); }
+    function addToCart(type) {
+        const selectId = type === 'sale' ? 'sale-product-select' : 'purchase-product-select';
+        const qtyId = type === 'sale' ? 'sale-qty-input' : 'purchase-qty-input';
+        const idx = document.getElementById(selectId).value;
+        const qty = parseFloat(document.getElementById(qtyId).value);
+
+        if(!idx || isNaN(qty) || qty <= 0) return;
+        
+        const item = ryanStock[idx];
+        if(type === 'sale' && item.qty < qty) return alert("الكمية غير كافية بالمخزن!");
+
+        cart[type].push({ productIdx: idx, name: item.name, qty: qty, price: item.price, total: qty * item.price });
+        if(type === 'sale') ryanStock[idx].qty -= qty; else ryanStock[idx].qty += qty;
+        
+        saveData();
+        renderTable(type);
+        document.getElementById(qtyId).value = '';
     }
 
-    function handlePurchase() {
-        const idx = document.getElementById('purchase-product-select').value;
-        const q = parseFloat(document.getElementById('purchase-qty-input').value);
-        if(q > 0) {
-            ryanStock[idx].qty += q;
-            const cost = q * ryanStock[idx].price; // سعر تقريبي للمشتريات
-            document.getElementById('purchase-total-val').innerText = cost.toFixed(2);
-            saveData(); alert("تمت الإضافة للمخزن");
-            showPage('inventory', document.getElementById('inv-tab'));
-        }
+    function renderTable(type) {
+        const tbody = document.getElementById(`${type}-table-body`);
+        const totalVal = document.getElementById('sales-total-val');
+        if(!tbody) return;
+        tbody.innerHTML = '';
+        let total = 0;
+        cart[type].forEach((item, i) => {
+            total += item.total;
+            tbody.innerHTML += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.total}</td><td class="text-danger" onclick="removeFromCart('${type}',${i})">✖</td></tr>`;
+        });
+        if(type === 'sale') totalVal.innerText = total.toFixed(2);
     }
 
-    // --- 4. العرض والتحديث ---
+    function removeFromCart(type, i) {
+        const item = cart[type][i];
+        if(type === 'sale') ryanStock[item.productIdx].qty += item.qty; else ryanStock[item.productIdx].qty -= item.qty;
+        cart[type].splice(i, 1);
+        saveData(); renderTable(type);
+    }
+
+    // --- وظيفة الطباعة ---
+    function printReceipt(type) {
+        if(cart[type].length === 0) return alert("الجدول فارغ!");
+
+        const printItems = document.getElementById('print-items');
+        const printTotal = document.getElementById('print-total');
+        const printDate = document.getElementById('print-date');
+        
+        printItems.innerHTML = '';
+        let total = 0;
+
+        cart[type].forEach(item => {
+            total += item.total;
+            printItems.innerHTML += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.total.toFixed(2)} دج</td></tr>`;
+        });
+
+        printTotal.innerText = `المجموع الكلي: ${total.toFixed(2)} دج`;
+        printDate.innerText = new Date().toLocaleString('ar-DZ');
+
+        window.print(); // فتح نافذة الطباعة
+
+        // تصفير الجدول بعد الطباعة
+        cart[type] = [];
+        renderTable(type);
+    }
+
     function refreshLists() {
-        const options = ryanStock.map((p, i) => `<option value="${i}">${p.name} (المتوفر: ${p.qty} ${p.unit})</option>`).join('');
-        document.getElementById('sale-product-select').innerHTML = options;
-        document.getElementById('purchase-product-select').innerHTML = options;
+        const options = ryanStock.map((p, i) => `<option value="${i}">${p.name} (${p.qty})</option>`).join('');
+        document.querySelectorAll('select').forEach(s => s.innerHTML = options);
         renderInventory();
     }
 
     function renderInventory() {
         const container = document.getElementById('inventory-display');
-        container.innerHTML = ryanStock.map((p, i) => `
-            <div class="card mb-2 p-3 border-0 shadow-sm d-flex flex-row justify-content-between align-items-center ${p.qty <= 5 ? 'stock-alert' : ''}">
-                <div>
-                    <div class="fw-bold">${p.name} ${p.qty <= 5 ? '⚠️' : ''}</div>
-                    <div class="small text-muted">الباركود: ${p.barcode || 'لا يوجد'}</div>
-                    <div class="small fw-bold">الرصيد: ${p.qty} ${p.unit}</div>
-                </div>
-                <div class="text-end">
-                    <div class="text-success fw-bold">${p.price} دج</div>
-                    <i class="material-icons-round text-danger mt-2" onclick="deleteProd(${i})">delete</i>
-                </div>
+        container.innerHTML = ryanStock.map(p => `
+            <div class="card p-2 mb-2 border-0 shadow-sm d-flex flex-row justify-content-between">
+                <span>${p.name}</span><b>${p.qty} قطعة</b>
             </div>`).join('');
     }
 
-    function deleteProd(i) { ryanStock.splice(i, 1); saveData(); refreshLists(); }
     function saveData() { localStorage.setItem('ryan_v4_system', JSON.stringify(ryanStock)); }
 
-    // تشغيل مبدئي
     refreshLists();
 </script>
 </body>
