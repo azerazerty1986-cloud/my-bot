@@ -10,6 +10,8 @@
         :root { 
             --nardo-grey: #4a5555;
             --main-red: #ff5e5e; 
+            --main-green: #4caf50;
+            --light-green: #e8f5e9;
             --bg-light: #f8f9fa;
         }
         body { 
@@ -50,6 +52,7 @@
             transition: 0.3s; 
         }
         .tab-item.active-red { background: var(--main-red); color: white; }
+        .tab-item.active-green { background: var(--main-green); color: white; }
         .tab-item.active-nardo { background: var(--nardo-grey); color: white; }
 
         .search-container { position: relative; margin: 0 15px; }
@@ -81,7 +84,6 @@
         .table-custom td { padding: 12px; vertical-align: middle; }
 
         .summary-box { 
-            background: var(--nardo-grey); 
             color: white; 
             padding: 15px; 
             border-radius: 15px; 
@@ -91,13 +93,31 @@
             flex-wrap: wrap; 
             gap: 10px; 
         }
+
         .btn-print { 
             background: white; 
-            color: var(--nardo-grey); 
             border-radius: 20px; 
             font-weight: bold; 
             padding: 8px 24px; 
             border: none; 
+        }
+
+        .mic-btn {
+            background: #6c757d;
+            color: white;
+            border: none;
+            padding: 0 12px;
+            font-size: 1.3rem;
+            cursor: pointer;
+        }
+        .mic-btn.listening {
+            background: #dc3545;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
         }
 
         .bottom-nav { 
@@ -141,11 +161,12 @@
         .active-section { display: block; }
 
         /* طباعة */
-        #print-area { display: none; }
+        #print-area, #purchase-print-area { display: none; }
         @media print {
             body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { 
+            #print-area, #print-area *, 
+            #purchase-print-area, #purchase-print-area * { visibility: visible; }
+            #print-area, #purchase-print-area { 
                 position: absolute; 
                 left: 0; top: 0; 
                 width: 100%; 
@@ -159,7 +180,6 @@
 </head>
 <body>
 
-    <!-- Header مشترك -->
     <div class="app-header no-print">
         <i class="material-icons-round">account_circle</i>
         <span class="fw-bold">سوبيرات ريان</span>
@@ -180,6 +200,7 @@
                 <div class="input-group">
                     <button class="btn btn-dark px-3"><i class="material-icons-round">qr_code_scanner</i></button>
                     <input type="text" id="sale-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearch(this.value)">
+                    <button class="mic-btn" id="mic-sale" title="البحث بالصوت"><i class="material-icons-round">mic</i></button>
                 </div>
                 <div id="search-box" class="search-results"></div>
             </div>
@@ -199,32 +220,66 @@
                 <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th></th></tr></thead>
                 <tbody id="cart-table"></tbody>
             </table>
-            <div class="summary-box mt-3 no-print">
-                <button class="btn-print" onclick="finishSaleAndPrint()">حفظ & طباعة</button>
+            <div class="summary-box mt-3 no-print" style="background: var(--main-red);">
+                <button class="btn-print" style="color: var(--main-red);" onclick="finishSaleAndPrint()">حفظ & طباعة</button>
                 <div>المجموع: <b id="grand-total">0.00</b> دج</div>
             </div>
         </div>
     </div>
 
-    <!-- =================== قسم الفواتير =================== -->
+    <!-- =================== قسم المشتريات =================== -->
+    <div id="purchases" class="section">
+        <div class="nav-tabs-custom no-print" style="background: var(--light-green);">
+            <div class="tab-item active-green">عملية شراء</div>
+            <div class="tab-item">فواتير الشراء</div>
+        </div>
+
+        <div class="main-card no-print">
+            <h6 class="text-center mb-3">تسجيل مشتريات</h6>
+            <div class="search-container mb-3">
+                <div class="input-group">
+                    <button class="btn btn-dark px-3"><i class="material-icons-round">qr_code_scanner</i></button>
+                    <input type="text" id="purchase-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearchPurchase(this.value)">
+                    <button class="mic-btn" id="mic-purchase" title="البحث بالصوت"><i class="material-icons-round">mic</i></button>
+                </div>
+                <div id="purchase-search-box" class="search-results"></div>
+            </div>
+            <div class="row g-2 mb-3">
+                <div class="col-7">
+                    <input type="number" id="purchase-qty" class="form-control" placeholder="الكمية" min="1">
+                </div>
+                <div class="col-5">
+                    <button class="btn btn-success w-100" onclick="addToPurchaseCart()">إضافة</button>
+                </div>
+            </div>
+            <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearPurchaseCart()">مسح السلة</button>
+        </div>
+
+        <div class="main-card">
+            <table class="table-custom">
+                <thead><tr><th>المنتج</th><th>الكمية</th><th>التكلفة</th><th></th></tr></thead>
+                <tbody id="purchase-cart-table"></tbody>
+            </table>
+            <div class="summary-box mt-3 no-print" style="background: var(--main-green);">
+                <button class="btn-print" style="color: var(--main-green);" onclick="finishPurchaseAndPrint()">حفظ & طباعة</button>
+                <div>المجموع: <b id="purchase-grand-total">0.00</b> دج</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- باقي الأقسام (الفواتير - الإضافة - المخزن) بدون تغيير كبير -->
     <div id="invoices" class="section">
         <div class="main-card">
             <h5 class="text-center mb-4">سجل الفواتير</h5>
             <table class="table-custom">
                 <thead>
-                    <tr>
-                        <th>رقم</th>
-                        <th>التاريخ</th>
-                        <th>المبلغ</th>
-                        <th>عدد الأصناف</th>
-                    </tr>
+                    <tr><th>رقم</th><th>التاريخ</th><th>المبلغ</th><th>عدد الأصناف</th></tr>
                 </thead>
                 <tbody id="invoices-tbody"></tbody>
             </table>
         </div>
     </div>
 
-    <!-- =================== قسم إضافة منتج =================== -->
     <div id="add" class="section">
         <div class="nav-tabs-custom no-print">
             <div class="tab-item active-nardo">منتج</div>
@@ -255,24 +310,19 @@
         </div>
     </div>
 
-    <!-- =================== قسم المخزن (عرض بسيط) =================== -->
     <div id="inventory" class="section">
         <div class="main-card">
             <h5 class="text-center mb-4">المخزن الحالي</h5>
             <table class="table-custom">
                 <thead>
-                    <tr>
-                        <th>المنتج</th>
-                        <th>الكمية</th>
-                        <th>سعر البيع</th>
-                    </tr>
+                    <tr><th>المنتج</th><th>الكمية</th><th>سعر البيع</th></tr>
                 </thead>
                 <tbody id="stock-tbody"></tbody>
             </table>
         </div>
     </div>
 
-    <!-- منطقة الطباعة المخفية -->
+    <!-- منطقة الطباعة - المبيعات -->
     <div id="print-area">
         <div class="text-center" style="border-bottom:1px dashed #000; padding-bottom:10px; margin-bottom:12px;">
             <h5 style="margin:0 0 4px;">سوبيرات ريان</h5>
@@ -301,23 +351,54 @@
         </div>
     </div>
 
+    <!-- منطقة الطباعة - المشتريات -->
+    <div id="purchase-print-area">
+        <div class="text-center" style="border-bottom:1px dashed #000; padding-bottom:10px; margin-bottom:12px;">
+            <h5 style="margin:0 0 4px;">سوبيرات ريان - فاتورة شراء</h5>
+            <small>الجزائر</small><br>
+            <small id="purchase-print-date-time"></small><br>
+            فاتورة شراء رقم: <b id="purchase-print-invoice-no"></b>
+        </div>
+        <table style="width:100%; font-size:12px;">
+            <thead>
+                <tr style="border-bottom:1px solid #000;">
+                    <th style="text-align:right;">الصنف</th>
+                    <th style="text-align:center;">الكمية</th>
+                    <th style="text-align:left;">التكلفة</th>
+                </tr>
+            </thead>
+            <tbody id="purchase-print-cart-items"></tbody>
+        </table>
+        <div style="margin-top:12px; border-top:1px dashed #000; padding-top:8px; font-weight:bold;">
+            <div style="display:flex; justify-content:space-between;">
+                <span>الإجمالي:</span>
+                <span id="purchase-print-grand-total">0.00 دج</span>
+            </div>
+        </div>
+        <div class="text-center mt-4" style="font-size:11px;">
+            تم التسجيل بنجاح
+        </div>
+    </div>
+
     <!-- الشريط السفلي -->
     <div class="bottom-nav no-print">
         <a href="#" class="nav-link active" onclick="switchSection('sales', this)"><i class="material-icons-round">payments</i>المبيعات</a>
-        <a href="#" class="nav-link" onclick="switchSection('invoices', this)"><i class="material-icons-round">receipt_long</i>الفواتير</a>
+        <a href="#" class="nav-link" onclick="switchSection('purchases', this)"><i class="material-icons-round">shopping_cart</i>المشتريات</a>
         <div class="nav-link text-center">
             <a href="#" class="add-btn-main" onclick="switchSection('add', this)"><i class="material-icons-round">add</i></a>
             <div style="margin-top:6px;">إضافة</div>
         </div>
+        <a href="#" class="nav-link" onclick="switchSection('invoices', this)"><i class="material-icons-round">receipt_long</i>الفواتير</a>
         <a href="#" class="nav-link" onclick="switchSection('inventory', this)"><i class="material-icons-round">inventory_2</i>المخزن</a>
-        <a href="#" class="nav-link" onclick="switchSection('reports', this)"><i class="material-icons-round">dashboard</i>التقارير</a>
     </div>
 
 <script>
 // ─── البيانات ────────────────────────────────────────
-let stock   = JSON.parse(localStorage.getItem('ryan_stock'))   || [];
-let invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
-let cart     = [];
+let stock     = JSON.parse(localStorage.getItem('ryan_stock'))     || [];
+let invoices  = JSON.parse(localStorage.getItem('ryan_invoices'))  || [];
+let purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
+let cart         = [];
+let purchaseCart = [];
 
 // ─── التنقل بين الأقسام ──────────────────────────────
 function switchSection(sectionId, element) {
@@ -331,7 +412,7 @@ function switchSection(sectionId, element) {
     if (sectionId === 'inventory')  renderStock();
 }
 
-// ─── البحث الذكي ──────────────────────────────────────
+// ─── البحث الذكي - المبيعات ───────────────────────────
 function smartSearch(val) {
     const box = document.getElementById('search-box');
     if (val.length < 1) { box.style.display = 'none'; return; }
@@ -355,62 +436,130 @@ function smartSearch(val) {
 }
 
 function selectProduct(name) {
-    const product = stock.find(p => p.name === name);
-    if (!product) return;
-
-    document.getElementById('sale-search').value = product.name;
+    document.getElementById('sale-search').value = name;
     document.getElementById('search-box').style.display = 'none';
     document.getElementById('sale-qty').focus();
 }
 
-// ─── إدارة السلة ──────────────────────────────────────
+// ─── البحث الذكي - المشتريات ─────────────────────────
+function smartSearchPurchase(val) {
+    const box = document.getElementById('purchase-search-box');
+    if (val.length < 1) { box.style.display = 'none'; return; }
+
+    const matches = stock.filter(p => 
+        p.name.toLowerCase().includes(val.toLowerCase()) || 
+        (p.barcode && p.barcode.includes(val))
+    );
+
+    box.innerHTML = matches.map(p => `
+        <div class="search-item" onclick="selectProductPurchase('${p.name}')">
+            <b>${p.name}</b>
+            <div class="d-flex justify-content-between small text-muted">
+                <span>مخزون: ${p.qty} ${p.unit}</span>
+                <span>شراء: ${p.buyPrice || '?'} دج</span>
+            </div>
+        </div>
+    `).join('');
+
+    box.style.display = matches.length ? 'block' : 'none';
+}
+
+function selectProductPurchase(name) {
+    document.getElementById('purchase-search').value = name;
+    document.getElementById('purchase-search-box').style.display = 'none';
+    document.getElementById('purchase-qty').focus();
+}
+
+// ─── الكتابة بالصوت (Speech Recognition) ───────────────
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+function initVoiceInput(inputId, micBtnId) {
+    if (!SpeechRecognition) {
+        document.getElementById(micBtnId).style.display = 'none';
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ar-DZ';          // أو 'ar-SA' أو 'ar'
+    recognition.interimResults = false;  // ننتظر النتيجة النهائية
+    recognition.maxAlternatives = 1;
+
+    const input = document.getElementById(inputId);
+    const micBtn = document.getElementById(micBtnId);
+
+    micBtn.addEventListener('click', () => {
+        if (micBtn.classList.contains('listening')) {
+            recognition.stop();
+        } else {
+            recognition.start();
+        }
+    });
+
+    recognition.onstart = () => {
+        micBtn.classList.add('listening');
+        micBtn.innerHTML = '<i class="material-icons-round">mic</i>';
+    };
+
+    recognition.onend = () => {
+        micBtn.classList.remove('listening');
+    };
+
+    recognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript.trim();
+        input.value = transcript;
+        input.dispatchEvent(new Event('input')); // لتشغيل البحث الذكي
+    };
+
+    recognition.onerror = (event) => {
+        console.error('خطأ في التعرف على الصوت:', event.error);
+        micBtn.classList.remove('listening');
+        if (event.error === 'no-speech') {
+            alert('لم يتم سماع صوت، حاول مجدداً');
+        } else if (event.error === 'not-allowed') {
+            alert('الإذن بالميكروفون مرفوض، يرجى السماح له');
+        }
+    };
+}
+
+// تهيئة الصوت لكلا الحقلين
+initVoiceInput('sale-search', 'mic-sale');
+initVoiceInput('purchase-search', 'mic-purchase');
+
+// ─── باقي الدوال (إدارة السلة، المشتريات، الحفظ، الطباعة...) ──
+// (انسخها من النسخة السابقة بدون تغيير كبير)
+
+let cart = [];
+let purchaseCart = [];
+
 function addToCart() {
     const search = document.getElementById('sale-search').value.trim();
     const qty    = parseFloat(document.getElementById('sale-qty').value) || 0;
 
-    if (!search || qty <= 0) {
-        alert('أدخل اسم المنتج والكمية بشكل صحيح');
-        return;
-    }
+    if (!search || qty <= 0) return alert('أدخل اسم المنتج والكمية بشكل صحيح');
 
     const product = stock.find(p => p.name === search);
-    if (!product) {
-        alert('المنتج غير موجود');
-        return;
-    }
+    if (!product) return alert('المنتج غير موجود');
+    if (qty > product.qty) return alert(`الكمية المطلوبة (\( {qty}) أكبر من المخزون ( \){product.qty})`);
 
-    if (qty > product.qty) {
-        alert(`الكمية المطلوبة (\( {qty}) أكبر من المخزون ( \){product.qty})`);
-        return;
-    }
-
-    cart.push({
-        name: product.name,
-        qty: qty,
-        price: product.sellPrice,
-        total: qty * product.sellPrice
-    });
-
+    cart.push({ name: product.name, qty, price: product.sellPrice, total: qty * product.sellPrice });
     product.qty -= qty;
     saveStock();
-
     renderCart();
     document.getElementById('sale-search').value = '';
     document.getElementById('sale-qty').value = '';
 }
 
 function renderCart() {
-    const tbody = document.getElementById('cart-table');
-    tbody.innerHTML = cart.map((item, idx) => `
+    document.getElementById('cart-table').innerHTML = cart.map((item, i) => `
         <tr>
             <td>${item.name}</td>
             <td>${item.qty}</td>
             <td>${item.total.toFixed(0)}</td>
-            <td class="text-danger fw-bold" style="cursor:pointer;" onclick="removeCartItem(${idx})">×</td>
+            <td class="text-danger fw-bold" style="cursor:pointer;" onclick="removeCartItem(${i})">×</td>
         </tr>
     `).join('');
 
-    const total = cart.reduce((sum, i) => sum + i.total, 0);
+    const total = cart.reduce((s, i) => s + i.total, 0);
     document.getElementById('grand-total').textContent = total.toFixed(0);
 }
 
@@ -424,9 +573,7 @@ function removeCartItem(idx) {
 }
 
 function clearCart() {
-    if (cart.length === 0) return;
-    if (!confirm('متأكد من مسح السلة؟')) return;
-
+    if (!cart.length || !confirm('متأكد من مسح السلة؟')) return;
     cart.forEach(item => {
         const p = stock.find(pr => pr.name === item.name);
         if (p) p.qty += item.qty;
@@ -436,51 +583,110 @@ function clearCart() {
     renderCart();
 }
 
-// ─── حفظ وطباعة الفاتورة ─────────────────────────────
 function finishSaleAndPrint() {
-    if (cart.length === 0) {
-        alert('السلة فارغة');
-        return;
-    }
+    if (!cart.length) return alert('السلة فارغة');
 
     const total = cart.reduce((s, i) => s + i.total, 0);
-    const now   = new Date();
+    const now = new Date();
     const invNo = invoices.length + 10001;
 
-    const invoice = {
-        number: invNo,
-        date: now.toLocaleString('ar-DZ'),
-        items: [...cart],
-        total: total
-    };
-
+    const invoice = { number: invNo, date: now.toLocaleString('ar-DZ'), items: [...cart], total };
     invoices.push(invoice);
     localStorage.setItem('ryan_invoices', JSON.stringify(invoices));
 
-    // تحضير منطقة الطباعة
     document.getElementById('print-invoice-no').textContent = invNo;
     document.getElementById('print-date-time').textContent = invoice.date;
     document.getElementById('print-grand-total').textContent = total.toFixed(0) + ' دج';
-
     document.getElementById('print-cart-items').innerHTML = cart.map(it => `
-        <tr>
-            <td>${it.name}</td>
-            <td style="text-align:center;">${it.qty}</td>
-            <td style="text-align:left;">${it.total.toFixed(0)} دج</td>
-        </tr>
+        <tr><td>\( {it.name}</td><td style="text-align:center;"> \){it.qty}</td><td style="text-align:left;">${it.total.toFixed(0)} دج</td></tr>
     `).join('');
 
     window.print();
-
-    // بعد الطباعة
     cart = [];
     renderCart();
 }
 
-// ─── عرض الفواتير ────────────────────────────────────
+// ─── دوال المشتريات (مطابقة تقريباً) ────────────────────────
+function addToPurchaseCart() {
+    const search = document.getElementById('purchase-search').value.trim();
+    const qty    = parseFloat(document.getElementById('purchase-qty').value) || 0;
+
+    if (!search || qty <= 0) return alert('أدخل اسم المنتج والكمية بشكل صحيح');
+
+    const product = stock.find(p => p.name === search);
+    if (!product) return alert('المنتج غير موجود');
+
+    const buyPrice = product.buyPrice || 0;
+    if (buyPrice <= 0) return alert('سعر الشراء غير محدد لهذا المنتج');
+
+    purchaseCart.push({ name: product.name, qty, price: buyPrice, total: qty * buyPrice });
+    product.qty += qty;
+    saveStock();
+    renderPurchaseCart();
+    document.getElementById('purchase-search').value = '';
+    document.getElementById('purchase-qty').value = '';
+}
+
+function renderPurchaseCart() {
+    document.getElementById('purchase-cart-table').innerHTML = purchaseCart.map((item, i) => `
+        <tr>
+            <td>${item.name}</td>
+            <td>${item.qty}</td>
+            <td>${item.total.toFixed(0)}</td>
+            <td class="text-danger fw-bold" style="cursor:pointer;" onclick="removePurchaseItem(${i})">×</td>
+        </tr>
+    `).join('');
+
+    const total = purchaseCart.reduce((s, i) => s + i.total, 0);
+    document.getElementById('purchase-grand-total').textContent = total.toFixed(0);
+}
+
+function removePurchaseItem(idx) {
+    const item = purchaseCart[idx];
+    const prod = stock.find(p => p.name === item.name);
+    if (prod) prod.qty -= item.qty;
+    purchaseCart.splice(idx, 1);
+    saveStock();
+    renderPurchaseCart();
+}
+
+function clearPurchaseCart() {
+    if (!purchaseCart.length || !confirm('متأكد من مسح سلة المشتريات؟')) return;
+    purchaseCart.forEach(item => {
+        const p = stock.find(pr => pr.name === item.name);
+        if (p) p.qty -= item.qty;
+    });
+    purchaseCart = [];
+    saveStock();
+    renderPurchaseCart();
+}
+
+function finishPurchaseAndPrint() {
+    if (!purchaseCart.length) return alert('سلة المشتريات فارغة');
+
+    const total = purchaseCart.reduce((s, i) => s + i.total, 0);
+    const now = new Date();
+    const invNo = purchases.length + 20001;
+
+    const purchase = { number: invNo, date: now.toLocaleString('ar-DZ'), items: [...purchaseCart], total };
+    purchases.push(purchase);
+    localStorage.setItem('ryan_purchases', JSON.stringify(purchases));
+
+    document.getElementById('purchase-print-invoice-no').textContent = invNo;
+    document.getElementById('purchase-print-date-time').textContent = purchase.date;
+    document.getElementById('purchase-print-grand-total').textContent = total.toFixed(0) + ' دج';
+    document.getElementById('purchase-print-cart-items').innerHTML = purchaseCart.map(it => `
+        <tr><td>\( {it.name}</td><td style="text-align:center;"> \){it.qty}</td><td style="text-align:left;">${it.total.toFixed(0)} دج</td></tr>
+    `).join('');
+
+    window.print();
+    purchaseCart = [];
+    renderPurchaseCart();
+}
+
+// ─── عرض الفواتير والمخزن ────────────────────────────────
 function renderInvoices() {
-    const tbody = document.getElementById('invoices-tbody');
-    tbody.innerHTML = invoices.map(inv => `
+    document.getElementById('invoices-tbody').innerHTML = invoices.map(inv => `
         <tr>
             <td>${inv.number}</td>
             <td>${inv.date}</td>
@@ -490,10 +696,8 @@ function renderInvoices() {
     `).join('');
 }
 
-// ─── عرض المخزن ──────────────────────────────────────
 function renderStock() {
-    const tbody = document.getElementById('stock-tbody');
-    tbody.innerHTML = stock.map(p => `
+    document.getElementById('stock-tbody').innerHTML = stock.map(p => `
         <tr>
             <td>${p.name}</td>
             <td>${p.qty} ${p.unit}</td>
@@ -502,45 +706,38 @@ function renderStock() {
     `).join('');
 }
 
-// ─── حفظ منتج جديد ───────────────────────────────────
+// ─── إضافة منتج جديد ─────────────────────────────────────
 function saveNewProduct() {
-    const name   = document.getElementById('new-name').value.trim();
-    const sell   = parseFloat(document.getElementById('new-sell').value) || 0;
+    const name = document.getElementById('new-name').value.trim();
+    const sell = parseFloat(document.getElementById('new-sell').value) || 0;
 
-    if (!name || sell <= 0) {
-        alert('اسم المنتج وسعر البيع مطلوبان');
-        return;
-    }
+    if (!name || sell <= 0) return alert('اسم المنتج وسعر البيع مطلوبان');
 
-    const product = {
-        name: name,
+    stock.push({
+        name,
         barcode: document.getElementById('new-barcode').value.trim() || '',
         sellPrice: sell,
         buyPrice: parseFloat(document.getElementById('new-buy').value) || 0,
         qty: parseFloat(document.getElementById('new-qty').value) || 0,
         unit: document.getElementById('new-unit').value
-    };
+    });
 
-    stock.push(product);
     saveStock();
     alert('تم إضافة المنتج بنجاح');
 
-    // تنظيف الحقول
     ['new-name','new-barcode','new-sell','new-buy','new-qty'].forEach(id => {
         document.getElementById(id).value = '';
     });
     document.getElementById('new-qty').value = '0';
 }
 
-// ─── مساعدات عامة ────────────────────────────────────
 function saveStock() {
     localStorage.setItem('ryan_stock', JSON.stringify(stock));
 }
 
-// ─── التحميل الأولي ──────────────────────────────────
+// ─── التحميل الأولي ──────────────────────────────────────
 renderCart();
-if (stock.length === 0) {
-    // منتج تجريبي إذا كان المخزن فارغاً
+if (!stock.length) {
     stock = [{
         name: "مثال - زيت زيتون",
         barcode: "123456789",
