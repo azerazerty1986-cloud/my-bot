@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سوبيرات ريان - نظام الطباعة المتكامل</title>
+    <title>سوبيرات ريان - النظام الشامل v7</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
@@ -14,27 +14,39 @@
         }
         body { background-color: #f4f7f6; font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 110px; }
         
-        /* إخفاء العناصر عند الطباعة */
+        /* تنسيق الطباعة */
         @media print {
-            .app-header, .nav-tabs-custom, .card, .bottom-nav, #scanner-container, .btn-no-print, .material-icons-round {
+            .app-header, .nav-tabs-custom, .card, .bottom-nav, #scanner-container, .btn-no-print, .material-icons-round, .summary-bar {
                 display: none !important;
             }
-            body { background: white; padding: 0; }
             .receipt-print { display: block !important; }
-            .app-container { max-width: 100% !important; border: none !important; }
+            body { background: white; padding: 0; }
         }
 
-        .receipt-print { display: none; padding: 20px; border: 1px dashed #ccc; text-align: center; }
-        .receipt-print table { width: 100%; margin-top: 15px; border-collapse: collapse; }
-        .receipt-print th, .receipt-print td { border-bottom: 1px solid #eee; padding: 8px; text-align: right; }
+        .receipt-print { display: none; padding: 20px; text-align: center; border: 1px solid #000; }
+        .receipt-print table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .receipt-print th, .receipt-print td { border-bottom: 1px solid #ddd; padding: 5px; text-align: right; }
 
-        .app-header { background: var(--dark-nardo); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .app-header { background: var(--dark-nardo); color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
+        
+        /* الواجهات الملونة */
         .section-sales { background-color: var(--light-red) !important; min-height: 85vh; border-radius: 20px; padding: 15px; }
         .section-purchases { background-color: var(--light-green) !important; min-height: 85vh; border-radius: 20px; padding: 15px; }
         
-        .table-custom { background: white; border-radius: 15px; overflow: hidden; font-size: 13px; margin-top: 10px; }
+        /* شريط التبويبات العلوية (الذي تم استرجاعه) */
+        .nav-tabs-custom { display: flex; background: white; border-radius: 50px; padding: 5px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .tab-item { flex: 1; text-align: center; padding: 8px; border-radius: 50px; cursor: pointer; font-size: 12px; color: #666; transition: 0.3s; }
+        .tab-item.active-red { background: var(--main-red); color: white; }
+        .tab-item.active-green { background: var(--main-green); color: white; }
+
+        /* الجداول */
+        .table-custom { background: white; border-radius: 15px; overflow: hidden; font-size: 13px; margin-top: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .table-custom th { background: #f8f9fa; color: var(--dark-nardo); padding: 10px; }
+
+        #scanner-container { width: 100%; height: 200px; background: #000; border-radius: 15px; display: none; margin-bottom: 15px; overflow: hidden; border: 3px solid var(--dark-nardo); }
         .summary-bar { background: var(--dark-nardo); color: white; padding: 15px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; margin-top: 15px; }
 
+        /* الشريط السفلي */
         .bottom-nav { position: fixed; bottom: 0; width: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); background: white; display: flex; justify-content: space-around; padding: 12px 0; border-top: 1px solid #eee; z-index: 2000; }
         .nav-item { text-align: center; color: #888; font-size: 11px; flex: 1; cursor: pointer; }
         .nav-item.active { color: var(--dark-nardo); font-weight: bold; }
@@ -51,85 +63,113 @@
     
     <div id="print-area" class="receipt-print">
         <h3>سوبيرات ريان</h3>
-        <p>وصل مبيعات</p>
-        <p id="print-date" style="font-size: 12px;"></p>
+        <p id="print-type">وصل</p>
+        <p id="print-date" style="font-size: 11px;"></p>
         <hr>
         <table>
-            <thead><tr><th>السلعة</th><th>الكمية</th><th>السعر</th></tr></thead>
+            <thead><tr><th>السلعة</th><th>الكمية</th><th>المجموع</th></tr></thead>
             <tbody id="print-items"></tbody>
         </table>
         <hr>
         <h4 id="print-total"></h4>
-        <p>شكراً لزيارتكم!</p>
+        <p>شكراً لتعاملكم معنا</p>
     </div>
 
     <div class="app-header shadow-sm">
         <i class="material-icons-round">menu</i>
-        <span class="fw-bold">سوبيرات ريان v6</span>
-        <i class="material-icons-round">settings</i>
+        <span class="fw-bold">سوبيرات ريان v7</span>
+        <i class="material-icons-round">account_circle</i>
     </div>
 
     <div id="scanner-container"></div>
 
     <div id="sales" class="section section-sales active-section">
-        <h6 class="fw-bold mb-3">عملية بيع جديدة</h6>
-        <div class="card p-3 border-0 shadow-sm">
+        <div class="nav-tabs-custom">
+            <div class="tab-item active-red">عملية بيع</div>
+            <div class="tab-item">الفواتير</div>
+            <div class="tab-item">العملاء</div>
+        </div>
+        
+        <div class="card p-3 border-0 shadow-sm mb-3">
+            <h6 class="fw-bold mb-3 small">تسجيل مبيعات</h6>
             <div class="input-group mb-2">
-                <select id="sale-product-select" class="form-select rounded-pill-start"></select>
-                <button class="btn btn-dark" onclick="startScanner('sale')"><i class="material-icons-round">qr_code_scanner</i></button>
+                <select id="sale-product-select" class="form-select rounded-start-pill"></select>
+                <button class="btn btn-dark" onclick="startScanner('sale')"><i class="material-icons-round align-middle">qr_code_scanner</i></button>
             </div>
             <div class="row g-2">
                 <div class="col-6"><input type="number" id="sale-qty-input" class="form-control" placeholder="الكمية"></div>
-                <div class="col-6"><button class="btn btn-danger w-100 rounded-pill" onclick="addToCart('sale')">إضافة للجدول</button></div>
+                <div class="col-6"><button class="btn btn-danger w-100 rounded-pill" onclick="addToCart('sale')">إضافة</button></div>
             </div>
         </div>
 
         <div class="table-custom">
-            <table class="table mb-0 text-center">
-                <thead><tr><th>المنتج</th><th>الكمية</th><th>المجموع</th><th>-</th></tr></thead>
+            <table class="table table-borderless mb-0 text-center">
+                <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>-</th></tr></thead>
                 <tbody id="sale-table-body"></tbody>
             </table>
         </div>
 
         <div class="summary-bar">
             <div>المجموع: <span id="sales-total-val">0.00</span> دج</div>
-            <button class="btn btn-light btn-sm rounded-pill fw-bold text-danger" onclick="printReceipt('sale')">إنهاء وطباعة</button>
+            <button class="btn btn-light btn-sm rounded-pill fw-bold" onclick="printReceipt('sale')">طباعة</button>
         </div>
     </div>
 
-    <div id="purchases" class="section section-purchases p-3">
-        <h6 class="fw-bold mb-3 text-success">دخول سلع للمخزن</h6>
-        <div class="card p-3 border-0 mb-3 shadow-sm">
-            <select id="purchase-product-select" class="form-select mb-2"></select>
-            <input type="number" id="purchase-qty-input" class="form-control mb-2" placeholder="الكمية المضافة">
-            <button class="btn btn-success w-100 rounded-pill" onclick="addToCart('purchase')">تأكيد الإضافة</button>
+    <div id="purchases" class="section section-purchases">
+        <div class="nav-tabs-custom">
+            <div class="tab-item active-green">عملية شراء</div>
+            <div class="tab-item">الفواتير</div>
+            <div class="tab-item">الموردين</div>
         </div>
+
+        <div class="card p-3 border-0 shadow-sm mb-3">
+            <h6 class="fw-bold mb-3 small">دخول سلع للمخزن</h6>
+            <div class="input-group mb-2">
+                <select id="purchase-product-select" class="form-select rounded-start-pill"></select>
+                <button class="btn btn-dark" onclick="startScanner('purchase')"><i class="material-icons-round align-middle">qr_code_scanner</i></button>
+            </div>
+            <div class="row g-2">
+                <div class="col-6"><input type="number" id="purchase-qty-input" class="form-control" placeholder="الكمية"></div>
+                <div class="col-6"><button class="btn btn-success w-100 rounded-pill" onclick="addToCart('purchase')">إضافة</button></div>
+            </div>
+        </div>
+
         <div class="table-custom">
-            <table class="table mb-0 text-center" id="purchase-table-body"></table>
+            <table class="table table-borderless mb-0 text-center">
+                <tbody id="purchase-table-body"></tbody>
+            </table>
+        </div>
+
+        <div class="summary-bar" style="background:var(--main-green)">
+            <div>المجموع: <span id="purchase-total-val">0.00</span> دج</div>
+            <button class="btn btn-light btn-sm rounded-pill fw-bold" onclick="printReceipt('purchase')">حفظ</button>
         </div>
     </div>
 
     <div id="add" class="section p-3">
-        <div class="card p-4 border-0 shadow-sm text-center">
-            <h6>تعريف منتج جديد</h6>
-            <input type="text" id="new-p-name" class="form-control mb-2" placeholder="اسم المنتج">
-            <input type="text" id="new-p-barcode" class="form-control mb-2" placeholder="الباركود (اختياري)">
+        <div class="card p-4 border-0 shadow-sm rounded-4">
+            <h6 class="fw-bold mb-4 text-center">تعريف سلع جديدة</h6>
+            <div class="input-group mb-3">
+                <input type="text" id="new-p-name" class="form-control" placeholder="اسم المنتج">
+                <button class="btn btn-outline-danger" onclick="startVoice()"><i class="material-icons-round align-middle" id="mic-icon">mic</i></button>
+            </div>
+            <input type="text" id="new-p-barcode" class="form-control mb-3" placeholder="الباركود">
             <input type="number" id="new-p-price" class="form-control mb-3" placeholder="سعر البيع">
-            <button class="btn btn-dark w-100 rounded-pill" onclick="registerProduct()">حفظ في النظام</button>
+            <button class="btn btn-dark w-100 rounded-pill py-2" onclick="registerProduct()">حفظ في النظام</button>
         </div>
     </div>
 
     <div id="inventory" class="section p-3">
-        <h5 class="fw-bold mb-3">المخزن الحالي</h5>
+        <h5 class="fw-bold mb-3">الجرد والمخزن</h5>
         <div id="inventory-display"></div>
     </div>
 
     <div class="bottom-nav shadow-lg">
-        <div class="nav-item active" onclick="showPage('sales', this)"><i class="material-icons-round">payments</i>بيع</div>
-        <div class="nav-item" onclick="showPage('purchases', this)"><i class="material-icons-round">local_shipping</i>شراء</div>
+        <div class="nav-item active" onclick="showPage('sales', this)"><i class="material-icons-round">payments</i>المبيعات</div>
+        <div class="nav-item" onclick="showPage('purchases', this)"><i class="material-icons-round">local_shipping</i>المشتريات</div>
         <div class="nav-item" onclick="showPage('add', this)"><div class="nav-add-btn"><i class="material-icons-round">add</i></div>إضافة</div>
-        <div class="nav-item" onclick="showPage('inventory', this)"><i class="material-icons-round">inventory_2</i>مخزن</div>
-        <div class="nav-item" onclick="showPage('reports', this)"><i class="material-icons-round">bar_chart</i>تقارير</div>
+        <div class="nav-item" onclick="showPage('inventory', this)"><i class="material-icons-round">inventory_2</i>المخزن</div>
+        <div class="nav-item" onclick="showPage('reports', this)"><i class="material-icons-round">dashboard</i>التقارير</div>
     </div>
 </div>
 
@@ -137,6 +177,7 @@
 <script>
     let ryanStock = JSON.parse(localStorage.getItem('ryan_v4_system')) || [];
     let cart = { sale: [], purchase: [] };
+    let scannerType = '';
 
     function showPage(id, el) {
         document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
@@ -152,8 +193,9 @@
         const p = parseFloat(document.getElementById('new-p-price').value);
         if(n && p) {
             ryanStock.push({ name: n, barcode: b, price: p, qty: 0, unit: 'قطعة' });
-            saveData(); alert("تم الحفظ بنجاح");
+            saveData(); alert("تم حفظ المنتج");
             document.getElementById('new-p-name').value = '';
+            document.getElementById('new-p-barcode').value = '';
         }
     }
 
@@ -166,7 +208,7 @@
         if(!idx || isNaN(qty) || qty <= 0) return;
         
         const item = ryanStock[idx];
-        if(type === 'sale' && item.qty < qty) return alert("الكمية غير كافية بالمخزن!");
+        if(type === 'sale' && item.qty < qty) return alert("الكمية غير كافية!");
 
         cart[type].push({ productIdx: idx, name: item.name, qty: qty, price: item.price, total: qty * item.price });
         if(type === 'sale') ryanStock[idx].qty -= qty; else ryanStock[idx].qty += qty;
@@ -178,15 +220,14 @@
 
     function renderTable(type) {
         const tbody = document.getElementById(`${type}-table-body`);
-        const totalVal = document.getElementById('sales-total-val');
-        if(!tbody) return;
+        const totalId = type === 'sale' ? 'sales-total-val' : 'purchase-total-val';
         tbody.innerHTML = '';
-        let total = 0;
+        let grandTotal = 0;
         cart[type].forEach((item, i) => {
-            total += item.total;
-            tbody.innerHTML += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.total}</td><td class="text-danger" onclick="removeFromCart('${type}',${i})">✖</td></tr>`;
+            grandTotal += item.total;
+            tbody.innerHTML += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.total.toFixed(2)}</td><td onclick="removeFromCart('${type}',${i})">❌</td></tr>`;
         });
-        if(type === 'sale') totalVal.innerText = total.toFixed(2);
+        document.getElementById(totalId).innerText = grandTotal.toFixed(2);
     }
 
     function removeFromCart(type, i) {
@@ -196,48 +237,55 @@
         saveData(); renderTable(type);
     }
 
-    // --- وظيفة الطباعة ---
     function printReceipt(type) {
-        if(cart[type].length === 0) return alert("الجدول فارغ!");
-
-        const printItems = document.getElementById('print-items');
-        const printTotal = document.getElementById('print-total');
-        const printDate = document.getElementById('print-date');
-        
-        printItems.innerHTML = '';
+        if(cart[type].length === 0) return;
+        const pItems = document.getElementById('print-items');
+        pItems.innerHTML = '';
         let total = 0;
-
         cart[type].forEach(item => {
             total += item.total;
-            printItems.innerHTML += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.total.toFixed(2)} دج</td></tr>`;
+            pItems.innerHTML += `<tr><td>${item.name}</td><td>${item.qty}</td><td>${item.total.toFixed(2)}</td></tr>`;
         });
-
-        printTotal.innerText = `المجموع الكلي: ${total.toFixed(2)} دج`;
-        printDate.innerText = new Date().toLocaleString('ar-DZ');
-
-        window.print(); // فتح نافذة الطباعة
-
-        // تصفير الجدول بعد الطباعة
-        cart[type] = [];
-        renderTable(type);
+        document.getElementById('print-total').innerText = `الإجمالي: ${total.toFixed(2)} دج`;
+        document.getElementById('print-date').innerText = new Date().toLocaleString();
+        window.print();
+        cart[type] = []; renderTable(type);
     }
+
+    // صوت و باركود
+    function startVoice() {
+        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        rec.lang = 'ar-SA';
+        rec.onresult = (e) => document.getElementById('new-p-name').value = e.results[0][0].transcript;
+        rec.start();
+    }
+
+    function startScanner(type) {
+        scannerType = type;
+        const con = document.getElementById('scanner-container');
+        con.style.display = 'block';
+        Quagga.init({ inputStream: {type: "LiveStream", target: con}, decoder: {readers: ["ean_reader"]} }, (err) => { if(!err) Quagga.start(); });
+    }
+
+    Quagga.onDetected((res) => {
+        const code = res.codeResult.code;
+        if(scannerType === 'add') document.getElementById('new-p-barcode').value = code;
+        else {
+            const idx = ryanStock.findIndex(p => p.barcode === code);
+            if(idx !== -1) document.getElementById(scannerType === 'sale' ? 'sale-product-select' : 'purchase-product-select').value = idx;
+        }
+        Quagga.stop(); document.getElementById('scanner-container').style.display = 'none';
+    });
 
     function refreshLists() {
         const options = ryanStock.map((p, i) => `<option value="${i}">${p.name} (${p.qty})</option>`).join('');
-        document.querySelectorAll('select').forEach(s => s.innerHTML = options);
-        renderInventory();
-    }
-
-    function renderInventory() {
-        const container = document.getElementById('inventory-display');
-        container.innerHTML = ryanStock.map(p => `
-            <div class="card p-2 mb-2 border-0 shadow-sm d-flex flex-row justify-content-between">
-                <span>${p.name}</span><b>${p.qty} قطعة</b>
-            </div>`).join('');
+        document.getElementById('sale-product-select').innerHTML = options;
+        document.getElementById('purchase-product-select').innerHTML = options;
+        const inv = document.getElementById('inventory-display');
+        inv.innerHTML = ryanStock.map(p => `<div class="card p-2 mb-2 border-0 shadow-sm d-flex flex-row justify-content-between"><span>${p.name}</span><b>${p.qty}</b></div>`).join('');
     }
 
     function saveData() { localStorage.setItem('ryan_v4_system', JSON.stringify(ryanStock)); }
-
     refreshLists();
 </script>
 </body>
