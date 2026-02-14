@@ -36,6 +36,10 @@
         .section { display: none; }
         .active-section { display: block; }
         #print-area, #purchase-print-area { display: none; }
+        /* Modal styles */
+        .modal-content { border-radius: 20px; }
+        .edit-item-row { background: #f8f9fa; padding: 8px; border-radius: 10px; margin-bottom: 8px; }
+        .edit-item-row input { width: 80px; display: inline-block; margin: 0 5px; }
         @media print { body * { visibility: hidden; } #print-area, #print-area *, #purchase-print-area, #purchase-print-area * { visibility: visible; } #print-area, #purchase-print-area { position: absolute; left: 0; top: 0; width: 100%; font-family: 'Courier New', monospace; font-size: 12px; padding: 10px; } .no-print { display: none !important; } }
     </style>
 </head>
@@ -91,7 +95,7 @@
             <div class="main-card">
                 <h5 class="text-center mb-4">سجل فواتير المبيعات</h5>
                 <table class="table-custom">
-                    <thead><tr><th>رقم</th><th>التاريخ</th><th>العميل</th><th>المبلغ</th><th>الأصناف</th></tr></thead>
+                    <thead><tr><th>رقم</th><th>التاريخ</th><th>العميل</th><th>المبلغ</th><th>الأصناف</th><th>تعديل</th></tr></thead>
                     <tbody id="sale-invoices-tbody"></tbody>
                 </table>
             </div>
@@ -102,9 +106,18 @@
                 <input type="text" id="new-customer" class="form-control mb-2" placeholder="اسم العميل الجديد">
                 <button class="btn btn-dark w-100" onclick="addCustomer()">إضافة عميل</button>
                 <table class="table-custom mt-3">
-                    <thead><tr><th>الاسم</th><th>حذف</th></tr></thead>
+                    <thead><tr><th>الاسم</th><th>الهاتف</th><th>الفواتير</th><th>حذف</th></tr></thead>
                     <tbody id="customers-tbody"></tbody>
                 </table>
+                <!-- نافذة عرض فواتير العميل -->
+                <div id="customer-invoices-view" style="display:none; margin-top:20px;">
+                    <h6>فواتير العميل <span id="selected-customer-name"></span></h6>
+                    <table class="table-custom">
+                        <thead><tr><th>رقم</th><th>التاريخ</th><th>المبلغ</th></tr></thead>
+                        <tbody id="customer-invoices-tbody"></tbody>
+                    </table>
+                    <button class="btn btn-secondary w-100 mt-2" onclick="hideCustomerInvoices()">رجوع</button>
+                </div>
             </div>
         </div>
     </div>
@@ -162,7 +175,7 @@
                 <input type="text" id="new-supplier" class="form-control mb-2" placeholder="اسم المورد الجديد">
                 <button class="btn btn-dark w-100" onclick="addSupplier()">إضافة مورد</button>
                 <table class="table-custom mt-3">
-                    <thead><tr><th>الاسم</th><th>حذف</th></tr></thead>
+                    <thead><tr><th>الاسم</th><th>الهاتف</th><th>حذف</th></tr></thead>
                     <tbody id="suppliers-tbody"></tbody>
                 </table>
             </div>
@@ -307,6 +320,25 @@
         </div>
     </div>
 
+    <!-- Modal تعديل الفاتورة -->
+    <div class="modal fade" id="editInvoiceModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">تعديل الفاتورة رقم <span id="edit-invoice-number"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="edit-invoice-items-container">
+                    <!-- يتم تعبئتها ديناميكياً -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-primary" onclick="updateInvoice()">حفظ التعديلات</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- الشريط السفلي -->
     <div class="bottom-nav no-print">
         <a href="#" class="nav-link active" onclick="switchSection('sales', this)"><i class="material-icons-round">payments</i>المبيعات</a>
@@ -319,6 +351,9 @@
         <a href="#" class="nav-link" onclick="switchSection('reports', this)"><i class="material-icons-round">dashboard</i>التقارير</a>
     </div>
 
+    <!-- Bootstrap JS (required for modal) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 <script>
 // ─── البيانات ────────────────────────────────────────
 let stock = JSON.parse(localStorage.getItem('ryan_stock')) || [];
@@ -328,6 +363,7 @@ let customers = JSON.parse(localStorage.getItem('ryan_customers')) || [];
 let suppliers = JSON.parse(localStorage.getItem('ryan_suppliers')) || [];
 let cart = [];
 let purchaseCart = [];
+let currentEditInvoiceIndex = -1; // لحفظ رقم الفاتورة الجاري تعديلها
 
 // ─── التنقل بين الأقسام ──────────────────────────────
 function switchSection(sectionId, element) {
@@ -340,20 +376,30 @@ function switchSection(sectionId, element) {
     if (sectionId === 'add') showSubSection('add-product');
     if (sectionId === 'inventory') renderStock();
     if (sectionId === 'reports') renderReports();
+    // إخفاء عرض فواتير العميل عند الانتقال
+    hideCustomerInvoices();
 }
 
 function showSubSection(subId) {
     const parent = document.querySelector('.active-section');
     parent.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
     document.getElementById(subId).style.display = 'block';
+    // تحديث التبويب النشط
     const tabs = parent.querySelectorAll('.tab-item');
     tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
-    const activeTab = Array.from(tabs).find(t => t.onclick.toString().includes(subId));
-    if (activeTab) activeTab.classList.add('active-red' || 'active-green' || 'active-nardo');
+    // البحث عن التبويب الذي يحتوي على النص subId (طريقة بسيطة)
+    tabs.forEach(t => {
+        if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(subId)) {
+            if (parent.id === 'sales') t.classList.add('active-red');
+            else if (parent.id === 'purchases') t.classList.add('active-green');
+            else if (parent.id === 'add') t.classList.add('active-nardo');
+        }
+    });
     if (subId === 'sale-invoices') renderSaleInvoices();
     if (subId === 'purchase-invoices') renderPurchaseInvoices();
     if (subId === 'customers') renderCustomers();
     if (subId === 'suppliers') renderSuppliers();
+    hideCustomerInvoices(); // إخفاء فواتير العميل إذا كانت مفتوحة
 }
 
 // ─── البحث الذكي ──────────────────────────────────────
@@ -404,21 +450,23 @@ function selectProductPurchase(name) {
 // ─── الكتابة بالصوت ──────────────────────────────────
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 if (SpeechRecognition) {
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'ar-DZ';
-    recognition.interimResults = false;
-
-    document.getElementById('mic-sale').addEventListener('click', () => recognition.start());
-    recognition.onresult = (event) => {
+    const recognitionSale = new SpeechRecognition();
+    recognitionSale.lang = 'ar-DZ';
+    recognitionSale.interimResults = false;
+    recognitionSale.onresult = (event) => {
         document.getElementById('sale-search').value = event.results[0][0].transcript;
         smartSearch(event.results[0][0].transcript);
     };
+    document.getElementById('mic-sale').addEventListener('click', () => recognitionSale.start());
 
-    document.getElementById('mic-purchase').addEventListener('click', () => recognition.start());
-    recognition.onresult = (event) => {
+    const recognitionPurchase = new SpeechRecognition();
+    recognitionPurchase.lang = 'ar-DZ';
+    recognitionPurchase.interimResults = false;
+    recognitionPurchase.onresult = (event) => {
         document.getElementById('purchase-search').value = event.results[0][0].transcript;
         smartSearchPurchase(event.results[0][0].transcript);
     };
+    document.getElementById('mic-purchase').addEventListener('click', () => recognitionPurchase.start());
 }
 
 // ─── إدارة السلة (مبيعات) ────────────────────────────
@@ -435,6 +483,8 @@ function addToCart() {
     product.qty -= qty;
     saveStock();
     renderCart();
+    document.getElementById('sale-search').value = '';
+    document.getElementById('sale-qty').value = '';
 }
 
 function renderCart() {
@@ -476,7 +526,12 @@ function finishSaleAndPrint() {
     const total = cart.reduce((sum, i) => sum + i.total, 0);
     const now = new Date();
     const invNo = invoices.length + 1;
-    const customer = document.getElementById('sale-customer').value || 'غير محدد';
+    // الحصول على اسم العميل (قد يكون نصاً أو كائن)
+    const customerSelect = document.getElementById('sale-customer');
+    const selectedOption = customerSelect.options[customerSelect.selectedIndex];
+    const customerName = selectedOption ? selectedOption.text : 'غير محدد';
+    // نأخذ اسم العميل فقط للتخزين (يمكن تخزين الاسم أو معرف)
+    const customer = customerName === 'اختر العميل' ? 'غير محدد' : customerName;
     const invoice = { number: invNo, date: now.toLocaleString('ar-DZ'), customer, items: [...cart], total };
     invoices.push(invoice);
     localStorage.setItem('ryan_invoices', JSON.stringify(invoices));
@@ -485,7 +540,9 @@ function finishSaleAndPrint() {
     document.getElementById('print-date-time').textContent = invoice.date;
     document.getElementById('print-customer').textContent = customer;
     document.getElementById('print-grand-total').textContent = total.toFixed(2) + ' دج';
-    document.getElementById('print-discount').textContent = cart[0]?.discount || 0 + ' %';
+    // عرض الخصم (نأخذ الخصم من أول عنصر إذا كان موحداً، لكن الأفضل عرض متوسط أو عدمه)
+    const discount = cart[0]?.discount || 0;
+    document.getElementById('print-discount').textContent = discount + ' %';
     document.getElementById('print-cart-items').innerHTML = cart.map(it => `
         <tr>
             <td>${it.name}</td>
@@ -497,6 +554,7 @@ function finishSaleAndPrint() {
     cart = [];
     renderCart();
     renderReports();
+    if (document.getElementById('sale-invoices').style.display !== 'none') renderSaleInvoices();
 }
 
 // ─── إدارة السلة (مشتريات) ────────────────────────────
@@ -511,6 +569,8 @@ function addToPurchaseCart() {
     product.qty += qty;
     saveStock();
     renderPurchaseCart();
+    document.getElementById('purchase-search').value = '';
+    document.getElementById('purchase-qty').value = '';
 }
 
 function renderPurchaseCart() {
@@ -552,7 +612,10 @@ function finishPurchaseAndPrint() {
     const total = purchaseCart.reduce((sum, i) => sum + i.total, 0);
     const now = new Date();
     const invNo = purchases.length + 1;
-    const supplier = document.getElementById('purchase-supplier').value || 'غير محدد';
+    const supplierSelect = document.getElementById('purchase-supplier');
+    const selectedOption = supplierSelect.options[supplierSelect.selectedIndex];
+    const supplierName = selectedOption ? selectedOption.text : 'غير محدد';
+    const supplier = supplierName === 'اختر المورد' ? 'غير محدد' : supplierName;
     const purchase = { number: invNo, date: now.toLocaleString('ar-DZ'), supplier, items: [...purchaseCart], total };
     purchases.push(purchase);
     localStorage.setItem('ryan_purchases', JSON.stringify(purchases));
@@ -572,22 +635,128 @@ function finishPurchaseAndPrint() {
     purchaseCart = [];
     renderPurchaseCart();
     renderReports();
+    if (document.getElementById('purchase-invoices').style.display !== 'none') renderPurchaseInvoices();
 }
 
-// ─── عرض الفواتير ────────────────────────────────────
+// ─── عرض فواتير المبيعات مع زر التعديل ───────────────
 function renderSaleInvoices() {
     const tbody = document.getElementById('sale-invoices-tbody');
-    tbody.innerHTML = invoices.map(inv => `
+    tbody.innerHTML = invoices.map((inv, index) => `
         <tr>
             <td>${inv.number}</td>
             <td>${inv.date}</td>
             <td>${inv.customer}</td>
             <td>${inv.total.toFixed(2)} دج</td>
             <td>${inv.items.length}</td>
+            <td><button class="btn btn-sm btn-warning" onclick="editInvoice(${index})"><i class="material-icons-round" style="font-size:16px;">edit</i></button></td>
         </tr>
     `).join('');
 }
 
+// ─── تعديل الفاتورة ──────────────────────────────────
+function editInvoice(index) {
+    currentEditInvoiceIndex = index;
+    const inv = invoices[index];
+    document.getElementById('edit-invoice-number').textContent = inv.number;
+    const container = document.getElementById('edit-invoice-items-container');
+    container.innerHTML = inv.items.map((item, i) => {
+        // نبحث عن المنتج في المخزن الحالي (للتأكد من وجوده)
+        const product = stock.find(p => p.name === item.name);
+        if (!product) return ''; // إذا لم يعد المنتج موجوداً نتخطى
+        return `
+            <div class="edit-item-row">
+                <strong>${item.name}</strong><br>
+                الكمية: <input type="number" id="edit-qty-${i}" value="${item.qty}" min="1" class="form-control d-inline" style="width:80px;">
+                السعر: <input type="number" id="edit-price-${i}" value="${item.price}" min="0" step="0.01" class="form-control d-inline" style="width:100px;">
+                (الخصم: ${item.discount || 0}%)
+            </div>
+        `;
+    }).join('');
+    // إذا لم تظهر أي منتجات (كلها محذوفة) نعرض رسالة
+    if (container.innerHTML === '') container.innerHTML = '<p class="text-danger">جميع منتجات هذه الفاتورة لم تعد موجودة في المخزن، لا يمكن التعديل.</p>';
+    // إظهار الـ Modal
+    const modal = new bootstrap.Modal(document.getElementById('editInvoiceModal'));
+    modal.show();
+}
+
+function updateInvoice() {
+    if (currentEditInvoiceIndex === -1) return;
+    const inv = invoices[currentEditInvoiceIndex];
+    // نسترجع العناصر المدخلة
+    const newItems = [];
+    let valid = true;
+    for (let i = 0; i < inv.items.length; i++) {
+        const product = stock.find(p => p.name === inv.items[i].name);
+        if (!product) continue; // المنتج غير موجود، نتخطاه
+        const qtyInput = document.getElementById(`edit-qty-${i}`);
+        const priceInput = document.getElementById(`edit-price-${i}`);
+        if (!qtyInput || !priceInput) continue; // قد يكون المنتج محذوفاً
+        const newQty = parseFloat(qtyInput.value);
+        const newPrice = parseFloat(priceInput.value);
+        if (isNaN(newQty) || newQty < 0 || isNaN(newPrice) || newPrice < 0) {
+            alert('الرجاء إدخال قيم صحيحة');
+            valid = false;
+            break;
+        }
+        // نحسب الخصم الأصلي (إذا كان موجوداً) أو نضعه صفر
+        const discount = inv.items[i].discount || 0;
+        const total = newQty * newPrice * (1 - discount / 100);
+        newItems.push({
+            name: inv.items[i].name,
+            qty: newQty,
+            price: newPrice,
+            discount: discount,
+            total: total
+        });
+    }
+    if (!valid) return;
+    // قبل التعديل، نعيد الكميات القديمة إلى المخزن
+    inv.items.forEach(item => {
+        const prod = stock.find(p => p.name === item.name);
+        if (prod) prod.qty += item.qty;
+    });
+    // ثم نخصم الكميات الجديدة
+    newItems.forEach(item => {
+        const prod = stock.find(p => p.name === item.name);
+        if (prod) {
+            if (item.qty > prod.qty) {
+                alert(`الكمية الجديدة للمنتج ${item.name} تتجاوز المتوفر في المخزن (${prod.qty})، لم يتم الحفظ.`);
+                valid = false;
+            }
+        }
+    });
+    if (!valid) {
+        // نعيد الكميات القديمة مرة أخرى (نرجع الحالة)
+        inv.items.forEach(item => {
+            const prod = stock.find(p => p.name === item.name);
+            if (prod) prod.qty -= item.qty;
+        });
+        return;
+    }
+    // نخصم الكميات الجديدة
+    newItems.forEach(item => {
+        const prod = stock.find(p => p.name === item.name);
+        if (prod) prod.qty -= item.qty;
+    });
+    // تحديث الفاتورة
+    const newTotal = newItems.reduce((sum, i) => sum + i.total, 0);
+    invoices[currentEditInvoiceIndex] = {
+        ...inv,
+        items: newItems,
+        total: newTotal
+    };
+    localStorage.setItem('ryan_invoices', JSON.stringify(invoices));
+    saveStock();
+    // إغلاق الـ Modal
+    bootstrap.Modal.getInstance(document.getElementById('editInvoiceModal')).hide();
+    alert('تم تعديل الفاتورة وتحديث المخزن');
+    renderSaleInvoices();
+    renderStock();
+    renderReports();
+    currentEditInvoiceIndex = -1;
+}
+
+// ─── عرض فواتير الشراء ───────────────────────────────
 function renderPurchaseInvoices() {
     const tbody = document.getElementById('purchase-invoices-tbody');
     tbody.innerHTML = purchases.map(pur => `
@@ -605,7 +774,7 @@ function renderPurchaseInvoices() {
 function addCustomer() {
     const name = document.getElementById('new-customer').value.trim();
     if (!name) return alert('أدخل اسم العميل');
-    customers.push(name);
+    customers.push({ name, phone: '' });
     localStorage.setItem('ryan_customers', JSON.stringify(customers));
     renderCustomers();
     document.getElementById('new-customer').value = '';
@@ -615,24 +784,50 @@ function renderCustomers() {
     const tbody = document.getElementById('customers-tbody');
     tbody.innerHTML = customers.map((c, idx) => `
         <tr>
-            <td>${c}</td>
-            <td class="text-danger" onclick="deleteCustomer(${idx})">×</td>
+            <td>${c.name}</td>
+            <td>${c.phone || ''}</td>
+            <td><button class="btn btn-sm btn-info" onclick="showCustomerInvoices(${idx})">عرض الفواتير</button></td>
+            <td class="text-danger" style="cursor:pointer;" onclick="deleteCustomer(${idx})">×</td>
         </tr>
     `).join('');
     const select = document.getElementById('sale-customer');
-    select.innerHTML = '<option value="">اختر العميل</option>' + customers.map(c => `<option value="\( {c}"> \){c}</option>`).join('');
+    select.innerHTML = '<option value="">اختر العميل</option>' + customers.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
 }
 
 function deleteCustomer(idx) {
     customers.splice(idx, 1);
     localStorage.setItem('ryan_customers', JSON.stringify(customers));
     renderCustomers();
+    hideCustomerInvoices();
+}
+
+function showCustomerInvoices(customerIndex) {
+    const customer = customers[customerIndex];
+    document.getElementById('selected-customer-name').textContent = customer.name;
+    // تصفية فواتير هذا العميل
+    const customerInvoices = invoices.filter(inv => inv.customer === customer.name);
+    const tbody = document.getElementById('customer-invoices-tbody');
+    tbody.innerHTML = customerInvoices.map(inv => `
+        <tr>
+            <td>${inv.number}</td>
+            <td>${inv.date}</td>
+            <td>${inv.total.toFixed(2)} دج</td>
+        </tr>
+    `).join('');
+    // إخفاء قائمة العملاء وإظهار جدول الفواتير
+    document.querySelector('#customers .table-custom').style.display = 'none';
+    document.getElementById('customer-invoices-view').style.display = 'block';
+}
+
+function hideCustomerInvoices() {
+    document.querySelector('#customers .table-custom').style.display = 'table';
+    document.getElementById('customer-invoices-view').style.display = 'none';
 }
 
 function addSupplier() {
     const name = document.getElementById('new-supplier').value.trim();
     if (!name) return alert('أدخل اسم المورد');
-    suppliers.push(name);
+    suppliers.push({ name, phone: '' });
     localStorage.setItem('ryan_suppliers', JSON.stringify(suppliers));
     renderSuppliers();
     document.getElementById('new-supplier').value = '';
@@ -642,12 +837,13 @@ function renderSuppliers() {
     const tbody = document.getElementById('suppliers-tbody');
     tbody.innerHTML = suppliers.map((s, idx) => `
         <tr>
-            <td>${s}</td>
-            <td class="text-danger" onclick="deleteSupplier(${idx})">×</td>
+            <td>${s.name}</td>
+            <td>${s.phone || ''}</td>
+            <td class="text-danger" style="cursor:pointer;" onclick="deleteSupplier(${idx})">×</td>
         </tr>
     `).join('');
     const select = document.getElementById('purchase-supplier');
-    select.innerHTML = '<option value="">اختر المورد</option>' + suppliers.map(s => `<option value="\( {s}"> \){s}</option>`).join('');
+    select.innerHTML = '<option value="">اختر المورد</option>' + suppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
 }
 
 function deleteSupplier(idx) {
@@ -700,6 +896,10 @@ function saveNewProduct() {
     const sell = parseFloat(document.getElementById('new-sell').value) || 0;
     const buy = parseFloat(document.getElementById('new-buy').value) || 0;
     if (!name || sell <= 0 || buy <= 0) return alert('الاسم وسعر البيع والشراء مطلوبة');
+    // التحقق من عدم تكرار الاسم
+    if (stock.some(p => p.name === name)) {
+        return alert('يوجد منتج بنفس الاسم بالفعل');
+    }
     stock.push({
         name,
         barcode: document.getElementById('new-barcode').value.trim(),
@@ -753,6 +953,12 @@ function saveStock() {
 }
 
 // ─── التحميل الأولي ──────────────────────────────────
+// التأكد من أن العملاء والموردين كائنات (في حال كان التخزين القديم نصوصاً)
+customers = customers.map(c => typeof c === 'string' ? { name: c, phone: '' } : c);
+suppliers = suppliers.map(s => typeof s === 'string' ? { name: s, phone: '' } : s);
+localStorage.setItem('ryan_customers', JSON.stringify(customers));
+localStorage.setItem('ryan_suppliers', JSON.stringify(suppliers));
+
 renderCart();
 renderPurchaseCart();
 renderStock();
