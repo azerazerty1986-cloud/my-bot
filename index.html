@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سوبيرات ريان - النسخة المتطورة</title>
+    <title>سوبيرات ريان - النسخة المتكاملة</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <!-- SweetAlert2 -->
@@ -42,7 +42,6 @@
         #print-area, #purchase-print-area { display: none; }
         .edit-item-row { background: #f8f9fa; padding: 8px; border-radius: 10px; margin-bottom: 8px; }
         .edit-item-row input { width: 80px; display: inline-block; margin: 0 5px; }
-        /* مصغرات الصور */
         .product-thumb { width: 40px; height: 40px; object-fit: cover; border-radius: 5px; cursor: pointer; }
         @media print { body * { visibility: hidden; } #print-area, #print-area *, #purchase-print-area, #purchase-print-area * { visibility: visible; } #print-area, #purchase-print-area { position: absolute; left: 0; top: 0; width: 100%; font-family: 'Courier New', monospace; font-size: 12px; padding: 10px; } .no-print { display: none !important; } }
     </style>
@@ -98,7 +97,6 @@
         <div id="sale-invoices" class="sub-section" style="display: none;">
             <div class="main-card">
                 <h5 class="text-center mb-4">سجل فواتير المبيعات</h5>
-                <!-- حقل بحث متقدم -->
                 <div class="input-group mb-3">
                     <span class="input-group-text"><i class="material-icons-round">search</i></span>
                     <input type="text" id="invoice-search" class="form-control" placeholder="بحث برقم الفاتورة، العميل، أو التاريخ" oninput="searchInvoices()">
@@ -118,7 +116,6 @@
                     <thead><tr><th>الاسم</th><th>الهاتف</th><th>الفواتير</th><th>حذف</th></tr></thead>
                     <tbody id="customers-tbody"></tbody>
                 </table>
-                <!-- نافذة عرض فواتير العميل -->
                 <div id="customer-invoices-view" style="display:none; margin-top:20px;">
                     <h6>فواتير العميل <span id="selected-customer-name"></span></h6>
                     <table class="table-custom">
@@ -202,7 +199,6 @@
             <div class="main-card text-center">
                 <h6 class="mb-4">إضافة منتج جديد</h6>
                 <input type="text" id="new-name" class="form-control mb-2" placeholder="اسم المنتج *">
-                <!-- حقل باركود مع زر مسح -->
                 <div class="input-group mb-2">
                     <input type="text" id="new-barcode" class="form-control" placeholder="باركود (اختياري)">
                     <button class="btn btn-outline-secondary" type="button" onclick="openBarcodeScanner()"><i class="material-icons-round">camera_alt</i> مسح</button>
@@ -222,7 +218,6 @@
                     </div>
                     <div class="col-6"><input type="number" id="new-qty" class="form-control" value="0" placeholder="الكمية الابتدائية"></div>
                 </div>
-                <!-- حقل رفع الصورة -->
                 <div class="mb-3">
                     <label for="product-image" class="form-label">صورة المنتج (اختياري)</label>
                     <input type="file" id="product-image" class="form-control" accept="image/*" onchange="previewImage(event)">
@@ -278,8 +273,8 @@
         </div>
     </div>
 
-    <!-- منطقة الطباعة المحسنة -->
-    <div id="print-area">
+    <!-- منطقة الطباعة للمبيعات -->
+    <div id="print-area" style="display: none;">
         <div class="text-center" style="border-bottom:1px dashed #000; padding-bottom:10px; margin-bottom:12px;">
             <h5 style="margin:0 0 4px;">سوبيرات ريان - فاتورة بيع</h5>
             <small>العنوان: الجزائر - هاتف: 123456789</small><br>
@@ -312,7 +307,8 @@
         </div>
     </div>
 
-    <div id="purchase-print-area">
+    <!-- منطقة الطباعة للمشتريات -->
+    <div id="purchase-print-area" style="display: none;">
         <div class="text-center" style="border-bottom:1px dashed #000; padding-bottom:10px; margin-bottom:12px;">
             <h5 style="margin:0 0 4px;">سوبيرات ريان - فاتورة شراء</h5>
             <small>العنوان: الجزائر - هاتف: 123456789</small><br>
@@ -349,9 +345,7 @@
                     <h5 class="modal-title">تعديل الفاتورة رقم <span id="edit-invoice-number"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body" id="edit-invoice-items-container">
-                    <!-- يتم تعبئتها ديناميكياً -->
-                </div>
+                <div class="modal-body" id="edit-invoice-items-container"></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
                     <button type="button" class="btn btn-primary" onclick="updateInvoice()">حفظ التعديلات</button>
@@ -379,7 +373,7 @@
         </div>
     </div>
 
-    <!-- Modal عرض الصورة المكبرة -->
+    <!-- Modal عرض الصورة -->
     <div class="modal fade" id="imageModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -389,6 +383,47 @@
                 </div>
                 <div class="modal-body text-center">
                     <img id="modal-image" src="#" alt="صورة المنتج" style="max-width:100%; max-height:400px;">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal إضافة منتج سريع (من المبيعات/المشتريات) -->
+    <div class="modal fade" id="quickAddProductModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">إضافة منتج جديد</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="quick-product-name" class="form-control mb-2" placeholder="اسم المنتج *" readonly>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <input type="number" id="quick-sell-price" class="form-control" placeholder="سعر البيع *">
+                        </div>
+                        <div class="col-6">
+                            <input type="number" id="quick-buy-price" class="form-control" placeholder="سعر الشراء *">
+                        </div>
+                    </div>
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <select id="quick-unit" class="form-select">
+                                <option>قطعة</option>
+                                <option>كغ</option>
+                                <option>لتر</option>
+                                <option>علبة</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <input type="number" id="quick-qty" class="form-control" value="0" placeholder="الكمية">
+                        </div>
+                    </div>
+                    <input type="hidden" id="quick-mode" value="sale">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="button" class="btn btn-primary" onclick="saveQuickProduct()">حفظ وإضافة للسلة</button>
                 </div>
             </div>
         </div>
@@ -408,7 +443,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // ─── البيانات ────────────────────────────────────────
+        // ================== البيانات العامة ==================
         let stock = JSON.parse(localStorage.getItem('ryan_stock')) || [];
         let invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
         let purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
@@ -417,8 +452,9 @@
         let cart = [];
         let purchaseCart = [];
         let currentEditInvoiceIndex = -1;
+        let selectedImageBase64 = '';
 
-        // ─── التنقل بين الأقسام ──────────────────────────────
+        // ================== التنقل بين الأقسام ==================
         function switchSection(sectionId, element) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
             document.getElementById(sectionId).classList.add('active-section');
@@ -452,21 +488,31 @@
             hideCustomerInvoices();
         }
 
-        // ─── البحث الذكي ──────────────────────────────────────
+        // ================== البحث الذكي مع إضافة منتج غير موجود ==================
         function smartSearch(val) {
             const box = document.getElementById('search-box');
             if (val.length < 1) { box.style.display = 'none'; return; }
             const matches = stock.filter(p => p.name.toLowerCase().includes(val.toLowerCase()) || (p.barcode && p.barcode.includes(val)));
-            box.innerHTML = matches.map(p => `
-                <div class="search-item" onclick="selectProduct('${p.name}')">
-                    <b>${p.name}</b>
-                    <div class="d-flex justify-content-between small text-muted">
-                        <span>مخزون: ${p.qty} ${p.unit}</span>
-                        <span>بيع: ${p.sellPrice} دج</span>
+            if (matches.length > 0) {
+                box.innerHTML = matches.map(p => `
+                    <div class="search-item" onclick="selectProduct('${p.name}')">
+                        <b>${p.name}</b>
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>مخزون: ${p.qty} ${p.unit}</span>
+                            <span>بيع: ${p.sellPrice} دج</span>
+                        </div>
                     </div>
-                </div>
-            `).join('');
-            box.style.display = matches.length ? 'block' : 'none';
+                `).join('');
+                box.style.display = 'block';
+            } else {
+                box.innerHTML = `
+                    <div class="search-item" onclick="openQuickAddModal('sale', '${val}')">
+                        <b>لا توجد منتجات بهذا الاسم</b>
+                        <div class="text-primary">+ انقر لإضافة "${val}" كمنتج جديد</div>
+                    </div>
+                `;
+                box.style.display = 'block';
+            }
         }
 
         function selectProduct(name) {
@@ -479,16 +525,26 @@
             const box = document.getElementById('purchase-search-box');
             if (val.length < 1) { box.style.display = 'none'; return; }
             const matches = stock.filter(p => p.name.toLowerCase().includes(val.toLowerCase()) || (p.barcode && p.barcode.includes(val)));
-            box.innerHTML = matches.map(p => `
-                <div class="search-item" onclick="selectProductPurchase('${p.name}')">
-                    <b>${p.name}</b>
-                    <div class="d-flex justify-content-between small text-muted">
-                        <span>مخزون: ${p.qty} ${p.unit}</span>
-                        <span>شراء: ${p.buyPrice} دج</span>
+            if (matches.length > 0) {
+                box.innerHTML = matches.map(p => `
+                    <div class="search-item" onclick="selectProductPurchase('${p.name}')">
+                        <b>${p.name}</b>
+                        <div class="d-flex justify-content-between small text-muted">
+                            <span>مخزون: ${p.qty} ${p.unit}</span>
+                            <span>شراء: ${p.buyPrice} دج</span>
+                        </div>
                     </div>
-                </div>
-            `).join('');
-            box.style.display = matches.length ? 'block' : 'none';
+                `).join('');
+                box.style.display = 'block';
+            } else {
+                box.innerHTML = `
+                    <div class="search-item" onclick="openQuickAddModal('purchase', '${val}')">
+                        <b>لا توجد منتجات بهذا الاسم</b>
+                        <div class="text-primary">+ انقر لإضافة "${val}" كمنتج جديد</div>
+                    </div>
+                `;
+                box.style.display = 'block';
+            }
         }
 
         function selectProductPurchase(name) {
@@ -497,7 +553,85 @@
             document.getElementById('purchase-qty').focus();
         }
 
-        // ─── الكتابة بالصوت ──────────────────────────────────
+        // ================== الإضافة السريعة لمنتج غير موجود ==================
+        function openQuickAddModal(mode, productName) {
+            document.getElementById('quick-mode').value = mode;
+            document.getElementById('quick-product-name').value = productName;
+            document.getElementById('quick-sell-price').value = '';
+            document.getElementById('quick-buy-price').value = '';
+            document.getElementById('quick-unit').value = 'قطعة';
+            document.getElementById('quick-qty').value = '0';
+            if (mode === 'sale') {
+                document.getElementById('quick-sell-price').focus();
+            } else {
+                document.getElementById('quick-buy-price').focus();
+            }
+            new bootstrap.Modal(document.getElementById('quickAddProductModal')).show();
+        }
+
+        function saveQuickProduct() {
+            const mode = document.getElementById('quick-mode').value;
+            const name = document.getElementById('quick-product-name').value.trim();
+            const sellPrice = parseFloat(document.getElementById('quick-sell-price').value) || 0;
+            const buyPrice = parseFloat(document.getElementById('quick-buy-price').value) || 0;
+            const unit = document.getElementById('quick-unit').value;
+            const qty = parseFloat(document.getElementById('quick-qty').value) || 0;
+
+            if (!name || sellPrice <= 0 || buyPrice <= 0) {
+                Swal.fire('تنبيه', 'الاسم وسعر البيع والشراء مطلوبة', 'warning');
+                return;
+            }
+            if (stock.some(p => p.name === name)) {
+                Swal.fire('خطأ', 'يوجد منتج بنفس الاسم بالفعل', 'error');
+                return;
+            }
+
+            const newProduct = {
+                name,
+                barcode: '',
+                sellPrice,
+                buyPrice,
+                qty,
+                unit,
+                image: null
+            };
+            stock.push(newProduct);
+            saveStock();
+
+            if (mode === 'sale') {
+                const saleQty = 1;
+                const discount = 0;
+                const total = saleQty * sellPrice;
+                cart.push({ name, qty: saleQty, price: sellPrice, total, discount });
+                newProduct.qty -= saleQty;
+                saveStock();
+                renderCart();
+                document.getElementById('sale-search').value = name;
+                document.getElementById('search-box').style.display = 'none';
+                document.getElementById('sale-qty').focus();
+            } else {
+                const purchaseQty = 1;
+                const total = purchaseQty * buyPrice;
+                purchaseCart.push({ name, qty: purchaseQty, price: buyPrice, total });
+                newProduct.qty += purchaseQty;
+                saveStock();
+                renderPurchaseCart();
+                document.getElementById('purchase-search').value = name;
+                document.getElementById('purchase-search-box').style.display = 'none';
+                document.getElementById('purchase-qty').focus();
+            }
+
+            bootstrap.Modal.getInstance(document.getElementById('quickAddProductModal')).hide();
+            Swal.fire({
+                icon: 'success',
+                title: 'تمت الإضافة',
+                text: `تم إضافة المنتج ${name} إلى المخزن والسلة`,
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+
+        // ================== البحث الصوتي ==================
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
             const recognitionSale = new SpeechRecognition();
@@ -519,7 +653,7 @@
             document.getElementById('mic-purchase').addEventListener('click', () => recognitionPurchase.start());
         }
 
-        // ─── إدارة السلة (مبيعات) ────────────────────────────
+        // ================== إدارة سلة المبيعات ==================
         function addToCart() {
             const name = document.getElementById('sale-search').value.trim();
             const qty = parseFloat(document.getElementById('sale-qty').value) || 0;
@@ -609,7 +743,7 @@
             const invoice = { number: invNo, date: now.toLocaleString('ar-DZ'), customer, items: [...cart], total };
             invoices.push(invoice);
             localStorage.setItem('ryan_invoices', JSON.stringify(invoices));
-            // تحضير الطباعة
+
             document.getElementById('print-invoice-no').textContent = invNo;
             document.getElementById('print-date-time').textContent = invoice.date;
             document.getElementById('print-customer').textContent = customer;
@@ -631,7 +765,7 @@
             Swal.fire('نجاح', 'تم حفظ الفاتورة', 'success');
         }
 
-        // ─── إدارة السلة (مشتريات) ────────────────────────────
+        // ================== إدارة سلة المشتريات ==================
         function addToPurchaseCart() {
             const name = document.getElementById('purchase-search').value.trim();
             const qty = parseFloat(document.getElementById('purchase-qty').value) || 0;
@@ -716,7 +850,7 @@
             const purchase = { number: invNo, date: now.toLocaleString('ar-DZ'), supplier, items: [...purchaseCart], total };
             purchases.push(purchase);
             localStorage.setItem('ryan_purchases', JSON.stringify(purchases));
-            // تحضير الطباعة
+
             document.getElementById('purchase-print-invoice-no').textContent = invNo;
             document.getElementById('purchase-print-date-time').textContent = purchase.date;
             document.getElementById('print-supplier').textContent = supplier;
@@ -736,12 +870,11 @@
             Swal.fire('نجاح', 'تم حفظ فاتورة الشراء', 'success');
         }
 
-        // ─── عرض فواتير المبيعات مع زر التعديل والبحث ─────────
+        // ================== عرض فواتير المبيعات مع البحث المتقدم ==================
         function renderSaleInvoices(filteredInvoices = null) {
             const tbody = document.getElementById('sale-invoices-tbody');
             const invs = filteredInvoices || invoices;
             tbody.innerHTML = invs.map((inv, index) => {
-                // نحتاج index الأصلي لتعديل الفاتورة
                 const originalIndex = invoices.findIndex(i => i.number === inv.number && i.date === inv.date);
                 return `
                 <tr>
@@ -769,7 +902,20 @@
             renderSaleInvoices(filtered);
         }
 
-        // ─── تعديل الفاتورة ──────────────────────────────────
+        function renderPurchaseInvoices() {
+            const tbody = document.getElementById('purchase-invoices-tbody');
+            tbody.innerHTML = purchases.map(pur => `
+                <tr>
+                    <td>${pur.number}</td>
+                    <td>${pur.date}</td>
+                    <td>${pur.supplier}</td>
+                    <td>${pur.total.toFixed(2)} دج</td>
+                    <td>${pur.items.length}</td>
+                </tr>
+            `).join('');
+        }
+
+        // ================== تعديل الفاتورة ==================
         function editInvoice(index) {
             currentEditInvoiceIndex = index;
             const inv = invoices[index];
@@ -788,8 +934,7 @@
                 `;
             }).join('');
             if (container.innerHTML === '') container.innerHTML = '<p class="text-danger">جميع منتجات هذه الفاتورة لم تعد موجودة في المخزن، لا يمكن التعديل.</p>';
-            const modal = new bootstrap.Modal(document.getElementById('editInvoiceModal'));
-            modal.show();
+            new bootstrap.Modal(document.getElementById('editInvoiceModal')).show();
         }
 
         function updateInvoice() {
@@ -822,12 +967,11 @@
             }
             if (!valid) return;
 
-            // إعادة الكميات القديمة للمخزن
             inv.items.forEach(item => {
                 const prod = stock.find(p => p.name === item.name);
                 if (prod) prod.qty += item.qty;
             });
-            // التحقق من الكميات الجديدة
+
             let stockOk = true;
             newItems.forEach(item => {
                 const prod = stock.find(p => p.name === item.name);
@@ -837,25 +981,20 @@
                 }
             });
             if (!stockOk) {
-                // إعادة الكميات القديمة مرة أخرى
                 inv.items.forEach(item => {
                     const prod = stock.find(p => p.name === item.name);
                     if (prod) prod.qty -= item.qty;
                 });
                 return;
             }
-            // خصم الكميات الجديدة
+
             newItems.forEach(item => {
                 const prod = stock.find(p => p.name === item.name);
                 if (prod) prod.qty -= item.qty;
             });
-            // تحديث الفاتورة
+
             const newTotal = newItems.reduce((sum, i) => sum + i.total, 0);
-            invoices[currentEditInvoiceIndex] = {
-                ...inv,
-                items: newItems,
-                total: newTotal
-            };
+            invoices[currentEditInvoiceIndex] = { ...inv, items: newItems, total: newTotal };
             localStorage.setItem('ryan_invoices', JSON.stringify(invoices));
             saveStock();
             bootstrap.Modal.getInstance(document.getElementById('editInvoiceModal')).hide();
@@ -866,21 +1005,7 @@
             currentEditInvoiceIndex = -1;
         }
 
-        // ─── عرض فواتير الشراء ───────────────────────────────
-        function renderPurchaseInvoices() {
-            const tbody = document.getElementById('purchase-invoices-tbody');
-            tbody.innerHTML = purchases.map(pur => `
-                <tr>
-                    <td>${pur.number}</td>
-                    <td>${pur.date}</td>
-                    <td>${pur.supplier}</td>
-                    <td>${pur.total.toFixed(2)} دج</td>
-                    <td>${pur.items.length}</td>
-                </tr>
-            `).join('');
-        }
-
-        // ─── إدارة العملاء والموردين ─────────────────────────
+        // ================== إدارة العملاء ==================
         function addCustomer() {
             const name = document.getElementById('new-customer').value.trim();
             if (!name) {
@@ -950,6 +1075,7 @@
             document.getElementById('customer-invoices-view').style.display = 'none';
         }
 
+        // ================== إدارة الموردين ==================
         function addSupplier() {
             const name = document.getElementById('new-supplier').value.trim();
             if (!name) {
@@ -996,9 +1122,7 @@
             });
         }
 
-        // ─── إدارة الصور والباركود ────────────────────────────
-        let selectedImageBase64 = '';
-
+        // ================== إدارة الصور والباركود ==================
         function previewImage(event) {
             const file = event.target.files[0];
             if (file) {
@@ -1018,7 +1142,6 @@
         function openBarcodeScanner() {
             const modal = new bootstrap.Modal(document.getElementById('barcodeScannerModal'));
             modal.show();
-            // تشغيل Quagga بعد ظهور الـ Modal
             setTimeout(() => {
                 Quagga.init({
                     inputStream: {
@@ -1028,7 +1151,7 @@
                         constraints: {
                             width: 640,
                             height: 480,
-                            facingMode: "environment" // الكاميرا الخلفية
+                            facingMode: "environment"
                         },
                     },
                     decoder: {
@@ -1054,7 +1177,6 @@
             }, 500);
         }
 
-        // تنظيف Quagga عند إغلاق الـ Modal
         document.getElementById('barcodeScannerModal').addEventListener('hidden.bs.modal', function () {
             Quagga.stop();
         });
@@ -1064,7 +1186,7 @@
             new bootstrap.Modal(document.getElementById('imageModal')).show();
         }
 
-        // ─── عرض المخزن مع الصور ──────────────────────────────
+        // ================== إدارة المخزن ==================
         function renderStock() {
             const tbody = document.getElementById('stock-tbody');
             tbody.innerHTML = stock.map((p, idx) => `
@@ -1137,7 +1259,7 @@
             });
         }
 
-        // ─── حفظ منتج جديد ───────────────────────────────────
+        // ================== حفظ منتج جديد ==================
         function saveNewProduct() {
             const name = document.getElementById('new-name').value.trim();
             const sell = parseFloat(document.getElementById('new-sell').value) || 0;
@@ -1167,7 +1289,7 @@
             renderStock();
         }
 
-        // ─── حفظ عملاء/موردين جدد ────────────────────────────
+        // ================== حفظ عميل/مورد جديد ==================
         function saveNewCustomer() {
             const name = document.getElementById('new-customer-name').value.trim();
             const phone = document.getElementById('new-customer-phone').value.trim();
@@ -1196,7 +1318,7 @@
             renderSuppliers();
         }
 
-        // ─── عرض التقارير ────────────────────────────────────
+        // ================== التقارير ==================
         function renderReports() {
             const totalSales = invoices.reduce((sum, inv) => sum + inv.total, 0);
             const totalPurchases = purchases.reduce((sum, pur) => sum + pur.total, 0);
@@ -1206,13 +1328,12 @@
             document.getElementById('total-profits').textContent = profits.toFixed(2);
         }
 
-        // ─── مساعدات عامة ────────────────────────────────────
+        // ================== مساعدات عامة ==================
         function saveStock() {
             localStorage.setItem('ryan_stock', JSON.stringify(stock));
         }
 
-        // ─── التحميل الأولي ──────────────────────────────────
-        // تحويل العملاء والموردين النصيين إلى كائنات
+        // ================== التحميل الأولي ==================
         customers = customers.map(c => typeof c === 'string' ? { name: c, phone: '' } : c);
         suppliers = suppliers.map(s => typeof s === 'string' ? { name: s, phone: '' } : s);
         localStorage.setItem('ryan_customers', JSON.stringify(customers));
