@@ -3,17 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سوبيرات ريان - النسخة المنظمة</title>
+    <title>سوبيرات ريان - النسخة الكاملة</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     <style>
-        :root { 
-            --nardo-grey: #4a5555;
-            --main-red: #ff5e5e; 
-            --main-green: #4caf50;
-            --light-green: #e8f5e9;
-            --bg-light: #f8f9fa;
-        }
+        :root { --nardo-grey: #4a5555; --main-red: #ff5e5e; --main-green: #4caf50; --light-green: #e8f5e9; --bg-light: #f8f9fa; }
         body { background-color: var(--bg-light); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding-bottom: 110px; }
         .app-header { background: var(--nardo-grey); color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
         .nav-tabs-custom { display: flex; background: white; border-radius: 15px; padding: 5px; margin: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
@@ -47,6 +41,7 @@
 </head>
 <body>
 
+    <!-- Header -->
     <div class="app-header no-print">
         <i class="material-icons-round">account_circle</i>
         <span class="fw-bold">سوبيرات ريان</span>
@@ -56,63 +51,168 @@
     <!-- قسم المبيعات -->
     <div id="sales" class="section active-section">
         <div class="nav-tabs-custom no-print">
-            <div class="tab-item active-red">عملية بيع</div>
+            <div class="tab-item active-red" onclick="showSubSection('sale-operation')">عملية بيع</div>
+            <div class="tab-item" onclick="showSubSection('sale-invoices')">الفواتير</div>
+            <div class="tab-item" onclick="showSubSection('customers')">العملاء</div>
         </div>
-        <div class="main-card no-print">
-            <h6 class="text-center mb-3">تسجيل مبيعات</h6>
-            <div class="search-container mb-3">
-                <div class="input-group">
-                    <input type="text" id="sale-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearch(this.value)">
-                    <button class="mic-btn" id="mic-sale"><i class="material-icons-round">mic</i></button>
+        <div id="sale-operation" class="sub-section">
+            <div class="main-card no-print">
+                <h6 class="text-center mb-3">تسجيل مبيعات</h6>
+                <div class="search-container mb-3">
+                    <div class="input-group">
+                        <button class="btn btn-dark px-3"><i class="material-icons-round">qr_code_scanner</i></button>
+                        <input type="text" id="sale-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearch(this.value)">
+                        <button class="mic-btn" id="mic-sale" title="البحث بالصوت"><i class="material-icons-round">mic</i></button>
+                    </div>
+                    <div id="search-box" class="search-results"></div>
                 </div>
-                <div id="search-box" class="search-results"></div>
+                <select id="sale-customer" class="form-select mb-2">
+                    <option value="">اختر العميل (اختياري)</option>
+                </select>
+                <div class="row g-2 mb-3">
+                    <div class="col-5"><input type="number" id="sale-qty" class="form-control" placeholder="الكمية" min="1"></div>
+                    <div class="col-5"><input type="number" id="sale-discount" class="form-control" placeholder="الخصم (%)" min="0" max="100"></div>
+                    <div class="col-2"><button class="btn btn-danger w-100" onclick="addToCart()">+</button></div>
+                </div>
+                <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearCart()">مسح السلة</button>
             </div>
-            <div class="row g-2 mb-3">
-                <div class="col-7"><input type="number" id="sale-qty" class="form-control" placeholder="الكمية" min="1"></div>
-                <div class="col-5"><button class="btn btn-danger w-100" onclick="addToCart()">إضافة</button></div>
+            <div class="main-card">
+                <table class="table-custom">
+                    <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th></th></tr></thead>
+                    <tbody id="cart-table"></tbody>
+                </table>
+                <div class="summary-box mt-3 no-print" style="background: var(--main-red);">
+                    <button class="btn-print" style="color: var(--main-red);" onclick="finishSaleAndPrint()">حفظ & طباعة</button>
+                    <div>المجموع: <b id="grand-total">0.00</b> دج</div>
+                </div>
             </div>
-            <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearCart()">مسح السلة</button>
         </div>
-        <div class="main-card">
-            <table class="table-custom">
-                <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th></th></tr></thead>
-                <tbody id="cart-table"></tbody>
-            </table>
-            <div class="summary-box mt-3 no-print" style="background: var(--main-red);">
-                <button class="btn-print" style="color:var(--main-red);" onclick="finishSaleAndPrint()">حفظ & طباعة</button>
-                <div>المجموع: <b id="grand-total">0</b> دج</div>
+        <div id="sale-invoices" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h5 class="text-center mb-4">سجل فواتير المبيعات</h5>
+                <table class="table-custom">
+                    <thead><tr><th>رقم</th><th>التاريخ</th><th>العميل</th><th>المبلغ</th><th>الأصناف</th></tr></thead>
+                    <tbody id="sale-invoices-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="customers" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h5 class="text-center mb-4">إدارة العملاء</h5>
+                <input type="text" id="new-customer" class="form-control mb-2" placeholder="اسم العميل الجديد">
+                <button class="btn btn-dark w-100" onclick="addCustomer()">إضافة عميل</button>
+                <table class="table-custom mt-3">
+                    <thead><tr><th>الاسم</th><th>حذف</th></tr></thead>
+                    <tbody id="customers-tbody"></tbody>
+                </table>
             </div>
         </div>
     </div>
 
     <!-- قسم المشتريات -->
     <div id="purchases" class="section">
-        <div class="nav-tabs-custom no-print" style="background:var(--light-green);">
-            <div class="tab-item active-green">عملية شراء</div>
+        <div class="nav-tabs-custom no-print" style="background: var(--light-green);">
+            <div class="tab-item active-green" onclick="showSubSection('purchase-operation')">عملية شراء</div>
+            <div class="tab-item" onclick="showSubSection('purchase-invoices')">فواتير الشراء</div>
+            <div class="tab-item" onclick="showSubSection('suppliers')">الموردون</div>
         </div>
-        <div class="main-card no-print">
-            <h6 class="text-center mb-3">تسجيل مشتريات</h6>
-            <div class="search-container mb-3">
-                <div class="input-group">
-                    <input type="text" id="purchase-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearchPurchase(this.value)">
-                    <button class="mic-btn" id="mic-purchase"><i class="material-icons-round">mic</i></button>
+        <div id="purchase-operation" class="sub-section">
+            <div class="main-card no-print">
+                <h6 class="text-center mb-3">تسجيل مشتريات</h6>
+                <div class="search-container mb-3">
+                    <div class="input-group">
+                        <button class="btn btn-dark px-3"><i class="material-icons-round">qr_code_scanner</i></button>
+                        <input type="text" id="purchase-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearchPurchase(this.value)">
+                        <button class="mic-btn" id="mic-purchase" title="البحث بالصوت"><i class="material-icons-round">mic</i></button>
+                    </div>
+                    <div id="purchase-search-box" class="search-results"></div>
                 </div>
-                <div id="purchase-search-box" class="search-results"></div>
+                <select id="purchase-supplier" class="form-select mb-2">
+                    <option value="">اختر المورد (اختياري)</option>
+                </select>
+                <div class="row g-2 mb-3">
+                    <div class="col-7"><input type="number" id="purchase-qty" class="form-control" placeholder="الكمية" min="1"></div>
+                    <div class="col-5"><button class="btn btn-success w-100" onclick="addToPurchaseCart()">إضافة</button></div>
+                </div>
+                <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearPurchaseCart()">مسح السلة</button>
             </div>
-            <div class="row g-2 mb-3">
-                <div class="col-7"><input type="number" id="purchase-qty" class="form-control" placeholder="الكمية" min="1"></div>
-                <div class="col-5"><button class="btn btn-success w-100" onclick="addToPurchaseCart()">إضافة</button></div>
+            <div class="main-card">
+                <table class="table-custom">
+                    <thead><tr><th>المنتج</th><th>الكمية</th><th>التكلفة</th><th></th></tr></thead>
+                    <tbody id="purchase-cart-table"></tbody>
+                </table>
+                <div class="summary-box mt-3 no-print" style="background: var(--main-green);">
+                    <button class="btn-print" style="color: var(--main-green);" onclick="finishPurchaseAndPrint()">حفظ & طباعة</button>
+                    <div>المجموع: <b id="purchase-grand-total">0.00</b> دج</div>
+                </div>
             </div>
-            <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearPurchaseCart()">مسح السلة</button>
         </div>
-        <div class="main-card">
-            <table class="table-custom">
-                <thead><tr><th>المنتج</th><th>الكمية</th><th>التكلفة</th><th></th></tr></thead>
-                <tbody id="purchase-cart-table"></tbody>
-            </table>
-            <div class="summary-box mt-3 no-print" style="background:var(--main-green);">
-                <button class="btn-print" style="color:var(--main-green);" onclick="finishPurchaseAndPrint()">حفظ & طباعة</button>
-                <div>المجموع: <b id="purchase-grand-total">0</b> دج</div>
+        <div id="purchase-invoices" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h5 class="text-center mb-4">سجل فواتير الشراء</h5>
+                <table class="table-custom">
+                    <thead><tr><th>رقم</th><th>التاريخ</th><th>المورد</th><th>المبلغ</th><th>الأصناف</th></tr></thead>
+                    <tbody id="purchase-invoices-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="suppliers" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h5 class="text-center mb-4">إدارة الموردين</h5>
+                <input type="text" id="new-supplier" class="form-control mb-2" placeholder="اسم المورد الجديد">
+                <button class="btn btn-dark w-100" onclick="addSupplier()">إضافة مورد</button>
+                <table class="table-custom mt-3">
+                    <thead><tr><th>الاسم</th><th>حذف</th></tr></thead>
+                    <tbody id="suppliers-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- قسم الإضافة -->
+    <div id="add" class="section">
+        <div class="nav-tabs-custom no-print">
+            <div class="tab-item active-nardo" onclick="showSubSection('add-product')">منتج</div>
+            <div class="tab-item" onclick="showSubSection('add-customer')">عميل</div>
+            <div class="tab-item" onclick="showSubSection('add-supplier')">مورد</div>
+        </div>
+        <div id="add-product" class="sub-section">
+            <div class="main-card text-center">
+                <h6 class="mb-4">إضافة منتج جديد</h6>
+                <input type="text" id="new-name" class="form-control mb-2" placeholder="اسم المنتج *">
+                <input type="text" id="new-barcode" class="form-control mb-2" placeholder="باركود (اختياري)">
+                <div class="row g-2 mb-3">
+                    <div class="col-6"><input type="number" id="new-sell" class="form-control" placeholder="سعر البيع *"></div>
+                    <div class="col-6"><input type="number" id="new-buy" class="form-control" placeholder="سعر الشراء *"></div>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <select id="new-unit" class="form-select">
+                            <option>قطعة</option>
+                            <option>كغ</option>
+                            <option>لتر</option>
+                            <option>علبة</option>
+                        </select>
+                    </div>
+                    <div class="col-6"><input type="number" id="new-qty" class="form-control" value="0" placeholder="الكمية الابتدائية"></div>
+                </div>
+                <button class="btn btn-dark w-100 py-3 rounded-pill" onclick="saveNewProduct()">حفظ المنتج</button>
+            </div>
+        </div>
+        <div id="add-customer" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h6 class="mb-4">إضافة عميل جديد</h6>
+                <input type="text" id="new-customer-name" class="form-control mb-2" placeholder="اسم العميل *">
+                <input type="text" id="new-customer-phone" class="form-control mb-2" placeholder="رقم الهاتف (اختياري)">
+                <button class="btn btn-dark w-100" onclick="saveNewCustomer()">حفظ العميل</button>
+            </div>
+        </div>
+        <div id="add-supplier" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h6 class="mb-4">إضافة مورد جديد</h6>
+                <input type="text" id="new-supplier-name" class="form-control mb-2" placeholder="اسم المورد *">
+                <input type="text" id="new-supplier-phone" class="form-control mb-2" placeholder="رقم الهاتف (اختياري)">
+                <button class="btn btn-dark w-100" onclick="saveNewSupplier()">حفظ المورد</button>
             </div>
         </div>
     </div>
@@ -122,265 +222,547 @@
         <div class="main-card">
             <h5 class="text-center mb-4">المخزن الحالي</h5>
             <table class="table-custom">
-                <thead><tr><th>المنتج</th><th>الكمية</th><th>سعر البيع</th><th>سعر الشراء</th></tr></thead>
+                <thead><tr><th>المنتج</th><th>الكمية</th><th>سعر البيع</th><th>سعر الشراء</th><th>عمليات</th></tr></thead>
                 <tbody id="stock-tbody"></tbody>
             </table>
         </div>
     </div>
 
-    <!-- منطقة الطباعة المبيعات -->
-    <div id="print-area">
-        <h5>سوبيرات ريان - فاتورة بيع</h5>
-        <small id="print-date-time"></small><br>
-        رقم الفاتورة: <b id="print-invoice-no"></b>
-        <table style="width:100%;"><thead><tr><th>الصنف</th><th>الكمية</th><th>المجموع</th></tr></thead><tbody id="print-cart-items"></tbody></table>
-        <div>الإجمالي: <b id="print-grand-total">0 دج</b></div>
+    <!-- قسم التقارير -->
+    <div id="reports" class="section">
+        <div class="main-card">
+            <h5 class="text-center mb-4">التقارير</h5>
+            <div class="summary-box mt-3" style="background: var(--nardo-grey);">
+                <div>إجمالي المبيعات: <b id="total-sales">0</b> دج</div>
+            </div>
+            <div class="summary-box mt-3" style="background: var(--main-green);">
+                <div>إجمالي المشتريات: <b id="total-purchases">0</b> دج</div>
+            </div>
+            <div class="summary-box mt-3" style="background: #ffc107;">
+                <div>الأرباح التقريبية: <b id="total-profits">0</b> دج</div>
+            </div>
+        </div>
     </div>
 
-    <!-- منطقة الطباعة المشتريات -->
+    <!-- منطقة الطباعة المحسنة -->
+    <div id="print-area">
+        <div class="text-center" style="border-bottom:1px dashed #000; padding-bottom:10px; margin-bottom:12px;">
+            <h5 style="margin:0 0 4px;">سوبيرات ريان - فاتورة بيع</h5>
+            <small>العنوان: الجزائر - هاتف: 123456789</small><br>
+            <small id="print-date-time"></small><br>
+            فاتورة رقم: <b id="print-invoice-no"></b><br>
+            العميل: <b id="print-customer"></b>
+        </div>
+        <table style="width:100%; font-size:12px;">
+            <thead>
+                <tr style="border-bottom:1px solid #000;">
+                    <th style="text-align:right;">الصنف</th>
+                    <th style="text-align:center;">الكمية</th>
+                    <th style="text-align:left;">المجموع</th>
+                </tr>
+            </thead>
+            <tbody id="print-cart-items"></tbody>
+        </table>
+        <div style="margin-top:12px; border-top:1px dashed #000; padding-top:8px; font-weight:bold;">
+            <div style="display:flex; justify-content:space-between;">
+                <span>الخصم:</span>
+                <span id="print-discount">0 %</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+                <span>الإجمالي:</span>
+                <span id="print-grand-total">0.00 دج</span>
+            </div>
+        </div>
+        <div class="text-center mt-4" style="font-size:11px;">
+            شكراً لتسوقكم معنا - راجعونا قريباً
+        </div>
+    </div>
+
     <div id="purchase-print-area">
-        <h5>سوبيرات ريان - فاتورة شراء</h5>
-        <small id="purchase-print-date-time"></small><br>
-        رقم الفاتورة: <b id="purchase-print-invoice-no"></b>
-        <table style="width:100%;"><thead><tr><th>الصنف</th><th>الكمية</th><th>التكلفة</th></tr></thead><tbody id="purchase-print-cart-items"></tbody></table>
-        <div>الإجمالي: <b id="purchase-print-grand-total">0 دج</b></div>
+        <div class="text-center" style="border-bottom:1px dashed #000; padding-bottom:10px; margin-bottom:12px;">
+            <h5 style="margin:0 0 4px;">سوبيرات ريان - فاتورة شراء</h5>
+            <small>العنوان: الجزائر - هاتف: 123456789</small><br>
+            <small id="purchase-print-date-time"></small><br>
+            فاتورة رقم: <b id="purchase-print-invoice-no"></b><br>
+            المورد: <b id="print-supplier"></b>
+        </div>
+        <table style="width:100%; font-size:12px;">
+            <thead>
+                <tr style="border-bottom:1px solid #000;">
+                    <th style="text-align:right;">الصنف</th>
+                    <th style="text-align:center;">الكمية</th>
+                    <th style="text-align:left;">التكلفة</th>
+                </tr>
+            </thead>
+            <tbody id="purchase-print-cart-items"></tbody>
+        </table>
+        <div style="margin-top:12px; border-top:1px dashed #000; padding-top:8px; font-weight:bold;">
+            <div style="display:flex; justify-content:space-between;">
+                <span>الإجمالي:</span>
+                <span id="purchase-print-grand-total">0.00 دج</span>
+            </div>
+        </div>
+        <div class="text-center mt-4" style="font-size:11px;">
+            تم التسجيل بنجاح - شكراً للمورد
+        </div>
     </div>
 
     <!-- الشريط السفلي -->
     <div class="bottom-nav no-print">
-        <a href="#" class="nav-link active" onclick="switchSection('sales', this)"><i class="material-icons-round">payments</i>مبيعات</a>
-        <a href="#" class="nav-link" onclick="switchSection('purchases', this)"><i class="material-icons-round">shopping_cart</i>مشتريات</a>
-        <a href="#" class="nav-link" onclick="switchSection('inventory', this)"><i class="material-icons-round">inventory_2</i>مخزن</a>
+        <a href="#" class="nav-link active" onclick="switchSection('sales', this)"><i class="material-icons-round">payments</i>المبيعات</a>
+        <a href="#" class="nav-link" onclick="switchSection('purchases', this)"><i class="material-icons-round">shopping_cart</i>المشتريات</a>
+        <div class="nav-link text-center">
+            <a href="#" class="add-btn-main" onclick="switchSection('add', this)"><i class="material-icons-round">add</i></a>
+            <div style="margin-top:6px;">إضافة</div>
+        </div>
+        <a href="#" class="nav-link" onclick="switchSection('inventory', this)"><i class="material-icons-round">inventory_2</i>المخزن</a>
+        <a href="#" class="nav-link" onclick="switchSection('reports', this)"><i class="material-icons-round">dashboard</i>التقارير</a>
     </div>
 
 <script>
-// ─── البيانات العامة ────────────────────────────────
-let stock     = JSON.parse(localStorage.getItem('ryan_stock'))     || [];
-let cart         = [];
+// ─── البيانات ────────────────────────────────────────
+let stock = JSON.parse(localStorage.getItem('ryan_stock')) || [];
+let invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
+let purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
+let customers = JSON.parse(localStorage.getItem('ryan_customers')) || [];
+let suppliers = JSON.parse(localStorage.getItem('ryan_suppliers')) || [];
+let cart = [];
 let purchaseCart = [];
 
 // ─── التنقل بين الأقسام ──────────────────────────────
-function switchSection(id, el) {
+function switchSection(sectionId, element) {
     document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
-    document.getElementById(id).classList.add('active-section');
-    
+    document.getElementById(sectionId).classList.add('active-section');
     document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-    if (el) el.classList.add('active');
-
-    if (id === 'inventory') renderStock();
+    if (element) element.classList.add('active');
+    if (sectionId === 'sales') showSubSection('sale-operation');
+    if (sectionId === 'purchases') showSubSection('purchase-operation');
+    if (sectionId === 'add') showSubSection('add-product');
+    if (sectionId === 'inventory') renderStock();
+    if (sectionId === 'reports') renderReports();
 }
 
-// ─── البحث الذكي مبيعات ───────────────────────────────
+function showSubSection(subId) {
+    const parent = document.querySelector('.active-section');
+    parent.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
+    document.getElementById(subId).style.display = 'block';
+    const tabs = parent.querySelectorAll('.tab-item');
+    tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
+    const activeTab = Array.from(tabs).find(t => t.onclick.toString().includes(subId));
+    if (activeTab) activeTab.classList.add('active-red' || 'active-green' || 'active-nardo');
+    if (subId === 'sale-invoices') renderSaleInvoices();
+    if (subId === 'purchase-invoices') renderPurchaseInvoices();
+    if (subId === 'customers') renderCustomers();
+    if (subId === 'suppliers') renderSuppliers();
+}
+
+// ─── البحث الذكي ──────────────────────────────────────
 function smartSearch(val) {
     const box = document.getElementById('search-box');
     if (val.length < 1) { box.style.display = 'none'; return; }
-    const matches = stock.filter(p => p.name.toLowerCase().includes(val.toLowerCase()));
-    box.innerHTML = matches.map(p => `<div class="search-item" onclick="selectProduct('\( {p.name}')"><b> \){p.name}</b> - ${p.qty} ${p.unit || ''} - ${p.sellPrice} دج</div>`).join('');
+    const matches = stock.filter(p => p.name.toLowerCase().includes(val.toLowerCase()) || (p.barcode && p.barcode.includes(val)));
+    box.innerHTML = matches.map(p => `
+        <div class="search-item" onclick="selectProduct('${p.name}')">
+            <b>${p.name}</b>
+            <div class="d-flex justify-content-between small text-muted">
+                <span>مخزون: ${p.qty} ${p.unit}</span>
+                <span>بيع: ${p.sellPrice} دج</span>
+            </div>
+        </div>
+    `).join('');
     box.style.display = matches.length ? 'block' : 'none';
 }
+
 function selectProduct(name) {
     document.getElementById('sale-search').value = name;
     document.getElementById('search-box').style.display = 'none';
+    document.getElementById('sale-qty').focus();
 }
 
-// ─── البحث الذكي مشتريات ─────────────────────────────
 function smartSearchPurchase(val) {
     const box = document.getElementById('purchase-search-box');
     if (val.length < 1) { box.style.display = 'none'; return; }
-    const matches = stock.filter(p => p.name.toLowerCase().includes(val.toLowerCase()));
-    box.innerHTML = matches.map(p => `<div class="search-item" onclick="selectProductPurchase('\( {p.name}')"><b> \){p.name}</b> - ${p.qty} ${p.unit || ''} - ${p.buyPrice||0} دج</div>`).join('');
+    const matches = stock.filter(p => p.name.toLowerCase().includes(val.toLowerCase()) || (p.barcode && p.barcode.includes(val)));
+    box.innerHTML = matches.map(p => `
+        <div class="search-item" onclick="selectProductPurchase('${p.name}')">
+            <b>${p.name}</b>
+            <div class="d-flex justify-content-between small text-muted">
+                <span>مخزون: ${p.qty} ${p.unit}</span>
+                <span>شراء: ${p.buyPrice} دج</span>
+            </div>
+        </div>
+    `).join('');
     box.style.display = matches.length ? 'block' : 'none';
 }
+
 function selectProductPurchase(name) {
     document.getElementById('purchase-search').value = name;
     document.getElementById('purchase-search-box').style.display = 'none';
+    document.getElementById('purchase-qty').focus();
 }
 
-// ─── إضافة للسلة (مبيعات) ─────────────────────────────
+// ─── الكتابة بالصوت ──────────────────────────────────
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+    recognition.lang = 'ar-DZ';
+    recognition.interimResults = false;
+
+    document.getElementById('mic-sale').addEventListener('click', () => recognition.start());
+    recognition.onresult = (event) => {
+        document.getElementById('sale-search').value = event.results[0][0].transcript;
+        smartSearch(event.results[0][0].transcript);
+    };
+
+    document.getElementById('mic-purchase').addEventListener('click', () => recognition.start());
+    recognition.onresult = (event) => {
+        document.getElementById('purchase-search').value = event.results[0][0].transcript;
+        smartSearchPurchase(event.results[0][0].transcript);
+    };
+}
+
+// ─── إدارة السلة (مبيعات) ────────────────────────────
 function addToCart() {
     const name = document.getElementById('sale-search').value.trim();
-    const qty  = Number(document.getElementById('sale-qty').value) || 0;
-    if (!name || qty <= 0) return alert('أكمل الحقول');
-
-    const prod = stock.find(p => p.name === name);
-    if (!prod) return alert('المنتج غير موجود');
-    if (qty > prod.qty) return alert('الكمية أكبر من المخزون');
-
-    cart.push({name: prod.name, qty, price: prod.sellPrice, total: qty * prod.sellPrice});
-    prod.qty -= qty;
+    const qty = parseFloat(document.getElementById('sale-qty').value) || 0;
+    const discount = parseFloat(document.getElementById('sale-discount').value) || 0;
+    if (!name || qty <= 0) return alert('أدخل المنتج والكمية');
+    const product = stock.find(p => p.name === name);
+    if (!product) return alert('المنتج غير موجود');
+    if (qty > product.qty) return alert('الكمية غير كافية في المخزون');
+    const total = qty * product.sellPrice * (1 - discount / 100);
+    cart.push({ name, qty, price: product.sellPrice, total, discount });
+    product.qty -= qty;
     saveStock();
     renderCart();
-    renderStock();
-    document.getElementById('sale-search').value = '';
-    document.getElementById('sale-qty').value = '';
 }
 
 function renderCart() {
-    let html = '';
-    let sum = 0;
-    cart.forEach((item, i) => {
-        html += `<tr><td>\( {item.name}</td><td> \){item.qty}</td><td>\( {item.total}</td><td class="text-danger" onclick="removeCartItem( \){i})">×</td></tr>`;
-        sum += item.total;
-    });
-    document.getElementById('cart-table').innerHTML = html;
-    document.getElementById('grand-total').textContent = sum;
+    const tbody = document.getElementById('cart-table');
+    tbody.innerHTML = cart.map((item, idx) => `
+        <tr>
+            <td>${item.name}</td>
+            <td>${item.qty}</td>
+            <td>${item.total.toFixed(2)}</td>
+            <td class="text-danger fw-bold" style="cursor:pointer;" onclick="removeCartItem(${idx})">×</td>
+        </tr>
+    `).join('');
+    const total = cart.reduce((sum, i) => sum + i.total, 0);
+    document.getElementById('grand-total').textContent = total.toFixed(2);
 }
 
-// ─── إزالة عنصر من سلة المبيعات ──────────────────────
-function removeCartItem(i) {
-    const item = cart[i];
+function removeCartItem(idx) {
+    const item = cart[idx];
     const prod = stock.find(p => p.name === item.name);
     if (prod) prod.qty += item.qty;
-    cart.splice(i, 1);
+    cart.splice(idx, 1);
     saveStock();
     renderCart();
-    renderStock();
 }
 
 function clearCart() {
-    if (confirm('مسح السلة؟')) {
-        cart.forEach(item => {
-            const p = stock.find(pr => pr.name === item.name);
-            if (p) p.qty += item.qty;
-        });
-        cart = [];
-        saveStock();
-        renderCart();
-        renderStock();
-    }
+    if (!confirm('متأكد من مسح السلة؟')) return;
+    cart.forEach(item => {
+        const p = stock.find(pr => pr.name === item.name);
+        if (p) p.qty += item.qty;
+    });
+    cart = [];
+    saveStock();
+    renderCart();
 }
 
-// ─── حفظ وطباعة المبيعات ─────────────────────────────
 function finishSaleAndPrint() {
-    if (!cart.length) return alert('السلة فارغة');
-    const total = cart.reduce((s, i) => s + i.total, 0);
-    document.getElementById('print-invoice-no').textContent = Date.now();
-    document.getElementById('print-date-time').textContent = new Date().toLocaleString('ar-DZ');
-    document.getElementById('print-grand-total').textContent = total + ' دج';
-    let html = '';
-    cart.forEach(it => html += `<tr><td>\( {it.name}</td><td> \){it.qty}</td><td>${it.total} دج</td></tr>`);
-    document.getElementById('print-cart-items').innerHTML = html;
+    if (cart.length === 0) return alert('السلة فارغة');
+    const total = cart.reduce((sum, i) => sum + i.total, 0);
+    const now = new Date();
+    const invNo = invoices.length + 1;
+    const customer = document.getElementById('sale-customer').value || 'غير محدد';
+    const invoice = { number: invNo, date: now.toLocaleString('ar-DZ'), customer, items: [...cart], total };
+    invoices.push(invoice);
+    localStorage.setItem('ryan_invoices', JSON.stringify(invoices));
+    // تحضير الطباعة
+    document.getElementById('print-invoice-no').textContent = invNo;
+    document.getElementById('print-date-time').textContent = invoice.date;
+    document.getElementById('print-customer').textContent = customer;
+    document.getElementById('print-grand-total').textContent = total.toFixed(2) + ' دج';
+    document.getElementById('print-discount').textContent = cart[0]?.discount || 0 + ' %';
+    document.getElementById('print-cart-items').innerHTML = cart.map(it => `
+        <tr>
+            <td>${it.name}</td>
+            <td style="text-align:center;">${it.qty}</td>
+            <td style="text-align:left;">${it.total.toFixed(2)} دج</td>
+        </tr>
+    `).join('');
     window.print();
     cart = [];
     renderCart();
-    renderStock();
+    renderReports();
 }
 
-// ─── إضافة لسلة المشتريات ────────────────────────────
+// ─── إدارة السلة (مشتريات) ────────────────────────────
 function addToPurchaseCart() {
     const name = document.getElementById('purchase-search').value.trim();
-    const qty  = Number(document.getElementById('purchase-qty').value) || 0;
-    if (!name || qty <= 0) return alert('أكمل الحقول');
-
-    const prod = stock.find(p => p.name === name);
-    if (!prod) return alert('المنتج غير موجود');
-    const buy = Number(prod.buyPrice) || 0;
-    if (buy <= 0) return alert('حدد سعر الشراء أولاً');
-
-    purchaseCart.push({name: prod.name, qty, price: buy, total: qty * buy});
-    prod.qty += qty;
+    const qty = parseFloat(document.getElementById('purchase-qty').value) || 0;
+    if (!name || qty <= 0) return alert('أدخل المنتج والكمية');
+    const product = stock.find(p => p.name === name);
+    if (!product) return alert('المنتج غير موجود');
+    const total = qty * product.buyPrice;
+    purchaseCart.push({ name, qty, price: product.buyPrice, total });
+    product.qty += qty;
     saveStock();
     renderPurchaseCart();
-    renderStock();
-    document.getElementById('purchase-search').value = '';
-    document.getElementById('purchase-qty').value = '';
 }
 
 function renderPurchaseCart() {
-    let html = '';
-    let sum = 0;
-    purchaseCart.forEach((item, i) => {
-        html += `<tr><td>\( {item.name}</td><td> \){item.qty}</td><td>\( {item.total}</td><td class="text-danger" onclick="removePurchaseItem( \){i})">×</td></tr>`;
-        sum += item.total;
-    });
-    document.getElementById('purchase-cart-table').innerHTML = html;
-    document.getElementById('purchase-grand-total').textContent = sum;
+    const tbody = document.getElementById('purchase-cart-table');
+    tbody.innerHTML = purchaseCart.map((item, idx) => `
+        <tr>
+            <td>${item.name}</td>
+            <td>${item.qty}</td>
+            <td>${item.total.toFixed(2)}</td>
+            <td class="text-danger fw-bold" style="cursor:pointer;" onclick="removePurchaseCartItem(${idx})">×</td>
+        </tr>
+    `).join('');
+    const total = purchaseCart.reduce((sum, i) => sum + i.total, 0);
+    document.getElementById('purchase-grand-total').textContent = total.toFixed(2);
 }
 
-function removePurchaseItem(i) {
-    const item = purchaseCart[i];
+function removePurchaseCartItem(idx) {
+    const item = purchaseCart[idx];
     const prod = stock.find(p => p.name === item.name);
     if (prod) prod.qty -= item.qty;
-    purchaseCart.splice(i, 1);
+    purchaseCart.splice(idx, 1);
     saveStock();
     renderPurchaseCart();
-    renderStock();
 }
 
 function clearPurchaseCart() {
-    if (confirm('مسح سلة المشتريات؟')) {
-        purchaseCart.forEach(item => {
-            const p = stock.find(pr => pr.name === item.name);
-            if (p) p.qty -= item.qty;
-        });
-        purchaseCart = [];
-        saveStock();
-        renderPurchaseCart();
-        renderStock();
-    }
+    if (!confirm('متأكد من مسح السلة؟')) return;
+    purchaseCart.forEach(item => {
+        const p = stock.find(pr => pr.name === item.name);
+        if (p) p.qty -= item.qty;
+    });
+    purchaseCart = [];
+    saveStock();
+    renderPurchaseCart();
 }
 
 function finishPurchaseAndPrint() {
-    if (!purchaseCart.length) return alert('السلة فارغة');
-    const total = purchaseCart.reduce((s, i) => s + i.total, 0);
-    document.getElementById('purchase-print-invoice-no').textContent = Date.now();
-    document.getElementById('purchase-print-date-time').textContent = new Date().toLocaleString('ar-DZ');
-    document.getElementById('purchase-print-grand-total').textContent = total + ' دج';
-    let html = '';
-    purchaseCart.forEach(it => html += `<tr><td>\( {it.name}</td><td> \){it.qty}</td><td>${it.total} دج</td></tr>`);
-    document.getElementById('purchase-print-cart-items').innerHTML = html;
+    if (purchaseCart.length === 0) return alert('السلة فارغة');
+    const total = purchaseCart.reduce((sum, i) => sum + i.total, 0);
+    const now = new Date();
+    const invNo = purchases.length + 1;
+    const supplier = document.getElementById('purchase-supplier').value || 'غير محدد';
+    const purchase = { number: invNo, date: now.toLocaleString('ar-DZ'), supplier, items: [...purchaseCart], total };
+    purchases.push(purchase);
+    localStorage.setItem('ryan_purchases', JSON.stringify(purchases));
+    // تحضير الطباعة
+    document.getElementById('purchase-print-invoice-no').textContent = invNo;
+    document.getElementById('purchase-print-date-time').textContent = purchase.date;
+    document.getElementById('print-supplier').textContent = supplier;
+    document.getElementById('purchase-print-grand-total').textContent = total.toFixed(2) + ' دج';
+    document.getElementById('purchase-print-cart-items').innerHTML = purchaseCart.map(it => `
+        <tr>
+            <td>${it.name}</td>
+            <td style="text-align:center;">${it.qty}</td>
+            <td style="text-align:left;">${it.total.toFixed(2)} دج</td>
+        </tr>
+    `).join('');
     window.print();
     purchaseCart = [];
     renderPurchaseCart();
-    renderStock();
+    renderReports();
+}
+
+// ─── عرض الفواتير ────────────────────────────────────
+function renderSaleInvoices() {
+    const tbody = document.getElementById('sale-invoices-tbody');
+    tbody.innerHTML = invoices.map(inv => `
+        <tr>
+            <td>${inv.number}</td>
+            <td>${inv.date}</td>
+            <td>${inv.customer}</td>
+            <td>${inv.total.toFixed(2)} دج</td>
+            <td>${inv.items.length}</td>
+        </tr>
+    `).join('');
+}
+
+function renderPurchaseInvoices() {
+    const tbody = document.getElementById('purchase-invoices-tbody');
+    tbody.innerHTML = purchases.map(pur => `
+        <tr>
+            <td>${pur.number}</td>
+            <td>${pur.date}</td>
+            <td>${pur.supplier}</td>
+            <td>${pur.total.toFixed(2)} دج</td>
+            <td>${pur.items.length}</td>
+        </tr>
+    `).join('');
+}
+
+// ─── إدارة العملاء والموردين ─────────────────────────
+function addCustomer() {
+    const name = document.getElementById('new-customer').value.trim();
+    if (!name) return alert('أدخل اسم العميل');
+    customers.push(name);
+    localStorage.setItem('ryan_customers', JSON.stringify(customers));
+    renderCustomers();
+    document.getElementById('new-customer').value = '';
+}
+
+function renderCustomers() {
+    const tbody = document.getElementById('customers-tbody');
+    tbody.innerHTML = customers.map((c, idx) => `
+        <tr>
+            <td>${c}</td>
+            <td class="text-danger" onclick="deleteCustomer(${idx})">×</td>
+        </tr>
+    `).join('');
+    const select = document.getElementById('sale-customer');
+    select.innerHTML = '<option value="">اختر العميل</option>' + customers.map(c => `<option value="\( {c}"> \){c}</option>`).join('');
+}
+
+function deleteCustomer(idx) {
+    customers.splice(idx, 1);
+    localStorage.setItem('ryan_customers', JSON.stringify(customers));
+    renderCustomers();
+}
+
+function addSupplier() {
+    const name = document.getElementById('new-supplier').value.trim();
+    if (!name) return alert('أدخل اسم المورد');
+    suppliers.push(name);
+    localStorage.setItem('ryan_suppliers', JSON.stringify(suppliers));
+    renderSuppliers();
+    document.getElementById('new-supplier').value = '';
+}
+
+function renderSuppliers() {
+    const tbody = document.getElementById('suppliers-tbody');
+    tbody.innerHTML = suppliers.map((s, idx) => `
+        <tr>
+            <td>${s}</td>
+            <td class="text-danger" onclick="deleteSupplier(${idx})">×</td>
+        </tr>
+    `).join('');
+    const select = document.getElementById('purchase-supplier');
+    select.innerHTML = '<option value="">اختر المورد</option>' + suppliers.map(s => `<option value="\( {s}"> \){s}</option>`).join('');
+}
+
+function deleteSupplier(idx) {
+    suppliers.splice(idx, 1);
+    localStorage.setItem('ryan_suppliers', JSON.stringify(suppliers));
+    renderSuppliers();
 }
 
 // ─── عرض المخزن ──────────────────────────────────────
 function renderStock() {
-    let html = '';
-    stock.forEach(p => {
-        html += `<tr><td>\( {p.name}</td><td> \){p.qty} \( {p.unit||''}</td><td> \){p.sellPrice||0}</td><td>${p.buyPrice||0}</td></tr>`;
-    });
-    document.getElementById('stock-tbody').innerHTML = html || '<tr><td colspan="4">لا توجد بيانات</td></tr>';
+    const tbody = document.getElementById('stock-tbody');
+    tbody.innerHTML = stock.map((p, idx) => `
+        <tr>
+            <td>${p.name}</td>
+            <td>${p.qty} ${p.unit}</td>
+            <td>${p.sellPrice}</td>
+            <td>${p.buyPrice}</td>
+            <td>
+                <button class="btn btn-sm btn-warning" onclick="editProduct(${idx})">تعديل</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteProduct(${idx})">حذف</button>
+            </td>
+        </tr>
+    `).join('');
 }
 
-// ─── حفظ البيانات ────────────────────────────────────
+function editProduct(idx) {
+    const p = stock[idx];
+    const newName = prompt('اسم المنتج الجديد', p.name);
+    const newSell = parseFloat(prompt('سعر البيع الجديد', p.sellPrice));
+    const newBuy = parseFloat(prompt('سعر الشراء الجديد', p.buyPrice));
+    const newQty = parseFloat(prompt('الكمية الجديدة', p.qty));
+    if (newName && !isNaN(newSell) && !isNaN(newBuy) && !isNaN(newQty)) {
+        stock[idx] = { ...p, name: newName, sellPrice: newSell, buyPrice: newBuy, qty: newQty };
+        saveStock();
+        renderStock();
+    }
+}
+
+function deleteProduct(idx) {
+    if (confirm('حذف المنتج؟')) {
+        stock.splice(idx, 1);
+        saveStock();
+        renderStock();
+    }
+}
+
+// ─── حفظ منتج جديد ───────────────────────────────────
+function saveNewProduct() {
+    const name = document.getElementById('new-name').value.trim();
+    const sell = parseFloat(document.getElementById('new-sell').value) || 0;
+    const buy = parseFloat(document.getElementById('new-buy').value) || 0;
+    if (!name || sell <= 0 || buy <= 0) return alert('الاسم وسعر البيع والشراء مطلوبة');
+    stock.push({
+        name,
+        barcode: document.getElementById('new-barcode').value.trim(),
+        sellPrice: sell,
+        buyPrice: buy,
+        qty: parseFloat(document.getElementById('new-qty').value) || 0,
+        unit: document.getElementById('new-unit').value
+    });
+    saveStock();
+    alert('تم الإضافة');
+    document.querySelectorAll('#add-product input').forEach(i => i.value = '');
+    renderStock();
+}
+
+// ─── حفظ عملاء/موردين جدد ────────────────────────────
+function saveNewCustomer() {
+    const name = document.getElementById('new-customer-name').value.trim();
+    const phone = document.getElementById('new-customer-phone').value.trim();
+    if (!name) return alert('اسم العميل مطلوب');
+    customers.push({ name, phone });
+    localStorage.setItem('ryan_customers', JSON.stringify(customers));
+    alert('تم إضافة العميل');
+    document.querySelectorAll('#add-customer input').forEach(i => i.value = '');
+    renderCustomers();
+}
+
+function saveNewSupplier() {
+    const name = document.getElementById('new-supplier-name').value.trim();
+    const phone = document.getElementById('new-supplier-phone').value.trim();
+    if (!name) return alert('اسم المورد مطلوب');
+    suppliers.push({ name, phone });
+    localStorage.setItem('ryan_suppliers', JSON.stringify(suppliers));
+    alert('تم إضافة المورد');
+    document.querySelectorAll('#add-supplier input').forEach(i => i.value = '');
+    renderSuppliers();
+}
+
+// ─── عرض التقارير ────────────────────────────────────
+function renderReports() {
+    const totalSales = invoices.reduce((sum, inv) => sum + inv.total, 0);
+    const totalPurchases = purchases.reduce((sum, pur) => sum + pur.total, 0);
+    const profits = totalSales - totalPurchases;
+    document.getElementById('total-sales').textContent = totalSales.toFixed(2);
+    document.getElementById('total-purchases').textContent = totalPurchases.toFixed(2);
+    document.getElementById('total-profits').textContent = profits.toFixed(2);
+}
+
+// ─── مساعدات عامة ────────────────────────────────────
 function saveStock() {
     localStorage.setItem('ryan_stock', JSON.stringify(stock));
 }
 
-// ─── تهيئة الصوت (اختياري - يعمل في Chrome) ─────────
-const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
-if (Speech) {
-    function startVoice(id, micId) {
-        const r = new Speech();
-        r.lang = 'ar-DZ';
-        const btn = document.getElementById(micId);
-        btn.onclick = () => r.start();
-        r.onresult = e => {
-            document.getElementById(id).value = e.results[0][0].transcript;
-            document.getElementById(id).dispatchEvent(new Event('input'));
-        };
-        r.onerror = () => alert('خطأ في التعرف على الصوت');
-    }
-    startVoice('sale-search', 'mic-sale');
-    startVoice('purchase-search', 'mic-purchase');
-}
-
-// ─── تحميل أولي + منتج تجريبي ────────────────────────
-if (!stock.length) {
-    stock = [{
-        name: "زيت زيتون",
-        sellPrice: 1200,
-        buyPrice: 900,
-        qty: 50,
-        unit: "لتر"
-    }];
-    saveStock();
-}
+// ─── التحميل الأولي ──────────────────────────────────
 renderCart();
 renderPurchaseCart();
 renderStock();
+renderCustomers();
+renderSuppliers();
+renderReports();
+if (stock.length === 0) {
+    stock = [{ name: "مثال - زيت زيتون", barcode: "123456", sellPrice: 1200, buyPrice: 900, qty: 45, unit: "لتر" }];
+    saveStock();
+}
 </script>
 </body>
 </html>
