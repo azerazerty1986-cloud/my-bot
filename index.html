@@ -1,224 +1,339 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سوبيرات ريان - النسخة المتكاملة v14</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    <style>
-        :root { 
-            --nardo-grey: #4a5555; /* اللون الرمادي من الصورة */
-            --main-red: #ff5e5e; 
-            --bg-light: #f8f9fa;
-        }
-        body { background-color: var(--bg-light); font-family: 'Segoe UI', sans-serif; margin: 0; padding-bottom: 100px; }
-
-        /* --- الهيدر العلوي (v8) --- */
-        .app-header { background: var(--nardo-grey); color: white; padding: 12px 15px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 1000; }
-        
-        /* --- التبويبات العلوية الفرعية --- */
-        .nav-tabs-custom { display: flex; background: white; border-radius: 15px; padding: 5px; margin: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .tab-item { flex: 1; text-align: center; padding: 10px; border-radius: 12px; cursor: pointer; font-size: 14px; color: #666; transition: 0.3s; }
-        .tab-item.active-red { background: var(--main-red); color: white; }
-        .tab-item.active-nardo { background: var(--nardo-grey); color: white; }
-
-        /* --- نظام البحث الذكي (ملاحظة: الكمية + سعر الشراء) --- */
-        .search-container { position: relative; margin: 0 15px; }
-        .search-results { position: absolute; width: 100%; background: white; z-index: 1000; border-radius: 12px; box-shadow: 0 8px 25px rgba(0,0,0,0.15); display: none; top: 100%; border: 1px solid #eee; }
-        .search-item { padding: 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; }
-        .search-item b { display: block; color: var(--nardo-grey); }
-        .search-item small { color: #888; font-size: 11px; }
-
-        /* --- البطاقات والجداول (v7) --- */
-        .main-card { background: white; border-radius: 20px; padding: 20px; margin: 0 15px 15px; border: 1px solid #efefef; }
-        .table-custom { font-size: 13px; text-align: center; width: 100%; }
-        .table-custom th { color: #999; font-weight: 500; border-bottom: 1px solid #eee; padding: 10px; }
-        .table-custom td { padding: 12px; vertical-align: middle; }
-
-        /* --- شريط المجموع والطباعة (v7) --- */
-        .summary-box { background: var(--nardo-grey); color: white; padding: 15px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; }
-        .btn-print { background: white; color: var(--nardo-grey); border-radius: 20px; font-weight: bold; padding: 5px 20px; border: none; }
-
-        /* --- الشريط السفلي (v7/v8) --- */
-        .bottom-nav { position: fixed; bottom: 0; width: 100%; max-width: 500px; left: 50%; transform: translateX(-50%); background: white; display: flex; justify-content: space-around; padding: 10px 0; border-top: 1px solid #eee; z-index: 2000; }
-        .nav-link { text-align: center; color: #888; font-size: 11px; text-decoration: none; flex: 1; position: relative; }
-        .nav-link i { display: block; font-size: 24px; margin-bottom: 2px; }
-        .nav-link.active { color: var(--nardo-grey); font-weight: bold; }
-        .add-btn-main { background: var(--nardo-grey); width: 65px; height: 65px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-top: -45px; border: 6px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.1); color: white !important; }
-
-        .section { display: none; }
-        .active-section { display: block; }
-
-        @media print { .no-print { display: none !important; } }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>سوبيرات ريان</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+  <style>
+    :root {
+      --grey: #4a5555;
+      --red:  #ff5e5e;
+      --light: #f8f9fa;
+    }
+    body { 
+      background: var(--light); 
+      font-family: system-ui, sans-serif; 
+      margin: 0; 
+      padding-bottom: 90px; 
+    }
+    header { 
+      background: var(--grey); 
+      color: white; 
+      padding: 12px; 
+      display: flex; 
+      justify-content: space-between; 
+      position: sticky; 
+      top: 0; 
+      z-index: 10; 
+    }
+    .card { 
+      background: white; 
+      border-radius: 16px; 
+      margin: 12px; 
+      padding: 16px; 
+      box-shadow: 0 1px 6px #0001; 
+    }
+    .bottom-bar { 
+      position: fixed; 
+      bottom: 0; 
+      width: 100%; 
+      background: white; 
+      display: flex; 
+      border-top: 1px solid #ddd; 
+      z-index: 10; 
+    }
+    .bottom-bar a { 
+      flex: 1; 
+      text-align: center; 
+      padding: 8px 0; 
+      color: #666; 
+      text-decoration: none; 
+    }
+    .bottom-bar .active { color: var(--grey); font-weight: bold; }
+    .add-btn { 
+      background: var(--grey); 
+      color: white; 
+      width: 56px; 
+      height: 56px; 
+      border-radius: 50%; 
+      margin-top: -36px; 
+      border: 4px solid white; 
+      box-shadow: 0 2px 8px #0002; 
+    }
+    table { width: 100%; font-size: 14px; }
+    th { color: #777; border-bottom: 1px solid #eee; padding: 8px; }
+    td { padding: 10px; text-align: center; }
+    .total-bar { 
+      background: var(--grey); 
+      color: white; 
+      padding: 12px; 
+      border-radius: 12px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin: 12px; 
+    }
+    @media print {
+      body > *:not(#print-area) { display: none; }
+      #print-area { 
+        font-family: monospace; 
+        font-size: 12px; 
+        padding: 10px; 
+      }
+    }
+  </style>
 </head>
 <body>
 
-    <div class="app-header no-print">
-        <i class="material-icons-round">account_circle</i>
-        <span class="fw-bold">سوبيرات ريان v14</span>
-        <i class="material-icons-round">menu</i>
+<header class="no-print">
+  <i class="material-icons-round">account_circle</i>
+  <span>سوبيرات ريان</span>
+  <i class="material-icons-round">menu</i>
+</header>
+
+<!-- المبيعات -->
+<div id="sales" class="section active">
+  <div class="card no-print">
+    <input type="text" id="search" class="form-control mb-2" placeholder="ابحث بالاسم أو الباركود" oninput="searchProduct(this.value)">
+    <div id="results" class="list-group mb-2" style="max-height:180px;overflow-y:auto;display:none"></div>
+    
+    <div class="input-group mb-2">
+      <input type="number" id="qty" class="form-control" placeholder="الكمية" min="1">
+      <button class="btn btn-danger" onclick="addToCart()">إضافة</button>
     </div>
+    <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearCart()">مسح السلة</button>
+  </div>
 
-    <div id="sales" class="section active-section">
-        <div class="nav-tabs-custom no-print">
-            <div class="tab-item active-red">عملية بيع</div>
-            <div class="tab-item">الفواتير</div>
-            <div class="tab-item">العملاء</div>
-        </div>
+  <div class="card">
+    <table>
+      <thead><tr><th>الصنف</th><th>كمية</th><th>المجموع</th><th></th></tr></thead>
+      <tbody id="cart"></tbody>
+    </table>
+  </div>
 
-        <div class="main-card no-print">
-            <h6 class="text-center mb-3">تسجيل مبيعات</h6>
-            <div class="search-container mb-3">
-                <div class="input-group">
-                    <button class="btn btn-dark px-3" onclick="startScanner('sale')"><i class="material-icons-round">qr_code_scanner</i></button>
-                    <input type="text" id="sale-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearch(this.value)">
-                </div>
-                <div id="search-box" class="search-results"></div>
-            </div>
-            <div class="row g-2">
-                <div class="col-8"><input type="number" id="sale-qty" class="form-control" placeholder="الكمية"></div>
-                <div class="col-4"><button class="btn btn-danger w-100" style="border-radius:10px; height:48px;" onclick="confirmSale()">إضافة</button></div>
-            </div>
-        </div>
+  <div class="total-bar no-print">
+    <button class="btn btn-light px-4" onclick="printInvoice()">طباعة</button>
+    <div>المجموع: <b id="total">0</b> دج</div>
+  </div>
+</div>
 
-        <div class="main-card">
-            <table class="table-custom">
-                <thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>-</th></tr></thead>
-                <tbody id="cart-table"></tbody>
-            </table>
-            <div class="summary-box mt-3 no-print">
-                <button class="btn-print" onclick="window.print()">طباعة</button>
-                <div class="text-start">المجموع: <b id="grand-total">0.00</b> دج</div>
-            </div>
-        </div>
-    </div>
+<!-- الفواتير -->
+<div id="invoices" class="section" style="display:none">
+  <div class="card">
+    <h5 class="text-center mb-3">الفواتير</h5>
+    <table>
+      <thead><tr><th>رقم</th><th>التاريخ</th><th>المبلغ</th></tr></thead>
+      <tbody id="invoice-list"></tbody>
+    </table>
+  </div>
+</div>
 
-    <div id="add" class="section">
-        <div class="nav-tabs-custom">
-            <div id="t-p" class="tab-item active-nardo" onclick="switchAdd('p')">منتج</div>
-            <div id="t-c" class="tab-item" onclick="switchAdd('c')">عميل</div>
-            <div id="t-s" class="tab-item" onclick="switchAdd('s')">مورد</div>
-        </div>
+<!-- إضافة منتج -->
+<div id="add" class="section" style="display:none">
+  <div class="card">
+    <h5 class="text-center mb-3">منتج جديد</h5>
+    <input id="p-name"   class="form-control mb-2" placeholder="الاسم *">
+    <input id="p-barcode"class="form-control mb-2" placeholder="باركود">
+    <input id="p-sell"   class="form-control mb-2" type="number" placeholder="سعر البيع *">
+    <input id="p-buy"    class="form-control mb-2" type="number" placeholder="سعر الشراء">
+    <input id="p-qty"    class="form-control mb-3" type="number" value="0" placeholder="الكمية">
+    <button class="btn btn-dark w-100" onclick="saveProduct()">حفظ</button>
+  </div>
+</div>
 
-        <div id="p-form" class="main-card text-center">
-            <h6 class="mb-4">تعريف سلع جديدة</h6>
-            <div class="input-group mb-2">
-                <button class="btn btn-outline-danger" onclick="startVoice()"><i class="material-icons-round">mic</i></button>
-                <input type="text" id="new-p-name" class="form-control" placeholder="اسم المنتج">
-            </div>
-            <div class="input-group mb-2">
-                <button class="btn btn-dark" onclick="startScanner('add')"><i class="material-icons-round">qr_code_scanner</i></button>
-                <input type="text" id="new-p-barcode" class="form-control" placeholder="الباركود">
-            </div>
-            <div class="row g-2 mb-2">
-                <div class="col-7"><input type="number" id="new-p-sell" class="form-control" placeholder="سعر البيع"></div>
-                <div class="col-5">
-                    <select id="new-p-unit" class="form-select"><option>قطعة</option><option>كغ</option><option>لتر</option></select>
-                </div>
-            </div>
-            <input type="number" id="new-p-buy" class="form-control mb-2" placeholder="سعر الشراء">
-            <div class="input-group mb-4">
-                <span class="input-group-text bg-white">الكمية الابتدائية:</span>
-                <input type="number" id="new-p-qty" class="form-control text-center" value="0">
-            </div>
-            <button class="btn btn-dark w-100 rounded-pill py-3 fw-bold" onclick="saveProduct()">حفظ في النظام</button>
-        </div>
-    </div>
+<!-- المخزن -->
+<div id="stock" class="section" style="display:none">
+  <div class="card">
+    <h5 class="text-center mb-3">المخزن</h5>
+    <table>
+      <thead><tr><th>الصنف</th><th>الكمية</th><th>البيع</th></tr></thead>
+      <tbody id="stock-list"></tbody>
+    </table>
+  </div>
+</div>
 
-    <div class="bottom-nav no-print">
-        <a href="#" class="nav-link active" onclick="showSection('sales', this)"><i class="material-icons-round">payments</i>المبيعات</a>
-        <a href="#" class="nav-link" onclick="showSection('purchases', this)"><i class="material-icons-round">local_shipping</i>المشتريات</a>
-        <div class="nav-link"><a href="#" class="add-btn-main" onclick="showSection('add', this)"><i class="material-icons-round">add</i></a><span style="display:block;margin-top:25px">إضافة</span></div>
-        <a href="#" class="nav-link" onclick="showSection('inventory', this)"><i class="material-icons-round">inventory_2</i>المخزن</a>
-        <a href="#" class="nav-link" onclick="showSection('reports', this)"><i class="material-icons-round">dashboard</i>التقارير</a>
-    </div>
+<!-- منطقة الطباعة -->
+<div id="print-area">
+  <div style="text-align:center; border-bottom:1px dashed #000; padding-bottom:8px;">
+    <h6>سوبيرات ريان</h6>
+    <small id="print-date"></small><br>
+    فاتورة رقم: <b id="print-no"></b>
+  </div>
+  <table style="width:100%; margin:8px 0;">
+    <tbody id="print-items"></tbody>
+  </table>
+  <div style="border-top:1px dashed #000; padding-top:8px; font-weight:bold; display:flex; justify-content:space-between;">
+    <span>الإجمالي</span>
+    <span id="print-total"></span>
+  </div>
+</div>
+
+<div class="bottom-bar no-print">
+  <a href="#" class="active" onclick="show('sales',this)"><i class="material-icons-round">payments</i>بيع</a>
+  <a href="#" onclick="show('invoices',this)"><i class="material-icons-round">receipt_long</i>فواتير</a>
+  <a href="#" class="text-center" onclick="show('add',this)">
+    <div class="add-btn"><i class="material-icons-round">add</i></div>
+  </a>
+  <a href="#" onclick="show('stock',this)"><i class="material-icons-round">inventory_2</i>مخزن</a>
+</div>
 
 <script>
-    let stock = JSON.parse(localStorage.getItem('ryan_v14_data')) || [];
-    let cart = [];
-    let selectedIdx = null;
+let stock   = JSON.parse(localStorage.getItem('st')||'[]');
+let invoices = JSON.parse(localStorage.getItem('inv')||'[]');
+let cart    = [];
 
-    function showSection(id, el) {
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
-        document.getElementById(id).classList.add('active-section');
-        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-        if(el) el.classList.add('active');
-    }
+function show(id, el){
+  document.querySelectorAll('.section').forEach(s=>s.style.display='none');
+  document.getElementById(id).style.display='block';
+  
+  document.querySelectorAll('.bottom-bar a').forEach(a=>a.classList.remove('active'));
+  if(el) el.classList.add('active');
+  
+  if(id==='invoices') renderInvoices();
+  if(id==='stock')    renderStock();
+}
 
-    // البحث الذكي (ملاحظة: عرض المخزن وسعر الشراء الأخير)
-    function smartSearch(val) {
-        const box = document.getElementById('search-box');
-        if(val.length < 1) { box.style.display = 'none'; return; }
-        
-        const matches = stock.filter(p => p.name.includes(val) || p.barcode === val);
-        box.innerHTML = matches.map(p => `
-            <div class="search-item" onclick="pickProduct(${stock.indexOf(p)})">
-                <b>${p.name}</b>
-                <div class="d-flex justify-content-between">
-                    <small>المخزن: ${p.qty} ${p.unit}</small>
-                    <small>شراء: ${p.buyPrice} دج | بيع: ${p.sellPrice} دج</small>
-                </div>
-            </div>
-        `).join('');
-        box.style.display = matches.length ? 'block' : 'none';
-    }
+function searchProduct(val){
+  if(!val.trim()){ document.getElementById('results').style.display='none'; return; }
+  let res = document.getElementById('results');
+  let matches = stock.filter(p=>p.name.includes(val)||p.barcode?.includes(val));
+  res.innerHTML = matches.map(p=>`
+    <button class="list-group-item list-group-item-action" onclick="select('${p.name}')">
+      ${p.name} - ${p.qty} ${p.unit||''} - ${p.sellPrice} دج
+    </button>
+  `).join('');
+  res.style.display = matches.length ? 'block' : 'none';
+}
 
-    function pickProduct(idx) {
-        selectedIdx = idx;
-        const p = stock[idx];
-        document.getElementById('sale-search').value = p.name;
-        document.getElementById('search-box').style.display = 'none';
-    }
+function select(name){
+  document.getElementById('search').value = name;
+  document.getElementById('results').style.display='none';
+  document.getElementById('qty').focus();
+}
 
-    function confirmSale() {
-        if(selectedIdx === null) return;
-        const qty = parseFloat(document.getElementById('sale-qty').value);
-        if(!qty || qty <= 0) return;
+function addToCart(){
+  let name = document.getElementById('search').value.trim();
+  let qty  = +document.getElementById('qty').value;
+  if(!name || qty<1) return alert('أكمل البيانات');
 
-        const p = stock[selectedIdx];
-        cart.push({ name: p.name, qty, price: p.sellPrice, total: qty * p.sellPrice });
-        stock[selectedIdx].qty -= qty;
-        
-        updateCartTable();
-        document.getElementById('sale-qty').value = '';
-        document.getElementById('sale-search').value = '';
-        selectedIdx = null;
-    }
+  let p = stock.find(x=>x.name===name);
+  if(!p) return alert('غير موجود');
+  if(qty > p.qty) return alert(`الكمية المتوفرة ${p.qty}`);
 
-    function updateCartTable() {
-        const tbody = document.getElementById('cart-table');
-        tbody.innerHTML = cart.map((item, i) => `
-            <tr><td>${item.name}</td><td>${item.qty}</td><td>${item.total.toFixed(2)}</td><td onclick="cart.splice(${i},1);updateCartTable()">❌</td></tr>
-        `).join('');
-        document.getElementById('grand-total').innerText = cart.reduce((s, i) => s + i.total, 0).toFixed(2);
-        localStorage.setItem('ryan_v14_data', JSON.stringify(stock));
-    }
+  cart.push({name, qty, price:p.sellPrice, total:qty*p.sellPrice});
+  p.qty -= qty;
+  save();
+  renderCart();
+  document.getElementById('search').value = '';
+  document.getElementById('qty').value = '';
+}
 
-    function saveProduct() {
-        const p = {
-            name: document.getElementById('new-p-name').value,
-            barcode: document.getElementById('new-p-barcode').value,
-            sellPrice: document.getElementById('new-p-sell').value,
-            buyPrice: document.getElementById('new-p-buy').value || 0,
-            qty: parseFloat(document.getElementById('new-p-qty').value) || 0,
-            unit: document.getElementById('new-p-unit').value
-        };
-        if(p.name && p.sellPrice) {
-            stock.push(p);
-            localStorage.setItem('ryan_v14_data', JSON.stringify(stock));
-            alert("تم الحفظ بنجاح");
-            location.reload();
-        }
-    }
+function renderCart(){
+  document.getElementById('cart').innerHTML = cart.map((it,i)=>`
+    <tr>
+      <td>${it.name}</td>
+      <td>${it.qty}</td>
+      <td>${it.total}</td>
+      <td class="text-danger" onclick="remove(${i})">×</td>
+    </tr>
+  `).join('');
+  
+  let sum = cart.reduce((a,c)=>a+c.total,0);
+  document.getElementById('total').textContent = sum;
+}
 
-    function startVoice() {
-        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        rec.lang = 'ar-SA';
-        rec.onresult = (e) => document.getElementById('new-p-name').value = e.results[0][0].transcript;
-        rec.start();
-    }
+function remove(i){
+  let it = cart[i];
+  let p = stock.find(x=>x.name===it.name);
+  if(p) p.qty += it.qty;
+  cart.splice(i,1);
+  save();
+  renderCart();
+}
+
+function clearCart(){
+  if(!cart.length || !confirm('مسح السلة؟')) return;
+  cart.forEach(it=>{
+    let p=stock.find(x=>x.name===it.name);
+    if(p) p.qty += it.qty;
+  });
+  cart=[];
+  save();
+  renderCart();
+}
+
+function printInvoice(){
+  if(!cart.length) return alert('السلة فارغة');
+
+  let sum = cart.reduce((a,c)=>a+c.total,0);
+  let no  = invoices.length + 1001;
+  let date = new Date().toLocaleString('ar-DZ');
+
+  invoices.push({no, date, items:[...cart], sum});
+  saveInv();
+
+  document.getElementById('print-no').textContent = no;
+  document.getElementById('print-date').textContent = date;
+  document.getElementById('print-total').textContent = sum + ' دج';
+
+  document.getElementById('print-items').innerHTML = cart.map(it=>`
+    <tr>
+      <td>${it.name}</td>
+      <td style="text-align:center">${it.qty}</td>
+      <td style="text-align:right">${it.total} دج</td>
+    </tr>
+  `).join('');
+
+  window.print();
+  cart = [];
+  renderCart();
+}
+
+function save(){ localStorage.setItem('st', JSON.stringify(stock)); }
+function saveInv(){ localStorage.setItem('inv', JSON.stringify(invoices)); }
+
+function saveProduct(){
+  let name = document.getElementById('p-name').value.trim();
+  let sell = +document.getElementById('p-sell').value;
+  if(!name || sell<1) return alert('الاسم وسعر البيع مطلوب');
+
+  stock.push({
+    name,
+    barcode: document.getElementById('p-barcode').value.trim()||'',
+    sellPrice: sell,
+    buyPrice: +document.getElementById('p-buy').value||0,
+    qty: +document.getElementById('p-qty').value||0,
+    unit: 'قطعة'
+  });
+  save();
+  alert('تم الحفظ');
+  ['p-name','p-barcode','p-sell','p-buy','p-qty'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p-qty').value='0';
+}
+
+function renderInvoices(){
+  document.getElementById('invoice-list').innerHTML = invoices.map(i=>`
+    <tr>
+      <td>${i.no}</td>
+      <td>${i.date}</td>
+      <td>${i.sum} دج</td>
+    </tr>
+  `).join('');
+}
+
+function renderStock(){
+  document.getElementById('stock-list').innerHTML = stock.map(p=>`
+    <tr>
+      <td>${p.name}</td>
+      <td>${p.qty}</td>
+      <td>${p.sellPrice}</td>
+    </tr>
+  `).join('');
+}
+
+renderCart();
 </script>
 </body>
 </html>
