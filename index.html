@@ -11,6 +11,8 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- QuaggaJS للباركود -->
     <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
+    <!-- مكتبة قراءة Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     <style>
         :root { --nardo-grey: #4a5555; --main-red: #ff5e5e; --main-green: #4caf50; --light-green: #e8f5e9; --bg-light: #f8f9fa; }
         body { background-color: var(--bg-light); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding-bottom: 110px; }
@@ -324,6 +326,10 @@
     <div id="inventory" class="section">
         <div class="main-card">
             <h5 class="text-center mb-4">المخزن الحالي</h5>
+            <!-- زر رفع Excel -->
+            <button class="btn btn-success w-100 mb-3" onclick="uploadExcelWithMapping()">
+                <i class="material-icons-round">upload_file</i> رفع ملف Excel (مع تحديد الأعمدة)
+            </button>
             <table class="table-custom">
                 <thead>
                     <tr>
@@ -352,6 +358,11 @@
             </div>
             <div class="summary-box mt-3" style="background: #ffc107;">
                 <div>الأرباح التقريبية: <b id="total-profits">0</b> دج</div>
+            </div>
+            <!-- خانة إضافية لعرض عدد الفواتير -->
+            <div class="summary-box mt-3" style="background: #17a2b8;">
+                <div>عدد فواتير المبيعات: <b id="total-sales-count">0</b></div>
+                <div>عدد فواتير الشراء: <b id="total-purchases-count">0</b></div>
             </div>
         </div>
     </div>
@@ -1573,6 +1584,217 @@
             document.getElementById('total-sales').textContent = totalSales.toFixed(2);
             document.getElementById('total-purchases').textContent = totalPurchases.toFixed(2);
             document.getElementById('total-profits').textContent = profits.toFixed(2);
+            // إحصائيات إضافية
+            document.getElementById('total-sales-count').textContent = invoices.length;
+            document.getElementById('total-purchases-count').textContent = purchases.length;
+        }
+
+        // ================== استيراد Excel مع تعيين الأعمدة وخيارات المكرر ==================
+        function uploadExcelWithMapping() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.xlsx, .xls, .csv';
+            
+            input.onchange = function(event) {
+                const file = event.target.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const rows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                        
+                        if (rows.length < 2) {
+                            Swal.fire('خطأ', 'الملف لا يحتوي على بيانات كافية.', 'error');
+                            return;
+                        }
+                        
+                        const headers = rows[0];
+                        const dataRows = rows.slice(1);
+                        
+                        showMappingDialog(headers, dataRows);
+                        
+                    } catch (error) {
+                        console.error(error);
+                        Swal.fire('خطأ', 'حدث خطأ أثناء قراءة الملف.', 'error');
+                    }
+                };
+                
+                reader.readAsArrayBuffer(file);
+            };
+            
+            input.click();
+        }
+
+        function showMappingDialog(headers, dataRows) {
+            const headerOptions = headers.map((h, idx) => `<option value="${idx}">${h || `عمود ${idx+1}`}</option>`).join('');
+            
+            let previewHtml = '<div style="max-height:200px; overflow-y:auto; font-size:12px; border:1px solid #ddd; padding:5px;">';
+            previewHtml += '<table class="table table-sm"><thead><tr>' + headers.map(h => `<th>${h || '?'}</th>`).join('') + '</tr></thead><tbody>';
+            for (let i = 0; i < Math.min(5, dataRows.length); i++) {
+                previewHtml += '<tr>' + dataRows[i].map(cell => `<td>${cell !== undefined ? cell : ''}</td>`).join('') + '</tr>';
+            }
+            if (dataRows.length > 5) previewHtml += '<tr><td colspan="100">...</td></tr>';
+            previewHtml += '</tbody></table></div>';
+            
+            Swal.fire({
+                title: 'تحديد الأعمدة ونطاق الصفوف',
+                html: `
+                    <div style="text-align:right;">
+                        <p class="mb-2">${previewHtml}</p>
+                        <hr>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label>حقل الاسم:</label>
+                                <select id="nameCol" class="form-select">${headerOptions}</select>
+                            </div>
+                            <div class="col-6">
+                                <label>حقل الباركود (اختياري):</label>
+                                <select id="barcodeCol" class="form-select"><option value="-1">-- بدون --</option>${headerOptions}</select>
+                            </div>
+                        </div>
+                        <div class="row g-2 mt-2">
+                            <div class="col-6">
+                                <label>سعر البيع:</label>
+                                <select id="sellCol" class="form-select">${headerOptions}</select>
+                            </div>
+                            <div class="col-6">
+                                <label>سعر الشراء:</label>
+                                <select id="buyCol" class="form-select">${headerOptions}</select>
+                            </div>
+                        </div>
+                        <div class="row g-2 mt-2">
+                            <div class="col-6">
+                                <label>الكمية:</label>
+                                <select id="qtyCol" class="form-select">${headerOptions}</select>
+                            </div>
+                            <div class="col-6">
+                                <label>الوحدة (اختياري):</label>
+                                <select id="unitCol" class="form-select"><option value="-1">قطعة (افتراضي)</option>${headerOptions}</select>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label>صف البداية (أول صف للبيانات):</label>
+                                <input type="number" id="startRow" class="form-control" value="2" min="2" max="${dataRows.length+1}">
+                            </div>
+                            <div class="col-6">
+                                <label>صف النهاية (اختياري، اترك 0 للنهاية):</label>
+                                <input type="number" id="endRow" class="form-control" value="0" min="0" max="${dataRows.length+1}">
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <label>عند وجود منتج مكرر:</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="duplicateAction" id="dupSkip" value="skip" checked>
+                                <label class="form-check-label" for="dupSkip">تجاهل المكرر (لا يضاف)</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="duplicateAction" id="dupUpdate" value="update">
+                                <label class="form-check-label" for="dupUpdate">تحديث الكمية (إضافة الكمية الجديدة إلى المخزون)</label>
+                            </div>
+                        </div>
+                        <p class="text-muted mt-2">ملاحظة: صف البداية = 2 يعني تخطي الترويسة. إذا كان أول صف هو البيانات ضع 1.</p>
+                    </div>
+                `,
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: 'استيراد',
+                cancelButtonText: 'إلغاء',
+                preConfirm: () => {
+                    const nameIdx = parseInt(document.getElementById('nameCol').value);
+                    const barcodeIdx = parseInt(document.getElementById('barcodeCol').value);
+                    const sellIdx = parseInt(document.getElementById('sellCol').value);
+                    const buyIdx = parseInt(document.getElementById('buyCol').value);
+                    const qtyIdx = parseInt(document.getElementById('qtyCol').value);
+                    const unitIdx = parseInt(document.getElementById('unitCol').value);
+                    const startRow = parseInt(document.getElementById('startRow').value) - 1;
+                    let endRow = parseInt(document.getElementById('endRow').value);
+                    if (endRow === 0) endRow = dataRows.length;
+                    else endRow = endRow - 1;
+                    
+                    const duplicateAction = document.querySelector('input[name="duplicateAction"]:checked')?.value || 'skip';
+                    
+                    if (isNaN(nameIdx) || isNaN(sellIdx) || isNaN(buyIdx) || isNaN(qtyIdx)) {
+                        Swal.showValidationMessage('يرجى اختيار الأعمدة الأساسية');
+                        return false;
+                    }
+                    if (startRow < 0 || startRow >= dataRows.length || endRow < startRow || endRow >= dataRows.length) {
+                        Swal.showValidationMessage('نطاق الصفوف غير صحيح');
+                        return false;
+                    }
+                    
+                    return { nameIdx, barcodeIdx, sellIdx, buyIdx, qtyIdx, unitIdx, startRow, endRow, duplicateAction };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const { nameIdx, barcodeIdx, sellIdx, buyIdx, qtyIdx, unitIdx, startRow, endRow, duplicateAction } = result.value;
+                    
+                    let addedCount = 0;
+                    let updatedCount = 0;
+                    let skippedCount = 0;
+                    
+                    for (let i = startRow; i <= endRow; i++) {
+                        const row = dataRows[i];
+                        if (!row || row.length === 0) continue;
+                        
+                        const name = row[nameIdx] ? row[nameIdx].toString().trim() : '';
+                        if (!name) {
+                            skippedCount++;
+                            continue;
+                        }
+                        
+                        const sellPrice = parseFloat(row[sellIdx]) || 0;
+                        const buyPrice = parseFloat(row[buyIdx]) || 0;
+                        const qty = parseFloat(row[qtyIdx]) || 0;
+                        const barcode = (barcodeIdx >= 0 && row[barcodeIdx]) ? row[barcodeIdx].toString() : '';
+                        let unit = 'قطعة';
+                        if (unitIdx >= 0 && row[unitIdx]) {
+                            unit = row[unitIdx].toString();
+                        }
+                        
+                        if (sellPrice <= 0 || buyPrice <= 0) {
+                            skippedCount++;
+                            continue;
+                        }
+                        
+                        const existingProductIndex = stock.findIndex(p => p.name === name);
+                        
+                        if (existingProductIndex !== -1) {
+                            if (duplicateAction === 'update') {
+                                // تحديث الكمية فقط (يمكن إضافة تحديث الأسعار هنا إن أردت)
+                                stock[existingProductIndex].qty += qty;
+                                updatedCount++;
+                            } else {
+                                skippedCount++;
+                            }
+                        } else {
+                            stock.push({
+                                name: name,
+                                barcode: barcode,
+                                sellPrice: sellPrice,
+                                buyPrice: buyPrice,
+                                qty: qty,
+                                unit: unit,
+                                image: null
+                            });
+                            addedCount++;
+                        }
+                    }
+                    
+                    saveStock();
+                    renderStock();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'تم الرفع',
+                        html: `تمت إضافة <b>${addedCount}</b> منتج جديد.<br>تم تحديث <b>${updatedCount}</b> منتج مكرر (إضافة الكمية).<br>تخطينا <b>${skippedCount}</b> صف (بيانات ناقصة أو مكرر تم تجاهله).`
+                    });
+                }
+            });
         }
 
         // ================== مساعدات عامة ==================
