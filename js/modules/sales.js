@@ -113,7 +113,7 @@ const salesModule = (function() {
 
     // ================== API العامة ==================
     function getCart() {
-        return [...cart]; // إرجاع نسخة وليس المرجع الأصلي
+        return [...cart];
     }
 
     function getCartStats() {
@@ -132,7 +132,6 @@ const salesModule = (function() {
             return; 
         }
         
-        // بحث متقدم مع ترتيب النتائج حسب الأقرب
         const matches = inventoryModule.stock
             .map(p => ({
                 ...p,
@@ -141,7 +140,7 @@ const salesModule = (function() {
             }))
             .filter(p => p.score > 0)
             .sort((a, b) => b.score - a.score)
-            .slice(0, 10); // حد أقصى 10 نتائج
+            .slice(0, 10);
         
         if (matches.length > 0) {
             box.innerHTML = matches.map(p => `
@@ -186,7 +185,6 @@ const salesModule = (function() {
             priceInput.value = product.sellPrice;
             priceInput.dataset.originalPrice = product.sellPrice;
             
-            // تأثير بصري
             priceInput.style.transition = 'background-color 0.3s';
             priceInput.style.backgroundColor = '#e8f5e9';
             setTimeout(() => priceInput.style.backgroundColor = '', 500);
@@ -216,7 +214,6 @@ const salesModule = (function() {
 
     // ================== إضافة إلى السلة محسنة ==================
     function addToCart() {
-        // الحصول على العناصر
         const searchInput = document.getElementById('sale-search');
         const priceInput = document.getElementById('sale-price');
         const qtyInput = document.getElementById('sale-qty');
@@ -232,10 +229,8 @@ const salesModule = (function() {
         const qty = parseFloat(qtyInput.value) || 0;
         const discount = parseFloat(discountInput.value) || 0;
         
-        // البحث عن المنتج
         const product = inventoryModule.stock.find(p => p.name === name);
         
-        // التحقق من صحة البيانات
         const errors = _validateCartItem(name, price, qty, discount, product);
         
         if (errors.length > 0) {
@@ -243,41 +238,33 @@ const salesModule = (function() {
             return;
         }
         
-        // إذا كان المنتج موجوداً ولم يتم إدخال سعر، استخدم السعر المسجل
         if (product && price === 0) {
             price = product.sellPrice;
         }
         
-        // إذا كان المنتج غير موجود ويوجد سعر
         if (!product && price <= 0) {
             _showNotification('تنبيه', 'الرجاء إدخال سعر للمنتج', 'warning');
             return;
         }
         
-        // إنشاء عنصر السلة
         const cartItem = _createCartItem(product, name, qty, price, discount);
         cart.push(cartItem);
         
-        // تحديث المخزون إذا كان المنتج موجوداً
         if (product) {
             product.qty -= qty;
             inventoryModule.saveStock();
             inventoryModule.addMovement('بيع', name, qty);
         }
         
-        // تحديث واجهة المستخدم
         renderCart();
         
-        // إظهار رسالة نجاح
         _showNotification('تمت الإضافة', `تم إضافة ${name} إلى السلة`, 'success');
         
-        // إفراغ الحقول
         searchInput.value = '';
         priceInput.value = '';
         qtyInput.value = '';
         if (discountInput) discountInput.value = '';
         
-        // إخفاء نتائج البحث
         document.getElementById('search-box').style.display = 'none';
     }
 
@@ -318,7 +305,6 @@ const salesModule = (function() {
             `}).join('');
         }
         
-        // تحديث الإحصائيات
         const totals = _calculateCartTotals();
         
         const elements = {
@@ -345,7 +331,6 @@ const salesModule = (function() {
         const item = cart[itemIndex];
         
         _showConfirmation('تأكيد الحذف', `حذف "${item.name}" من السلة؟`, () => {
-            // إعادة الكمية إلى المخزون
             if (item.productId) {
                 const product = inventoryModule.stock.find(p => p.id === item.productId);
                 if (product) {
@@ -369,7 +354,6 @@ const salesModule = (function() {
         }
         
         _showConfirmation('تأكيد مسح السلة', 'هل أنت متأكد من مسح جميع العناصر؟', () => {
-            // إعادة الكميات إلى المخزون
             cart.forEach(item => {
                 if (item.productId) {
                     const product = inventoryModule.stock.find(p => p.id === item.productId);
@@ -392,7 +376,6 @@ const salesModule = (function() {
             return;
         }
         
-        // التحقق من صحة السلة
         const invalidItems = cart.filter(item => {
             if (!item.productId) return false;
             const product = inventoryModule.stock.find(p => p.id === item.productId);
@@ -408,12 +391,10 @@ const salesModule = (function() {
         const now = new Date();
         const invNo = invoices.length + 1;
         
-        // الحصول على العميل
         const customerSelect = document.getElementById('sale-customer');
         const customer = customerSelect?.options[customerSelect.selectedIndex]?.text || 'غير محدد';
         const finalCustomer = customer === 'اختر العميل' ? 'نقدي' : customer;
         
-        // إنشاء الفاتورة
         const invoice = {
             id: _generateId(),
             number: invNo,
@@ -429,22 +410,17 @@ const salesModule = (function() {
         invoices.push(invoice);
         localStorage.setItem(CONFIG.STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
         
-        // تجهيز الطباعة
         _preparePrintInvoice(invoice, totals);
         
-        // طباعة الفاتورة
         window.print();
         
-        // تفريغ السلة
         cart = [];
         renderCart();
         
-        // تحديث التقارير
         if (typeof reportsModule !== 'undefined') {
             reportsModule.renderReports();
         }
         
-        // تحديث قائمة الفواتير
         if (document.getElementById('sale-invoices')?.style.display !== 'none') {
             renderSaleInvoices();
         }
@@ -569,7 +545,6 @@ const salesModule = (function() {
         const numberSpan = document.getElementById('edit-invoice-number');
         if (numberSpan) numberSpan.textContent = inv.number;
 
-        // التحقق من المنتجات المحذوفة
         const validItems = inv.items.filter(item => 
             !item.productId || inventoryModule.stock.some(p => p.id === item.productId)
         );
@@ -580,7 +555,6 @@ const salesModule = (function() {
             inv.items = validItems;
         }
 
-        // عرض عناصر التعديل
         const container = document.getElementById('edit-invoice-items-container');
         if (!container) return;
         
@@ -624,7 +598,6 @@ const salesModule = (function() {
         const inv = invoices[currentEditInvoiceIndex];
         const newItems = [];
         
-        // جمع القيم المعدلة
         for (let i = 0; i < inv.items.length; i++) {
             const qtyInput = document.getElementById(`edit-qty-${i}`);
             const priceInput = document.getElementById(`edit-price-${i}`);
@@ -651,7 +624,6 @@ const salesModule = (function() {
             });
         }
         
-        // استعادة الكميات القديمة
         inv.items.forEach(item => {
             if (item.productId) {
                 const prod = inventoryModule.stock.find(p => p.id === item.productId);
@@ -659,7 +631,6 @@ const salesModule = (function() {
             }
         });
         
-        // التحقق من الكميات الجديدة
         let stockOk = true;
         newItems.forEach(item => {
             if (!item.productId) return;
@@ -671,7 +642,6 @@ const salesModule = (function() {
         });
         
         if (!stockOk) {
-            // إعادة الكميات القديمة
             inv.items.forEach(item => {
                 if (item.productId) {
                     const prod = inventoryModule.stock.find(p => p.id === item.productId);
@@ -681,7 +651,6 @@ const salesModule = (function() {
             return;
         }
         
-        // تطبيق الكميات الجديدة
         newItems.forEach(item => {
             if (item.productId) {
                 const prod = inventoryModule.stock.find(p => p.id === item.productId);
@@ -689,14 +658,12 @@ const salesModule = (function() {
             }
         });
         
-        // حساب الإجماليات الجديدة
         const totals = {
             subtotal: newItems.reduce((sum, i) => sum + (i.qty * i.price), 0),
             totalDiscount: newItems.reduce((sum, i) => sum + (i.qty * i.price * (i.discount / 100)), 0),
             total: newItems.reduce((sum, i) => sum + i.total, 0)
         };
         
-        // تحديث الفاتورة
         invoices[currentEditInvoiceIndex] = {
             ...inv,
             items: newItems,
@@ -759,7 +726,6 @@ const salesModule = (function() {
                 searchInput.value = transcript;
                 smartSearch(transcript);
                 
-                // تأثير بصري
                 searchInput.style.backgroundColor = '#e8f5e9';
                 setTimeout(() => searchInput.style.backgroundColor = '', 500);
             }
@@ -783,41 +749,59 @@ const salesModule = (function() {
         }
     }
 
+    // ================== دالة showSubSection ==================
+    function showSubSection(subId) {
+        const parent = document.querySelector('.active-section');
+        if (!parent) return;
+        
+        parent.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
+        
+        const targetSection = document.getElementById(subId);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+        }
+        
+        const tabs = parent.querySelectorAll('.tab-item');
+        tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
+        
+        tabs.forEach(t => {
+            if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(subId)) {
+                if (parent.id === 'sales') t.classList.add('active-red');
+            }
+        });
+        
+        if (subId === 'sale-invoices') {
+            renderSaleInvoices();
+        }
+        if (subId === 'customers' && typeof customerModule !== 'undefined') {
+            customerModule.renderCustomers();
+        }
+        if (typeof customerModule !== 'undefined') {
+            customerModule.hideCustomerInvoices();
+        }
+    }
+
     // ================== تصدير الوحدة ==================
     return {
-        // الحالة
         cart: cart,
         invoices: invoices,
-        
-        // الدوال الأساسية
         getCart,
         getCartStats,
-        
-        // البحث
         smartSearch,
         selectProduct,
         openQuickAddModal,
-        
-        // إدارة السلة
         addToCart,
         renderCart,
         removeCartItem,
         clearCart,
-        
-        // إنهاء البيع
         finishSaleAndPrint,
-        
-        // إدارة الفواتير
         renderSaleInvoices,
         searchInvoices,
         deleteInvoice,
         editInvoice,
         updateInvoice,
-        
-        // البحث الصوتي
         initVoiceSearch,
-        
-        // دوال مساعدة (للاستخدام في وحدات أخرى)
+        showSubSection,
         formatCurrency: _formatCurrency
     };
 })();
