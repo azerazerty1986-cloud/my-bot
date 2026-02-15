@@ -47,44 +47,94 @@ const salesModule = (function() {
 
     // إدارة السلة
     function addToCart() {
-        const name = document.getElementById('sale-search').value.trim();
-        const qty = parseFloat(document.getElementById('sale-qty').value) || 0;
-        const discount = parseFloat(document.getElementById('sale-discount').value) || 0;
-        if (!name || qty <= 0) {
-            Swal.fire('تنبيه', 'أدخل المنتج والكمية', 'warning');
-            return;
-        }
-        if (discount > 100) {
-            Swal.fire('تنبيه', 'الخصم لا يتجاوز 100%', 'warning');
-            return;
-        }
-        const product = inventoryModule.stock.find(p => p.name === name);
-        if (!product) {
-            Swal.fire('خطأ', 'المنتج غير موجود', 'error');
-            return;
-        }
+    // الحصول على القيم من حقول الإدخال
+    const name = document.getElementById('sale-search').value.trim();
+    const price = parseFloat(document.getElementById('sale-price').value) || 0;
+    const qty = parseFloat(document.getElementById('sale-qty').value) || 0;
+    const discount = parseFloat(document.getElementById('sale-discount').value) || 0;
+    
+    // التحقق من المدخلات
+    if (!name || qty <= 0 || price <= 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'تنبيه',
+            text: 'أدخل المنتج والكمية والسعر'
+        });
+        return;
+    }
+    
+    if (discount > 100) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'تنبيه',
+            text: 'الخصم لا يتجاوز 100%'
+        });
+        return;
+    }
+    
+    // البحث عن المنتج في المخزون
+    const product = inventoryModule.stock.find(p => p.name === name);
+    
+    // إذا كان المنتج موجوداً في المخزون
+    if (product) {
         if (qty > product.qty) {
-            Swal.fire('خطأ', 'الكمية غير كافية في المخزون', 'error');
+            Swal.fire({
+                icon: 'error',
+                title: 'خطأ',
+                text: 'الكمية غير كافية في المخزون'
+            });
             return;
         }
+        
+        // حساب الإجمالي مع الخصم
         const total = qty * product.sellPrice * (1 - discount / 100);
+        
+        // إضافة المنتج إلى السلة
         cart.push({
             id: Date.now() + Math.random(),
             productId: product.id,
-            name,
-            qty,
+            name: name,
+            qty: qty,
             price: product.sellPrice,
-            discount,
-            total
+            discount: discount,
+            total: total
         });
+        
+        // تحديث المخزون
         product.qty -= qty;
         inventoryModule.saveStock();
         inventoryModule.addMovement('بيع', name, qty);
-        renderCart();
-        document.getElementById('sale-search').value = '';
-        document.getElementById('sale-qty').value = '';
-        document.getElementById('sale-discount').value = '';
+    } 
+    // إذا كان المنتج غير موجود في المخزون (سعر مخصص)
+    else {
+        // حساب الإجمالي مع الخصم
+        const total = qty * price * (1 - discount / 100);
+        
+        // إضافة المنتج إلى السلة
+        cart.push({
+            id: Date.now() + Math.random(),
+            productId: null,
+            name: name,
+            qty: qty,
+            price: price,
+            discount: discount,
+            total: total,
+            isCustomPrice: true
+        });
     }
+    
+    // تحديث عرض السلة
+    renderCart();
+    
+    // إفراغ حقول الإدخال
+    document.getElementById('sale-search').value = '';
+    document.getElementById('sale-price').value = '';
+    document.getElementById('sale-qty').value = '';
+    document.getElementById('sale-discount').value = '';
+    
+    // إخفاء نتائج البحث
+    document.getElementById('search-box').style.display = 'none';
+}
 
     function renderCart() {
         const tbody = document.getElementById('cart-table');
