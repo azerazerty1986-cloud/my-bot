@@ -603,7 +603,10 @@ function exportToExcel() {
             showConfirmButton: false
         });
     }
-
+// ================== عرض المخزون ==================
+function renderStock() {
+    renderFilteredStock(stock);
+}
     // ================== تصدير الوحدة ==================
     return {
         stock,
