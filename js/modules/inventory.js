@@ -70,11 +70,6 @@ const inventoryModule = (function() {
         });
     }
 
-    // ================== عرض المخزون ==================
-    function renderStock() {
-        renderFilteredStock(stock);
-    }
-
     // ================== عرض المنتجات المفلترة ==================
     function renderFilteredStock(filteredProducts) {
         const tbody = document.getElementById('stock-tbody');
@@ -104,14 +99,18 @@ const inventoryModule = (function() {
             </tr>
         `}).join('');
 
-        // تحديث الإحصائيات
         updateStats();
+    }
+
+    // ================== عرض المخزون ==================
+    function renderStock() {
+        renderFilteredStock(stock);
     }
 
     // ================== البحث عن المنتجات ==================
     function searchProducts() {
-        const searchTerm = document.getElementById('search-product').value.toLowerCase().trim();
-        const categoryFilter = document.getElementById('filter-category').value;
+        const searchTerm = document.getElementById('search-product')?.value.toLowerCase().trim() || '';
+        const categoryFilter = document.getElementById('filter-category')?.value || 'all';
         
         let filteredProducts = stock;
         
@@ -214,16 +213,16 @@ const inventoryModule = (function() {
         });
     }
 
-    // ================== حفظ منتج جديد محسن ==================
+    // ================== حفظ منتج جديد ==================
     function saveNewProduct() {
-        const name = document.getElementById('new-name').value.trim();
+        const name = document.getElementById('new-name')?.value.trim() || '';
         const category = document.getElementById('new-category')?.value || 'عام';
-        const sell = parseFloat(document.getElementById('new-sell').value) || 0;
-        const buy = parseFloat(document.getElementById('new-buy').value) || 0;
+        const sell = parseFloat(document.getElementById('new-sell')?.value) || 0;
+        const buy = parseFloat(document.getElementById('new-buy')?.value) || 0;
         const wholesale = parseFloat(document.getElementById('new-wholesale')?.value) || 0;
-        const qty = parseFloat(document.getElementById('new-qty').value) || 0;
-        const unit = document.getElementById('new-unit').value;
-        const barcode = document.getElementById('new-barcode').value.trim();
+        const qty = parseFloat(document.getElementById('new-qty')?.value) || 0;
+        const unit = document.getElementById('new-unit')?.value || 'قطعة';
+        const barcode = document.getElementById('new-barcode')?.value.trim() || '';
         const minStock = parseInt(document.getElementById('new-min-stock')?.value) || 5;
         const location = document.getElementById('new-location')?.value || '';
         const notes = document.getElementById('new-notes')?.value || '';
@@ -286,14 +285,14 @@ const inventoryModule = (function() {
 
     // ================== حفظ منتج سريع ==================
     function saveQuickProduct() {
-        const mode = document.getElementById('quick-mode').value;
-        const name = document.getElementById('quick-product-name').value.trim();
-        const sellPrice = parseFloat(document.getElementById('quick-sell-price').value) || 0;
-        const buyPrice = parseFloat(document.getElementById('quick-buy-price').value) || 0;
-        const unit = document.getElementById('quick-unit').value;
-        const qty = parseFloat(document.getElementById('quick-qty').value) || 0;
-        const cartQty = parseFloat(document.getElementById('quick-cart-qty').value) || 1;
-        const discount = parseFloat(document.getElementById('quick-discount').value) || 0;
+        const mode = document.getElementById('quick-mode')?.value || 'sale';
+        const name = document.getElementById('quick-product-name')?.value.trim() || '';
+        const sellPrice = parseFloat(document.getElementById('quick-sell-price')?.value) || 0;
+        const buyPrice = parseFloat(document.getElementById('quick-buy-price')?.value) || 0;
+        const unit = document.getElementById('quick-unit')?.value || 'قطعة';
+        const qty = parseFloat(document.getElementById('quick-qty')?.value) || 0;
+        const cartQty = parseFloat(document.getElementById('quick-cart-qty')?.value) || 1;
+        const discount = parseFloat(document.getElementById('quick-discount')?.value) || 0;
 
         if (!name || sellPrice <= 0 || buyPrice <= 0) {
             _showNotification('تنبيه', 'الاسم وسعر البيع والشراء مطلوبة', 'warning');
@@ -392,7 +391,7 @@ const inventoryModule = (function() {
         new bootstrap.Modal(document.getElementById('editProductModal')).show();
     }
 
-    // ================== تعديل المنتج محسن ==================
+    // ================== تعديل المنتج ==================
     function updateProduct() {
         const idx = document.getElementById('edit-product-idx').value;
         const p = stock[idx];
