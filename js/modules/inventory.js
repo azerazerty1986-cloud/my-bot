@@ -21,7 +21,117 @@ const inventoryModule = (function() {
         createdAt: p.createdAt || new Date().toISOString(),
         lastUpdated: p.lastUpdated || new Date().toISOString()
     }));
+// أضف هذه الدوال إلى inventory.js
 
+// ================== إضافة منتج جديد محسن ==================
+function saveNewProduct() {
+    const name = document.getElementById('new-name').value.trim();
+    const category = document.getElementById('new-category')?.value || 'عام';
+    const sell = parseFloat(document.getElementById('new-sell').value) || 0;
+    const buy = parseFloat(document.getElementById('new-buy').value) || 0;
+    const wholesale = parseFloat(document.getElementById('new-wholesale')?.value) || 0;
+    const qty = parseFloat(document.getElementById('new-qty').value) || 0;
+    const unit = document.getElementById('new-unit').value;
+    const barcode = document.getElementById('new-barcode').value.trim();
+    const minStock = parseInt(document.getElementById('new-min-stock')?.value) || 5;
+    const location = document.getElementById('new-location')?.value || '';
+    const notes = document.getElementById('new-notes')?.value || '';
+    
+    if (!name || sell <= 0 || buy <= 0) {
+        _showNotification('تنبيه', 'الاسم وسعر البيع والشراء مطلوبة', 'warning');
+        return;
+    }
+    
+    if (stock.some(p => p.name === name)) {
+        _showNotification('خطأ', 'يوجد منتج بنفس الاسم بالفعل', 'error');
+        return;
+    }
+
+    stock.push({
+        id: Date.now(),
+        name: name,
+        category: category,
+        barcode: barcode,
+        sellPrice: sell,
+        buyPrice: buy,
+        wholesalePrice: wholesale,
+        qty: qty,
+        minStock: minStock,
+        unit: unit,
+        location: location,
+        notes: notes,
+        image: selectedImageBase64 || null,
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
+        totalSales: 0,
+        totalPurchases: 0
+    });
+    
+    saveStock();
+    addMovement('إضافة منتج', name, qty);
+    
+    _showNotification('نجاح', 'تم إضافة المنتج', 'success');
+    
+    // إعادة تعيين الحقول
+    document.querySelectorAll('#add-product input, #add-product select').forEach(i => i.value = '');
+    document.getElementById('image-preview').style.display = 'none';
+    selectedImageBase64 = '';
+    renderStock();
+}
+
+// ================== تعديل المنتج محسن ==================
+function updateProduct() {
+    const idx = document.getElementById('edit-product-idx').value;
+    const p = stock[idx];
+    
+    const newName = document.getElementById('edit-product-name').value.trim();
+    const newCategory = document.getElementById('edit-product-category')?.value || p.category;
+    const newSell = parseFloat(document.getElementById('edit-product-sell').value);
+    const newBuy = parseFloat(document.getElementById('edit-product-buy').value);
+    const newWholesale = parseFloat(document.getElementById('edit-product-wholesale')?.value) || p.wholesalePrice;
+    const newQty = parseFloat(document.getElementById('edit-product-qty').value);
+    const newMinStock = parseInt(document.getElementById('edit-product-min-stock')?.value) || p.minStock;
+    const newUnit = document.getElementById('edit-product-unit').value;
+    const newLocation = document.getElementById('edit-product-location')?.value || p.location;
+    const newNotes = document.getElementById('edit-product-notes')?.value || p.notes;
+
+    if (!newName || isNaN(newSell) || isNaN(newBuy) || isNaN(newQty)) {
+        _showNotification('خطأ', 'يرجى ملء جميع الحقول', 'error');
+        return;
+    }
+
+    const fileInput = document.getElementById('edit-product-image');
+    if (fileInput.files.length > 0) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            p.image = e.target.result;
+            finishUpdate();
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+    } else {
+        finishUpdate();
+    }
+
+    function finishUpdate() {
+        p.name = newName;
+        p.category = newCategory;
+        p.sellPrice = newSell;
+        p.buyPrice = newBuy;
+        p.wholesalePrice = newWholesale;
+        p.qty = newQty;
+        p.minStock = newMinStock;
+        p.unit = newUnit;
+        p.location = newLocation;
+        p.notes = newNotes;
+        p.lastUpdated = new Date().toISOString();
+        
+        saveStock();
+        bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
+        renderStock();
+        
+        _showNotification('نجاح', 'تم تعديل المنتج', 'success');
+    }
+}
     // حفظ المخزون
     function saveStock() {
         localStorage.setItem('ryan_stock', JSON.stringify(stock));
