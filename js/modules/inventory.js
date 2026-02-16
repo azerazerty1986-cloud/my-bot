@@ -439,7 +439,140 @@ function updateProduct() {
             _showNotification('تم', 'تم حذف المنتج', 'success');
         });
     }
+    
+// ================== دوال البحث والفلترة ==================
 
+// البحث عن المنتجات
+function searchProducts() {
+    const searchTerm = document.getElementById('search-product').value.toLowerCase().trim();
+    const categoryFilter = document.getElementById('filter-category').value;
+    
+    let filteredProducts = stock;
+    
+    // تصفية حسب النص
+    if (searchTerm !== '') {
+        filteredProducts = filteredProducts.filter(p => 
+            p.name.toLowerCase().includes(searchTerm) || 
+            (p.barcode && p.barcode.includes(searchTerm))
+        );
+    }
+    
+    // تصفية حسب الصنف
+    if (categoryFilter !== 'all') {
+        filteredProducts = filteredProducts.filter(p => p.category === categoryFilter);
+    }
+    
+    renderFilteredStock(filteredProducts);
+}
+
+// التصفية حسب الصنف
+function filterByCategory() {
+    searchProducts(); // إعادة استخدام دالة البحث
+}
+
+// عرض المنتجات الناقصة
+function showLowStock() {
+    const lowStock = stock.filter(p => p.qty < (p.minStock || 5));
+    
+    if (lowStock.length === 0) {
+        Swal.fire({
+            icon: 'success',
+            title: 'لا توجد منتجات ناقصة',
+            text: 'جميع المنتجات متوفرة بكميات كافية',
+            timer: 2000
+        });
+    } else {
+        let message = '';
+        lowStock.forEach(p => {
+            message += `• ${p.name}: ${p.qty} ${p.unit} (الحد الأدنى: ${p.minStock || 5})\n`;
+        });
+        
+        Swal.fire({
+            icon: 'warning',
+            title: 'المنتجات الناقصة',
+            text: message,
+            confirmButtonText: 'حسناً'
+        });
+    }
+}
+
+// عرض المنتجات المفلترة
+function renderFilteredStock(filteredProducts) {
+    const tbody = document.getElementById('stock-tbody');
+    if (!tbody) return;
+
+    if (filteredProducts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4 text-muted"><i class="material-icons-round" style="font-size:48px;">search_off</i><p>لا توجد نتائج للبحث</p></td></tr>';
+        return;
+    }
+
+    tbody.innerHTML = filteredProducts.map((p, idx) => {
+        const profit = p.sellPrice - p.buyPrice;
+        const profitClass = profit >= 0 ? 'text-success' : 'text-danger';
+        const isLowStock = p.qty < (p.minStock || 5);
+        
+        return `
+        <tr>
+            <td>${p.image ? `<img src="${p.image}" class="product-thumb" onclick="utils.showLargeImage('${p.image}')" style="width:40px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;">` : '📦'}</td>
+            <td>${p.name}</td>
+            <td>${p.category || 'عام'}</td>
+            <td class="${isLowStock ? 'low-stock-item' : ''}">${p.qty} ${p.unit} ${isLowStock ? '⚠️' : ''}</td>
+            <td>${p.sellPrice} دج</td>
+            <td>${p.buyPrice} دج</td>
+            <td class="${profitClass}">${profit} دج</td>
+            <td>
+                <button class="btn btn-sm btn-warning" onclick="inventoryModule.openEditProductModal(${stock.indexOf(p)})"><i class="material-icons-round" style="font-size:16px;">edit</i></button>
+                <button class="btn btn-sm btn-danger" onclick="inventoryModule.deleteProduct(${stock.indexOf(p)})"><i class="material-icons-round" style="font-size:16px;">delete</i></button>
+            </td>
+        </tr>
+    `}).join('');
+
+    // تحديث الإحصائيات
+    updateStats();
+}
+
+// تحديث الإحصائيات
+function updateStats() {
+    const totalProducts = stock.length;
+    const totalValue = stock.reduce((sum, p) => sum + (p.qty * p.buyPrice), 0);
+    const lowStockCount = stock.filter(p => p.qty < (p.minStock || 5)).length;
+    
+    document.getElementById('total-products').textContent = totalProducts;
+    document.getElementById('total-stock-value').textContent = totalValue.toFixed(2) + ' دج';
+    document.getElementById('low-stock-count').textContent = lowStockCount;
+}
+
+// تصدير إلى Excel
+function exportToExcel() {
+    if (stock.length === 0) {
+        Swal.fire('تنبيه', 'لا توجد منتجات للتصدير', 'warning');
+        return;
+    }
+    
+    // تحويل البيانات إلى صيغة مناسبة
+    const data = stock.map(p => ({
+        'المنتج': p.name,
+        'الصنف': p.category || 'عام',
+        'الكمية': p.qty + ' ' + p.unit,
+        'سعر الشراء': p.buyPrice + ' دج',
+        'سعر البيع': p.sellPrice + ' دج',
+        'الربح': (p.sellPrice - p.buyPrice) + ' دج',
+        'الباركود': p.barcode || '-'
+    }));
+    
+    // إنشاء ملف Excel
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(wb, ws, "المخزون");
+    XLSX.writeFile(wb, `المخزون_${new Date().toLocaleDateString('ar-DZ')}.xlsx`);
+    
+    Swal.fire('نجاح', 'تم تصدير الملف بنجاح', 'success');
+}
+
+// تعديل دالة renderStock الأصلية
+function renderStock() {
+    renderFilteredStock(stock);
+}
     // ================== رفع Excel ==================
     function uploadExcelWithMapping() {
         alert('سيتم إضافة رفع Excel قريباً');
