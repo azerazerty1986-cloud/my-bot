@@ -1,33 +1,37 @@
 // ================== تهيئة التطبيق ==================
 document.addEventListener('DOMContentLoaded', function() {
-    // تهيئة جميع الوحدات
-    console.log('تم تحميل تطبيق سوبيرات ريان');
+    console.log('تم تحميل تطبيق سوبر');
     
-    // تهيئة البحث الصوتي
-    salesModule.initVoiceSearch();
-    purchasesModule.initVoiceSearch();
+    // تهيئة الوحدات
+    if (typeof salesModule !== 'undefined' && salesModule.initVoiceSearch) {
+        salesModule.initVoiceSearch();
+    }
+    if (typeof purchasesModule !== 'undefined' && purchasesModule.initVoiceSearch) {
+        purchasesModule.initVoiceSearch();
+    }
     
     // عرض البيانات الأولية
-    salesModule.renderCart();
-    purchasesModule.renderPurchaseCart();
-    inventoryModule.renderStock();
-    customerModule.renderCustomers();
-    supplierModule.renderSuppliers();
-    reportsModule.renderReports();
-    
-    // إضافة منتج افتراضي إذا كان المخزون فارغاً
-    if (inventoryModule.stock.length === 0) {
-        inventoryModule.stock.push({
-            id: Date.now(),
-            name: "مثال - زيت زيتون",
-            barcode: "123456",
-            sellPrice: 1200,
-            buyPrice: 900,
-            qty: 45,
-            unit: "لتر",
-            image: null
-        });
-        inventoryModule.saveStock();
+    if (typeof salesModule !== 'undefined' && salesModule.renderCart) {
+        salesModule.renderCart();
+    }
+    if (typeof purchasesModule !== 'undefined' && purchasesModule.renderPurchaseCart) {
+        purchasesModule.renderPurchaseCart();
+    }
+    if (typeof inventoryModule !== 'undefined' && inventoryModule.renderStock) {
         inventoryModule.renderStock();
+    }
+    if (typeof customerModule !== 'undefined' && customerModule.renderCustomers) {
+        customerModule.renderCustomers();
+    }
+    if (typeof supplierModule !== 'undefined' && supplierModule.renderSuppliers) {
+        supplierModule.renderSuppliers();
+    }
+    if (typeof reportsModule !== 'undefined' && reportsModule.renderReports) {
+        reportsModule.renderReports();
+    }
+    
+    // التحقق من حالة تسجيل الدخول
+    if (typeof utils !== 'undefined' && utils.checkLoginStatus) {
+        utils.checkLoginStatus();
     }
 });
