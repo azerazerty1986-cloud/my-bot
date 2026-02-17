@@ -161,7 +161,7 @@ const utils = (function() {
     }
 
     // ================== نظام تسجيل الدخول ==================
-    const APP_PASSWORD = "123456";
+    const APP_PASSWORD = "1986";
 
     function checkPassword() {
         const passwordInput = document.getElementById('password-input');
