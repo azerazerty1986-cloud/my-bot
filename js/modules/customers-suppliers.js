@@ -889,7 +889,120 @@ const supplierModule = (function() {
             }
         });
     }
+// ================== عرض فواتير المورد مع المنتوجات ==================
+function showSupplierInvoices(supplierIndex) {
+    const supplier = suppliers[supplierIndex];
+    if (!supplier) return;
+    
+    document.getElementById('selected-supplier-name').textContent = supplier.name;
+    
+    const purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
+    const supplierPurchases = purchases.filter(p => p.supplier === supplier.name);
+    
+    const tbody = document.getElementById('supplier-invoices-tbody');
+    if (tbody) {
+        if (supplierPurchases.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-3 text-muted">لا توجد فواتير لهذا المورد</td></tr>';
+        } else {
+            tbody.innerHTML = supplierPurchases.map(pur => {
+                const itemsCount = pur.items ? pur.items.length : 0;
+                
+                return `
+                <tr>
+                    <td>#${pur.number}</td>
+                    <td>${pur.date}</td>
+                    <td>${itemsCount}</td>
+                    <td class="fw-bold text-success">${pur.total.toFixed(2)} دج</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="supplierModule.viewPurchaseDetails(${pur.number})">
+                            <i class="material-icons-round" style="font-size:16px;">visibility</i> عرض
+                        </button>
+                    </td>
+                </tr>
+            `}).join('');
+        }
+    }
+    
+    document.querySelector('#suppliers .table-responsive').style.display = 'none';
+    document.getElementById('supplier-invoices-view').style.display = 'block';
+}
 
+// ================== عرض تفاصيل فاتورة شراء مع المنتوجات ==================
+function viewPurchaseDetails(invoiceNumber) {
+    const purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
+    const purchase = purchases.find(p => p.number === invoiceNumber);
+    
+    if (!purchase) {
+        Swal.fire('خطأ', 'الفاتورة غير موجودة', 'error');
+        return;
+    }
+    
+    let productsHtml = '';
+    
+    if (purchase.items && purchase.items.length > 0) {
+        purchase.items.forEach((item, index) => {
+            productsHtml += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.qty} ${item.unit || ''}</td>
+                    <td>${item.price.toFixed(2)} دج</td>
+                    <td class="fw-bold">${(item.qty * item.price).toFixed(2)} دج</td>
+                </tr>
+            `;
+        });
+    }
+    
+    Swal.fire({
+        title: `فاتورة شراء رقم ${purchase.number}`,
+        html: `
+            <div style="text-align:right; max-height:500px; overflow-y:auto; padding:10px;">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <p><strong>المورد:</strong> ${purchase.supplier}</p>
+                        <p><strong>التاريخ:</strong> ${purchase.date}</p>
+                    </div>
+                    <div class="col-6">
+                        <p><strong>طريقة الدفع:</strong> ${purchase.paymentMethod || 'نقدي'}</p>
+                        <p><strong>الإجمالي:</strong> ${purchase.total.toFixed(2)} دج</p>
+                    </div>
+                </div>
+                <hr>
+                <h6 class="text-center mb-3">المنتوجات المشتراة</h6>
+                <div class="table-responsive">
+                    <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#f8f9fa;">
+                                <th style="padding:8px;">#</th>
+                                <th style="padding:8px;">المنتج</th>
+                                <th style="padding:8px;">الكمية</th>
+                                <th style="padding:8px;">سعر الوحدة</th>
+                                <th style="padding:8px;">الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${productsHtml || '<tr><td colspan="5" class="text-center">لا توجد منتوجات</td></tr>'}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="4" style="text-align:left; padding:8px;"><strong>الإجمالي:</strong></td>
+                                <td style="padding:8px; font-size:16px; color:#28a745;">${purchase.total.toFixed(2)} دج</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        `,
+        width: '800px',
+        confirmButtonText: 'إغلاق'
+    });
+}
+
+// ================== إخفاء فواتير المورد ==================
+function hideSupplierInvoices() {
+    document.querySelector('#suppliers .table-responsive').style.display = 'block';
+    document.getElementById('supplier-invoices-view').style.display = 'none';
+}
     // ================== حذف المورد ==================
     function deleteSupplier(idx) {
         const supplier = suppliers[idx];
