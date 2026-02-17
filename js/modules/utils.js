@@ -210,7 +210,7 @@ const utils = (function() {
             title: 'نسيت كلمة السر؟',
             html: `
                 <div style="text-align:right">
-                    <p>كلمة السر الافتراضية هي: <strong>123456</strong></p>
+                    <p>كلمة السر الافتراضية هي: <strong>1986</strong></p>
                 </div>
             `,
             icon: 'info',
