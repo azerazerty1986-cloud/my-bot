@@ -118,9 +118,8 @@ const customerModule = (function() {
         _showNotification('نجاح', 'تم إضافة العميل', 'success');
     }
 
-    // ================== إضافة عميل كامل من النموذج المتقدم ==================
+    // ================== إضافة عميل كامل ==================
     function saveNewCustomer() {
-        // الحصول على القيم من النموذج
         const name = document.getElementById('new-customer-name')?.value.trim();
         const phone = document.getElementById('new-customer-phone')?.value.trim() || '';
         const secondaryPhone = document.getElementById('new-customer-phone2')?.value.trim() || '';
@@ -140,7 +139,6 @@ const customerModule = (function() {
             return;
         }
 
-        // التحقق من عدم التكرار
         if (customers.some(c => c.name === name)) {
             _showNotification('تنبيه', 'يوجد عميل بنفس الاسم بالفعل', 'warning');
             return;
@@ -161,25 +159,18 @@ const customerModule = (function() {
             maxDebt: maxDebt,
             alertDays: alertDays,
             notes: notes,
-            createdAt: new Date().toISOString(),
-            totalInvoices: 0,
-            totalPurchases: 0,
-            lastInvoiceDate: null
+            createdAt: new Date().toISOString()
         };
 
         customers.push(newCustomer);
         saveCustomers();
         
-        // إغلاق المودال إذا كان مفتوحاً
         const modal = document.getElementById('addCustomerModal');
         if (modal) {
             bootstrap.Modal.getInstance(modal)?.hide();
         }
         
-        // تحديث العرض
         renderCustomers();
-        
-        // إفراغ الحقول
         _clearCustomerForm();
         
         _showNotification('نجاح', 'تم إضافة العميل بنجاح', 'success');
@@ -200,27 +191,47 @@ const customerModule = (function() {
         });
     }
 
-    // ================== عرض العملاء في الجدول ==================
-    function renderCustomers() {
+    // ================== البحث عن العملاء ==================
+    function searchCustomers() {
+        const searchTerm = document.getElementById('search-customer')?.value.toLowerCase().trim() || '';
+        
+        let filteredCustomers = customers;
+        
+        if (searchTerm !== '') {
+            filteredCustomers = customers.filter(c => 
+                c.name.toLowerCase().includes(searchTerm) || 
+                (c.phone && c.phone.includes(searchTerm))
+            );
+        }
+        
+        renderFilteredCustomers(filteredCustomers);
+    }
+
+    // ================== عرض العملاء المفلترين ==================
+    function renderFilteredCustomers(filteredCustomers) {
         const tbody = document.getElementById('customers-tbody');
         if (!tbody) return;
 
-        if (customers.length === 0) {
+        if (filteredCustomers.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="text-center p-4 text-muted">
-                        <i class="material-icons-round" style="font-size: 48px;">people</i>
-                        <p>لا يوجد عملاء</p>
+                    <td colspan="10" class="text-center p-4 text-muted">
+                        <i class="material-icons-round" style="font-size:48px;">search_off</i>
+                        <p>لا توجد نتائج للبحث</p>
                     </td>
                 </tr>
             `;
             return;
         }
 
-        tbody.innerHTML = customers.map((c, idx) => {
-            // حساب الديون المستحقة
-            const invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
+        const invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
+
+        tbody.innerHTML = filteredCustomers.map((c, idx) => {
+            const originalIndex = customers.findIndex(item => item.id === c.id);
+            
             const customerInvoices = invoices.filter(inv => inv.customer === c.name);
+            const invoiceCount = customerInvoices.length;
+            const totalPurchases = customerInvoices.reduce((sum, inv) => sum + inv.total, 0);
             const totalDue = customerInvoices.reduce((sum, inv) => sum + inv.total, 0);
             const isOverdue = totalDue > c.maxDebt && c.maxDebt > 0;
             
@@ -235,25 +246,30 @@ const customerModule = (function() {
                         ${totalDue.toFixed(2)} دج / ${c.maxDebt} دج
                     </span>
                 </td>
+                <td><span class="badge bg-primary">${invoiceCount}</span></td>
+                <td>${totalPurchases.toFixed(2)} دج</td>
                 <td>
-                    <button class="btn btn-sm btn-info" onclick="customerModule.showCustomerDetails(${idx})">
-                        <i class="material-icons-round" style="font-size:16px;">visibility</i>
+                    <button class="btn btn-sm btn-info" onclick="customerModule.showCustomerInvoices(${originalIndex})">
+                        <i class="material-icons-round" style="font-size:16px;">receipt</i>
                     </button>
                 </td>
                 <td>
-                    <button class="btn btn-sm btn-warning" onclick="customerModule.editCustomer(${idx})">
+                    <button class="btn btn-sm btn-warning" onclick="customerModule.editCustomer(${originalIndex})">
                         <i class="material-icons-round" style="font-size:16px;">edit</i>
                     </button>
                 </td>
                 <td>
-                    <button class="btn btn-sm btn-danger" onclick="customerModule.deleteCustomer(${idx})">
+                    <button class="btn btn-sm btn-danger" onclick="customerModule.deleteCustomer(${originalIndex})">
                         <i class="material-icons-round" style="font-size:16px;">delete</i>
                     </button>
                 </td>
             </tr>
         `}).join('');
+    }
 
-        // تحديث قائمة العملاء في المبيعات
+    // ================== عرض العملاء في الجدول ==================
+    function renderCustomers() {
+        renderFilteredCustomers(customers);
         updateCustomerSelect();
     }
 
@@ -279,21 +295,18 @@ const customerModule = (function() {
         Swal.fire({
             title: 'تفاصيل العميل',
             html: `
-                <div class="text-right" style="text-align:right; max-height:400px; overflow-y:auto;">
+                <div style="text-align:right; max-height:400px; overflow-y:auto;">
                     <table class="table table-sm table-bordered">
-                        <tr><th style="width:40%">الاسم:</th><td>${customer.name}</td></tr>
+                        <tr><th>الاسم:</th><td>${customer.name}</td></tr>
                         <tr><th>الهاتف:</th><td>${customer.phone || '-'}</td></tr>
                         <tr><th>هاتف آخر:</th><td>${customer.secondaryPhone || '-'}</td></tr>
                         <tr><th>المحافظة:</th><td>${customer.governorate || '-'}</td></tr>
                         <tr><th>المدينة:</th><td>${customer.city || '-'}</td></tr>
-                        <tr><th>الشارع:</th><td>${customer.street || '-'}</td></tr>
                         <tr><th>العنوان:</th><td>${customer.address || '-'}</td></tr>
                         <tr><th>الرقم الضريبي:</th><td>${customer.taxNumber || '-'}</td></tr>
                         <tr><th>السجل التجاري:</th><td>${customer.commercialRegister || '-'}</td></tr>
                         <tr><th>البريد الإلكتروني:</th><td>${customer.email || '-'}</td></tr>
                         <tr><th>الحد الأقصى للمديونية:</th><td>${customer.maxDebt} دج</td></tr>
-                        <tr><th>أيام التنبيه:</th><td>${customer.alertDays} يوم</td></tr>
-                        <tr><th>ملاحظات:</th><td>${customer.notes || '-'}</td></tr>
                         <tr class="table-info"><th>إجمالي المشتريات:</th><td>${totalPurchases.toFixed(2)} دج</td></tr>
                         <tr class="table-info"><th>عدد الفواتير:</th><td>${invoiceCount}</td></tr>
                     </table>
@@ -304,6 +317,171 @@ const customerModule = (function() {
         });
     }
 
+    // ================== عرض فواتير العميل مع المنتوجات ==================
+    function showCustomerInvoices(customerIndex) {
+        const customer = customers[customerIndex];
+        if (!customer) return;
+        
+        document.getElementById('selected-customer-name').textContent = customer.name;
+        
+        const invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
+        const customerInvoices = invoices.filter(inv => inv.customer === customer.name);
+        
+        const tbody = document.getElementById('customer-invoices-tbody');
+        if (tbody) {
+            if (customerInvoices.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-3 text-muted">لا توجد فواتير لهذا العميل</td></tr>';
+            } else {
+                tbody.innerHTML = customerInvoices.map(inv => {
+                    const itemsCount = inv.items ? inv.items.length : 0;
+                    const total = inv.total || (inv.items ? inv.items.reduce((sum, item) => sum + (item.price * item.qty * (1 - (item.discount || 0)/100)), 0) : 0);
+                    
+                    return `
+                    <tr>
+                        <td>#${inv.number}</td>
+                        <td>${inv.date}</td>
+                        <td>${itemsCount}</td>
+                        <td class="fw-bold">${total.toFixed(2)} دج</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="customerModule.viewInvoiceDetails(${inv.number})">
+                                <i class="material-icons-round" style="font-size:16px;">visibility</i> عرض
+                            </button>
+                        </td>
+                    </tr>
+                `}).join('');
+            }
+        }
+        
+        document.querySelector('#customers .table-responsive').style.display = 'none';
+        document.getElementById('customer-invoices-view').style.display = 'block';
+    }
+
+    // ================== عرض تفاصيل فاتورة معينة مع المنتوجات ==================
+    function viewInvoiceDetails(invoiceNumber) {
+        const invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
+        const invoice = invoices.find(inv => inv.number === invoiceNumber);
+        
+        if (!invoice) {
+            Swal.fire('خطأ', 'الفاتورة غير موجودة', 'error');
+            return;
+        }
+        
+        let productsHtml = '';
+        let subtotal = 0;
+        
+        if (invoice.items && invoice.items.length > 0) {
+            invoice.items.forEach((item, index) => {
+                const itemTotal = item.price * item.qty * (1 - (item.discount || 0)/100);
+                subtotal += itemTotal;
+                
+                productsHtml += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item.name}</td>
+                        <td>${item.qty} ${item.unit || ''}</td>
+                        <td>${item.price.toFixed(2)} دج</td>
+                        <td>${item.discount || 0}%</td>
+                        <td class="fw-bold">${itemTotal.toFixed(2)} دج</td>
+                    </tr>
+                `;
+            });
+        }
+        
+        const totalDiscount = invoice.totalDiscount || (invoice.items ? invoice.items.reduce((sum, item) => sum + (item.price * item.qty * (item.discount || 0)/100), 0) : 0);
+        const grandTotal = invoice.total || subtotal;
+        
+        Swal.fire({
+            title: `فاتورة رقم ${invoice.number}`,
+            html: `
+                <div style="text-align:right; max-height:500px; overflow-y:auto; padding:10px;">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <p><strong>العميل:</strong> ${invoice.customer || 'نقدي'}</p>
+                            <p><strong>التاريخ:</strong> ${invoice.date}</p>
+                        </div>
+                        <div class="col-6">
+                            <p><strong>طريقة الدفع:</strong> ${invoice.paymentMethod || 'نقدي'}</p>
+                            <p><strong>المجموع:</strong> ${grandTotal.toFixed(2)} دج</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="text-center mb-3">المنتوجات</h6>
+                    <div class="table-responsive">
+                        <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#f8f9fa;">
+                                    <th style="padding:8px;">#</th>
+                                    <th style="padding:8px;">المنتج</th>
+                                    <th style="padding:8px;">الكمية</th>
+                                    <th style="padding:8px;">السعر</th>
+                                    <th style="padding:8px;">الخصم</th>
+                                    <th style="padding:8px;">الإجمالي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${productsHtml || '<tr><td colspan="6" class="text-center">لا توجد منتوجات</td></tr>'}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="5" style="text-align:left; padding:8px;"><strong>المجموع الفرعي:</strong></td>
+                                    <td style="padding:8px;">${subtotal.toFixed(2)} دج</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="5" style="text-align:left; padding:8px;"><strong>إجمالي الخصم:</strong></td>
+                                    <td style="padding:8px;">${totalDiscount.toFixed(2)} دج</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="5" style="text-align:left; padding:8px;"><strong>الإجمالي النهائي:</strong></td>
+                                    <td style="padding:8px; font-size:16px; color:#28a745;">${grandTotal.toFixed(2)} دج</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            `,
+            width: '800px',
+            confirmButtonText: 'إغلاق',
+            showCancelButton: true,
+            cancelButtonText: 'طباعة',
+            cancelButtonColor: '#17a2b8'
+        }).then((result) => {
+            if (result.dismiss === Swal.DismissReason.cancel) {
+                printInvoice(invoice);
+            }
+        });
+    }
+
+    // ================== طباعة الفاتورة ==================
+    function printInvoice(invoice) {
+        document.getElementById('print-invoice-no').textContent = invoice.number;
+        document.getElementById('print-date-time').textContent = invoice.date;
+        document.getElementById('print-customer').textContent = invoice.customer || 'نقدي';
+        document.getElementById('print-grand-total').textContent = (invoice.total || 0).toFixed(2) + ' دج';
+        document.getElementById('print-total-discount').textContent = (invoice.totalDiscount || 0).toFixed(2) + ' دج';
+        
+        const itemsHtml = invoice.items.map(item => {
+            const itemTotal = item.price * item.qty * (1 - (item.discount || 0)/100);
+            return `
+                <tr>
+                    <td style="text-align:right;">${item.name}</td>
+                    <td style="text-align:center;">${item.qty}</td>
+                    <td style="text-align:left;">${item.price.toFixed(2)} دج</td>
+                    <td style="text-align:left;">${item.discount || 0}%</td>
+                    <td style="text-align:left;">${itemTotal.toFixed(2)} دج</td>
+                </tr>
+            `;
+        }).join('');
+        
+        document.getElementById('print-cart-items').innerHTML = itemsHtml;
+        window.print();
+    }
+
+    // ================== إخفاء فواتير العميل ==================
+    function hideCustomerInvoices() {
+        document.querySelector('#customers .table-responsive').style.display = 'block';
+        document.getElementById('customer-invoices-view').style.display = 'none';
+    }
+
     // ================== تعديل العميل ==================
     function editCustomer(index) {
         const customer = customers[index];
@@ -312,13 +490,12 @@ const customerModule = (function() {
         Swal.fire({
             title: 'تعديل العميل',
             html: `
-                <div class="text-right" style="text-align:right; max-height:400px; overflow-y:auto;">
+                <div style="text-align:right;">
                     <input type="text" id="edit-name" class="form-control mb-2" placeholder="اسم العميل *" value="${customer.name}">
                     <input type="text" id="edit-phone" class="form-control mb-2" placeholder="رقم الهاتف" value="${customer.phone || ''}">
                     <input type="text" id="edit-secondary-phone" class="form-control mb-2" placeholder="رقم هاتف آخر" value="${customer.secondaryPhone || ''}">
                     <input type="text" id="edit-governorate" class="form-control mb-2" placeholder="المحافظة" value="${customer.governorate || ''}">
                     <input type="text" id="edit-city" class="form-control mb-2" placeholder="المدينة" value="${customer.city || ''}">
-                    <input type="text" id="edit-street" class="form-control mb-2" placeholder="الشارع" value="${customer.street || ''}">
                     <input type="text" id="edit-address" class="form-control mb-2" placeholder="العنوان كامل" value="${customer.address || ''}">
                     <input type="text" id="edit-tax" class="form-control mb-2" placeholder="الرقم الضريبي" value="${customer.taxNumber || ''}">
                     <input type="text" id="edit-commercial" class="form-control mb-2" placeholder="رقم السجل التجاري" value="${customer.commercialRegister || ''}">
@@ -327,7 +504,6 @@ const customerModule = (function() {
                         <input type="number" id="edit-max-debt" class="form-control" placeholder="الحد الأقصى للمديونية" value="${customer.maxDebt}">
                         <span class="input-group-text">دج</span>
                     </div>
-                    <input type="number" id="edit-alert-days" class="form-control mb-2" placeholder="أيام التنبيه" value="${customer.alertDays}">
                     <textarea id="edit-notes" class="form-control" placeholder="ملاحظات" rows="2">${customer.notes || ''}</textarea>
                 </div>
             `,
@@ -346,23 +522,18 @@ const customerModule = (function() {
                     secondaryPhone: document.getElementById('edit-secondary-phone').value.trim(),
                     governorate: document.getElementById('edit-governorate').value.trim(),
                     city: document.getElementById('edit-city').value.trim(),
-                    street: document.getElementById('edit-street').value.trim(),
                     address: document.getElementById('edit-address').value.trim(),
                     taxNumber: document.getElementById('edit-tax').value.trim(),
                     commercialRegister: document.getElementById('edit-commercial').value.trim(),
                     email: document.getElementById('edit-email').value.trim(),
                     maxDebt: parseFloat(document.getElementById('edit-max-debt').value) || 0,
-                    alertDays: parseInt(document.getElementById('edit-alert-days').value) || 0,
                     notes: document.getElementById('edit-notes').value.trim()
                 };
             }
         }).then((result) => {
             if (result.isConfirmed) {
                 const updated = result.value;
-                customers[index] = {
-                    ...customer,
-                    ...updated
-                };
+                customers[index] = { ...customer, ...updated };
                 saveCustomers();
                 renderCustomers();
                 _showNotification('نجاح', 'تم تعديل العميل', 'success');
@@ -383,182 +554,6 @@ const customerModule = (function() {
         });
     }
 
-    // ================== عرض فواتير العميل مع المنتوجات ==================
-function showCustomerInvoices(customerIndex) {
-    const customer = customers[customerIndex];
-    if (!customer) return;
-    
-    document.getElementById('selected-customer-name').textContent = customer.name;
-    
-    const invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
-    const customerInvoices = invoices.filter(inv => inv.customer === customer.name);
-    
-    const tbody = document.getElementById('customer-invoices-tbody');
-    if (tbody) {
-        if (customerInvoices.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-3 text-muted">لا توجد فواتير لهذا العميل</td></tr>';
-        } else {
-            tbody.innerHTML = customerInvoices.map(inv => {
-                // حساب عدد المنتوجات في الفاتورة
-                const itemsCount = inv.items ? inv.items.length : 0;
-                // حساب إجمالي الفاتورة
-                const total = inv.total || inv.items.reduce((sum, item) => sum + (item.price * item.qty * (1 - (item.discount || 0)/100)), 0);
-                
-                return `
-                <tr>
-                    <td>#${inv.number}</td>
-                    <td>${inv.date}</td>
-                    <td>${itemsCount}</td>
-                    <td class="fw-bold">${total.toFixed(2)} دج</td>
-                    <td>
-                        <button class="btn btn-sm btn-info" onclick="customerModule.viewInvoiceDetails(${inv.number})">
-                            <i class="material-icons-round" style="font-size:16px;">visibility</i> عرض
-                        </button>
-                    </td>
-                </tr>
-            `}).join('');
-        }
-    }
-    
-    document.querySelector('#customers .table-responsive').style.display = 'none';
-    document.getElementById('customer-invoices-view').style.display = 'block';
-}
-
-// ================== عرض تفاصيل فاتورة معينة مع المنتوجات ==================
-function viewInvoiceDetails(invoiceNumber) {
-    const invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
-    const invoice = invoices.find(inv => inv.number === invoiceNumber);
-    
-    if (!invoice) {
-        Swal.fire('خطأ', 'الفاتورة غير موجودة', 'error');
-        return;
-    }
-    
-    let productsHtml = '';
-    let subtotal = 0;
-    
-    if (invoice.items && invoice.items.length > 0) {
-        invoice.items.forEach((item, index) => {
-            const itemTotal = item.price * item.qty * (1 - (item.discount || 0)/100);
-            subtotal += itemTotal;
-            
-            productsHtml += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.name}</td>
-                    <td>${item.qty} ${item.unit || ''}</td>
-                    <td>${item.price.toFixed(2)} دج</td>
-                    <td>${item.discount || 0}%</td>
-                    <td class="fw-bold">${itemTotal.toFixed(2)} دج</td>
-                </tr>
-            `;
-        });
-    }
-    
-    const totalDiscount = invoice.totalDiscount || (invoice.items ? invoice.items.reduce((sum, item) => sum + (item.price * item.qty * (item.discount || 0)/100), 0) : 0);
-    const grandTotal = invoice.total || subtotal;
-    
-    Swal.fire({
-        title: `فاتورة رقم ${invoice.number}`,
-        html: `
-            <div style="text-align:right; max-height:500px; overflow-y:auto; padding:10px;">
-                <div class="row mb-3">
-                    <div class="col-6">
-                        <p><strong>العميل:</strong> ${invoice.customer || 'نقدي'}</p>
-                        <p><strong>التاريخ:</strong> ${invoice.date}</p>
-                    </div>
-                    <div class="col-6">
-                        <p><strong>طريقة الدفع:</strong> ${invoice.paymentMethod || 'نقدي'}</p>
-                        <p><strong>المجموع:</strong> ${grandTotal.toFixed(2)} دج</p>
-                    </div>
-                </div>
-                <hr>
-                <h6 class="text-center mb-3">المنتوجات</h6>
-                <div class="table-responsive">
-                    <table style="width:100%; font-size:12px; border-collapse:collapse;">
-                        <thead>
-                            <tr style="background:#f8f9fa;">
-                                <th style="padding:8px;">#</th>
-                                <th style="padding:8px;">المنتج</th>
-                                <th style="padding:8px;">الكمية</th>
-                                <th style="padding:8px;">السعر</th>
-                                <th style="padding:8px;">الخصم</th>
-                                <th style="padding:8px;">الإجمالي</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${productsHtml || '<tr><td colspan="6" class="text-center">لا توجد منتوجات</td></tr>'}
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="5" style="text-align:left; padding:8px;"><strong>المجموع الفرعي:</strong></td>
-                                <td style="padding:8px;">${subtotal.toFixed(2)} دج</td>
-                            </tr>
-                            <tr>
-                                <td colspan="5" style="text-align:left; padding:8px;"><strong>إجمالي الخصم:</strong></td>
-                                <td style="padding:8px;">${totalDiscount.toFixed(2)} دج</td>
-                            </tr>
-                            <tr>
-                                <td colspan="5" style="text-align:left; padding:8px;"><strong>الإجمالي النهائي:</strong></td>
-                                <td style="padding:8px; font-size:16px; color:#28a745;">${grandTotal.toFixed(2)} دج</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-        `,
-        width: '800px',
-        confirmButtonText: 'إغلاق',
-        showCancelButton: true,
-        cancelButtonText: 'طباعة',
-        cancelButtonColor: '#17a2b8',
-        preConfirm: () => {
-            // يمكن إضافة طباعة الفاتورة هنا
-            return true;
-        }
-    }).then((result) => {
-        if (result.dismiss === Swal.DismissReason.cancel) {
-            // طباعة الفاتورة
-            printInvoice(invoice);
-        }
-    });
-}
-
-// ================== طباعة الفاتورة ==================
-function printInvoice(invoice) {
-    // تجهيز منطقة الطباعة
-    document.getElementById('print-invoice-no').textContent = invoice.number;
-    document.getElementById('print-date-time').textContent = invoice.date;
-    document.getElementById('print-customer').textContent = invoice.customer || 'نقدي';
-    document.getElementById('print-grand-total').textContent = (invoice.total || 0).toFixed(2) + ' دج';
-    document.getElementById('print-total-discount').textContent = (invoice.totalDiscount || 0).toFixed(2) + ' دج';
-    
-    // تجهيز عناصر الفاتورة
-    const itemsHtml = invoice.items.map(item => {
-        const itemTotal = item.price * item.qty * (1 - (item.discount || 0)/100);
-        return `
-            <tr>
-                <td style="text-align:right;">${item.name}</td>
-                <td style="text-align:center;">${item.qty}</td>
-                <td style="text-align:left;">${item.price.toFixed(2)} دج</td>
-                <td style="text-align:left;">${item.discount || 0}%</td>
-                <td style="text-align:left;">${itemTotal.toFixed(2)} دج</td>
-            </tr>
-        `;
-    }).join('');
-    
-    document.getElementById('print-cart-items').innerHTML = itemsHtml;
-    
-    // طباعة
-    window.print();
-}
-
-// ================== إخفاء فواتير العميل ==================
-function hideCustomerInvoices() {
-    document.querySelector('#customers .table-responsive').style.display = 'block';
-    document.getElementById('customer-invoices-view').style.display = 'none';
-}
-
     // ================== تصدير الوحدة ==================
     return {
         customers,
@@ -569,7 +564,10 @@ function hideCustomerInvoices() {
         editCustomer,
         deleteCustomer,
         showCustomerInvoices,
-        hideCustomerInvoices
+        hideCustomerInvoices,
+        searchCustomers,
+        viewInvoiceDetails,
+        printInvoice
     };
 })();
 
@@ -742,48 +740,78 @@ const supplierModule = (function() {
         });
     }
 
-    // ================== عرض الموردين ==================
-    function renderSuppliers() {
+    // ================== البحث عن الموردين ==================
+    function searchSuppliers() {
+        const searchTerm = document.getElementById('search-supplier')?.value.toLowerCase().trim() || '';
+        
+        let filteredSuppliers = suppliers;
+        
+        if (searchTerm !== '') {
+            filteredSuppliers = suppliers.filter(s => 
+                s.name.toLowerCase().includes(searchTerm) || 
+                (s.phone && s.phone.includes(searchTerm))
+            );
+        }
+        
+        renderFilteredSuppliers(filteredSuppliers);
+    }
+
+    // ================== عرض الموردين المفلترين ==================
+    function renderFilteredSuppliers(filteredSuppliers) {
         const tbody = document.getElementById('suppliers-tbody');
         if (!tbody) return;
 
-        if (suppliers.length === 0) {
+        if (filteredSuppliers.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center p-4 text-muted">
-                        <i class="material-icons-round" style="font-size: 48px;">business</i>
-                        <p>لا يوجد موردين</p>
+                    <td colspan="9" class="text-center p-4 text-muted">
+                        <i class="material-icons-round" style="font-size:48px;">search_off</i>
+                        <p>لا توجد نتائج للبحث</p>
                     </td>
                 </tr>
             `;
             return;
         }
 
-        tbody.innerHTML = suppliers.map((s, idx) => `
+        const purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
+
+        tbody.innerHTML = filteredSuppliers.map((s, idx) => {
+            const originalIndex = suppliers.findIndex(item => item.id === s.id);
+            
+            const supplierPurchases = purchases.filter(p => p.supplier === s.name);
+            const invoiceCount = supplierPurchases.length;
+            const totalPurchases = supplierPurchases.reduce((sum, p) => sum + p.total, 0);
+            
+            return `
             <tr>
                 <td>${s.name}</td>
                 <td>${s.phone || '-'}</td>
                 <td>${s.secondaryPhone || '-'}</td>
                 <td>${s.city || '-'}</td>
+                <td><span class="badge bg-primary">${invoiceCount}</span></td>
+                <td>${totalPurchases.toFixed(2)} دج</td>
                 <td>
-                    <button class="btn btn-sm btn-info" onclick="supplierModule.showSupplierDetails(${idx})">
-                        <i class="material-icons-round" style="font-size:16px;">visibility</i>
+                    <button class="btn btn-sm btn-info" onclick="supplierModule.showSupplierInvoices(${originalIndex})">
+                        <i class="material-icons-round" style="font-size:16px;">receipt</i>
                     </button>
                 </td>
                 <td>
-                    <button class="btn btn-sm btn-warning" onclick="supplierModule.editSupplier(${idx})">
+                    <button class="btn btn-sm btn-warning" onclick="supplierModule.editSupplier(${originalIndex})">
                         <i class="material-icons-round" style="font-size:16px;">edit</i>
                     </button>
                 </td>
                 <td>
-                    <button class="btn btn-sm btn-danger" onclick="supplierModule.deleteSupplier(${idx})">
+                    <button class="btn btn-sm btn-danger" onclick="supplierModule.deleteSupplier(${originalIndex})">
                         <i class="material-icons-round" style="font-size:16px;">delete</i>
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `}).join('');
+    }
 
-        // تحديث قائمة الموردين في المشتريات
+    // ================== عرض الموردين ==================
+    function renderSuppliers() {
+        renderFilteredSuppliers(suppliers);
         updateSupplierSelect();
     }
 
@@ -808,19 +836,17 @@ const supplierModule = (function() {
         Swal.fire({
             title: 'تفاصيل المورد',
             html: `
-                <div class="text-right" style="text-align:right; max-height:400px; overflow-y:auto;">
+                <div style="text-align:right;">
                     <table class="table table-sm table-bordered">
-                        <tr><th style="width:40%">الاسم:</th><td>${supplier.name}</td></tr>
+                        <tr><th>الاسم:</th><td>${supplier.name}</td></tr>
                         <tr><th>الهاتف:</th><td>${supplier.phone || '-'}</td></tr>
                         <tr><th>هاتف آخر:</th><td>${supplier.secondaryPhone || '-'}</td></tr>
                         <tr><th>المحافظة:</th><td>${supplier.governorate || '-'}</td></tr>
                         <tr><th>المدينة:</th><td>${supplier.city || '-'}</td></tr>
-                        <tr><th>الشارع:</th><td>${supplier.street || '-'}</td></tr>
                         <tr><th>العنوان:</th><td>${supplier.address || '-'}</td></tr>
                         <tr><th>الرقم الضريبي:</th><td>${supplier.taxNumber || '-'}</td></tr>
                         <tr><th>السجل التجاري:</th><td>${supplier.commercialRegister || '-'}</td></tr>
                         <tr><th>البريد الإلكتروني:</th><td>${supplier.email || '-'}</td></tr>
-                        <tr><th>ملاحظات:</th><td>${supplier.notes || '-'}</td></tr>
                         <tr class="table-info"><th>إجمالي المشتريات:</th><td>${totalPurchases.toFixed(2)} دج</td></tr>
                         <tr class="table-info"><th>عدد الفواتير:</th><td>${purchaseCount}</td></tr>
                     </table>
@@ -831,6 +857,121 @@ const supplierModule = (function() {
         });
     }
 
+    // ================== عرض فواتير المورد مع المنتوجات ==================
+    function showSupplierInvoices(supplierIndex) {
+        const supplier = suppliers[supplierIndex];
+        if (!supplier) return;
+        
+        document.getElementById('selected-supplier-name').textContent = supplier.name;
+        
+        const purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
+        const supplierPurchases = purchases.filter(p => p.supplier === supplier.name);
+        
+        const tbody = document.getElementById('supplier-invoices-tbody');
+        if (tbody) {
+            if (supplierPurchases.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-3 text-muted">لا توجد فواتير لهذا المورد</td></tr>';
+            } else {
+                tbody.innerHTML = supplierPurchases.map(pur => {
+                    const itemsCount = pur.items ? pur.items.length : 0;
+                    
+                    return `
+                    <tr>
+                        <td>#${pur.number}</td>
+                        <td>${pur.date}</td>
+                        <td>${itemsCount}</td>
+                        <td class="fw-bold text-success">${pur.total.toFixed(2)} دج</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="supplierModule.viewPurchaseDetails(${pur.number})">
+                                <i class="material-icons-round" style="font-size:16px;">visibility</i> عرض
+                            </button>
+                        </td>
+                    </tr>
+                `}).join('');
+            }
+        }
+        
+        document.querySelector('#suppliers .table-responsive').style.display = 'none';
+        document.getElementById('supplier-invoices-view').style.display = 'block';
+    }
+
+    // ================== عرض تفاصيل فاتورة شراء مع المنتوجات ==================
+    function viewPurchaseDetails(invoiceNumber) {
+        const purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
+        const purchase = purchases.find(p => p.number === invoiceNumber);
+        
+        if (!purchase) {
+            Swal.fire('خطأ', 'الفاتورة غير موجودة', 'error');
+            return;
+        }
+        
+        let productsHtml = '';
+        
+        if (purchase.items && purchase.items.length > 0) {
+            purchase.items.forEach((item, index) => {
+                productsHtml += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${item.name}</td>
+                        <td>${item.qty} ${item.unit || ''}</td>
+                        <td>${item.price.toFixed(2)} دج</td>
+                        <td class="fw-bold">${(item.qty * item.price).toFixed(2)} دج</td>
+                    </tr>
+                `;
+            });
+        }
+        
+        Swal.fire({
+            title: `فاتورة شراء رقم ${purchase.number}`,
+            html: `
+                <div style="text-align:right; max-height:500px; overflow-y:auto; padding:10px;">
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <p><strong>المورد:</strong> ${purchase.supplier}</p>
+                            <p><strong>التاريخ:</strong> ${purchase.date}</p>
+                        </div>
+                        <div class="col-6">
+                            <p><strong>طريقة الدفع:</strong> ${purchase.paymentMethod || 'نقدي'}</p>
+                            <p><strong>الإجمالي:</strong> ${purchase.total.toFixed(2)} دج</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6 class="text-center mb-3">المنتوجات المشتراة</h6>
+                    <div class="table-responsive">
+                        <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                            <thead>
+                                <tr style="background:#f8f9fa;">
+                                    <th style="padding:8px;">#</th>
+                                    <th style="padding:8px;">المنتج</th>
+                                    <th style="padding:8px;">الكمية</th>
+                                    <th style="padding:8px;">سعر الوحدة</th>
+                                    <th style="padding:8px;">الإجمالي</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${productsHtml || '<tr><td colspan="5" class="text-center">لا توجد منتوجات</td></tr>'}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td colspan="4" style="text-align:left; padding:8px;"><strong>الإجمالي:</strong></td>
+                                    <td style="padding:8px; font-size:16px; color:#28a745;">${purchase.total.toFixed(2)} دج</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+            `,
+            width: '800px',
+            confirmButtonText: 'إغلاق'
+        });
+    }
+
+    // ================== إخفاء فواتير المورد ==================
+    function hideSupplierInvoices() {
+        document.querySelector('#suppliers .table-responsive').style.display = 'block';
+        document.getElementById('supplier-invoices-view').style.display = 'none';
+    }
+
     // ================== تعديل المورد ==================
     function editSupplier(index) {
         const supplier = suppliers[index];
@@ -839,13 +980,12 @@ const supplierModule = (function() {
         Swal.fire({
             title: 'تعديل المورد',
             html: `
-                <div class="text-right" style="text-align:right; max-height:400px; overflow-y:auto;">
+                <div style="text-align:right;">
                     <input type="text" id="edit-name" class="form-control mb-2" placeholder="اسم المورد *" value="${supplier.name}">
                     <input type="text" id="edit-phone" class="form-control mb-2" placeholder="رقم الهاتف" value="${supplier.phone || ''}">
                     <input type="text" id="edit-secondary-phone" class="form-control mb-2" placeholder="رقم هاتف آخر" value="${supplier.secondaryPhone || ''}">
                     <input type="text" id="edit-governorate" class="form-control mb-2" placeholder="المحافظة" value="${supplier.governorate || ''}">
                     <input type="text" id="edit-city" class="form-control mb-2" placeholder="المدينة" value="${supplier.city || ''}">
-                    <input type="text" id="edit-street" class="form-control mb-2" placeholder="الشارع" value="${supplier.street || ''}">
                     <input type="text" id="edit-address" class="form-control mb-2" placeholder="العنوان كامل" value="${supplier.address || ''}">
                     <input type="text" id="edit-tax" class="form-control mb-2" placeholder="الرقم الضريبي" value="${supplier.taxNumber || ''}">
                     <input type="text" id="edit-commercial" class="form-control mb-2" placeholder="رقم السجل التجاري" value="${supplier.commercialRegister || ''}">
@@ -868,7 +1008,6 @@ const supplierModule = (function() {
                     secondaryPhone: document.getElementById('edit-secondary-phone').value.trim(),
                     governorate: document.getElementById('edit-governorate').value.trim(),
                     city: document.getElementById('edit-city').value.trim(),
-                    street: document.getElementById('edit-street').value.trim(),
                     address: document.getElementById('edit-address').value.trim(),
                     taxNumber: document.getElementById('edit-tax').value.trim(),
                     commercialRegister: document.getElementById('edit-commercial').value.trim(),
@@ -879,130 +1018,14 @@ const supplierModule = (function() {
         }).then((result) => {
             if (result.isConfirmed) {
                 const updated = result.value;
-                suppliers[index] = {
-                    ...supplier,
-                    ...updated
-                };
+                suppliers[index] = { ...supplier, ...updated };
                 saveSuppliers();
                 renderSuppliers();
                 _showNotification('نجاح', 'تم تعديل المورد', 'success');
             }
         });
     }
-// ================== عرض فواتير المورد مع المنتوجات ==================
-function showSupplierInvoices(supplierIndex) {
-    const supplier = suppliers[supplierIndex];
-    if (!supplier) return;
-    
-    document.getElementById('selected-supplier-name').textContent = supplier.name;
-    
-    const purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
-    const supplierPurchases = purchases.filter(p => p.supplier === supplier.name);
-    
-    const tbody = document.getElementById('supplier-invoices-tbody');
-    if (tbody) {
-        if (supplierPurchases.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-3 text-muted">لا توجد فواتير لهذا المورد</td></tr>';
-        } else {
-            tbody.innerHTML = supplierPurchases.map(pur => {
-                const itemsCount = pur.items ? pur.items.length : 0;
-                
-                return `
-                <tr>
-                    <td>#${pur.number}</td>
-                    <td>${pur.date}</td>
-                    <td>${itemsCount}</td>
-                    <td class="fw-bold text-success">${pur.total.toFixed(2)} دج</td>
-                    <td>
-                        <button class="btn btn-sm btn-info" onclick="supplierModule.viewPurchaseDetails(${pur.number})">
-                            <i class="material-icons-round" style="font-size:16px;">visibility</i> عرض
-                        </button>
-                    </td>
-                </tr>
-            `}).join('');
-        }
-    }
-    
-    document.querySelector('#suppliers .table-responsive').style.display = 'none';
-    document.getElementById('supplier-invoices-view').style.display = 'block';
-}
 
-// ================== عرض تفاصيل فاتورة شراء مع المنتوجات ==================
-function viewPurchaseDetails(invoiceNumber) {
-    const purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
-    const purchase = purchases.find(p => p.number === invoiceNumber);
-    
-    if (!purchase) {
-        Swal.fire('خطأ', 'الفاتورة غير موجودة', 'error');
-        return;
-    }
-    
-    let productsHtml = '';
-    
-    if (purchase.items && purchase.items.length > 0) {
-        purchase.items.forEach((item, index) => {
-            productsHtml += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.name}</td>
-                    <td>${item.qty} ${item.unit || ''}</td>
-                    <td>${item.price.toFixed(2)} دج</td>
-                    <td class="fw-bold">${(item.qty * item.price).toFixed(2)} دج</td>
-                </tr>
-            `;
-        });
-    }
-    
-    Swal.fire({
-        title: `فاتورة شراء رقم ${purchase.number}`,
-        html: `
-            <div style="text-align:right; max-height:500px; overflow-y:auto; padding:10px;">
-                <div class="row mb-3">
-                    <div class="col-6">
-                        <p><strong>المورد:</strong> ${purchase.supplier}</p>
-                        <p><strong>التاريخ:</strong> ${purchase.date}</p>
-                    </div>
-                    <div class="col-6">
-                        <p><strong>طريقة الدفع:</strong> ${purchase.paymentMethod || 'نقدي'}</p>
-                        <p><strong>الإجمالي:</strong> ${purchase.total.toFixed(2)} دج</p>
-                    </div>
-                </div>
-                <hr>
-                <h6 class="text-center mb-3">المنتوجات المشتراة</h6>
-                <div class="table-responsive">
-                    <table style="width:100%; font-size:12px; border-collapse:collapse;">
-                        <thead>
-                            <tr style="background:#f8f9fa;">
-                                <th style="padding:8px;">#</th>
-                                <th style="padding:8px;">المنتج</th>
-                                <th style="padding:8px;">الكمية</th>
-                                <th style="padding:8px;">سعر الوحدة</th>
-                                <th style="padding:8px;">الإجمالي</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${productsHtml || '<tr><td colspan="5" class="text-center">لا توجد منتوجات</td></tr>'}
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="4" style="text-align:left; padding:8px;"><strong>الإجمالي:</strong></td>
-                                <td style="padding:8px; font-size:16px; color:#28a745;">${purchase.total.toFixed(2)} دج</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-        `,
-        width: '800px',
-        confirmButtonText: 'إغلاق'
-    });
-}
-
-// ================== إخفاء فواتير المورد ==================
-function hideSupplierInvoices() {
-    document.querySelector('#suppliers .table-responsive').style.display = 'block';
-    document.getElementById('supplier-invoices-view').style.display = 'none';
-}
     // ================== حذف المورد ==================
     function deleteSupplier(idx) {
         const supplier = suppliers[idx];
@@ -1022,7 +1045,11 @@ function hideSupplierInvoices() {
         renderSuppliers,
         showSupplierDetails,
         editSupplier,
-        deleteSupplier
+        deleteSupplier,
+        searchSuppliers,
+        showSupplierInvoices,
+        hideSupplierInvoices,
+        viewPurchaseDetails
     };
 })();
 
