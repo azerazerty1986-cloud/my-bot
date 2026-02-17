@@ -383,35 +383,181 @@ const customerModule = (function() {
         });
     }
 
-    // ================== عرض فواتير العميل ==================
-    function showCustomerInvoices(customerIndex) {
-        const customer = customers[customerIndex];
-        if (!customer) return;
-        
-        document.getElementById('selected-customer-name').textContent = customer.name;
-        
-        const invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
-        const customerInvoices = invoices.filter(inv => inv.customer === customer.name);
-        
-        const tbody = document.getElementById('customer-invoices-tbody');
-        if (tbody) {
-            tbody.innerHTML = customerInvoices.map(inv => `
+    // ================== عرض فواتير العميل مع المنتوجات ==================
+function showCustomerInvoices(customerIndex) {
+    const customer = customers[customerIndex];
+    if (!customer) return;
+    
+    document.getElementById('selected-customer-name').textContent = customer.name;
+    
+    const invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
+    const customerInvoices = invoices.filter(inv => inv.customer === customer.name);
+    
+    const tbody = document.getElementById('customer-invoices-tbody');
+    if (tbody) {
+        if (customerInvoices.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-3 text-muted">لا توجد فواتير لهذا العميل</td></tr>';
+        } else {
+            tbody.innerHTML = customerInvoices.map(inv => {
+                // حساب عدد المنتوجات في الفاتورة
+                const itemsCount = inv.items ? inv.items.length : 0;
+                // حساب إجمالي الفاتورة
+                const total = inv.total || inv.items.reduce((sum, item) => sum + (item.price * item.qty * (1 - (item.discount || 0)/100)), 0);
+                
+                return `
                 <tr>
                     <td>#${inv.number}</td>
                     <td>${inv.date}</td>
-                    <td class="fw-bold">${inv.total.toFixed(2)} دج</td>
+                    <td>${itemsCount}</td>
+                    <td class="fw-bold">${total.toFixed(2)} دج</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="customerModule.viewInvoiceDetails(${inv.number})">
+                            <i class="material-icons-round" style="font-size:16px;">visibility</i> عرض
+                        </button>
+                    </td>
                 </tr>
-            `).join('');
+            `}).join('');
         }
-        
-        document.querySelector('#customers .table-custom').style.display = 'none';
-        document.getElementById('customer-invoices-view').style.display = 'block';
     }
+    
+    document.querySelector('#customers .table-responsive').style.display = 'none';
+    document.getElementById('customer-invoices-view').style.display = 'block';
+}
 
-    function hideCustomerInvoices() {
-        document.querySelector('#customers .table-custom').style.display = 'table';
-        document.getElementById('customer-invoices-view').style.display = 'none';
+// ================== عرض تفاصيل فاتورة معينة مع المنتوجات ==================
+function viewInvoiceDetails(invoiceNumber) {
+    const invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
+    const invoice = invoices.find(inv => inv.number === invoiceNumber);
+    
+    if (!invoice) {
+        Swal.fire('خطأ', 'الفاتورة غير موجودة', 'error');
+        return;
     }
+    
+    let productsHtml = '';
+    let subtotal = 0;
+    
+    if (invoice.items && invoice.items.length > 0) {
+        invoice.items.forEach((item, index) => {
+            const itemTotal = item.price * item.qty * (1 - (item.discount || 0)/100);
+            subtotal += itemTotal;
+            
+            productsHtml += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.qty} ${item.unit || ''}</td>
+                    <td>${item.price.toFixed(2)} دج</td>
+                    <td>${item.discount || 0}%</td>
+                    <td class="fw-bold">${itemTotal.toFixed(2)} دج</td>
+                </tr>
+            `;
+        });
+    }
+    
+    const totalDiscount = invoice.totalDiscount || (invoice.items ? invoice.items.reduce((sum, item) => sum + (item.price * item.qty * (item.discount || 0)/100), 0) : 0);
+    const grandTotal = invoice.total || subtotal;
+    
+    Swal.fire({
+        title: `فاتورة رقم ${invoice.number}`,
+        html: `
+            <div style="text-align:right; max-height:500px; overflow-y:auto; padding:10px;">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <p><strong>العميل:</strong> ${invoice.customer || 'نقدي'}</p>
+                        <p><strong>التاريخ:</strong> ${invoice.date}</p>
+                    </div>
+                    <div class="col-6">
+                        <p><strong>طريقة الدفع:</strong> ${invoice.paymentMethod || 'نقدي'}</p>
+                        <p><strong>المجموع:</strong> ${grandTotal.toFixed(2)} دج</p>
+                    </div>
+                </div>
+                <hr>
+                <h6 class="text-center mb-3">المنتوجات</h6>
+                <div class="table-responsive">
+                    <table style="width:100%; font-size:12px; border-collapse:collapse;">
+                        <thead>
+                            <tr style="background:#f8f9fa;">
+                                <th style="padding:8px;">#</th>
+                                <th style="padding:8px;">المنتج</th>
+                                <th style="padding:8px;">الكمية</th>
+                                <th style="padding:8px;">السعر</th>
+                                <th style="padding:8px;">الخصم</th>
+                                <th style="padding:8px;">الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${productsHtml || '<tr><td colspan="6" class="text-center">لا توجد منتوجات</td></tr>'}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <td colspan="5" style="text-align:left; padding:8px;"><strong>المجموع الفرعي:</strong></td>
+                                <td style="padding:8px;">${subtotal.toFixed(2)} دج</td>
+                            </tr>
+                            <tr>
+                                <td colspan="5" style="text-align:left; padding:8px;"><strong>إجمالي الخصم:</strong></td>
+                                <td style="padding:8px;">${totalDiscount.toFixed(2)} دج</td>
+                            </tr>
+                            <tr>
+                                <td colspan="5" style="text-align:left; padding:8px;"><strong>الإجمالي النهائي:</strong></td>
+                                <td style="padding:8px; font-size:16px; color:#28a745;">${grandTotal.toFixed(2)} دج</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        `,
+        width: '800px',
+        confirmButtonText: 'إغلاق',
+        showCancelButton: true,
+        cancelButtonText: 'طباعة',
+        cancelButtonColor: '#17a2b8',
+        preConfirm: () => {
+            // يمكن إضافة طباعة الفاتورة هنا
+            return true;
+        }
+    }).then((result) => {
+        if (result.dismiss === Swal.DismissReason.cancel) {
+            // طباعة الفاتورة
+            printInvoice(invoice);
+        }
+    });
+}
+
+// ================== طباعة الفاتورة ==================
+function printInvoice(invoice) {
+    // تجهيز منطقة الطباعة
+    document.getElementById('print-invoice-no').textContent = invoice.number;
+    document.getElementById('print-date-time').textContent = invoice.date;
+    document.getElementById('print-customer').textContent = invoice.customer || 'نقدي';
+    document.getElementById('print-grand-total').textContent = (invoice.total || 0).toFixed(2) + ' دج';
+    document.getElementById('print-total-discount').textContent = (invoice.totalDiscount || 0).toFixed(2) + ' دج';
+    
+    // تجهيز عناصر الفاتورة
+    const itemsHtml = invoice.items.map(item => {
+        const itemTotal = item.price * item.qty * (1 - (item.discount || 0)/100);
+        return `
+            <tr>
+                <td style="text-align:right;">${item.name}</td>
+                <td style="text-align:center;">${item.qty}</td>
+                <td style="text-align:left;">${item.price.toFixed(2)} دج</td>
+                <td style="text-align:left;">${item.discount || 0}%</td>
+                <td style="text-align:left;">${itemTotal.toFixed(2)} دج</td>
+            </tr>
+        `;
+    }).join('');
+    
+    document.getElementById('print-cart-items').innerHTML = itemsHtml;
+    
+    // طباعة
+    window.print();
+}
+
+// ================== إخفاء فواتير العميل ==================
+function hideCustomerInvoices() {
+    document.querySelector('#customers .table-responsive').style.display = 'block';
+    document.getElementById('customer-invoices-view').style.display = 'none';
+}
 
     // ================== تصدير الوحدة ==================
     return {
