@@ -334,7 +334,11 @@ const utils = (function() {
             icon: 'info'
         });
     }
-
+// تجاوز تسجيل الدخول مؤقتاً
+window.onload = function() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('welcome-screen').style.display = 'flex';
+};
     return {
         switchSection,
         showSubSection,
