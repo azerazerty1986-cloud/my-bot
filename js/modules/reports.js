@@ -1,9 +1,10 @@
-// ================== التقارير والإحصائيات - نسخة كاملة ==================
+// ================== نظام التقارير والديون المتكامل - النسخة النهائية ==================
 const reportsModule = (function() {
     // ================== المتغيرات الخاصة ==================
     let movements = JSON.parse(localStorage.getItem('ryan_movements')) || [];
     let payments = JSON.parse(localStorage.getItem('payment_history')) || [];
     
+    // ثوابت للتكوين
     const CONFIG = {
         CURRENCY: 'دج',
         STORAGE_KEYS: {
@@ -34,7 +35,7 @@ const reportsModule = (function() {
         });
     }
 
-    // ================== دالة إظهار التبويبات ==================
+    // ================== إظهار تبويب التقارير ==================
     function showReportTab(tabId) {
         // إخفاء جميع التقارير
         document.querySelectorAll('.report-content').forEach(c => c.classList.remove('active-report'));
@@ -59,18 +60,8 @@ const reportsModule = (function() {
             case 'report-products':
                 renderProductsReport();
                 break;
-            case 'report-services':
-                renderServicesReport();
-                break;
-            case 'report-stores':
-                renderStoresReport();
-                break;
             case 'report-categories':
                 renderCategoriesReport();
-                break;
-            case 'report-import':
-                break;
-            case 'report-barcode':
                 break;
             case 'report-lowstock':
                 updateLowStockList();
@@ -82,6 +73,7 @@ const reportsModule = (function() {
                 updateMovementsList();
                 break;
             case 'report-date':
+                // لا تحتاج لتحديث
                 break;
             case 'report-customer-debts':
                 renderCustomerDebts();
@@ -95,7 +87,7 @@ const reportsModule = (function() {
         }
     }
 
-    // ================== دالة تحديث التقارير ==================
+    // ================== تحديث التقارير الرئيسية ==================
     function renderReports() {
         const invoices = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.INVOICES)) || [];
         const purchases = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.PURCHASES)) || [];
@@ -129,6 +121,7 @@ const reportsModule = (function() {
         const stock = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.STOCK)) || [];
         const categories = [...new Set(stock.map(p => p.category || 'عام'))];
         
+        // تحديث الإحصائيات العامة
         const productsCount = document.getElementById('products-count');
         const categoriesCount = document.getElementById('categories-count');
         const stockValue = document.getElementById('stock-value');
@@ -139,6 +132,7 @@ const reportsModule = (function() {
         const totalValue = stock.reduce((sum, p) => sum + ((p.qty || 0) * (p.buyPrice || 0)), 0);
         if (stockValue) stockValue.textContent = totalValue.toFixed(2) + ' دج';
         
+        // عرض تفاصيل الأصناف
         const tbody = document.getElementById('products-category-tbody');
         if (!tbody) return;
         
@@ -170,7 +164,12 @@ const reportsModule = (function() {
         stock.forEach(p => {
             const cat = p.category || 'عام';
             if (!categories[cat]) {
-                categories[cat] = { count: 0, totalBuy: 0, totalSell: 0, qty: 0 };
+                categories[cat] = {
+                    count: 0,
+                    totalBuy: 0,
+                    totalSell: 0,
+                    qty: 0
+                };
             }
             categories[cat].count++;
             categories[cat].totalBuy += (p.buyPrice || 0) * (p.qty || 0);
@@ -256,7 +255,10 @@ const reportsModule = (function() {
                 return `
                     <div class="list-group-item d-flex justify-content-between align-items-center">
                         <span>${medal} ${name}</span>
-                        <span class="badge bg-primary">${data.qty} قطعة</span>
+                        <div>
+                            <span class="badge bg-primary me-1">${data.qty} قطعة</span>
+                            <span class="badge bg-success">${data.total.toFixed(2)} دج</span>
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -273,14 +275,31 @@ const reportsModule = (function() {
         } else {
             list.innerHTML = movements.slice(-20).reverse().map(m => {
                 let icon = '🔄';
+                let color = '';
+                
                 switch(m.type) {
-                    case 'بيع': icon = '💰'; break;
-                    case 'شراء': icon = '📦'; break;
-                    case 'إضافة منتج': icon = '➕'; break;
-                    case 'تعديل': icon = '✏️'; break;
+                    case 'بيع':
+                        icon = '💰';
+                        color = 'text-danger';
+                        break;
+                    case 'شراء':
+                        icon = '📦';
+                        color = 'text-success';
+                        break;
+                    case 'إضافة منتج':
+                        icon = '➕';
+                        color = 'text-primary';
+                        break;
+                    case 'تعديل':
+                        icon = '✏️';
+                        color = 'text-warning';
+                        break;
+                    default:
+                        icon = '📝';
                 }
+                
                 return `
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div class="list-group-item d-flex justify-content-between align-items-center ${color}">
                         <span>${icon} ${m.date || ''}</span>
                         <span>${m.type} - ${m.product || ''} (${m.qty || 0})</span>
                     </div>
@@ -289,24 +308,128 @@ const reportsModule = (function() {
         }
     }
 
+    // ================== تقرير المبيعات بين تاريخين ==================
+    function filterSalesByDate() {
+        const start = document.getElementById('start-date').value;
+        const end = document.getElementById('end-date').value;
+        
+        if (!start || !end) {
+            _showNotification('تنبيه', 'الرجاء اختيار تاريخ البداية والنهاية', 'warning');
+            return;
+        }
+        
+        const startDate = new Date(start);
+        const endDate = new Date(end);
+        endDate.setHours(23, 59, 59);
+
+        const invoices = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.INVOICES)) || [];
+        
+        const filtered = invoices.filter(inv => {
+            if (!inv.date) return false;
+            const invDate = new Date(inv.date.split(' ')[0].split('/').reverse().join('-'));
+            return invDate >= startDate && invDate <= endDate;
+        });
+
+        const total = filtered.reduce((sum, inv) => sum + (inv.total || 0), 0);
+        const count = filtered.length;
+        const avgTicket = count > 0 ? total / count : 0;
+        
+        const resultDiv = document.getElementById('date-sales-result');
+        if (!resultDiv) return;
+        
+        if (filtered.length === 0) {
+            resultDiv.innerHTML = '<div class="alert alert-info">لا توجد مبيعات في هذه الفترة</div>';
+            return;
+        }
+        
+        resultDiv.innerHTML = `
+            <div class="alert alert-info">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="small">عدد الفواتير</div>
+                        <div class="h5">${count}</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="small">إجمالي المبيعات</div>
+                        <div class="h5">${total.toFixed(2)} دج</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="small">متوسط الفاتورة</div>
+                        <div class="h5">${avgTicket.toFixed(2)} دج</div>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
+                <table class="table table-sm table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>رقم</th>
+                            <th>التاريخ</th>
+                            <th>العميل</th>
+                            <th>المبلغ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filtered.map(inv => `
+                            <tr>
+                                <td>#${inv.number || ''}</td>
+                                <td>${inv.date || ''}</td>
+                                <td>${inv.customer || 'نقدي'}</td>
+                                <td class="fw-bold">${(inv.total || 0).toFixed(2)} دج</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+
     // ================== حساب ديون العملاء ==================
     function calculateCustomerDebts() {
         const customers = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.CUSTOMERS)) || [];
         const invoices = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.INVOICES)) || [];
+        const payments = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.PAYMENTS)) || [];
         
         const debts = [];
         let totalDebt = 0;
         let debtorCount = 0;
         let creditorCount = 0;
         let maxDebt = 0;
+        let totalPaid = 0;
         
         customers.forEach(customer => {
+            // فواتير هذا العميل
             const customerInvoices = invoices.filter(inv => inv.customer === customer.name);
             const totalPurchases = customerInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
             
-            // المدفوعات (نفترض 60% مدفوع)
-            const paid = totalPurchases * 0.6;
+            // المدفوعات التي تمت
+            const paid = payments
+                .filter(p => p.customer === customer.name)
+                .reduce((sum, p) => sum + (p.amount || 0), 0);
+            
             const remaining = totalPurchases - paid;
+            totalPaid += paid;
+            
+            // آخر فاتورة
+            let lastInvoice = '-';
+            if (customerInvoices.length > 0) {
+                const sorted = customerInvoices.sort((a, b) => 
+                    new Date(b.date) - new Date(a.date)
+                );
+                lastInvoice = sorted[0].date;
+            }
+            
+            // آخر دفعة
+            let lastPayment = '-';
+            const customerPayments = payments.filter(p => p.customer === customer.name);
+            if (customerPayments.length > 0) {
+                const sorted = customerPayments.sort((a, b) => 
+                    new Date(b.date) - new Date(a.date)
+                );
+                lastPayment = sorted[0].date;
+            }
+            
+            const isOverdue = remaining > (customer.maxDebt || 0) && remaining > 0;
             
             if (remaining > 0) {
                 totalDebt += remaining;
@@ -322,13 +445,18 @@ const reportsModule = (function() {
                 totalPurchases: totalPurchases,
                 paid: paid,
                 remaining: remaining,
-                maxDebt: customer.maxDebt || 0
+                maxDebt: customer.maxDebt || 0,
+                lastInvoice: lastInvoice,
+                lastPayment: lastPayment,
+                paymentCount: customerPayments.length,
+                isOverdue: isOverdue
             });
         });
         
         return {
-            debts: debts,
+            debts: debts.sort((a, b) => b.remaining - a.remaining),
             totalDebt: totalDebt,
+            totalPaid: totalPaid,
             debtorCount: debtorCount,
             creditorCount: creditorCount,
             maxDebt: maxDebt,
@@ -340,21 +468,20 @@ const reportsModule = (function() {
     function renderCustomerDebts() {
         const data = calculateCustomerDebts();
         
+        // تحديث الإحصائيات
         const totalEl = document.getElementById('total-customer-debt');
         const debtorEl = document.getElementById('debtor-customers-count');
         const creditorEl = document.getElementById('creditor-customers-count');
-        const avgEl = document.getElementById('avg-customer-debt');
         
         if (totalEl) totalEl.textContent = data.totalDebt.toFixed(2) + ' دج';
         if (debtorEl) debtorEl.textContent = data.debtorCount;
         if (creditorEl) creditorEl.textContent = data.creditorCount;
-        if (avgEl) avgEl.textContent = data.avgDebt.toFixed(2) + ' دج';
         
         const tbody = document.getElementById('customer-debts-tbody');
         if (!tbody) return;
         
         if (data.debts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center p-4">لا توجد بيانات</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4">لا توجد بيانات</td></tr>';
             return;
         }
         
@@ -363,8 +490,13 @@ const reportsModule = (function() {
             let statusText = 'دائن';
             
             if (d.remaining > 0) {
-                statusClass = 'bg-warning';
-                statusText = 'مدين';
+                if (d.isOverdue) {
+                    statusClass = 'bg-danger';
+                    statusText = 'متأخر ⚠️';
+                } else {
+                    statusClass = 'bg-warning';
+                    statusText = 'مدين';
+                }
             }
             
             return `
@@ -375,8 +507,6 @@ const reportsModule = (function() {
                 <td>${d.paid.toFixed(2)} دج</td>
                 <td class="${d.remaining > 0 ? 'text-danger fw-bold' : 'text-success'}">${d.remaining.toFixed(2)} دج</td>
                 <td>${d.maxDebt} دج</td>
-                <td>-</td>
-                <td>-</td>
                 <td><span class="badge ${statusClass}">${statusText}</span></td>
                 <td>
                     ${d.remaining > 0 ? 
@@ -395,42 +525,189 @@ const reportsModule = (function() {
         const data = calculateCustomerDebts();
         const customer = data.debts.find(d => d.name === customerName);
         
-        if (!customer || customer.remaining <= 0) {
-            _showNotification('معلومات', 'لا توجد ديون مستحقة', 'info');
+        if (!customer) {
+            _showNotification('خطأ', 'العميل غير موجود', 'error');
+            return;
+        }
+        
+        if (customer.remaining <= 0) {
+            _showNotification('معلومات', 'لا توجد ديون مستحقة لهذا العميل', 'info');
             return;
         }
         
         Swal.fire({
             title: 'تسديد دين',
             html: `
-                <div style="text-align:right">
+                <div style="text-align:right; padding:10px;">
                     <p><strong>العميل:</strong> ${customerName}</p>
-                    <p><strong>المتبقي:</strong> ${customer.remaining.toFixed(2)} دج</p>
+                    <p><strong>إجمالي الديون:</strong> ${customer.remaining.toFixed(2)} دج</p>
                     <hr>
-                    <div class="form-group">
-                        <label>المبلغ المدفوع</label>
-                        <input type="number" id="payment-amount" class="form-control" value="${customer.remaining}">
+                    <div class="form-group mb-3">
+                        <label class="form-label">المبلغ المدفوع</label>
+                        <input type="number" id="payment-amount" class="form-control" value="${customer.remaining}" min="1" max="${customer.remaining}">
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">طريقة الدفع</label>
+                        <select id="payment-method" class="form-select">
+                            <option value="نقدي">💰 نقدي</option>
+                            <option value="بطاقة">💳 بطاقة</option>
+                            <option value="شيك">📝 شيك</option>
+                            <option value="تحويل">🏦 تحويل بنكي</option>
+                        </select>
+                    </div>
+                    <div class="form-group mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea id="payment-notes" class="form-control" rows="2" placeholder="ملاحظات إضافية"></textarea>
                     </div>
                 </div>
             `,
             showCancelButton: true,
             confirmButtonText: 'تأكيد الدفع',
             cancelButtonText: 'إلغاء',
+            confirmButtonColor: '#28a745',
             preConfirm: () => {
                 const amount = parseFloat(document.getElementById('payment-amount').value);
+                const method = document.getElementById('payment-method').value;
+                const notes = document.getElementById('payment-notes').value;
+                
                 if (isNaN(amount) || amount <= 0) {
                     Swal.showValidationMessage('الرجاء إدخال مبلغ صحيح');
                     return false;
                 }
-                return amount;
+                
+                if (amount > customer.remaining) {
+                    Swal.showValidationMessage('المبلغ أكبر من الدين المتبقي');
+                    return false;
+                }
+                
+                return { amount, method, notes };
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                _showNotification('نجاح', 'تم تسديد الدين بنجاح', 'success');
+                const { amount, method, notes } = result.value;
+                
+                // تسجيل الدفعة
+                const payment = {
+                    id: Date.now(),
+                    customer: customerName,
+                    amount: amount,
+                    method: method,
+                    notes: notes,
+                    date: new Date().toLocaleString('ar-DZ'),
+                    timestamp: new Date().toISOString()
+                };
+                
+                payments.push(payment);
+                localStorage.setItem(CONFIG.STORAGE_KEYS.PAYMENTS, JSON.stringify(payments));
+                
+                const newRemaining = customer.remaining - amount;
+                
+                // إنشاء إيصال الدفع
+                const receipt = `
+                    <div style="text-align:right; font-family: 'Courier New', monospace; padding:10px;">
+                        <h3 style="text-align:center;">إيصال سداد</h3>
+                        <hr>
+                        <p><strong>التاريخ:</strong> ${new Date().toLocaleString('ar-DZ')}</p>
+                        <p><strong>العميل:</strong> ${customerName}</p>
+                        <p><strong>المبلغ:</strong> ${amount.toFixed(2)} دج</p>
+                        <p><strong>طريقة الدفع:</strong> ${method}</p>
+                        ${notes ? `<p><strong>ملاحظات:</strong> ${notes}</p>` : ''}
+                        <hr>
+                        <p><strong>المتبقي بعد السداد:</strong> ${newRemaining.toFixed(2)} دج</p>
+                        <p style="text-align:center; margin-top:20px;">شكراً لتعاملكم معنا</p>
+                    </div>
+                `;
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'تم التسديد بنجاح',
+                    html: receipt,
+                    confirmButtonText: 'إغلاق'
+                });
+                
+                // تحديث التقارير
                 renderCustomerDebts();
                 renderDebtSummary();
             }
         });
+    }
+
+    // ================== فلترة ديون العملاء ==================
+    function filterCustomerDebts() {
+        const filter = document.getElementById('debt-filter').value;
+        const searchTerm = document.getElementById('debt-search').value.toLowerCase().trim();
+        
+        const data = calculateCustomerDebts();
+        let filtered = data.debts;
+        
+        // تطبيق الفلتر
+        switch(filter) {
+            case 'debtor':
+                filtered = filtered.filter(d => d.remaining > 0);
+                break;
+            case 'clean':
+                filtered = filtered.filter(d => d.remaining <= 0);
+                break;
+        }
+        
+        // تطبيق البحث
+        if (searchTerm) {
+            filtered = filtered.filter(d => 
+                d.name.toLowerCase().includes(searchTerm) || 
+                d.phone.includes(searchTerm)
+            );
+        }
+        
+        renderFilteredCustomerDebts(filtered);
+    }
+
+    function renderFilteredCustomerDebts(filtered) {
+        const tbody = document.getElementById('customer-debts-tbody');
+        if (!tbody) return;
+        
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4">لا توجد نتائج</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = filtered.map(d => {
+            let statusClass = 'bg-success';
+            let statusText = 'دائن';
+            
+            if (d.remaining > 0) {
+                if (d.isOverdue) {
+                    statusClass = 'bg-danger';
+                    statusText = 'متأخر ⚠️';
+                } else {
+                    statusClass = 'bg-warning';
+                    statusText = 'مدين';
+                }
+            }
+            
+            return `
+            <tr>
+                <td>${d.name}</td>
+                <td>${d.phone}</td>
+                <td>${d.totalPurchases.toFixed(2)} دج</td>
+                <td>${d.paid.toFixed(2)} دج</td>
+                <td class="${d.remaining > 0 ? 'text-danger fw-bold' : 'text-success'}">${d.remaining.toFixed(2)} دج</td>
+                <td>${d.maxDebt} دج</td>
+                <td><span class="badge ${statusClass}">${statusText}</span></td>
+                <td>
+                    ${d.remaining > 0 ? 
+                        `<button class="btn btn-sm btn-success" onclick="reportsModule.payCustomerDebt('${d.name}')">
+                            <i class="material-icons-round">payment</i>
+                        </button>` : 
+                        `<span class="badge bg-success">✓</span>`
+                    }
+                </td>
+            </tr>
+        `}).join('');
+    }
+
+    // ================== البحث في ديون العملاء ==================
+    function searchCustomerDebts() {
+        filterCustomerDebts();
     }
 
     // ================== حساب ديون الموردين ==================
@@ -448,12 +725,16 @@ const reportsModule = (function() {
             const supplierPurchases = purchases.filter(p => p.supplier === supplier.name);
             const totalPurchases = supplierPurchases.reduce((sum, p) => sum + (p.total || 0), 0);
             
+            // المدفوعات (نفترض 70% مدفوع)
             const paid = totalPurchases * 0.7;
             const remaining = totalPurchases - paid;
             
             let lastInvoice = '-';
             if (supplierPurchases.length > 0) {
-                lastInvoice = supplierPurchases[supplierPurchases.length - 1].date;
+                const sorted = supplierPurchases.sort((a, b) => 
+                    new Date(b.date) - new Date(a.date)
+                );
+                lastInvoice = sorted[0].date;
             }
             
             if (remaining > 0) {
@@ -476,7 +757,7 @@ const reportsModule = (function() {
         });
         
         return {
-            debts: debts,
+            debts: debts.sort((a, b) => b.remaining - a.remaining),
             totalDebt: totalDebt,
             debtorCount: debtorCount,
             creditorCount: creditorCount,
@@ -501,7 +782,7 @@ const reportsModule = (function() {
         if (!tbody) return;
         
         if (data.debts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4">لا توجد بيانات</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4">لا توجد بيانات</td></tr>';
             return;
         }
         
@@ -513,7 +794,6 @@ const reportsModule = (function() {
                 <td>${d.paid.toFixed(2)} دج</td>
                 <td class="${d.remaining > 0 ? 'text-danger fw-bold' : 'text-success'}">${d.remaining.toFixed(2)} دج</td>
                 <td>${d.lastInvoice}</td>
-                <td>${d.invoiceCount}</td>
             </tr>
         `).join('');
     }
@@ -523,108 +803,31 @@ const reportsModule = (function() {
         const customerData = calculateCustomerDebts();
         const supplierData = calculateSupplierDebts();
         
+        // ديون العملاء
         const summaryCustomerDebt = document.getElementById('summary-customer-debt');
         const summaryDebtorCustomers = document.getElementById('summary-debtor-customers');
-        const summaryCreditorCustomers = document.getElementById('summary-creditor-customers');
         const maxCustomerDebt = document.getElementById('max-customer-debt');
         const avgCustomerDebt = document.getElementById('avg-customer-debt');
-        const totalCustomerPaid = document.getElementById('total-customer-paid');
         
         if (summaryCustomerDebt) summaryCustomerDebt.textContent = customerData.totalDebt.toFixed(2) + ' دج';
         if (summaryDebtorCustomers) summaryDebtorCustomers.textContent = customerData.debtorCount;
-        if (summaryCreditorCustomers) summaryCreditorCustomers.textContent = customerData.creditorCount;
         if (maxCustomerDebt) maxCustomerDebt.textContent = customerData.maxDebt.toFixed(2) + ' دج';
         if (avgCustomerDebt) avgCustomerDebt.textContent = customerData.avgDebt.toFixed(2) + ' دج';
-        if (totalCustomerPaid) totalCustomerPaid.textContent = (customerData.totalDebt * 0.6).toFixed(2) + ' دج';
         
+        // ديون الموردين
         const summarySupplierDebt = document.getElementById('summary-supplier-debt');
         const summaryDebtorSuppliers = document.getElementById('summary-debtor-suppliers');
-        const summaryCreditorSuppliers = document.getElementById('summary-creditor-suppliers');
         const maxSupplierDebt = document.getElementById('max-supplier-debt');
         const avgSupplierDebt = document.getElementById('avg-supplier-debt');
         
         if (summarySupplierDebt) summarySupplierDebt.textContent = supplierData.totalDebt.toFixed(2) + ' دج';
         if (summaryDebtorSuppliers) summaryDebtorSuppliers.textContent = supplierData.debtorCount;
-        if (summaryCreditorSuppliers) summaryCreditorSuppliers.textContent = supplierData.creditorCount;
         if (maxSupplierDebt) maxSupplierDebt.textContent = supplierData.maxDebt.toFixed(2) + ' دج';
         if (avgSupplierDebt) avgSupplierDebt.textContent = supplierData.avgDebt.toFixed(2) + ' دج';
         
+        // صافي الديون
         const netDebt = document.getElementById('net-debt');
         if (netDebt) netDebt.textContent = (customerData.totalDebt - supplierData.totalDebt).toFixed(2) + ' دج';
-        
-        const collectionRate = document.getElementById('collection-rate');
-        const collectionProgress = document.getElementById('collection-rate-progress');
-        
-        if (collectionRate && collectionProgress) {
-            const rate = customerData.totalDebt > 0 ? 60 : 0;
-            collectionRate.textContent = rate + '%';
-            collectionProgress.style.width = rate + '%';
-        }
-    }
-
-    // ================== فلترة ديون العملاء ==================
-    function filterCustomerDebts() {
-        const filter = document.getElementById('debt-filter')?.value || 'all';
-        const searchTerm = document.getElementById('debt-search')?.value.toLowerCase().trim() || '';
-        
-        const data = calculateCustomerDebts();
-        let filtered = data.debts;
-        
-        if (filter === 'debtor') {
-            filtered = filtered.filter(d => d.remaining > 0);
-        } else if (filter === 'clean') {
-            filtered = filtered.filter(d => d.remaining <= 0);
-        }
-        
-        if (searchTerm) {
-            filtered = filtered.filter(d => 
-                d.name.toLowerCase().includes(searchTerm) || 
-                d.phone.includes(searchTerm)
-            );
-        }
-        
-        renderFilteredCustomerDebts(filtered);
-    }
-
-    function renderFilteredCustomerDebts(filtered) {
-        const tbody = document.getElementById('customer-debts-tbody');
-        if (!tbody) return;
-        
-        if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center p-4">لا توجد نتائج</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = filtered.map(d => {
-            let statusClass = 'bg-success';
-            let statusText = 'دائن';
-            
-            if (d.remaining > 0) {
-                statusClass = 'bg-warning';
-                statusText = 'مدين';
-            }
-            
-            return `
-            <tr>
-                <td>${d.name}</td>
-                <td>${d.phone}</td>
-                <td>${d.totalPurchases.toFixed(2)} دج</td>
-                <td>${d.paid.toFixed(2)} دج</td>
-                <td class="${d.remaining > 0 ? 'text-danger fw-bold' : 'text-success'}">${d.remaining.toFixed(2)} دج</td>
-                <td>${d.maxDebt} دج</td>
-                <td>-</td>
-                <td>-</td>
-                <td><span class="badge ${statusClass}">${statusText}</span></td>
-                <td>
-                    ${d.remaining > 0 ? 
-                        `<button class="btn btn-sm btn-success" onclick="reportsModule.payCustomerDebt('${d.name}')">
-                            <i class="material-icons-round">payment</i>
-                        </button>` : 
-                        `<span class="badge bg-success">✓</span>`
-                    }
-                </td>
-            </tr>
-        `}).join('');
     }
 
     // ================== تصدير ديون العملاء إلى Excel ==================
@@ -638,7 +841,7 @@ const reportsModule = (function() {
             'المدفوع': d.paid.toFixed(2),
             'المتبقي': d.remaining.toFixed(2),
             'الحد المسموح': d.maxDebt,
-            'الحالة': d.remaining > 0 ? 'مدين' : 'دائن'
+            'الحالة': d.remaining > 0 ? (d.isOverdue ? 'متأخر' : 'مدين') : 'دائن'
         }));
         
         const wb = XLSX.utils.book_new();
@@ -652,52 +855,37 @@ const reportsModule = (function() {
         _showNotification('نجاح', 'تم تصدير التقرير بنجاح', 'success');
     }
 
-    // ================== دوال الخدمات والمخازن ==================
-    function renderServicesReport() {
-        const container = document.getElementById('report-services');
-        if (container) {
-            container.innerHTML = `
-                <div class="bg-light p-4 text-center rounded">
-                    <i class="material-icons-round" style="font-size: 48px; color: #6610f2;">build</i>
-                    <h6 class="mt-2">الخدمات</h6>
-                    <p class="text-muted small">قريباً - إدارة الخدمات</p>
-                </div>
-            `;
-        }
-    }
-
-    function renderStoresReport() {
-        const container = document.getElementById('report-stores');
-        if (container) {
-            container.innerHTML = `
-                <div class="bg-light p-4 text-center rounded">
-                    <i class="material-icons-round" style="font-size: 48px; color: #fd7e14;">store</i>
-                    <h6 class="mt-2">المخازن</h6>
-                    <p class="text-muted small">قريباً - إدارة المخازن</p>
-                </div>
-            `;
-        }
-    }
-
     // ================== تصدير الوحدة ==================
     return {
         showReportTab,
         renderReports,
         renderProductsReport,
-        renderServicesReport,
-        renderStoresReport,
         renderCategoriesReport,
         updateLowStockThreshold,
         updateLowStockList,
         updateTopProducts,
         updateMovementsList,
+        filterSalesByDate,
         renderCustomerDebts,
         renderSupplierDebts,
         renderDebtSummary,
         filterCustomerDebts,
+        searchCustomerDebts,
         payCustomerDebt,
         exportDebtsToExcel
     };
 })();
 
+// ================== تصدير للاستخدام العام ==================
 window.reportsModule = reportsModule;
+
+// تهيئة تلقائية عند تحميل الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.getElementById('reports')) {
+        setTimeout(() => {
+            if (typeof window.reportsModule !== 'undefined') {
+                window.reportsModule.renderReports();
+            }
+        }, 500);
+    }
+});
