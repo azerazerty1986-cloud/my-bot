@@ -1,4 +1,4 @@
-// ================== إدارة المبيعات - نسخة محسنة ==================
+// ================== إدارة المبيعات - النسخة النهائية ==================
 const salesModule = (function() {
     // ================== المتغيرات الخاصة ==================
     let cart = [];
@@ -13,8 +13,7 @@ const salesModule = (function() {
         STORAGE_KEYS: {
             INVOICES: 'ryan_invoices'
         },
-        SWAL_TIMER: 1500,
-        ANIMATION_DURATION: 300
+        SWAL_TIMER: 1500
     };
 
     // ================== دوال مساعدة خاصة ==================
@@ -46,7 +45,7 @@ const salesModule = (function() {
             showCancelButton: true,
             confirmButtonColor: '#d33',
             cancelButtonColor: '#3085d6',
-            confirmButtonText: 'نعم، متأكد',
+            confirmButtonText: 'نعم',
             cancelButtonText: 'إلغاء',
             reverseButtons: true
         }).then((result) => {
@@ -56,7 +55,7 @@ const salesModule = (function() {
         });
     }
 
-    // ================== إدارة السلة المتقدمة ==================
+    // ================== إدارة السلة ==================
     function _calculateCartTotals() {
         return {
             subtotal: cart.reduce((sum, item) => sum + (item.qty * item.price), 0),
@@ -120,7 +119,39 @@ const salesModule = (function() {
         return _calculateCartTotals();
     }
 
-    // ================== البحث الذكي المحسن ==================
+    // ================== إظهار القسم الفرعي ==================
+    function showSubSection(subId) {
+        const parent = document.querySelector('.active-section');
+        if (!parent) return;
+        
+        parent.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
+        
+        const targetSection = document.getElementById(subId);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+        }
+        
+        const tabs = parent.querySelectorAll('.tab-item');
+        tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
+        
+        tabs.forEach(t => {
+            if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(subId)) {
+                if (parent.id === 'sales') t.classList.add('active-red');
+            }
+        });
+        
+        if (subId === 'sale-invoices') {
+            renderSaleInvoices();
+        }
+        if (subId === 'customers' && typeof customerModule !== 'undefined') {
+            customerModule.renderCustomers();
+        }
+        if (typeof customerModule !== 'undefined') {
+            customerModule.hideCustomerInvoices();
+        }
+    }
+
+    // ================== البحث الذكي ==================
     function smartSearch(val) {
         const box = document.getElementById('search-box');
         if (!box) return;
@@ -132,19 +163,15 @@ const salesModule = (function() {
             return; 
         }
         
-        const matches = inventoryModule.stock
-            .map(p => ({
-                ...p,
-                score: p.name.toLowerCase().includes(searchTerm) ? 2 : 
-                       (p.barcode && p.barcode.includes(searchTerm)) ? 1 : 0
-            }))
-            .filter(p => p.score > 0)
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 10);
+        // البحث في المخزون
+        const matches = window.inventoryModule?.stock.filter(p => 
+            p.name.toLowerCase().includes(searchTerm) || 
+            (p.barcode && p.barcode.includes(searchTerm))
+        ) || [];
         
         if (matches.length > 0) {
             box.innerHTML = matches.map(p => `
-                <div class="search-item animate__animated animate__fadeIn" onclick="salesModule.selectProduct('${p.name}')">
+                <div class="search-item" onclick="salesModule.selectProduct('${p.name}')">
                     <div class="d-flex justify-content-between align-items-center">
                         <b>${p.name}</b>
                         ${p.qty < 5 ? '<span class="badge bg-danger">مخزون محدود</span>' : ''}
@@ -179,12 +206,13 @@ const salesModule = (function() {
         
         searchInput.value = name;
         
-        const product = inventoryModule.stock.find(p => p.name === name);
+        const product = window.inventoryModule?.stock.find(p => p.name === name);
         
         if (product) {
             priceInput.value = product.sellPrice;
             priceInput.dataset.originalPrice = product.sellPrice;
             
+            // تأثير بصري
             priceInput.style.transition = 'background-color 0.3s';
             priceInput.style.backgroundColor = '#e8f5e9';
             setTimeout(() => priceInput.style.backgroundColor = '', 500);
@@ -198,7 +226,7 @@ const salesModule = (function() {
     }
 
     function openQuickAddModal(productName) {
-        if (typeof inventoryModule !== 'undefined' && inventoryModule.saveQuickProduct) {
+        if (typeof window.inventoryModule !== 'undefined' && window.inventoryModule.saveQuickProduct) {
             document.getElementById('quick-product-name').value = productName;
             document.getElementById('quick-sell-price').value = '';
             document.getElementById('quick-buy-price').value = '';
@@ -212,8 +240,9 @@ const salesModule = (function() {
         }
     }
 
-    // ================== إضافة إلى السلة محسنة ==================
+    // ================== إضافة إلى السلة ==================
     function addToCart() {
+        // الحصول على العناصر
         const searchInput = document.getElementById('sale-search');
         const priceInput = document.getElementById('sale-price');
         const qtyInput = document.getElementById('sale-qty');
@@ -229,8 +258,10 @@ const salesModule = (function() {
         const qty = parseFloat(qtyInput.value) || 0;
         const discount = parseFloat(discountInput.value) || 0;
         
-        const product = inventoryModule.stock.find(p => p.name === name);
+        // البحث عن المنتج
+        const product = window.inventoryModule?.stock.find(p => p.name === name);
         
+        // التحقق من صحة البيانات
         const errors = _validateCartItem(name, price, qty, discount, product);
         
         if (errors.length > 0) {
@@ -238,37 +269,47 @@ const salesModule = (function() {
             return;
         }
         
+        // إذا كان المنتج موجوداً ولم يتم إدخال سعر، استخدم السعر المسجل
         if (product && price === 0) {
             price = product.sellPrice;
         }
         
+        // إذا كان المنتج غير موجود ويوجد سعر
         if (!product && price <= 0) {
             _showNotification('تنبيه', 'الرجاء إدخال سعر للمنتج', 'warning');
             return;
         }
         
+        // إنشاء عنصر السلة
         const cartItem = _createCartItem(product, name, qty, price, discount);
         cart.push(cartItem);
         
+        // تحديث المخزون إذا كان المنتج موجوداً
         if (product) {
             product.qty -= qty;
-            inventoryModule.saveStock();
-            inventoryModule.addMovement('بيع', name, qty);
+            if (window.inventoryModule) {
+                window.inventoryModule.saveStock();
+                window.inventoryModule.addMovement('بيع', name, qty);
+            }
         }
         
+        // تحديث واجهة المستخدم
         renderCart();
         
+        // إظهار رسالة نجاح
         _showNotification('تمت الإضافة', `تم إضافة ${name} إلى السلة`, 'success');
         
+        // إفراغ الحقول
         searchInput.value = '';
         priceInput.value = '';
-        qtyInput.value = '';
-        if (discountInput) discountInput.value = '';
+        qtyInput.value = '1';
+        if (discountInput) discountInput.value = '0';
         
+        // إخفاء نتائج البحث
         document.getElementById('search-box').style.display = 'none';
     }
 
-    // ================== عرض السلة محسن ==================
+    // ================== عرض السلة ==================
     function renderCart() {
         const tbody = document.getElementById('cart-table');
         if (!tbody) return;
@@ -290,7 +331,7 @@ const salesModule = (function() {
                     : `<span>${item.price.toFixed(2)}</span>`;
                 
                 return `
-                <tr class="animate__animated animate__fadeIn">
+                <tr>
                     <td>${item.name}</td>
                     <td>${item.qty} ${item.unit}</td>
                     <td>${priceDisplay} ${CONFIG.CURRENCY}</td>
@@ -305,6 +346,7 @@ const salesModule = (function() {
             `}).join('');
         }
         
+        // تحديث الإحصائيات
         const totals = _calculateCartTotals();
         
         const elements = {
@@ -319,7 +361,7 @@ const salesModule = (function() {
         });
     }
 
-    // ================== حذف عنصر من السلة محسن ==================
+    // ================== حذف عنصر من السلة ==================
     function removeCartItem(itemId) {
         const itemIndex = cart.findIndex(item => item.id === itemId);
         
@@ -331,11 +373,12 @@ const salesModule = (function() {
         const item = cart[itemIndex];
         
         _showConfirmation('تأكيد الحذف', `حذف "${item.name}" من السلة؟`, () => {
-            if (item.productId) {
-                const product = inventoryModule.stock.find(p => p.id === item.productId);
+            // إعادة الكمية إلى المخزون
+            if (item.productId && window.inventoryModule) {
+                const product = window.inventoryModule.stock.find(p => p.id === item.productId);
                 if (product) {
                     product.qty += item.qty;
-                    inventoryModule.saveStock();
+                    window.inventoryModule.saveStock();
                 }
             }
             
@@ -346,7 +389,7 @@ const salesModule = (function() {
         });
     }
 
-    // ================== مسح السلة محسن ==================
+    // ================== مسح السلة بالكامل ==================
     function clearCart() {
         if (cart.length === 0) {
             _showNotification('تنبيه', 'السلة فارغة', 'info');
@@ -354,31 +397,35 @@ const salesModule = (function() {
         }
         
         _showConfirmation('تأكيد مسح السلة', 'هل أنت متأكد من مسح جميع العناصر؟', () => {
-            cart.forEach(item => {
-                if (item.productId) {
-                    const product = inventoryModule.stock.find(p => p.id === item.productId);
-                    if (product) product.qty += item.qty;
-                }
-            });
+            // إعادة الكميات إلى المخزون
+            if (window.inventoryModule) {
+                cart.forEach(item => {
+                    if (item.productId) {
+                        const product = window.inventoryModule.stock.find(p => p.id === item.productId);
+                        if (product) product.qty += item.qty;
+                    }
+                });
+                window.inventoryModule.saveStock();
+            }
             
             cart = [];
-            inventoryModule.saveStock();
             renderCart();
             
             _showNotification('تم', 'تم مسح السلة', 'success');
         });
     }
 
-    // ================== إنهاء البيع والطباعة محسن ==================
+    // ================== إنهاء البيع والطباعة ==================
     function finishSaleAndPrint() {
         if (cart.length === 0) {
             _showNotification('تنبيه', 'السلة فارغة', 'warning');
             return;
         }
         
+        // التحقق من صحة السلة
         const invalidItems = cart.filter(item => {
             if (!item.productId) return false;
-            const product = inventoryModule.stock.find(p => p.id === item.productId);
+            const product = window.inventoryModule?.stock.find(p => p.id === item.productId);
             return product && product.qty < 0;
         });
         
@@ -391,10 +438,12 @@ const salesModule = (function() {
         const now = new Date();
         const invNo = invoices.length + 1;
         
+        // الحصول على العميل
         const customerSelect = document.getElementById('sale-customer');
         const customer = customerSelect?.options[customerSelect.selectedIndex]?.text || 'غير محدد';
-        const finalCustomer = customer === 'اختر العميل' ? 'نقدي' : customer;
+        const finalCustomer = customer === '—— اختر العميل (اختياري) ——' ? 'نقدي' : customer;
         
+        // إنشاء الفاتورة
         const invoice = {
             id: _generateId(),
             number: invNo,
@@ -403,24 +452,28 @@ const salesModule = (function() {
             customer: finalCustomer,
             items: cart.map(item => ({ ...item })),
             ...totals,
-            paymentMethod: 'نقدي',
-            cashier: 'المستخدم'
+            paymentMethod: 'نقدي'
         };
         
         invoices.push(invoice);
         localStorage.setItem(CONFIG.STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
         
+        // تجهيز الطباعة
         _preparePrintInvoice(invoice, totals);
         
+        // طباعة الفاتورة
         window.print();
         
+        // تفريغ السلة
         cart = [];
         renderCart();
         
-        if (typeof reportsModule !== 'undefined') {
-            reportsModule.renderReports();
+        // تحديث التقارير
+        if (typeof window.reportsModule !== 'undefined') {
+            window.reportsModule.renderReports();
         }
         
+        // تحديث قائمة الفواتير
         if (document.getElementById('sale-invoices')?.style.display !== 'none') {
             renderSaleInvoices();
         }
@@ -456,7 +509,7 @@ const salesModule = (function() {
         }
     }
 
-    // ================== فواتير المبيعات محسنة ==================
+    // ================== فواتير المبيعات ==================
     function renderSaleInvoices(filteredInvoices = null) {
         const tbody = document.getElementById('sale-invoices-tbody');
         if (!tbody) return;
@@ -466,7 +519,7 @@ const salesModule = (function() {
         if (invs.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center p-4 text-muted">
+                    <td colspan="8" class="text-center p-4 text-muted">
                         <i class="material-icons-round" style="font-size: 48px;">receipt</i>
                         <p>لا توجد فواتير</p>
                     </td>
@@ -485,6 +538,11 @@ const salesModule = (function() {
                 <td class="fw-bold">${_formatCurrency(inv.total)}</td>
                 <td><span class="badge bg-info">${inv.items.length} أصناف</span></td>
                 <td>
+                    <button class="btn btn-sm btn-info" onclick="salesModule.showInvoiceDetails(${inv.number})">
+                        <i class="material-icons-round" style="font-size:16px;">visibility</i>
+                    </button>
+                </td>
+                <td>
                     <button class="btn btn-sm btn-warning" onclick="salesModule.editInvoice(${originalIndex})">
                         <i class="material-icons-round" style="font-size:16px;">edit</i>
                     </button>
@@ -498,6 +556,99 @@ const salesModule = (function() {
         `}).join('');
     }
 
+    // ================== عرض تفاصيل الفاتورة ==================
+    function showInvoiceDetails(invoiceNumber) {
+        const invoice = invoices.find(inv => inv.number === invoiceNumber);
+        
+        if (!invoice) {
+            _showNotification('خطأ', 'الفاتورة غير موجودة', 'error');
+            return;
+        }
+        
+        let itemsHtml = '';
+        let subtotal = 0;
+        
+        invoice.items.forEach((item, index) => {
+            const itemTotal = item.price * item.qty * (1 - (item.discount || 0)/100);
+            subtotal += itemTotal;
+            itemsHtml += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.qty} ${item.unit}</td>
+                    <td>${item.price.toFixed(2)} دج</td>
+                    <td>${item.discount || 0}%</td>
+                    <td>${itemTotal.toFixed(2)} دج</td>
+                </tr>
+            `;
+        });
+        
+        const content = `
+            <div style="text-align:right; padding:10px;">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <p><strong>رقم الفاتورة:</strong> #${invoice.number}</p>
+                        <p><strong>التاريخ:</strong> ${invoice.date}</p>
+                    </div>
+                    <div class="col-6">
+                        <p><strong>العميل:</strong> ${invoice.customer}</p>
+                        <p><strong>الإجمالي:</strong> ${invoice.total.toFixed(2)} دج</p>
+                    </div>
+                </div>
+                <hr>
+                <h6 class="text-center mb-3">تفاصيل المنتجات</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>المنتج</th>
+                                <th>الكمية</th>
+                                <th>السعر</th>
+                                <th>الخصم</th>
+                                <th>الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="5" class="text-left">المجموع النهائي:</th>
+                                <th>${invoice.total.toFixed(2)} دج</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        // عرض التفاصيل في نافذة منبثقة
+        Swal.fire({
+            title: `فاتورة رقم ${invoice.number}`,
+            html: content,
+            width: '800px',
+            showCancelButton: true,
+            confirmButtonText: 'طباعة',
+            cancelButtonText: 'إغلاق',
+            cancelButtonColor: '#6c757d'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                printInvoice(invoice);
+            }
+        });
+    }
+
+    // ================== طباعة فاتورة ==================
+    function printInvoice(invoice) {
+        _preparePrintInvoice(invoice, {
+            total: invoice.total,
+            totalDiscount: invoice.totalDiscount || 0
+        });
+        window.print();
+    }
+
+    // ================== البحث في الفواتير ==================
     function searchInvoices() {
         const searchInput = document.getElementById('invoice-search');
         if (!searchInput) return;
@@ -518,6 +669,7 @@ const salesModule = (function() {
         renderSaleInvoices(filtered);
     }
 
+    // ================== حذف فاتورة ==================
     function deleteInvoice(index) {
         if (index < 0 || index >= invoices.length) return;
         
@@ -528,14 +680,15 @@ const salesModule = (function() {
             localStorage.setItem(CONFIG.STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
             renderSaleInvoices();
             
-            if (typeof reportsModule !== 'undefined') {
-                reportsModule.renderReports();
+            if (typeof window.reportsModule !== 'undefined') {
+                window.reportsModule.renderReports();
             }
             
             _showNotification('تم', 'تم حذف الفاتورة', 'success');
         });
     }
 
+    // ================== تعديل فاتورة ==================
     function editInvoice(index) {
         if (index < 0 || index >= invoices.length) return;
         
@@ -545,8 +698,9 @@ const salesModule = (function() {
         const numberSpan = document.getElementById('edit-invoice-number');
         if (numberSpan) numberSpan.textContent = inv.number;
 
+        // التحقق من المنتجات المحذوفة
         const validItems = inv.items.filter(item => 
-            !item.productId || inventoryModule.stock.some(p => p.id === item.productId)
+            !item.productId || (window.inventoryModule && window.inventoryModule.stock.some(p => p.id === item.productId))
         );
         
         if (validItems.length !== inv.items.length) {
@@ -555,12 +709,13 @@ const salesModule = (function() {
             inv.items = validItems;
         }
 
+        // عرض عناصر التعديل
         const container = document.getElementById('edit-invoice-items-container');
         if (!container) return;
         
         container.innerHTML = inv.items.map((item, i) => {
-            const product = inventoryModule.stock.find(p => p.id === item.productId);
-            if (!product) return '';
+            const product = window.inventoryModule?.stock.find(p => p.id === item.productId);
+            if (!product && item.productId) return '';
             
             return `
                 <div class="edit-item-row p-3 mb-2 border rounded">
@@ -592,12 +747,14 @@ const salesModule = (function() {
         new bootstrap.Modal(document.getElementById('editInvoiceModal')).show();
     }
 
+    // ================== تحديث الفاتورة ==================
     function updateInvoice() {
         if (currentEditInvoiceIndex === -1) return;
         
         const inv = invoices[currentEditInvoiceIndex];
         const newItems = [];
         
+        // جمع القيم المعدلة
         for (let i = 0; i < inv.items.length; i++) {
             const qtyInput = document.getElementById(`edit-qty-${i}`);
             const priceInput = document.getElementById(`edit-price-${i}`);
@@ -624,46 +781,61 @@ const salesModule = (function() {
             });
         }
         
-        inv.items.forEach(item => {
-            if (item.productId) {
-                const prod = inventoryModule.stock.find(p => p.id === item.productId);
-                if (prod) prod.qty += item.qty;
-            }
-        });
-        
-        let stockOk = true;
-        newItems.forEach(item => {
-            if (!item.productId) return;
-            const prod = inventoryModule.stock.find(p => p.id === item.productId);
-            if (prod && item.qty > prod.qty) {
-                _showNotification('خطأ', `الكمية المطلوبة لـ ${item.name} غير متوفرة`, 'error');
-                stockOk = false;
-            }
-        });
-        
-        if (!stockOk) {
+        // استعادة الكميات القديمة
+        if (window.inventoryModule) {
             inv.items.forEach(item => {
                 if (item.productId) {
-                    const prod = inventoryModule.stock.find(p => p.id === item.productId);
-                    if (prod) prod.qty -= item.qty;
+                    const prod = window.inventoryModule.stock.find(p => p.id === item.productId);
+                    if (prod) prod.qty += item.qty;
                 }
             });
+        }
+        
+        // التحقق من الكميات الجديدة
+        let stockOk = true;
+        if (window.inventoryModule) {
+            newItems.forEach(item => {
+                if (!item.productId) return;
+                const prod = window.inventoryModule.stock.find(p => p.id === item.productId);
+                if (prod && item.qty > prod.qty) {
+                    _showNotification('خطأ', `الكمية المطلوبة لـ ${item.name} غير متوفرة`, 'error');
+                    stockOk = false;
+                }
+            });
+        }
+        
+        if (!stockOk) {
+            // إعادة الكميات القديمة
+            if (window.inventoryModule) {
+                inv.items.forEach(item => {
+                    if (item.productId) {
+                        const prod = window.inventoryModule.stock.find(p => p.id === item.productId);
+                        if (prod) prod.qty -= item.qty;
+                    }
+                });
+            }
             return;
         }
         
-        newItems.forEach(item => {
-            if (item.productId) {
-                const prod = inventoryModule.stock.find(p => p.id === item.productId);
-                if (prod) prod.qty -= item.qty;
-            }
-        });
+        // تطبيق الكميات الجديدة
+        if (window.inventoryModule) {
+            newItems.forEach(item => {
+                if (item.productId) {
+                    const prod = window.inventoryModule.stock.find(p => p.id === item.productId);
+                    if (prod) prod.qty -= item.qty;
+                }
+            });
+            window.inventoryModule.saveStock();
+        }
         
+        // حساب الإجماليات الجديدة
         const totals = {
             subtotal: newItems.reduce((sum, i) => sum + (i.qty * i.price), 0),
             totalDiscount: newItems.reduce((sum, i) => sum + (i.qty * i.price * (i.discount / 100)), 0),
             total: newItems.reduce((sum, i) => sum + i.total, 0)
         };
         
+        // تحديث الفاتورة
         invoices[currentEditInvoiceIndex] = {
             ...inv,
             items: newItems,
@@ -671,23 +843,22 @@ const salesModule = (function() {
         };
         
         localStorage.setItem(CONFIG.STORAGE_KEYS.INVOICES, JSON.stringify(invoices));
-        inventoryModule.saveStock();
         
         bootstrap.Modal.getInstance(document.getElementById('editInvoiceModal'))?.hide();
         
         _showNotification('نجاح', 'تم تعديل الفاتورة', 'success');
         
         renderSaleInvoices();
-        inventoryModule.renderStock();
+        if (window.inventoryModule) window.inventoryModule.renderStock();
         
-        if (typeof reportsModule !== 'undefined') {
-            reportsModule.renderReports();
+        if (typeof window.reportsModule !== 'undefined') {
+            window.reportsModule.renderReports();
         }
         
         currentEditInvoiceIndex = -1;
     }
 
-    // ================== البحث الصوتي المحسن ==================
+    // ================== البحث الصوتي ==================
     function initVoiceSearch() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         
@@ -726,6 +897,8 @@ const salesModule = (function() {
                 searchInput.value = transcript;
                 smartSearch(transcript);
                 
+                // تأثير بصري
+                searchInput.style.transition = 'background-color 0.3s';
                 searchInput.style.backgroundColor = '#e8f5e9';
                 setTimeout(() => searchInput.style.backgroundColor = '', 500);
             }
@@ -749,44 +922,13 @@ const salesModule = (function() {
         }
     }
 
-    // ================== دالة showSubSection ==================
-    function showSubSection(subId) {
-        const parent = document.querySelector('.active-section');
-        if (!parent) return;
-        
-        parent.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
-        
-        const targetSection = document.getElementById(subId);
-        if (targetSection) {
-            targetSection.style.display = 'block';
-        }
-        
-        const tabs = parent.querySelectorAll('.tab-item');
-        tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
-        
-        tabs.forEach(t => {
-            if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(subId)) {
-                if (parent.id === 'sales') t.classList.add('active-red');
-            }
-        });
-        
-        if (subId === 'sale-invoices') {
-            renderSaleInvoices();
-        }
-        if (subId === 'customers' && typeof customerModule !== 'undefined') {
-            customerModule.renderCustomers();
-        }
-        if (typeof customerModule !== 'undefined') {
-            customerModule.hideCustomerInvoices();
-        }
-    }
-
     // ================== تصدير الوحدة ==================
     return {
         cart: cart,
         invoices: invoices,
         getCart,
         getCartStats,
+        showSubSection,
         smartSearch,
         selectProduct,
         openQuickAddModal,
@@ -800,8 +942,8 @@ const salesModule = (function() {
         deleteInvoice,
         editInvoice,
         updateInvoice,
+        showInvoiceDetails,
         initVoiceSearch,
-        showSubSection,
         formatCurrency: _formatCurrency
     };
 })();
