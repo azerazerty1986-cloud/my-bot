@@ -1,1 +1,212 @@
+<!-- ================== قسم المبيعات ================== -->
+<div id="sales" class="section active-section">
+    <!-- الشريط العلوي للتبويبات -->
+    <div class="nav-tabs-custom no-print">
+        <div class="tab-item active-red" onclick="salesModule.showSubSection('sale-operation')">➕ عملية بيع</div>
+        <div class="tab-item" onclick="salesModule.showSubSection('sale-invoices')">📋 الفواتير</div>
+        <div class="tab-item" onclick="salesModule.showSubSection('customers')">👥 العملاء</div>
+    </div>
 
+    <!-- ===== 1. عملية بيع ===== -->
+    <div id="sale-operation" class="sub-section">
+        <div class="main-card no-print">
+            <h6 class="text-center mb-3"><i class="material-icons-round text-danger">shopping_cart</i> تسجيل مبيعات</h6>
+            
+            <div class="search-container mb-3">
+                <div class="input-group">
+                    <button class="btn btn-dark px-3" onclick="utils.openBarcodeScanner()" title="مسح الباركود">
+                        <i class="material-icons-round">qr_code_scanner</i>
+                    </button>
+                    <input type="text" id="sale-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="salesModule.smartSearch(this.value)" autocomplete="off">
+                    <button class="mic-btn" id="mic-sale" title="البحث بالصوت">
+                        <i class="material-icons-round">mic</i>
+                    </button>
+                </div>
+                <div id="search-box" class="search-results"></div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">اختر العميل</label>
+                <select id="sale-customer" class="form-select">
+                    <option value="">—— اختر العميل (اختياري) ——</option>
+                </select>
+            </div>
+            
+            <div class="row g-2 mb-3">
+                <div class="col-5">
+                    <label class="form-label">الكمية</label>
+                    <input type="number" id="sale-qty" class="form-control" placeholder="الكمية" min="1" value="1">
+                </div>
+                <div class="col-5">
+                    <label class="form-label">الخصم %</label>
+                    <input type="number" id="sale-discount" class="form-control" placeholder="الخصم %" min="0" max="100" value="0">
+                </div>
+                <div class="col-2 d-flex align-items-end">
+                    <button class="btn btn-danger w-100" onclick="salesModule.addToCart()">
+                        <i class="material-icons-round">add</i>
+                    </button>
+                </div>
+            </div>
+            
+            <button class="btn btn-outline-secondary w-100 mb-2" onclick="salesModule.clearCart()">
+                <i class="material-icons-round">delete_sweep</i> مسح السلة
+            </button>
+        </div>
+        
+        <div class="main-card">
+            <h6 class="mb-3"><i class="material-icons-round">shopping_basket</i> سلة المشتريات</h6>
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table-custom">
+                    <thead class="sticky-top bg-light">
+                        <tr>
+                            <th>المنتج</th>
+                            <th>الكمية</th>
+                            <th>سعر الوحدة</th>
+                            <th>الخصم %</th>
+                            <th>الإجمالي</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cart-table">
+                        <tr>
+                            <td colspan="6" class="text-center p-4 text-muted">
+                                <i class="material-icons-round" style="font-size:48px;">shopping_cart</i>
+                                <p>السلة فارغة</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="d-flex justify-content-between mt-3 p-2 bg-light rounded">
+                <span>إجمالي الخصم: <b id="total-discount" class="text-danger">0.00</b> دج</span>
+                <span>المجموع: <b id="grand-total" class="text-primary">0.00</b> دج</span>
+            </div>
+            
+            <div class="summary-box mt-3 no-print" style="background: var(--main-red);">
+                <button class="btn-print" style="color: var(--main-red);" onclick="salesModule.finishSaleAndPrint()">
+                    <i class="material-icons-round">save</i> حفظ وطباعة
+                </button>
+                <div>المجموع النهائي: <b id="final-grand-total">0.00</b> دج</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 2. فواتير المبيعات ===== -->
+    <div id="sale-invoices" class="sub-section" style="display: none;">
+        <div class="main-card">
+            <h5 class="text-center mb-4"><i class="material-icons-round text-primary">receipt</i> سجل فواتير المبيعات</h5>
+            
+            <div class="input-group mb-3">
+                <span class="input-group-text"><i class="material-icons-round">search</i></span>
+                <input type="text" id="invoice-search" class="form-control" placeholder="بحث برقم الفاتورة، العميل، أو التاريخ" oninput="salesModule.searchInvoices()">
+                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('invoice-search').value=''; salesModule.searchInvoices()">
+                    <i class="material-icons-round">refresh</i>
+                </button>
+            </div>
+            
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table-custom">
+                    <thead class="sticky-top bg-light">
+                        <tr>
+                            <th>رقم</th>
+                            <th>التاريخ</th>
+                            <th>العميل</th>
+                            <th>المبلغ</th>
+                            <th>الأصناف</th>
+                            <th>عرض</th>
+                            <th>تعديل</th>
+                            <th>حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sale-invoices-tbody">
+                        <tr>
+                            <td colspan="8" class="text-center p-4 text-muted">
+                                <i class="material-icons-round" style="font-size:48px;">receipt</i>
+                                <p>لا توجد فواتير</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 3. إدارة العملاء ===== -->
+    <div id="customers" class="sub-section" style="display: none;">
+        <div class="main-card">
+            <h5 class="text-center mb-4"><i class="material-icons-round text-info">people</i> إدارة العملاء</h5>
+            
+            <div class="input-group mb-3">
+                <span class="input-group-text"><i class="material-icons-round">search</i></span>
+                <input type="text" id="search-customer" class="form-control" placeholder="ابحث عن عميل..." onkeyup="customerModule.searchCustomers()">
+                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('search-customer').value=''; customerModule.searchCustomers()">
+                    <i class="material-icons-round">refresh</i>
+                </button>
+            </div>
+            
+            <button class="btn btn-primary w-100 mb-3" onclick="utils.showSubSection('add-customer')">
+                <i class="material-icons-round">person_add</i> إضافة عميل جديد
+            </button>
+            
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table-custom">
+                    <thead class="sticky-top bg-light">
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الهاتف</th>
+                            <th>هاتف آخر</th>
+                            <th>المدينة</th>
+                            <th>المديونية</th>
+                            <th>عدد الفواتير</th>
+                            <th>إجمالي المشتريات</th>
+                            <th>عرض الفواتير</th>
+                            <th>تعديل</th>
+                            <th>حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customers-tbody">
+                        <tr>
+                            <td colspan="10" class="text-center p-4 text-muted">
+                                <i class="material-icons-round" style="font-size:48px;">people</i>
+                                <p>لا يوجد عملاء</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="customer-invoices-view" style="display:none; margin-top:20px;">
+                <div class="card">
+                    <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                        <span><i class="material-icons-round">receipt</i> فواتير العميل: <span id="selected-customer-name"></span></span>
+                        <button class="btn btn-sm btn-light" onclick="customerModule.hideCustomerInvoices()">
+                            <i class="material-icons-round">close</i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>رقم الفاتورة</th>
+                                        <th>التاريخ</th>
+                                        <th>عدد الأصناف</th>
+                                        <th>المبلغ</th>
+                                        <th>عرض التفاصيل</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customer-invoices-tbody">
+                                    <tr><td colspan="5" class="text-center p-3">لا توجد فواتير</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-secondary w-100 mt-2" onclick="customerModule.hideCustomerInvoices()">
+                            <i class="material-icons-round">arrow_back</i> رجوع
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
