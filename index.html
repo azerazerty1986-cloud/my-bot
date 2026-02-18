@@ -82,154 +82,385 @@
         </div>
     </div>
 
-    <!-- ================== القسم الأساسي - يتم تحميل الأجزاء عبر JavaScript ================== -->
-    <div id="main-content">
-        <!-- سيتم تحميل الأقسام هنا عبر JavaScript -->
+    <!-- ================== قسم المبيعات ================== -->
+    <div id="sales" class="section active-section">
+        <div class="nav-tabs-custom no-print">
+            <div class="tab-item active-red" onclick="showSubSection('sale-operation')">➕ عملية بيع</div>
+            <div class="tab-item" onclick="showSubSection('sale-invoices')">📋 الفواتير</div>
+            <div class="tab-item" onclick="showSubSection('customers')">👥 العملاء</div>
+        </div>
+
+        <!-- عملية بيع -->
+        <div id="sale-operation" class="sub-section">
+            <div class="main-card no-print">
+                <h6 class="text-center mb-3">تسجيل مبيعات</h6>
+                
+                <div class="search-container mb-3">
+                    <div class="input-group">
+                        <button class="btn btn-dark px-3" onclick="openBarcodeScanner()">
+                            <i class="material-icons-round">qr_code_scanner</i>
+                        </button>
+                        <input type="text" id="sale-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearch(this.value)">
+                        <button class="mic-btn" id="mic-sale" title="البحث بالصوت">
+                            <i class="material-icons-round">mic</i>
+                        </button>
+                    </div>
+                    <div id="search-box" class="search-results"></div>
+                </div>
+                
+                <select id="sale-customer" class="form-select mb-2">
+                    <option value="">اختر العميل (اختياري)</option>
+                </select>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <input type="number" id="sale-qty" class="form-control" placeholder="الكمية" min="1" value="1">
+                    </div>
+                    <div class="col-4">
+                        <input type="number" id="sale-discount" class="form-control" placeholder="الخصم %" min="0" max="100" value="0">
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-danger w-100" onclick="addToCart()">إضافة</button>
+                    </div>
+                </div>
+                
+                <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearCart()">مسح السلة</button>
+            </div>
+            
+            <div class="main-card">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>المنتج</th>
+                            <th>الكمية</th>
+                            <th>سعر الوحدة</th>
+                            <th>الخصم %</th>
+                            <th>الإجمالي</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="cart-table"></tbody>
+                </table>
+                
+                <div class="d-flex justify-content-between mt-2">
+                    <span>إجمالي الخصم: <b id="total-discount">0.00</b> دج</span>
+                    <span>المجموع: <b id="grand-total">0.00</b> دج</span>
+                </div>
+                
+                <div class="summary-box mt-3 no-print" style="background: var(--main-red);">
+                    <button class="btn-print" style="color: var(--main-red);" onclick="finishSaleAndPrint()">حفظ وطباعة</button>
+                    <div>المجموع النهائي: <b id="final-grand-total">0.00</b> دج</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- فواتير المبيعات -->
+        <div id="sale-invoices" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h5 class="text-center mb-4">سجل فواتير المبيعات</h5>
+                <div class="input-group mb-3">
+                    <span class="input-group-text"><i class="material-icons-round">search</i></span>
+                    <input type="text" id="invoice-search" class="form-control" placeholder="بحث برقم الفاتورة، العميل، أو التاريخ" oninput="searchInvoices()">
+                </div>
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>رقم</th>
+                            <th>التاريخ</th>
+                            <th>العميل</th>
+                            <th>المبلغ</th>
+                            <th>الأصناف</th>
+                            <th>تعديل</th>
+                            <th>حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sale-invoices-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- العملاء -->
+        <div id="customers" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h5 class="text-center mb-4">إدارة العملاء</h5>
+                <input type="text" id="new-customer" class="form-control mb-2" placeholder="اسم العميل الجديد">
+                <button class="btn btn-dark w-100" onclick="addCustomer()">إضافة عميل</button>
+                <table class="table-custom mt-3">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الهاتف</th>
+                            <th>الفواتير</th>
+                            <th>حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customers-tbody"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <!-- ================== النوافذ المنبثقة الأساسية ================== -->
-    <div id="modals-container">
-        <!-- تعديل فاتورة المبيعات -->
-        <div class="modal fade" id="editInvoiceModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5>تعديل الفاتورة <span id="edit-invoice-number"></span></h5>
-                        <button class="btn-close" data-bs-dismiss="modal"></button>
+    <!-- ================== قسم المشتريات ================== -->
+    <div id="purchases" class="section">
+        <div class="nav-tabs-custom no-print" style="background: var(--light-green);">
+            <div class="tab-item active-green" onclick="showSubSection('purchase-operation')">➕ عملية شراء</div>
+            <div class="tab-item" onclick="showSubSection('purchase-invoices')">📋 فواتير الشراء</div>
+            <div class="tab-item" onclick="showSubSection('suppliers')">👥 الموردون</div>
+        </div>
+
+        <!-- عملية شراء -->
+        <div id="purchase-operation" class="sub-section">
+            <div class="main-card no-print">
+                <h6 class="text-center mb-3">تسجيل مشتريات</h6>
+                
+                <div class="search-container mb-3">
+                    <div class="input-group">
+                        <button class="btn btn-dark px-3" onclick="openBarcodeScanner()">
+                            <i class="material-icons-round">qr_code_scanner</i>
+                        </button>
+                        <input type="text" id="purchase-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearchPurchase(this.value)">
+                        <button class="mic-btn" id="mic-purchase" title="البحث بالصوت">
+                            <i class="material-icons-round">mic</i>
+                        </button>
                     </div>
-                    <div class="modal-body" id="edit-invoice-items-container"></div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                        <button class="btn btn-primary" onclick="salesModule.updateInvoice()">حفظ</button>
+                    <div id="purchase-search-box" class="search-results"></div>
+                </div>
+                
+                <select id="purchase-supplier" class="form-select mb-2">
+                    <option value="">اختر المورد (اختياري)</option>
+                </select>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <input type="number" id="purchase-price" class="form-control" placeholder="السعر" min="0" step="0.01">
                     </div>
+                    <div class="col-4">
+                        <input type="number" id="purchase-qty" class="form-control" placeholder="الكمية" min="1" value="1">
+                    </div>
+                    <div class="col-4">
+                        <button class="btn btn-success w-100" onclick="addToPurchaseCart()">إضافة</button>
+                    </div>
+                </div>
+                
+                <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearPurchaseCart()">مسح السلة</button>
+            </div>
+            
+            <div class="main-card">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>المنتج</th>
+                            <th>الكمية</th>
+                            <th>تكلفة الوحدة</th>
+                            <th>الإجمالي</th>
+                            <th>تعديل</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchase-cart-table"></tbody>
+                </table>
+                
+                <div class="summary-box mt-3 no-print" style="background: var(--main-green);">
+                    <button class="btn-print" style="color: var(--main-green);" onclick="finishPurchaseAndPrint()">حفظ وطباعة</button>
+                    <div>المجموع: <b id="purchase-grand-total">0.00</b> دج</div>
                 </div>
             </div>
         </div>
 
-        <!-- تعديل فاتورة الشراء -->
-        <div class="modal fade" id="editPurchaseInvoiceModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5>تعديل فاتورة شراء <span id="edit-purchase-invoice-number"></span></h5>
-                        <button class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body" id="edit-purchase-invoice-items-container"></div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                        <button class="btn btn-primary" onclick="purchasesModule.updatePurchaseInvoice()">حفظ</button>
-                    </div>
-                </div>
+        <!-- فواتير الشراء -->
+        <div id="purchase-invoices" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h5 class="text-center mb-4">سجل فواتير الشراء</h5>
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>رقم</th>
+                            <th>التاريخ</th>
+                            <th>المورد</th>
+                            <th>المبلغ</th>
+                            <th>الأصناف</th>
+                            <th>تعديل</th>
+                            <th>حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchase-invoices-tbody"></tbody>
+                </table>
             </div>
         </div>
 
-        <!-- ماسح الباركود -->
-        <div class="modal fade" id="barcodeScannerModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5>مسح الباركود</h5>
-                        <button class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div id="barcode-video" style="width:100%; height:300px; background:#000;"></div>
-                        <p class="text-center" id="barcode-result"></p>
-                    </div>
-                </div>
+        <!-- الموردون -->
+        <div id="suppliers" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h5 class="text-center mb-4">إدارة الموردين</h5>
+                <input type="text" id="new-supplier" class="form-control mb-2" placeholder="اسم المورد الجديد">
+                <button class="btn btn-dark w-100" onclick="addSupplier()">إضافة مورد</button>
+                <table class="table-custom mt-3">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>الهاتف</th>
+                            <th>حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suppliers-tbody"></tbody>
+                </table>
             </div>
         </div>
+    </div>
 
-        <!-- عرض الصورة المكبرة -->
-        <div class="modal fade" id="imageModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-body text-center">
-                        <img id="modal-image" src="#" style="max-width:100%">
-                    </div>
-                </div>
-            </div>
+    <!-- ================== قسم الإضافة ================== -->
+    <div id="add" class="section">
+        <div class="nav-tabs-custom no-print">
+            <div class="tab-item active-nardo" onclick="showSubSection('add-product')">منتج</div>
+            <div class="tab-item" onclick="showSubSection('add-customer')">عميل</div>
+            <div class="tab-item" onclick="showSubSection('add-supplier')">مورد</div>
         </div>
 
-        <!-- إضافة منتج سريع -->
-        <div class="modal fade" id="quickAddProductModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5>إضافة منتج سريع</h5>
-                        <button class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="text" id="quick-product-name" class="form-control mb-2" readonly>
-                        <div class="row">
-                            <div class="col-6"><input type="number" id="quick-sell-price" class="form-control" placeholder="سعر البيع"></div>
-                            <div class="col-6"><input type="number" id="quick-buy-price" class="form-control" placeholder="سعر الشراء"></div>
+        <!-- إضافة منتج -->
+        <div id="add-product" class="sub-section">
+            <div class="main-card">
+                <h6 class="text-center mb-4">إضافة منتج جديد</h6>
+                
+                <div class="mb-3">
+                    <label class="form-label">اسم المنتج <span class="text-danger">*</span></label>
+                    <input type="text" id="new-name" class="form-control" maxlength="60" placeholder="اسم المنتج">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">الصنف</label>
+                    <select id="new-category" class="form-select">
+                        <option>عام</option>
+                        <option>مواد غذائية</option>
+                        <option>مشروبات</option>
+                        <option>منظفات</option>
+                    </select>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">سعر الشراء *</label>
+                        <div class="input-group">
+                            <input type="number" id="new-buy" class="form-control" placeholder="سعر الشراء">
+                            <span class="input-group-text">دج</span>
                         </div>
-                        <select id="quick-unit" class="form-select my-2">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">سعر البيع *</label>
+                        <div class="input-group">
+                            <input type="number" id="new-sell" class="form-control" placeholder="سعر البيع">
+                            <span class="input-group-text">دج</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">الكمية</label>
+                        <input type="number" id="new-qty" class="form-control" value="0">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">الوحدة</label>
+                        <select id="new-unit" class="form-select">
                             <option>قطعة</option>
                             <option>كغ</option>
                             <option>لتر</option>
-                            <option>علبة</option>
                         </select>
-                        <div class="row">
-                            <div class="col-6"><input type="number" id="quick-cart-qty" class="form-control" value="1"></div>
-                            <div class="col-6"><input type="number" id="quick-discount" class="form-control" value="0"></div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                        <button class="btn btn-primary" onclick="inventoryModule.saveQuickProduct()">حفظ</button>
                     </div>
                 </div>
-            </div>
-        </div>
-
-        <!-- تعديل المنتج -->
-        <div class="modal fade" id="editProductModal" tabindex="-1">
-            <div class="modal-dialog">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5>تعديل المنتج</h5>
-                        <button class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" id="edit-product-idx">
-                        <input type="text" id="edit-product-name" class="form-control mb-2">
-                        <input type="number" id="edit-product-sell" class="form-control mb-2">
-                        <input type="number" id="edit-product-buy" class="form-control mb-2">
-                        <input type="number" id="edit-product-qty" class="form-control mb-2">
-                        <select id="edit-product-unit" class="form-select mb-2">
-                            <option>قطعة</option>
-                            <option>كغ</option>
-                            <option>لتر</option>
-                            <option>علبة</option>
-                        </select>
-                        <div id="edit-current-image"></div>
-                        <input type="file" id="edit-product-image" class="form-control">
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                        <button class="btn btn-primary" onclick="inventoryModule.updateProduct()">حفظ</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- نافذة عرض تفاصيل الفاتورة -->
-        <div class="modal fade" id="invoiceDetailsModal" tabindex="-1">
-            <div class="modal-dialog modal-lg">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title"><i class="material-icons-round">receipt</i> تفاصيل الفاتورة</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body" id="invoice-details-content"></div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
-                        <button type="button" class="btn btn-primary" onclick="printInvoiceDetails()">
-                            <i class="material-icons-round">print</i> طباعة
+                
+                <div class="mb-3">
+                    <label class="form-label">الباركود</label>
+                    <div class="input-group">
+                        <input type="text" id="new-barcode" class="form-control" placeholder="باركود المنتج">
+                        <button class="btn btn-outline-secondary" type="button" onclick="openBarcodeScanner()">
+                            <i class="material-icons-round">camera_alt</i>
                         </button>
                     </div>
                 </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">صورة المنتج</label>
+                    <input type="file" id="product-image" class="form-control" accept="image/*" onchange="previewImage(event)">
+                    <div id="image-preview" class="mt-2" style="display:none;">
+                        <img id="preview-img" src="#" alt="معاينة" style="max-width:150px;">
+                    </div>
+                </div>
+                
+                <button class="btn btn-dark w-100 py-3" onclick="saveNewProduct()">حفظ المنتج</button>
+            </div>
+        </div>
+
+        <!-- إضافة عميل -->
+        <div id="add-customer" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h6 class="text-center mb-4">إضافة عميل جديد</h6>
+                <input type="text" id="new-customer-name" class="form-control mb-2" placeholder="اسم العميل">
+                <input type="tel" id="new-customer-phone" class="form-control mb-2" placeholder="رقم الهاتف">
+                <button class="btn btn-primary w-100 py-3" onclick="saveNewCustomer()">حفظ العميل</button>
+            </div>
+        </div>
+
+        <!-- إضافة مورد -->
+        <div id="add-supplier" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h6 class="text-center mb-4">إضافة مورد جديد</h6>
+                <input type="text" id="new-supplier-name" class="form-control mb-2" placeholder="اسم المورد">
+                <input type="tel" id="new-supplier-phone" class="form-control mb-2" placeholder="رقم الهاتف">
+                <button class="btn btn-success w-100 py-3" onclick="saveNewSupplier()">حفظ المورد</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================== قسم المخزن ================== -->
+    <div id="inventory" class="section">
+        <div class="main-card">
+            <h5 class="text-center mb-4">المخزن الحالي</h5>
+            <button class="btn btn-success w-100 mb-3" onclick="uploadExcel()">
+                <i class="material-icons-round">upload_file</i> رفع ملف Excel
+            </button>
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>الصورة</th>
+                        <th>المنتج</th>
+                        <th>الكمية</th>
+                        <th>سعر البيع</th>
+                        <th>سعر الشراء</th>
+                        <th>عمليات</th>
+                    </tr>
+                </thead>
+                <tbody id="stock-tbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ================== قسم التقارير ================== -->
+    <div id="reports" class="section">
+        <div class="main-card">
+            <h5 class="text-center mb-4">التقارير والإحصائيات</h5>
+            <div class="report-tabs no-print">
+                <span class="report-tab active" onclick="showReportTab('report-summary')">ملخص</span>
+                <span class="report-tab" onclick="showReportTab('report-lowstock')">النواقص</span>
+                <span class="report-tab" onclick="showReportTab('report-top')">الأكثر مبيعاً</span>
+            </div>
+
+            <div id="report-summary" class="report-content active-report">
+                <div class="summary-box mt-3" style="background: var(--nardo-grey);">
+                    <div>إجمالي المبيعات: <b id="total-sales">0</b> دج</div>
+                </div>
+                <div class="summary-box mt-3" style="background: var(--main-green);">
+                    <div>إجمالي المشتريات: <b id="total-purchases">0</b> دج</div>
+                </div>
+            </div>
+            
+            <div id="report-lowstock" class="report-content">
+                <h6>المنتجات الناقصة</h6>
+                <div id="low-stock-list"></div>
+            </div>
+            
+            <div id="report-top" class="report-content">
+                <h6>الأكثر مبيعاً</h6>
+                <div id="top-products-list"></div>
             </div>
         </div>
     </div>
@@ -278,174 +509,255 @@
         <div>الإجمالي: <span id="purchase-print-grand-total"></span></div>
     </div>
 
-    <!-- ================== الشريط السفلي المعدل ================== -->
-<div class="bottom-nav no-print">
-    <a href="#" class="nav-link active" onclick="switchSection('sales', this)">
-        <i class="material-icons-round">payments</i>
-        <span>المبيعات</span>
-    </a>
-    <a href="#" class="nav-link" onclick="switchSection('purchases', this)">
-        <i class="material-icons-round">shopping_cart</i>
-        <span>المشتريات</span>
-    </a>
-    <div class="nav-link text-center">
-        <a href="#" class="add-btn-main" onclick="switchSection('add', this)">
-            <i class="material-icons-round">add</i>
-        </a>
-        <div style="margin-top:6px; font-size:11px;">إضافة</div>
+    <!-- ================== النوافذ المنبثقة ================== -->
+    <!-- تعديل فاتورة المبيعات -->
+    <div class="modal fade" id="editInvoiceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>تعديل الفاتورة <span id="edit-invoice-number"></span></h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="edit-invoice-items-container"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button class="btn btn-primary" onclick="updateInvoice()">حفظ</button>
+                </div>
+            </div>
+        </div>
     </div>
-    <a href="#" class="nav-link" onclick="switchSection('inventory', this)">
-        <i class="material-icons-round">inventory_2</i>
-        <span>المخزن</span>
-    </a>
-    <a href="#" class="nav-link" onclick="switchSection('reports', this)">
-        <i class="material-icons-round">dashboard</i>
-        <span>التقارير</span>
-    </a>
-</div>
 
-    <!-- ================== ملفات JavaScript بالترتيب الصحيح ================== -->
+    <!-- تعديل فاتورة الشراء -->
+    <div class="modal fade" id="editPurchaseInvoiceModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>تعديل فاتورة شراء <span id="edit-purchase-invoice-number"></span></h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="edit-purchase-invoice-items-container"></div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button class="btn btn-primary" onclick="updatePurchaseInvoice()">حفظ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ماسح الباركود -->
+    <div class="modal fade" id="barcodeScannerModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>مسح الباركود</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="barcode-video" style="width:100%; height:300px; background:#000;"></div>
+                    <p class="text-center" id="barcode-result"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- عرض الصورة المكبرة -->
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <img id="modal-image" src="#" style="max-width:100%">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- إضافة منتج سريع -->
+    <div class="modal fade" id="quickAddProductModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>إضافة منتج سريع</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="quick-product-name" class="form-control mb-2" readonly>
+                    <div class="row">
+                        <div class="col-6"><input type="number" id="quick-sell-price" class="form-control" placeholder="سعر البيع"></div>
+                        <div class="col-6"><input type="number" id="quick-buy-price" class="form-control" placeholder="سعر الشراء"></div>
+                    </div>
+                    <select id="quick-unit" class="form-select my-2">
+                        <option>قطعة</option>
+                    </select>
+                    <div class="row">
+                        <div class="col-6"><input type="number" id="quick-cart-qty" class="form-control" value="1"></div>
+                        <div class="col-6"><input type="number" id="quick-discount" class="form-control" value="0"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button class="btn btn-primary" onclick="saveQuickProduct()">حفظ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- تعديل المنتج -->
+    <div class="modal fade" id="editProductModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5>تعديل المنتج</h5>
+                    <button class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="edit-product-idx">
+                    <input type="text" id="edit-product-name" class="form-control mb-2">
+                    <input type="number" id="edit-product-sell" class="form-control mb-2">
+                    <input type="number" id="edit-product-buy" class="form-control mb-2">
+                    <input type="number" id="edit-product-qty" class="form-control mb-2">
+                    <select id="edit-product-unit" class="form-select mb-2">
+                        <option>قطعة</option>
+                    </select>
+                    <div id="edit-current-image"></div>
+                    <input type="file" id="edit-product-image" class="form-control">
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button class="btn btn-primary" onclick="updateProduct()">حفظ</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================== الشريط السفلي ================== -->
+    <div class="bottom-nav no-print">
+        <a href="#" class="nav-link active" onclick="switchSection('sales', this)">
+            <i class="material-icons-round">payments</i>
+            <span>المبيعات</span>
+        </a>
+        <a href="#" class="nav-link" onclick="switchSection('purchases', this)">
+            <i class="material-icons-round">shopping_cart</i>
+            <span>المشتريات</span>
+        </a>
+        <div class="nav-link text-center">
+            <a href="#" class="add-btn-main" onclick="switchSection('add', this)">
+                <i class="material-icons-round">add</i>
+            </a>
+            <div style="margin-top:6px; font-size:11px;">إضافة</div>
+        </div>
+        <a href="#" class="nav-link" onclick="switchSection('inventory', this)">
+            <i class="material-icons-round">inventory_2</i>
+            <span>المخزن</span>
+        </a>
+        <a href="#" class="nav-link" onclick="switchSection('reports', this)">
+            <i class="material-icons-round">dashboard</i>
+            <span>التقارير</span>
+        </a>
+    </div>
+
+    <!-- ================== ملفات JavaScript ================== -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- الملفات الأساسية -->
     <script src="js/modules/utils.js"></script>
-    <script src="js/modules/ai.js"></script>
-    
-    <!-- ملفات إدارة البيانات -->
-    <script src="js/modules/customer.js"></script>
-    <script src="js/modules/supplier.js"></script>
-    <script src="js/modules/product.js"></script>
     <script src="js/modules/inventory.js"></script>
-    <script src="js/modules/debt.js"></script>
-    
-    <!-- ملفات العمليات -->
+    <script src="js/modules/customers-suppliers.js"></script>
     <script src="js/modules/sales.js"></script>
     <script src="js/modules/purchases.js"></script>
-    
-    <!-- ملفات التقارير والنسخ الاحتياطي -->
     <script src="js/modules/reports.js"></script>
     <script src="js/modules/backup.js"></script>
-    
-    <!-- الملف الرئيسي -->
     <script src="js/app.js"></script>
 
     <script>
-        // ================== تحميل الأقسام ديناميكياً ==================
-        document.addEventListener('DOMContentLoaded', function() {
-            loadSections();
-        });
+        // ================== دوال بسيطة للتنقل ==================
+        function switchSection(sectionId, element) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
+            document.getElementById(sectionId).classList.add('active-section');
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            if (element) element.classList.add('active');
+        }
 
-        function loadSections() {
-            const mainContent = document.getElementById('main-content');
+        function showSubSection(subId) {
+            const parent = document.querySelector('.active-section');
+            if (!parent) return;
             
-            // الأقسام الأساسية
-            const sections = [
-                { id: 'sales-section', file: 'includes/sales-section.html' },
-                { id: 'purchases-section', file: 'includes/purchases-section.html' },
-                { id: 'add-section', file: 'includes/add-section.html' },
-                { id: 'inventory-section', file: 'includes/inventory-section.html' },
-                { id: 'reports-section', file: 'includes/reports-section.html' }
-            ];
+            parent.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
+            document.getElementById(subId).style.display = 'block';
             
-            let loadedCount = 0;
+            const tabs = parent.querySelectorAll('.tab-item');
+            tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
             
-            sections.forEach(section => {
-                fetch(section.file)
-                    .then(response => response.text())
-                    .then(data => {
-                        const div = document.createElement('div');
-                        div.innerHTML = data;
-                        mainContent.appendChild(div.firstChild);
-                        loadedCount++;
-                        
-                        if (loadedCount === sections.length) {
-                            console.log('✅ تم تحميل جميع الأقسام');
-                            // تفعيل القسم النشط
-                            document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
-                            document.getElementById('sales')?.classList.add('active-section');
-                        }
-                    })
-                    .catch(error => console.error('خطأ في تحميل القسم:', error));
+            tabs.forEach(t => {
+                if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(subId)) {
+                    if (parent.id === 'sales') t.classList.add('active-red');
+                    else if (parent.id === 'purchases') t.classList.add('active-green');
+                    else if (parent.id === 'add') t.classList.add('active-nardo');
+                }
             });
         }
-    </script>
-    <script>
-// ================== حل سريع لمشكلة التجمد ==================
-(function() {
-    console.log('🚀 بدء التطبيق...');
-    
-    // التحقق من وجود العناصر
-    function checkElements() {
-        const loginScreen = document.getElementById('login-screen');
-        const salesSection = document.getElementById('sales');
-        
-        console.log('شاشة الدخول:', loginScreen ? 'موجودة' : 'غير موجودة');
-        console.log('قسم المبيعات:', salesSection ? 'موجود' : 'غير موجود');
-        
-        return loginScreen && salesSection;
-    }
-    
-    // إظهار القسم المناسب
-    function showAppropriateSection() {
-        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
-        const loginScreen = document.getElementById('login-screen');
-        const resetScreen = document.getElementById('reset-password-screen');
-        const salesSection = document.getElementById('sales');
-        
-        if (isLoggedIn) {
-            // مستخدم مسجل الدخول
-            if (loginScreen) loginScreen.style.display = 'none';
-            if (resetScreen) resetScreen.style.display = 'none';
-            
-            // إظهار قسم المبيعات
-            document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
-            if (salesSection) salesSection.classList.add('active-section');
-            
-            console.log('✅ تم إظهار قسم المبيعات');
-        } else {
-            // مستخدم غير مسجل
-            if (loginScreen) loginScreen.style.display = 'flex';
-            if (resetScreen) resetScreen.style.display = 'none';
-            
-            console.log('👤 يرجى تسجيل الدخول');
+
+        // ================== دوال تسجيل الدخول ==================
+        function showResetPassword() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('reset-password-screen').style.display = 'flex';
         }
-    }
-    
-    // تشغيل بعد تحميل الصفحة
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', showAppropriateSection);
-    } else {
-        showAppropriateSection();
-    }
-    
-    // تشغيل أيضاً بعد ثانية للتأكد
-    setTimeout(showAppropriateSection, 1000);
-})();
-</script>
-    <script>
-// ================== حل سريع جداً ==================
-(function() {
-    console.log('🚀 حل سريع للتجمد');
-    
-    // إخفاء شاشة الدخول بعد 3 ثواني
-    setTimeout(function() {
-        document.getElementById('login-screen').style.display = 'none';
-        document.getElementById('reset-password-screen').style.display = 'none';
         
-        // إظهار قسم المبيعات
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
-        document.getElementById('sales').classList.add('active-section');
+        function backToLogin() {
+            document.getElementById('reset-password-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+        }
         
-        console.log('✅ تم إظهار التطبيق');
-    }, 3000);
-    
-    // ربط الأزرار مباشرة
-    window.switchSection = function(section, element) {
-        console.log('الانتقال إلى:', section);
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
-        document.getElementById(section).classList.add('active-section');
-    };
-})();
-</script>
+        function useDefaultPassword() {
+            document.getElementById('password-input').value = '123456';
+            backToLogin();
+            Swal.fire({
+                icon: 'info',
+                title: 'كلمة السر الافتراضية',
+                text: 'تم تعيين كلمة السر إلى 123456',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+        
+        function togglePasswordVisibility() {
+            const input = document.getElementById('password-input');
+            const icon = document.querySelector('.toggle-password');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = 'visibility';
+            } else {
+                input.type = 'password';
+                icon.textContent = 'visibility_off';
+            }
+        }
+        
+        function checkPassword() {
+            const password = document.getElementById('password-input').value;
+            const error = document.getElementById('error-message');
+            
+            if (password === '123456') {
+                error.style.display = 'none';
+                document.getElementById('login-screen').style.display = 'none';
+                localStorage.setItem('isLoggedIn', 'true');
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'مرحباً بك',
+                    text: 'تم تسجيل الدخول بنجاح',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                error.style.display = 'flex';
+                document.getElementById('password-input').value = '';
+            }
+        }
+
+        // ================== حل مشكلة التجمد ==================
+        setTimeout(function() {
+            if (localStorage.getItem('isLoggedIn') === 'true') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('reset-password-screen').style.display = 'none';
+            }
+        }, 1000);
+    </script>
 </body>
 </html>
