@@ -1,4 +1,3 @@
-
 // ================== إدارة الموردين - وحدة منفصلة ==================
 const supplierModule = (function() {
     let suppliers = JSON.parse(localStorage.getItem('ryan_suppliers')) || [];
@@ -204,4 +203,196 @@ const supplierModule = (function() {
 
         const purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
 
-        tbody.innerHTML = filtered.map((s, idx
+        tbody.innerHTML = filtered.map((s, idx) => {
+            const originalIndex = suppliers.findIndex(item => item.id === s.id);
+            const supplierPurchases = purchases.filter(p => p.supplier === s.name);
+            const invoiceCount = supplierPurchases.length;
+            const totalPurchases = supplierPurchases.reduce((sum, p) => sum + (p.total || 0), 0);
+            
+            return `
+            <tr>
+                <td>${s.name}</td>
+                <td>${s.phone || '-'}</td>
+                <td>${s.secondaryPhone || '-'}</td>
+                <td>${s.city || '-'}</td>
+                <td><span class="badge bg-primary">${invoiceCount}</span></td>
+                <td>${totalPurchases.toFixed(2)} دج</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="supplierModule.showSupplierInvoices(${originalIndex})">
+                        <i class="material-icons-round">receipt</i>
+                    </button>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="supplierModule.editSupplier(${originalIndex})">
+                        <i class="material-icons-round">edit</i>
+                    </button>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="supplierModule.deleteSupplier(${originalIndex})">
+                        <i class="material-icons-round">delete</i>
+                    </button>
+                </td>
+            </tr>
+        `}).join('');
+    }
+
+    function renderSuppliers() {
+        renderFiltered(suppliers);
+        updateSelect();
+    }
+
+    function updateSelect() {
+        const select = document.getElementById('purchase-supplier');
+        if (select) {
+            select.innerHTML = '<option value="">اختر المورد</option>' + 
+                suppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+        }
+    }
+
+    // ================== عرض فواتير المورد ==================
+    function showSupplierInvoices(index) {
+        const supplier = suppliers[index];
+        if (!supplier) return;
+        
+        document.getElementById('selected-supplier-name').textContent = supplier.name;
+        
+        const purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
+        const supplierPurchases = purchases.filter(p => p.supplier === supplier.name);
+        
+        const tbody = document.getElementById('supplier-invoices-tbody');
+        if (tbody) {
+            if (supplierPurchases.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-3">لا توجد فواتير</td></tr>';
+            } else {
+                tbody.innerHTML = supplierPurchases.map(pur => `
+                    <tr>
+                        <td>#${pur.number || ''}</td>
+                        <td>${pur.date || ''}</td>
+                        <td>${pur.items ? pur.items.length : 0}</td>
+                        <td class="fw-bold text-success">${(pur.total || 0).toFixed(2)} دج</td>
+                        <td>
+                            <button class="btn btn-sm btn-info" onclick="supplierModule.showPurchaseDetails(${pur.number})">
+                                <i class="material-icons-round">visibility</i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+        }
+        
+        document.querySelector('#suppliers .table-responsive').style.display = 'none';
+        document.getElementById('supplier-invoices-view').style.display = 'block';
+    }
+
+    function hideSupplierInvoices() {
+        document.querySelector('#suppliers .table-responsive').style.display = 'block';
+        document.getElementById('supplier-invoices-view').style.display = 'none';
+    }
+
+    function showPurchaseDetails(invoiceNumber) {
+        const purchases = JSON.parse(localStorage.getItem('ryan_purchases')) || [];
+        const purchase = purchases.find(p => p.number === invoiceNumber);
+        
+        if (!purchase) return;
+        
+        let itemsHtml = '';
+        purchase.items.forEach((item, index) => {
+            itemsHtml += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.qty}</td>
+                    <td>${item.price.toFixed(2)} دج</td>
+                    <td>${(item.qty * item.price).toFixed(2)} دج</td>
+                </tr>
+            `;
+        });
+        
+        Swal.fire({
+            title: `فاتورة شراء رقم ${purchase.number}`,
+            html: `
+                <div style="text-align:right; max-height:400px; overflow-y:auto;">
+                    <p><strong>المورد:</strong> ${purchase.supplier}</p>
+                    <p><strong>التاريخ:</strong> ${purchase.date}</p>
+                    <p><strong>الإجمالي:</strong> ${purchase.total.toFixed(2)} دج</p>
+                    <hr>
+                    <table style="width:100%; font-size:12px;">
+                        <thead>
+                            <tr><th>#</th><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الإجمالي</th></tr>
+                        </thead>
+                        <tbody>${itemsHtml}</tbody>
+                    </table>
+                </div>
+            `,
+            width: '700px',
+            confirmButtonText: 'إغلاق'
+        });
+    }
+
+    // ================== تعديل المورد ==================
+    function editSupplier(index) {
+        const supplier = suppliers[index];
+        if (!supplier) return;
+
+        Swal.fire({
+            title: 'تعديل المورد',
+            html: `
+                <div style="text-align:right;">
+                    <input type="text" id="edit-name" class="form-control mb-2" value="${supplier.name}">
+                    <input type="text" id="edit-phone" class="form-control mb-2" value="${supplier.phone || ''}">
+                    <input type="text" id="edit-city" class="form-control mb-2" value="${supplier.city || ''}">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'حفظ',
+            cancelButtonText: 'إلغاء',
+            preConfirm: () => {
+                const name = document.getElementById('edit-name').value.trim();
+                if (!name) {
+                    Swal.showValidationMessage('اسم المورد مطلوب');
+                    return false;
+                }
+                return {
+                    name: name,
+                    phone: document.getElementById('edit-phone').value.trim(),
+                    city: document.getElementById('edit-city').value.trim()
+                };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const updated = result.value;
+                suppliers[index] = { ...supplier, ...updated };
+                saveSuppliers();
+                renderSuppliers();
+                _showNotification('نجاح', 'تم تعديل المورد', 'success');
+            }
+        });
+    }
+
+    // ================== حذف المورد ==================
+    function deleteSupplier(idx) {
+        const supplier = suppliers[idx];
+        
+        _showConfirmation('تأكيد الحذف', `حذف المورد "${supplier.name}"؟`, () => {
+            suppliers.splice(idx, 1);
+            saveSuppliers();
+            renderSuppliers();
+            _showNotification('تم', 'تم حذف المورد', 'success');
+        });
+    }
+
+    return {
+        suppliers,
+        addSupplier,
+        saveNewSupplier,
+        renderSuppliers,
+        editSupplier,
+        deleteSupplier,
+        searchSuppliers,
+        showSupplierInvoices,
+        hideSupplierInvoices,
+        showPurchaseDetails
+    };
+})();
+
+window.supplierModule = supplierModule;
