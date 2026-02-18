@@ -9,7 +9,9 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof purchasesModule !== 'undefined' && purchasesModule.initVoiceSearch) {
         purchasesModule.initVoiceSearch();
     }
-    
+    // اختبار التقارير
+console.log('قسم التقارير جاهز');
+console.log('reportsModule موجود:', typeof reportsModule !== 'undefined');
     // عرض البيانات الأولية
     if (typeof salesModule !== 'undefined' && salesModule.renderCart) {
         salesModule.renderCart();
