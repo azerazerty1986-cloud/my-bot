@@ -1,1 +1,208 @@
+<!-- ================== قسم المشتريات ================== -->
+<div id="purchases" class="section">
+    <div class="nav-tabs-custom no-print" style="background: var(--light-green);">
+        <div class="tab-item active-green" onclick="purchasesModule.showSubSection('purchase-operation')">➕ عملية شراء</div>
+        <div class="tab-item" onclick="purchasesModule.showSubSection('purchase-invoices')">📋 فواتير الشراء</div>
+        <div class="tab-item" onclick="purchasesModule.showSubSection('suppliers')">👥 الموردون</div>
+    </div>
 
+    <!-- ===== 1. عملية شراء ===== -->
+    <div id="purchase-operation" class="sub-section">
+        <div class="main-card no-print">
+            <h6 class="text-center mb-3"><i class="material-icons-round text-success">shopping_basket</i> تسجيل مشتريات</h6>
+            
+            <div class="search-container mb-3">
+                <div class="input-group">
+                    <button class="btn btn-dark px-3" onclick="utils.openBarcodeScanner()">
+                        <i class="material-icons-round">qr_code_scanner</i>
+                    </button>
+                    <input type="text" id="purchase-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="purchasesModule.smartSearchPurchase(this.value)">
+                    <button class="mic-btn" id="mic-purchase" title="البحث بالصوت">
+                        <i class="material-icons-round">mic</i>
+                    </button>
+                </div>
+                <div id="purchase-search-box" class="search-results"></div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">اختر المورد</label>
+                <select id="purchase-supplier" class="form-select">
+                    <option value="">—— اختر المورد (اختياري) ——</option>
+                </select>
+            </div>
+            
+            <div class="row g-2 mb-3">
+                <div class="col-5">
+                    <label class="form-label">السعر</label>
+                    <div class="input-group">
+                        <input type="number" id="purchase-price" class="form-control" placeholder="السعر" min="0" step="0.01">
+                        <span class="input-group-text">دج</span>
+                    </div>
+                </div>
+                <div class="col-5">
+                    <label class="form-label">الكمية</label>
+                    <input type="number" id="purchase-qty" class="form-control" placeholder="الكمية" min="1" value="1">
+                </div>
+                <div class="col-2 d-flex align-items-end">
+                    <button class="btn btn-success w-100" onclick="purchasesModule.addToPurchaseCart()">
+                        <i class="material-icons-round">add</i>
+                    </button>
+                </div>
+            </div>
+            
+            <button class="btn btn-outline-secondary w-100 mb-2" onclick="purchasesModule.clearPurchaseCart()">
+                <i class="material-icons-round">delete_sweep</i> مسح السلة
+            </button>
+        </div>
+        
+        <div class="main-card">
+            <h6 class="mb-3"><i class="material-icons-round">shopping_basket</i> سلة المشتريات</h6>
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table-custom">
+                    <thead class="sticky-top bg-light">
+                        <tr>
+                            <th>المنتج</th>
+                            <th>الكمية</th>
+                            <th>تكلفة الوحدة</th>
+                            <th>الإجمالي</th>
+                            <th>تعديل</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchase-cart-table">
+                        <tr>
+                            <td colspan="6" class="text-center p-4 text-muted">
+                                <i class="material-icons-round" style="font-size:48px;">shopping_basket</i>
+                                <p>سلة المشتريات فارغة</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="summary-box mt-3 no-print" style="background: var(--main-green);">
+                <button class="btn-print" style="color: var(--main-green);" onclick="purchasesModule.finishPurchaseAndPrint()">
+                    <i class="material-icons-round">save</i> حفظ وطباعة
+                </button>
+                <div>المجموع: <b id="purchase-grand-total">0.00</b> دج</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 2. فواتير الشراء ===== -->
+    <div id="purchase-invoices" class="sub-section" style="display: none;">
+        <div class="main-card">
+            <h5 class="text-center mb-4"><i class="material-icons-round text-success">receipt</i> سجل فواتير الشراء</h5>
+            
+            <div class="input-group mb-3">
+                <span class="input-group-text"><i class="material-icons-round">search</i></span>
+                <input type="text" id="purchase-invoice-search" class="form-control" placeholder="بحث برقم الفاتورة، المورد، أو التاريخ" oninput="purchasesModule.searchPurchaseInvoices()">
+                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('purchase-invoice-search').value=''; purchasesModule.searchPurchaseInvoices()">
+                    <i class="material-icons-round">refresh</i>
+                </button>
+            </div>
+            
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table-custom">
+                    <thead class="sticky-top bg-light">
+                        <tr>
+                            <th>رقم</th>
+                            <th>التاريخ</th>
+                            <th>المورد</th>
+                            <th>المبلغ</th>
+                            <th>الأصناف</th>
+                            <th>عرض</th>
+                            <th>تعديل</th>
+                            <th>حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="purchase-invoices-tbody">
+                        <tr>
+                            <td colspan="8" class="text-center p-4 text-muted">
+                                <i class="material-icons-round" style="font-size:48px;">receipt</i>
+                                <p>لا توجد فواتير شراء</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 3. إدارة الموردين ===== -->
+    <div id="suppliers" class="sub-section" style="display: none;">
+        <div class="main-card">
+            <h5 class="text-center mb-4"><i class="material-icons-round text-warning">business</i> إدارة الموردين</h5>
+            
+            <div class="input-group mb-3">
+                <span class="input-group-text"><i class="material-icons-round">search</i></span>
+                <input type="text" id="search-supplier" class="form-control" placeholder="ابحث عن مورد..." onkeyup="supplierModule.searchSuppliers()">
+                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('search-supplier').value=''; supplierModule.searchSuppliers()">
+                    <i class="material-icons-round">refresh</i>
+                </button>
+            </div>
+            
+            <button class="btn btn-success w-100 mb-3" onclick="utils.showSubSection('add-supplier')">
+                <i class="material-icons-round">business_center</i> إضافة مورد جديد
+            </button>
+            
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table-custom">
+                    <thead class="sticky-top bg-light">
+                        <tr>
+                            <th>اسم المورد</th>
+                            <th>الهاتف</th>
+                            <th>هاتف آخر</th>
+                            <th>المدينة</th>
+                            <th>عدد الفواتير</th>
+                            <th>إجمالي المشتريات</th>
+                            <th>عرض الفواتير</th>
+                            <th>تعديل</th>
+                            <th>حذف</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suppliers-tbody">
+                        <tr>
+                            <td colspan="9" class="text-center p-4 text-muted">
+                                <i class="material-icons-round" style="font-size:48px;">business</i>
+                                <p>لا يوجد موردين</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div id="supplier-invoices-view" style="display:none; margin-top:20px;">
+                <div class="card">
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <span><i class="material-icons-round">receipt</i> فواتير المورد: <span id="selected-supplier-name"></span></span>
+                        <button class="btn btn-sm btn-light" onclick="supplierModule.hideSupplierInvoices()">
+                            <i class="material-icons-round">close</i>
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                            <table class="table-custom">
+                                <thead>
+                                    <tr>
+                                        <th>رقم الفاتورة</th>
+                                        <th>التاريخ</th>
+                                        <th>عدد الأصناف</th>
+                                        <th>المبلغ</th>
+                                        <th>عرض التفاصيل</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="supplier-invoices-tbody">
+                                    <tr><td colspan="5" class="text-center p-3">لا توجد فواتير</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <button class="btn btn-secondary w-100 mt-2" onclick="supplierModule.hideSupplierInvoices()">
+                            <i class="material-icons-round">arrow_back</i> رجوع
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
