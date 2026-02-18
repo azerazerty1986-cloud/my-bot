@@ -1,7 +1,34 @@
-// ================== الأدوات المساعدة ==================
+// ================== الأدوات المساعدة المتقدمة ==================
 const utils = (function() {
     let quaggaRunning = false;
     let selectedImageBase64 = '';
+
+    // ================== توليد معرف فريد ==================
+    function generateId() {
+        return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    }
+
+    // ================== تنسيق العملة ==================
+    function formatCurrency(amount) {
+        return `${Number(amount).toFixed(2)} دج`;
+    }
+
+    // ================== تنسيق التاريخ ==================
+    function formatDate(date = new Date()) {
+        return date.toLocaleString('ar-DZ');
+    }
+
+    // ================== التحقق من البريد الإلكتروني ==================
+    function isValidEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    }
+
+    // ================== التحقق من رقم الهاتف ==================
+    function isValidPhone(phone) {
+        const re = /^(05|06|07)[0-9]{8}$/;
+        return re.test(phone);
+    }
 
     // ================== وظائف التنقل ==================
     function switchSection(sectionId, element) {
@@ -23,6 +50,9 @@ const utils = (function() {
         
         if (typeof customerModule !== 'undefined') {
             customerModule.hideCustomerInvoices();
+        }
+        if (typeof supplierModule !== 'undefined') {
+            supplierModule.hideSupplierInvoices();
         }
     }
 
@@ -63,6 +93,9 @@ const utils = (function() {
         
         if (typeof customerModule !== 'undefined') {
             customerModule.hideCustomerInvoices();
+        }
+        if (typeof supplierModule !== 'undefined') {
+            supplierModule.hideSupplierInvoices();
         }
     }
 
@@ -130,246 +163,53 @@ const utils = (function() {
         new bootstrap.Modal(document.getElementById('imageModal')).show();
     }
 
-    // ================== دوال القائمة الجانبية ==================
-    function toggleSidebar() {
-        const sidebar = document.getElementById('sidebar');
-        const overlay = document.getElementById('sidebar-overlay');
-        
-        if (sidebar && overlay) {
-            if (sidebar.style.display === 'none' || sidebar.style.display === '') {
-                sidebar.style.display = 'block';
-                overlay.style.display = 'block';
-            } else {
-                sidebar.style.display = 'none';
-                overlay.style.display = 'none';
-            }
-        }
-    }
-
-    function openUserMenu() {
+    // ================== دوال الإشعارات ==================
+    function showNotification(title, message, type = 'success') {
         Swal.fire({
-            title: 'قائمة المستخدم',
-            html: `
-                <div style="text-align:right">
-                    <p><i class="material-icons-round">person</i> الملف الشخصي</p>
-                    <p><i class="material-icons-round">settings</i> الإعدادات</p>
-                </div>
-            `,
+            icon: type,
+            title: title,
+            text: message,
+            timer: 2000,
             showConfirmButton: false,
-            showCloseButton: true
+            toast: true,
+            position: 'top-end'
         });
     }
 
-    // ================== نظام تسجيل الدخول ==================
-    const APP_PASSWORD = "1986";
-
-    function checkPassword() {
-        const passwordInput = document.getElementById('password-input');
-        const errorMessage = document.getElementById('error-message');
-        const password = passwordInput.value;
-        
-        if (password === APP_PASSWORD) {
-            errorMessage.style.display = 'none';
-            document.getElementById('login-screen').style.display = 'none';
-            localStorage.setItem('isLoggedIn', 'true');
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'مرحباً بك',
-                text: 'تم تسجيل الدخول بنجاح',
-                timer: 1500,
-                showConfirmButton: false
-            });
-            
-            setTimeout(() => {
-                document.getElementById('welcome-screen').style.display = 'flex';
-            }, 1500);
-            
-        } else {
-            errorMessage.style.display = 'flex';
-            passwordInput.value = '';
-            passwordInput.focus();
-        }
-    }
-
-    function togglePasswordVisibility() {
-        const passwordInput = document.getElementById('password-input');
-        const toggleIcon = document.querySelector('.toggle-password');
-        
-        if (passwordInput.type === 'password') {
-            passwordInput.type = 'text';
-            toggleIcon.textContent = 'visibility';
-        } else {
-            passwordInput.type = 'password';
-            toggleIcon.textContent = 'visibility_off';
-        }
-    }
-
-    function showPasswordHint() {
+    function showConfirmation(title, text, confirmCallback) {
         Swal.fire({
-            title: 'نسيت كلمة السر؟',
-            html: `
-                <div style="text-align:right">
-                    <p>كلمة السر الافتراضية هي: <strong>1986</strong></p>
-                </div>
-            `,
-            icon: 'info',
-            confirmButtonText: 'حسناً'
-        });
-    }
-
-    function checkLoginStatus() {
-        const isLoggedIn = localStorage.getItem('isLoggedIn');
-        
-        if (isLoggedIn === 'true') {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('welcome-screen').style.display = 'flex';
-        } else {
-            document.getElementById('login-screen').style.display = 'flex';
-            document.getElementById('welcome-screen').style.display = 'none';
-        }
-    }
-
-    function logout() {
-        Swal.fire({
-            title: 'تسجيل الخروج',
-            text: 'هل أنت متأكد من تسجيل الخروج؟',
-            icon: 'question',
+            title: title,
+            text: text,
+            icon: 'warning',
             showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
             confirmButtonText: 'نعم',
             cancelButtonText: 'إلغاء'
         }).then((result) => {
-            if (result.isConfirmed) {
-                localStorage.removeItem('isLoggedIn');
-                location.reload();
+            if (result.isConfirmed && confirmCallback) {
+                confirmCallback();
             }
         });
     }
 
-    function closeWelcomeScreen() {
-        document.getElementById('welcome-screen').style.display = 'none';
-    }
-
-    function openPrintSettings() {
-        closeWelcomeScreen();
-        Swal.fire({
-            title: 'إعدادات الطباعة',
-            html: '<p>سيتم إضافة إعدادات الطباعة قريباً</p>',
-            icon: 'info'
-        });
-    }
-
-    function openSettings() {
-        closeWelcomeScreen();
-        Swal.fire({
-            title: 'إعدادات النظام',
-            html: '<p>سيتم إضافة الإعدادات قريباً</p>',
-            icon: 'info'
-        });
-    }
-
-    function openAboutApp() {
-        closeWelcomeScreen();
-        Swal.fire({
-            title: 'عن التطبيق',
-            html: `
-                <div style="text-align:right">
-                    <h3>تطبيق سوبر</h3>
-                    <p>نظام متكامل لإدارة المبيعات والمشتريات والمخزون</p>
-                    <p><strong>الإصدار:</strong> 1.0.0</p>
-                </div>
-            `,
-            icon: 'info'
-        });
-    }
-
-    function rateApp() {
-        closeWelcomeScreen();
-        Swal.fire({
-            title: 'تقييم التطبيق',
-            text: 'شكراً لاستخدامك التطبيق!',
-            icon: 'success'
-        });
-    }
-
-    function shareApp() {
-        closeWelcomeScreen();
-        if (navigator.share) {
-            navigator.share({
-                title: 'تطبيق سوبر',
-                text: 'نظام متكامل لإدارة المبيعات والمشتريات والمخزون',
-                url: window.location.href
-            });
-        } else {
-            Swal.fire({
-                title: 'مشاركة التطبيق',
-                text: 'يمكنك نسخ الرابط ومشاركته مع أصدقائك',
-                icon: 'info'
-            });
-        }
-    }
-
-    function openPrivacyPolicy() {
-        closeWelcomeScreen();
-        Swal.fire({
-            title: 'سياسة الخصوصية',
-            html: `
-                <div style="text-align:right">
-                    <p>جميع البيانات保存在 جهازك المحلي ولا يتم مشاركتها مع أي طرف ثالث.</p>
-                </div>
-            `,
-            icon: 'info'
-        });
-    }
-
-    function openHelp() {
-        closeWelcomeScreen();
-        Swal.fire({
-            title: 'مساعدة',
-            html: `
-                <div style="text-align:right">
-                    <p>للحصول على مساعدة، يرجى التواصل معنا</p>
-                </div>
-            `,
-            icon: 'info'
-        });
-    }
-// تجاوز تسجيل الدخول مؤقتاً
-window.onload = function() {
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('welcome-screen').style.display = 'flex';
-};
+    // ================== تصدير الوحدة ==================
     return {
+        generateId,
+        formatCurrency,
+        formatDate,
+        isValidEmail,
+        isValidPhone,
         switchSection,
         showSubSection,
         previewImage,
         openBarcodeScanner,
         showLargeImage,
-        toggleSidebar,
-        openUserMenu,
-        checkPassword,
-        togglePasswordVisibility,
-        showPasswordHint,
-        checkLoginStatus,
-        logout,
-        closeWelcomeScreen,
-        openPrintSettings,
-        openSettings,
-        openAboutApp,
-        rateApp,
-        shareApp,
-        openPrivacyPolicy,
-        openHelp,
+        showNotification,
+        showConfirmation,
         getSelectedImage: () => selectedImageBase64,
         setSelectedImage: (val) => { selectedImageBase64 = val; }
     };
 })();
 
 window.utils = utils;
-
-// التحقق من حالة تسجيل الدخول عند تحميل الصفحة
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof utils !== 'undefined' && utils.checkLoginStatus) {
-        utils.checkLoginStatus();
-    }
-});
