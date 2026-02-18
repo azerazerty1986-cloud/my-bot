@@ -1,3 +1,4 @@
+
 // ================== نظام الذكاء الاصطناعي المتكامل ==================
 const aiModule = (function() {
     let learningData = JSON.parse(localStorage.getItem('ai_learning_data')) || [];
