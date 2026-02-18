@@ -1,12 +1,9 @@
-// ================== إدارة المخزون والمنتجات ==================
+// ================== إدارة المخزون والمنتجات - نسخة كاملة ==================
 const inventoryModule = (function() {
     let stock = JSON.parse(localStorage.getItem('ryan_stock')) || [];
     let movements = JSON.parse(localStorage.getItem('ryan_movements')) || [];
-    
-    // متغير للصورة المحددة
-    let selectedImageBase64 = '';
 
-    // تحويل المخزون القديم
+    // ================== هيكلة البيانات ==================
     stock = stock.map((p, index) => ({ 
         id: p.id || Date.now() + index, 
         name: p.name || '',
@@ -25,11 +22,12 @@ const inventoryModule = (function() {
         lastUpdated: p.lastUpdated || new Date().toISOString()
     }));
 
-    // ================== دوال أساسية ==================
+    // ================== حفظ البيانات ==================
     function saveStock() {
         localStorage.setItem('ryan_stock', JSON.stringify(stock));
     }
 
+    // ================== إضافة حركة مخزون ==================
     function addMovement(type, product, qty) {
         movements.push({
             id: Date.now() + Math.random(),
@@ -72,156 +70,44 @@ const inventoryModule = (function() {
         });
     }
 
-    // ================== دوال البحث والتصفية ==================
-    function searchProducts() {
-        const searchInput = document.getElementById('search-product');
-        const categorySelect = document.getElementById('filter-category');
-        
-        if (!searchInput || !categorySelect) return;
-        
-        const searchTerm = searchInput.value.toLowerCase().trim();
-        const categoryFilter = categorySelect.value;
-        
-        let filteredProducts = stock;
-        
-        if (searchTerm !== '') {
-            filteredProducts = filteredProducts.filter(p => 
-                p.name.toLowerCase().includes(searchTerm) || 
-                (p.barcode && p.barcode.toLowerCase().includes(searchTerm))
-            );
-        }
-        
-        if (categoryFilter !== 'all') {
-            filteredProducts = filteredProducts.filter(p => p.category === categoryFilter);
-        }
-        
-        renderFilteredStock(filteredProducts);
-    }
-
-    function filterByCategory() {
-        searchProducts();
-    }
-
-    function renderFilteredStock(filteredProducts) {
+    // ================== عرض المخزون ==================
+    function renderStock() {
         const tbody = document.getElementById('stock-tbody');
         if (!tbody) return;
 
-        if (filteredProducts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-muted"><i class="material-icons-round" style="font-size:48px;">search_off</i><p>لا توجد نتائج للبحث</p></td></tr>';
+        if (stock.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-muted"><i class="material-icons-round" style="font-size:48px;">inventory</i><p>لا توجد منتجات</p></td></tr>';
             return;
         }
 
-        tbody.innerHTML = filteredProducts.map((p) => {
-            const originalIndex = stock.findIndex(item => item.id === p.id);
-            const isLowStock = p.qty < (p.minStock || 5);
-            
-            return `
+        tbody.innerHTML = stock.map((p, idx) => `
             <tr>
                 <td>${p.image ? `<img src="${p.image}" class="product-thumb" onclick="utils.showLargeImage('${p.image}')" style="width:40px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;">` : 'لا توجد'}</td>
                 <td>${p.name}</td>
                 <td>${p.category || 'عام'}</td>
-                <td class="${isLowStock ? 'low-stock-item' : ''}">${p.qty} ${p.unit} ${isLowStock ? '⚠️' : ''}</td>
+                <td>${p.qty} ${p.unit} ${p.qty < p.minStock ? '<span class="badge bg-danger">ناقص</span>' : ''}</td>
                 <td>${p.sellPrice} دج</td>
                 <td>${p.buyPrice} دج</td>
                 <td>
-                    <button class="btn btn-sm btn-warning" onclick="inventoryModule.openEditProductModal(${originalIndex})"><i class="material-icons-round" style="font-size:16px;">edit</i></button>
-                    <button class="btn btn-sm btn-danger" onclick="inventoryModule.deleteProduct(${originalIndex})"><i class="material-icons-round" style="font-size:16px;">delete</i></button>
+                    <button class="btn btn-sm btn-warning" onclick="inventoryModule.openEditProductModal(${idx})"><i class="material-icons-round">edit</i></button>
+                    <button class="btn btn-sm btn-danger" onclick="inventoryModule.deleteProduct(${idx})"><i class="material-icons-round">delete</i></button>
                 </td>
             </tr>
-        `}).join('');
+        `).join('');
         
         updateStats();
     }
 
-    function renderStock() {
-        renderFilteredStock(stock);
-    }
-
-    function showLowStock() {
-        const lowStock = stock.filter(p => p.qty < (p.minStock || 5));
-        
-        if (lowStock.length === 0) {
-            Swal.fire({
-                icon: 'success',
-                title: 'لا توجد منتجات ناقصة',
-                text: 'جميع المنتجات متوفرة بكميات كافية',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        } else {
-            let items = '';
-            lowStock.forEach(p => {
-                items += `• ${p.name}: ${p.qty} ${p.unit} (الحد الأدنى: ${p.minStock || 5})\n`;
-            });
-            
-            Swal.fire({
-                icon: 'warning',
-                title: 'المنتجات الناقصة',
-                text: items,
-                confirmButtonText: 'حسناً'
-            });
-        }
-    }
-
-    function updateStats() {
-        const totalProducts = stock.length;
-        const totalValue = stock.reduce((sum, p) => sum + ((p.qty || 0) * (p.buyPrice || 0)), 0);
-        const lowStockCount = stock.filter(p => p.qty < (p.minStock || 5)).length;
-        
-        const totalEl = document.getElementById('total-products');
-        const valueEl = document.getElementById('total-stock-value');
-        const lowEl = document.getElementById('low-stock-count');
-        
-        if (totalEl) totalEl.textContent = totalProducts;
-        if (valueEl) valueEl.textContent = totalValue.toFixed(2) + ' دج';
-        if (lowEl) lowEl.textContent = lowStockCount;
-    }
-
-    function exportToExcel() {
-        if (stock.length === 0) {
-            Swal.fire('تنبيه', 'لا توجد منتجات للتصدير', 'warning');
-            return;
-        }
-        
-        const data = stock.map((p, index) => ({
-            'الرقم': index + 1,
-            'المنتج': p.name,
-            'الصنف': p.category || 'عام',
-            'الكمية': p.qty + ' ' + p.unit,
-            'سعر الشراء': p.buyPrice + ' دج',
-            'سعر البيع': p.sellPrice + ' دج',
-            'الباركود': p.barcode || '-',
-            'الحد الأدنى': p.minStock || 5,
-            'الموقع': p.location || '-'
-        }));
-        
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, "المخزون");
-        
-        const today = new Date();
-        const dateStr = `${today.getDate()}-${today.getMonth()+1}-${today.getFullYear()}`;
-        XLSX.writeFile(wb, `المخزون_${dateStr}.xlsx`);
-        
-        Swal.fire({
-            icon: 'success',
-            title: 'تم التصدير',
-            text: 'تم تصدير الملف بنجاح',
-            timer: 2000,
-            showConfirmButton: false
-        });
-    }
-
     // ================== إضافة منتج جديد ==================
     function saveNewProduct() {
-        const name = document.getElementById('new-name')?.value.trim() || '';
+        const name = document.getElementById('new-name')?.value.trim();
         const category = document.getElementById('new-category')?.value || 'عام';
-        const sell = parseFloat(document.getElementById('new-sell')?.value) || 0;
-        const buy = parseFloat(document.getElementById('new-buy')?.value) || 0;
+        const sell = parseFloat(document.getElementById('new-sell').value) || 0;
+        const buy = parseFloat(document.getElementById('new-buy').value) || 0;
         const wholesale = parseFloat(document.getElementById('new-wholesale')?.value) || 0;
-        const qty = parseFloat(document.getElementById('new-qty')?.value) || 0;
-        const unit = document.getElementById('new-unit')?.value || 'قطعة';
-        const barcode = document.getElementById('new-barcode')?.value.trim() || '';
+        const qty = parseFloat(document.getElementById('new-qty').value) || 0;
+        const unit = document.getElementById('new-unit').value;
+        const barcode = document.getElementById('new-barcode').value.trim();
         const minStock = parseInt(document.getElementById('new-min-stock')?.value) || 5;
         const location = document.getElementById('new-location')?.value || '';
         const notes = document.getElementById('new-notes')?.value || '';
@@ -272,12 +158,230 @@ const inventoryModule = (function() {
             
             _showNotification('نجاح', 'تم إضافة المنتج', 'success');
             
-            // إعادة تعيين الحقول
-            document.querySelectorAll('#add-product input, #add-product select, #add-product textarea').forEach(i => i.value = '');
+            document.querySelectorAll('#add-product input, #add-product select').forEach(i => i.value = '');
             document.getElementById('image-preview').style.display = 'none';
             
             renderStock();
         }
+    }
+
+    // ================== فتح نافذة تعديل المنتج ==================
+    function openEditProductModal(idx) {
+        const p = stock[idx];
+        document.getElementById('edit-product-idx').value = idx;
+        document.getElementById('edit-product-name').value = p.name;
+        document.getElementById('edit-product-sell').value = p.sellPrice;
+        document.getElementById('edit-product-buy').value = p.buyPrice;
+        document.getElementById('edit-product-qty').value = p.qty;
+        document.getElementById('edit-product-unit').value = p.unit;
+        
+        const currentImageDiv = document.getElementById('edit-current-image');
+        if (currentImageDiv) {
+            currentImageDiv.innerHTML = p.image ? `<img src="${p.image}" style="max-width:100px; border-radius:5px;">` : 'لا توجد صورة';
+        }
+        
+        document.getElementById('edit-image-preview').style.display = 'none';
+        document.getElementById('edit-product-image').value = '';
+        
+        new bootstrap.Modal(document.getElementById('editProductModal')).show();
+    }
+
+    // ================== تعديل المنتج ==================
+    function updateProduct() {
+        const idx = document.getElementById('edit-product-idx').value;
+        const p = stock[idx];
+        
+        const newName = document.getElementById('edit-product-name').value.trim();
+        const newSell = parseFloat(document.getElementById('edit-product-sell').value);
+        const newBuy = parseFloat(document.getElementById('edit-product-buy').value);
+        const newQty = parseFloat(document.getElementById('edit-product-qty').value);
+        const newUnit = document.getElementById('edit-product-unit').value;
+
+        if (!newName || isNaN(newSell) || isNaN(newBuy) || isNaN(newQty)) {
+            _showNotification('خطأ', 'يرجى ملء جميع الحقول', 'error');
+            return;
+        }
+
+        const fileInput = document.getElementById('edit-product-image');
+        if (fileInput.files.length > 0) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                p.image = e.target.result;
+                finishUpdate();
+            };
+            reader.readAsDataURL(fileInput.files[0]);
+        } else {
+            finishUpdate();
+        }
+
+        function finishUpdate() {
+            p.name = newName;
+            p.sellPrice = newSell;
+            p.buyPrice = newBuy;
+            p.qty = newQty;
+            p.unit = newUnit;
+            p.lastUpdated = new Date().toISOString();
+            
+            saveStock();
+            bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
+            renderStock();
+            
+            _showNotification('نجاح', 'تم تعديل المنتج', 'success');
+        }
+    }
+
+    // ================== حذف المنتج ==================
+    function deleteProduct(idx) {
+        const product = stock[idx];
+        
+        _showConfirmation('تأكيد الحذف', `حذف المنتج "${product.name}"؟`, () => {
+            stock.splice(idx, 1);
+            saveStock();
+            renderStock();
+            _showNotification('تم', 'تم حذف المنتج', 'success');
+        });
+    }
+
+    // ================== البحث عن المنتجات ==================
+    function searchProducts() {
+        const searchTerm = document.getElementById('search-product')?.value.toLowerCase().trim() || '';
+        const categoryFilter = document.getElementById('filter-category')?.value || 'all';
+        
+        let filtered = stock;
+        
+        if (searchTerm !== '') {
+            filtered = filtered.filter(p => 
+                p.name.toLowerCase().includes(searchTerm) || 
+                (p.barcode && p.barcode.toLowerCase().includes(searchTerm))
+            );
+        }
+        
+        if (categoryFilter !== 'all') {
+            filtered = filtered.filter(p => p.category === categoryFilter);
+        }
+        
+        renderFilteredStock(filtered);
+    }
+
+    function renderFilteredStock(filtered) {
+        const tbody = document.getElementById('stock-tbody');
+        if (!tbody) return;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-muted"><i class="material-icons-round" style="font-size:48px;">search_off</i><p>لا توجد نتائج</p></td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = filtered.map((p, idx) => {
+            const originalIndex = stock.findIndex(item => item.id === p.id);
+            const isLowStock = p.qty < p.minStock;
+            
+            return `
+            <tr>
+                <td>${p.image ? `<img src="${p.image}" class="product-thumb" onclick="utils.showLargeImage('${p.image}')" style="width:40px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;">` : 'لا توجد'}</td>
+                <td>${p.name}</td>
+                <td>${p.category || 'عام'}</td>
+                <td class="${isLowStock ? 'low-stock-item' : ''}">${p.qty} ${p.unit}</td>
+                <td>${p.sellPrice} دج</td>
+                <td>${p.buyPrice} دج</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="inventoryModule.openEditProductModal(${originalIndex})"><i class="material-icons-round">edit</i></button>
+                    <button class="btn btn-sm btn-danger" onclick="inventoryModule.deleteProduct(${originalIndex})"><i class="material-icons-round">delete</i></button>
+                </td>
+            </tr>
+        `}).join('');
+
+        updateStats();
+    }
+
+    function filterByCategory() {
+        searchProducts();
+    }
+
+    function updateStats() {
+        const totalProducts = stock.length;
+        const totalValue = stock.reduce((sum, p) => sum + (p.qty * p.buyPrice), 0);
+        const lowStockCount = stock.filter(p => p.qty < p.minStock).length;
+        
+        const totalEl = document.getElementById('total-products');
+        const valueEl = document.getElementById('total-stock-value');
+        const lowEl = document.getElementById('low-stock-count');
+        
+        if (totalEl) totalEl.textContent = totalProducts;
+        if (valueEl) valueEl.textContent = totalValue.toFixed(2) + ' دج';
+        if (lowEl) lowEl.textContent = lowStockCount;
+    }
+
+    // ================== عرض المنتجات الناقصة ==================
+    function showLowStock() {
+        const lowStock = stock.filter(p => p.qty < p.minStock);
+        
+        if (lowStock.length === 0) {
+            Swal.fire({
+                icon: 'success',
+                title: 'لا توجد منتجات ناقصة',
+                text: 'جميع المنتجات متوفرة',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        } else {
+            let items = '';
+            lowStock.forEach(p => {
+                items += `• ${p.name}: ${p.qty} ${p.unit} (الحد الأدنى: ${p.minStock})\n`;
+            });
+            
+            Swal.fire({
+                icon: 'warning',
+                title: 'المنتجات الناقصة',
+                text: items,
+                confirmButtonText: 'حسناً'
+            });
+        }
+    }
+
+    // ================== تصدير إلى Excel ==================
+    function exportToExcel() {
+        if (stock.length === 0) {
+            Swal.fire('تنبيه', 'لا توجد منتجات للتصدير', 'warning');
+            return;
+        }
+        
+        const data = stock.map((p, index) => ({
+            'الرقم': index + 1,
+            'المنتج': p.name,
+            'الصنف': p.category || 'عام',
+            'الكمية': p.qty + ' ' + p.unit,
+            'سعر الشراء': p.buyPrice + ' دج',
+            'سعر البيع': p.sellPrice + ' دج',
+            'الباركود': p.barcode || '-'
+        }));
+        
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.json_to_sheet(data);
+        XLSX.utils.book_append_sheet(wb, ws, "المخزون");
+        
+        const today = new Date();
+        const dateStr = `${today.getDate()}-${today.getMonth()+1}-${today.getFullYear()}`;
+        XLSX.writeFile(wb, `المخزون_${dateStr}.xlsx`);
+        
+        Swal.fire({
+            icon: 'success',
+            title: 'تم التصدير',
+            text: 'تم تصدير الملف بنجاح',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    }
+
+    // ================== رفع Excel ==================
+    function uploadExcelWithMapping() {
+        Swal.fire({
+            icon: 'info',
+            title: 'قريباً',
+            text: 'سيتم إضافة رفع Excel قريباً',
+            timer: 2000,
+            showConfirmButton: false
+        });
     }
 
     // ================== حفظ منتج سريع ==================
@@ -324,8 +428,8 @@ const inventoryModule = (function() {
                 return;
             }
             const total = cartQty * sellPrice * (1 - discount / 100);
-            if (typeof salesModule !== 'undefined' && salesModule.getCart) {
-                const cart = salesModule.getCart();
+            if (typeof window.salesModule !== 'undefined' && window.salesModule.getCart) {
+                const cart = window.salesModule.getCart();
                 cart.push({
                     id: Date.now() + Math.random(),
                     productId: newProduct.id,
@@ -339,13 +443,13 @@ const inventoryModule = (function() {
             newProduct.qty -= cartQty;
             saveStock();
             addMovement('بيع', name, cartQty);
-            if (typeof salesModule !== 'undefined' && salesModule.renderCart) {
-                salesModule.renderCart();
+            if (typeof window.salesModule !== 'undefined' && window.salesModule.renderCart) {
+                window.salesModule.renderCart();
             }
         } else {
             const total = cartQty * buyPrice;
-            if (typeof purchasesModule !== 'undefined' && purchasesModule.getPurchaseCart) {
-                const cart = purchasesModule.getPurchaseCart();
+            if (typeof window.purchasesModule !== 'undefined' && window.purchasesModule.getPurchaseCart) {
+                const cart = window.purchasesModule.getPurchaseCart();
                 cart.push({
                     id: Date.now() + Math.random(),
                     productId: newProduct.id,
@@ -358,8 +462,8 @@ const inventoryModule = (function() {
             newProduct.qty += cartQty;
             saveStock();
             addMovement('شراء', name, cartQty);
-            if (typeof purchasesModule !== 'undefined' && purchasesModule.renderPurchaseCart) {
-                purchasesModule.renderPurchaseCart();
+            if (typeof window.purchasesModule !== 'undefined' && window.purchasesModule.renderPurchaseCart) {
+                window.purchasesModule.renderPurchaseCart();
             }
         }
 
@@ -367,105 +471,6 @@ const inventoryModule = (function() {
         _showNotification('تمت الإضافة', `تم إضافة ${name}`, 'success');
     }
 
-    // ================== فتح نافذة تعديل المنتج ==================
-    function openEditProductModal(idx) {
-        const p = stock[idx];
-        document.getElementById('edit-product-idx').value = idx;
-        document.getElementById('edit-product-name').value = p.name;
-        document.getElementById('edit-product-sell').value = p.sellPrice;
-        document.getElementById('edit-product-buy').value = p.buyPrice;
-        document.getElementById('edit-product-qty').value = p.qty;
-        document.getElementById('edit-product-unit').value = p.unit;
-        
-        const currentImageDiv = document.getElementById('edit-current-image');
-        if (currentImageDiv) {
-            currentImageDiv.innerHTML = p.image ? `<img src="${p.image}" style="max-width:100px; max-height:100px; border-radius:5px;">` : 'لا توجد صورة';
-        }
-        
-        document.getElementById('edit-image-preview').style.display = 'none';
-        document.getElementById('edit-product-image').value = '';
-        
-        new bootstrap.Modal(document.getElementById('editProductModal')).show();
-    }
-
-    // ================== تعديل المنتج ==================
-    function updateProduct() {
-        const idx = document.getElementById('edit-product-idx').value;
-        const p = stock[idx];
-        
-        const newName = document.getElementById('edit-product-name').value.trim();
-        const newCategory = document.getElementById('edit-product-category')?.value || p.category;
-        const newSell = parseFloat(document.getElementById('edit-product-sell').value);
-        const newBuy = parseFloat(document.getElementById('edit-product-buy').value);
-        const newWholesale = parseFloat(document.getElementById('edit-product-wholesale')?.value) || p.wholesalePrice;
-        const newQty = parseFloat(document.getElementById('edit-product-qty').value);
-        const newMinStock = parseInt(document.getElementById('edit-product-min-stock')?.value) || p.minStock;
-        const newUnit = document.getElementById('edit-product-unit').value;
-        const newLocation = document.getElementById('edit-product-location')?.value || p.location;
-        const newNotes = document.getElementById('edit-product-notes')?.value || p.notes;
-
-        if (!newName || isNaN(newSell) || isNaN(newBuy) || isNaN(newQty)) {
-            _showNotification('خطأ', 'يرجى ملء جميع الحقول', 'error');
-            return;
-        }
-
-        const fileInput = document.getElementById('edit-product-image');
-        if (fileInput.files.length > 0) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                p.image = e.target.result;
-                finishUpdate();
-            };
-            reader.readAsDataURL(fileInput.files[0]);
-        } else {
-            finishUpdate();
-        }
-
-        function finishUpdate() {
-            p.name = newName;
-            p.category = newCategory;
-            p.sellPrice = newSell;
-            p.buyPrice = newBuy;
-            p.wholesalePrice = newWholesale;
-            p.qty = newQty;
-            p.minStock = newMinStock;
-            p.unit = newUnit;
-            p.location = newLocation;
-            p.notes = newNotes;
-            p.lastUpdated = new Date().toISOString();
-            
-            saveStock();
-            bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
-            renderStock();
-            
-            _showNotification('نجاح', 'تم تعديل المنتج', 'success');
-        }
-    }
-
-    // ================== حذف المنتج ==================
-    function deleteProduct(idx) {
-        const product = stock[idx];
-        
-        _showConfirmation('تأكيد الحذف', `حذف المنتج "${product.name}"؟`, () => {
-            stock.splice(idx, 1);
-            saveStock();
-            renderStock();
-            _showNotification('تم', 'تم حذف المنتج', 'success');
-        });
-    }
-
-    // ================== رفع Excel ==================
-    function uploadExcelWithMapping() {
-        Swal.fire({
-            icon: 'info',
-            title: 'قريباً',
-            text: 'سيتم إضافة رفع Excel قريباً',
-            timer: 2000,
-            showConfirmButton: false
-        });
-    }
-
-    // ================== تصدير الوحدة ==================
     return {
         stock,
         movements,
@@ -477,11 +482,11 @@ const inventoryModule = (function() {
         openEditProductModal,
         updateProduct,
         deleteProduct,
-        uploadExcelWithMapping,
         searchProducts,
         filterByCategory,
         showLowStock,
-        exportToExcel
+        exportToExcel,
+        uploadExcelWithMapping
     };
 })();
 
