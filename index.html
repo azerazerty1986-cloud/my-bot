@@ -369,5 +369,58 @@
             });
         }
     </script>
+    <script>
+// ================== حل سريع لمشكلة التجمد ==================
+(function() {
+    console.log('🚀 بدء التطبيق...');
+    
+    // التحقق من وجود العناصر
+    function checkElements() {
+        const loginScreen = document.getElementById('login-screen');
+        const salesSection = document.getElementById('sales');
+        
+        console.log('شاشة الدخول:', loginScreen ? 'موجودة' : 'غير موجودة');
+        console.log('قسم المبيعات:', salesSection ? 'موجود' : 'غير موجود');
+        
+        return loginScreen && salesSection;
+    }
+    
+    // إظهار القسم المناسب
+    function showAppropriateSection() {
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        const loginScreen = document.getElementById('login-screen');
+        const resetScreen = document.getElementById('reset-password-screen');
+        const salesSection = document.getElementById('sales');
+        
+        if (isLoggedIn) {
+            // مستخدم مسجل الدخول
+            if (loginScreen) loginScreen.style.display = 'none';
+            if (resetScreen) resetScreen.style.display = 'none';
+            
+            // إظهار قسم المبيعات
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
+            if (salesSection) salesSection.classList.add('active-section');
+            
+            console.log('✅ تم إظهار قسم المبيعات');
+        } else {
+            // مستخدم غير مسجل
+            if (loginScreen) loginScreen.style.display = 'flex';
+            if (resetScreen) resetScreen.style.display = 'none';
+            
+            console.log('👤 يرجى تسجيل الدخول');
+        }
+    }
+    
+    // تشغيل بعد تحميل الصفحة
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showAppropriateSection);
+    } else {
+        showAppropriateSection();
+    }
+    
+    // تشغيل أيضاً بعد ثانية للتأكد
+    setTimeout(showAppropriateSection, 1000);
+})();
+</script>
 </body>
 </html>
