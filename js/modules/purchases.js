@@ -1,4 +1,4 @@
-// ================== إدارة المشتريات - نسخة محسنة ==================
+// ================== إدارة المشتريات - النسخة النهائية ==================
 const purchasesModule = (function() {
     // ================== المتغيرات الخاصة ==================
     let purchaseCart = [];
@@ -46,7 +46,7 @@ const purchasesModule = (function() {
             showCancelButton: true,
             confirmButtonColor: '#4caf50',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'نعم، متأكد',
+            confirmButtonText: 'نعم',
             cancelButtonText: 'إلغاء',
             reverseButtons: true
         }).then((result) => {
@@ -56,7 +56,36 @@ const purchasesModule = (function() {
         });
     }
 
-    // ================== إدارة سلة المشتريات المتقدمة ==================
+    // ================== إظهار القسم الفرعي ==================
+    function showSubSection(subId) {
+        const parent = document.querySelector('.active-section');
+        if (!parent) return;
+        
+        parent.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
+        
+        const targetSection = document.getElementById(subId);
+        if (targetSection) {
+            targetSection.style.display = 'block';
+        }
+        
+        const tabs = parent.querySelectorAll('.tab-item');
+        tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
+        
+        tabs.forEach(t => {
+            if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(subId)) {
+                if (parent.id === 'purchases') t.classList.add('active-green');
+            }
+        });
+        
+        if (subId === 'purchase-invoices') {
+            renderPurchaseInvoices();
+        }
+        if (subId === 'suppliers' && typeof window.supplierModule !== 'undefined') {
+            window.supplierModule.renderSuppliers();
+        }
+    }
+
+    // ================== إدارة سلة المشتريات ==================
     function _calculateCartTotals() {
         return {
             subtotal: purchaseCart.reduce((sum, item) => sum + (item.qty * item.price), 0),
@@ -117,7 +146,7 @@ const purchasesModule = (function() {
         return _calculateCartTotals();
     }
 
-    // ================== البحث الذكي المحسن ==================
+    // ================== البحث الذكي ==================
     function smartSearchPurchase(val) {
         const box = document.getElementById('purchase-search-box');
         if (!box) return;
@@ -129,19 +158,15 @@ const purchasesModule = (function() {
             return; 
         }
         
-        const matches = inventoryModule.stock
-            .map(p => ({
-                ...p,
-                score: p.name.toLowerCase().includes(searchTerm) ? 2 : 
-                       (p.barcode && p.barcode.includes(searchTerm)) ? 1 : 0
-            }))
-            .filter(p => p.score > 0)
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 10);
+        // البحث في المخزون
+        const matches = window.inventoryModule?.stock.filter(p => 
+            p.name.toLowerCase().includes(searchTerm) || 
+            (p.barcode && p.barcode.includes(searchTerm))
+        ) || [];
         
         if (matches.length > 0) {
             box.innerHTML = matches.map(p => `
-                <div class="search-item animate__animated animate__fadeIn" onclick="purchasesModule.selectProductPurchase('${p.name}')">
+                <div class="search-item" onclick="purchasesModule.selectProductPurchase('${p.name}')">
                     <div class="d-flex justify-content-between align-items-center">
                         <b>${p.name}</b>
                         <span class="badge bg-success">${p.qty} ${p.unit}</span>
@@ -176,12 +201,13 @@ const purchasesModule = (function() {
         
         searchInput.value = name;
         
-        const product = inventoryModule.stock.find(p => p.name === name);
+        const product = window.inventoryModule?.stock.find(p => p.name === name);
         
         if (product) {
             priceInput.value = product.buyPrice;
             priceInput.dataset.originalPrice = product.buyPrice;
             
+            // تأثير بصري
             priceInput.style.transition = 'background-color 0.3s';
             priceInput.style.backgroundColor = '#e8f5e9';
             setTimeout(() => priceInput.style.backgroundColor = '', 500);
@@ -197,7 +223,7 @@ const purchasesModule = (function() {
     }
 
     function openQuickAddModal(productName) {
-        if (typeof inventoryModule !== 'undefined' && inventoryModule.saveQuickProduct) {
+        if (typeof window.inventoryModule !== 'undefined' && window.inventoryModule.saveQuickProduct) {
             document.getElementById('quick-product-name').value = productName;
             document.getElementById('quick-sell-price').value = '';
             document.getElementById('quick-buy-price').value = '';
@@ -211,7 +237,7 @@ const purchasesModule = (function() {
         }
     }
 
-    // ================== إضافة إلى سلة المشتريات محسنة ==================
+    // ================== إضافة إلى سلة المشتريات ==================
     function addToPurchaseCart() {
         const searchInput = document.getElementById('purchase-search');
         const priceInput = document.getElementById('purchase-price');
@@ -226,8 +252,10 @@ const purchasesModule = (function() {
         let price = parseFloat(priceInput.value) || 0;
         const qty = parseFloat(qtyInput.value) || 0;
         
-        const product = inventoryModule.stock.find(p => p.name === name);
+        // البحث عن المنتج
+        const product = window.inventoryModule?.stock.find(p => p.name === name);
         
+        // التحقق من صحة البيانات
         const errors = _validateCartItem(name, price, qty, product);
         
         if (errors.length > 0) {
@@ -235,36 +263,44 @@ const purchasesModule = (function() {
             return;
         }
         
+        // التحقق من الحد الأقصى للسلة
         if (purchaseCart.length >= CONFIG.MAX_CART_ITEMS) {
             _showNotification('تنبيه', `لا يمكن إضافة أكثر من ${CONFIG.MAX_CART_ITEMS} صنف`, 'warning');
             return;
         }
         
+        // إذا كان المنتج موجوداً ولم يتم إدخال سعر، استخدم السعر المسجل
         if (product && price === 0) {
             price = product.buyPrice;
         }
         
+        // إنشاء عنصر السلة
         const cartItem = _createCartItem(product, name, qty, price);
         purchaseCart.push(cartItem);
         
-        if (product) {
+        // تحديث المخزون (زيادة الكمية)
+        if (product && window.inventoryModule) {
             product.qty += qty;
-            inventoryModule.saveStock();
-            inventoryModule.addMovement('شراء', name, qty);
+            window.inventoryModule.saveStock();
+            window.inventoryModule.addMovement('شراء', name, qty);
         }
         
+        // تحديث واجهة المستخدم
         renderPurchaseCart();
         
+        // إظهار رسالة نجاح
         _showNotification('تمت الإضافة', `تم إضافة ${name} إلى مشترياتك`, 'success');
         
+        // إفراغ الحقول
         searchInput.value = '';
         priceInput.value = '';
-        qtyInput.value = '';
+        qtyInput.value = '1';
         
+        // إخفاء نتائج البحث
         document.getElementById('purchase-search-box').style.display = 'none';
     }
 
-    // ================== عرض سلة المشتريات محسن ==================
+    // ================== عرض سلة المشتريات ==================
     function renderPurchaseCart() {
         const tbody = document.getElementById('purchase-cart-table');
         if (!tbody) return;
@@ -286,7 +322,7 @@ const purchasesModule = (function() {
                     : `<span>${item.price.toFixed(2)}</span>`;
                 
                 return `
-                <tr class="animate__animated animate__fadeIn">
+                <tr>
                     <td>${item.name}</td>
                     <td>${item.qty} ${item.unit}</td>
                     <td>${priceDisplay} ${CONFIG.CURRENCY}</td>
@@ -305,18 +341,20 @@ const purchasesModule = (function() {
             `}).join('');
         }
         
+        // تحديث الإجمالي
         const totals = _calculateCartTotals();
         const grandTotalEl = document.getElementById('purchase-grand-total');
         if (grandTotalEl) {
             grandTotalEl.textContent = totals.total.toFixed(2);
             
+            // تأثير بصري
             grandTotalEl.style.transition = 'color 0.3s';
             grandTotalEl.style.color = '#4caf50';
             setTimeout(() => grandTotalEl.style.color = '', 500);
         }
     }
 
-    // ================== حذف عنصر من سلة المشتريات محسن ==================
+    // ================== حذف عنصر من سلة المشتريات ==================
     function removePurchaseCartItem(itemId) {
         const itemIndex = purchaseCart.findIndex(item => item.id === itemId);
         
@@ -328,11 +366,12 @@ const purchasesModule = (function() {
         const item = purchaseCart[itemIndex];
         
         _showConfirmation('تأكيد الحذف', `حذف "${item.name}" من المشتريات؟`, () => {
-            if (item.productId) {
-                const product = inventoryModule.stock.find(p => p.id === item.productId);
+            // إعادة الكمية من المخزون (نقص)
+            if (item.productId && window.inventoryModule) {
+                const product = window.inventoryModule.stock.find(p => p.id === item.productId);
                 if (product) {
                     product.qty -= item.qty;
-                    inventoryModule.saveStock();
+                    window.inventoryModule.saveStock();
                 }
             }
             
@@ -343,7 +382,7 @@ const purchasesModule = (function() {
         });
     }
 
-    // ================== تعديل سعر عنصر في سلة المشتريات محسن ==================
+    // ================== تعديل سعر عنصر في سلة المشتريات ==================
     function editPurchaseCartItemPrice(itemId) {
         const itemIndex = purchaseCart.findIndex(item => item.id === itemId);
         
@@ -357,25 +396,25 @@ const purchasesModule = (function() {
         Swal.fire({
             title: 'تعديل سعر الشراء',
             html: `
-                <div class="text-right">
-                    <label>المنتج: <strong>${item.name}</strong></label><br>
-                    <label>الكمية: ${item.qty}</label>
+                <div style="text-align:right">
+                    <p><strong>المنتج:</strong> ${item.name}</p>
+                    <p><strong>الكمية:</strong> ${item.qty}</p>
+                    <hr>
+                    <div class="form-group">
+                        <label class="form-label">السعر الجديد</label>
+                        <div class="input-group">
+                            <input type="number" id="edit-price-input" class="form-control" value="${item.price}" min="0.01" step="0.01">
+                            <span class="input-group-text">دج</span>
+                        </div>
+                    </div>
                 </div>
             `,
-            input: 'number',
-            inputLabel: 'السعر الجديد (دج)',
-            inputValue: item.price,
-            inputAttributes: {
-                min: 0.01,
-                step: 0.01,
-                dir: 'ltr'
-            },
             showCancelButton: true,
             confirmButtonText: 'حفظ',
             cancelButtonText: 'إلغاء',
             confirmButtonColor: '#4caf50',
-            preConfirm: (value) => {
-                const newPrice = parseFloat(value);
+            preConfirm: () => {
+                const newPrice = parseFloat(document.getElementById('edit-price-input').value);
                 if (isNaN(newPrice) || newPrice <= 0) {
                     Swal.showValidationMessage('يجب إدخال سعر صحيح أكبر من صفر');
                     return false;
@@ -385,19 +424,15 @@ const purchasesModule = (function() {
         }).then((result) => {
             if (result.isConfirmed) {
                 const newPrice = result.value;
-                const oldPrice = item.price;
                 const newTotal = item.qty * newPrice;
                 
+                // تحديث العنصر
                 purchaseCart[itemIndex] = { 
                     ...item, 
                     price: newPrice, 
                     total: newTotal,
-                    originalPrice: item.originalPrice || oldPrice
+                    originalPrice: item.originalPrice || item.price
                 };
-                
-                if (item.productId) {
-                    inventoryModule.addMovement('تعديل سعر شراء', item.name, 0);
-                }
                 
                 renderPurchaseCart();
                 
@@ -406,7 +441,7 @@ const purchasesModule = (function() {
         });
     }
 
-    // ================== مسح سلة المشتريات بالكامل محسن ==================
+    // ================== مسح سلة المشتريات بالكامل ==================
     function clearPurchaseCart() {
         if (purchaseCart.length === 0) {
             _showNotification('تنبيه', 'السلة فارغة', 'info');
@@ -414,24 +449,27 @@ const purchasesModule = (function() {
         }
         
         _showConfirmation('تأكيد مسح السلة', 'هل أنت متأكد من مسح جميع المشتريات؟', () => {
-            purchaseCart.forEach(item => {
-                if (item.productId) {
-                    const product = inventoryModule.stock.find(p => p.id === item.productId);
-                    if (product) {
-                        product.qty -= item.qty;
+            // إعادة الكميات إلى المخزون (نقص)
+            if (window.inventoryModule) {
+                purchaseCart.forEach(item => {
+                    if (item.productId) {
+                        const product = window.inventoryModule.stock.find(p => p.id === item.productId);
+                        if (product) {
+                            product.qty -= item.qty;
+                        }
                     }
-                }
-            });
+                });
+                window.inventoryModule.saveStock();
+            }
             
             purchaseCart = [];
-            inventoryModule.saveStock();
             renderPurchaseCart();
             
             _showNotification('تم', 'تم مسح سلة المشتريات', 'success');
         });
     }
 
-    // ================== إنهاء عملية الشراء والطباعة محسن ==================
+    // ================== إنهاء عملية الشراء والطباعة ==================
     function finishPurchaseAndPrint() {
         if (purchaseCart.length === 0) {
             _showNotification('تنبيه', 'السلة فارغة', 'warning');
@@ -442,10 +480,12 @@ const purchasesModule = (function() {
         const now = new Date();
         const invNo = purchases.length + 1;
         
+        // الحصول على المورد
         const supplierSelect = document.getElementById('purchase-supplier');
         const supplier = supplierSelect?.options[supplierSelect.selectedIndex]?.text || 'غير محدد';
-        const finalSupplier = supplier === 'اختر المورد' ? 'غير محدد' : supplier;
+        const finalSupplier = supplier === '—— اختر المورد (اختياري) ——' ? 'غير محدد' : supplier;
         
+        // إنشاء فاتورة الشراء
         const purchase = {
             id: _generateId(),
             number: invNo,
@@ -454,24 +494,28 @@ const purchasesModule = (function() {
             supplier: finalSupplier,
             items: purchaseCart.map(item => ({ ...item })),
             ...totals,
-            paymentMethod: 'نقدي',
-            notes: ''
+            paymentMethod: 'نقدي'
         };
         
         purchases.push(purchase);
         localStorage.setItem(CONFIG.STORAGE_KEYS.PURCHASES, JSON.stringify(purchases));
         
+        // تجهيز الطباعة
         _preparePrintPurchase(purchase, totals);
         
+        // طباعة الفاتورة
         window.print();
         
+        // تفريغ السلة
         purchaseCart = [];
         renderPurchaseCart();
         
-        if (typeof reportsModule !== 'undefined') {
-            reportsModule.renderReports();
+        // تحديث التقارير
+        if (typeof window.reportsModule !== 'undefined') {
+            window.reportsModule.renderReports();
         }
         
+        // تحديث قائمة الفواتير
         if (document.getElementById('purchase-invoices')?.style.display !== 'none') {
             renderPurchaseInvoices();
         }
@@ -505,24 +549,28 @@ const purchasesModule = (function() {
         }
     }
 
-    // ================== فواتير المشتريات محسنة ==================
-    function renderPurchaseInvoices() {
+    // ================== فواتير المشتريات ==================
+    function renderPurchaseInvoices(filteredInvoices = null) {
         const tbody = document.getElementById('purchase-invoices-tbody');
         if (!tbody) return;
         
-        if (purchases.length === 0) {
+        const invs = filteredInvoices || purchases;
+        
+        if (invs.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center p-4 text-muted">
+                    <td colspan="8" class="text-center p-4 text-muted">
                         <i class="material-icons-round" style="font-size: 48px;">receipt</i>
-                        <p>لا توجد فواتير مشتريات</p>
+                        <p>لا توجد فواتير شراء</p>
                     </td>
                 </tr>
             `;
             return;
         }
         
-        tbody.innerHTML = purchases.map((pur, index) => `
+        tbody.innerHTML = invs.map((pur, index) => {
+            const originalIndex = purchases.findIndex(p => p.number === pur.number && p.date === pur.date);
+            return `
             <tr>
                 <td>#${pur.number}</td>
                 <td>${new Date(pur.date).toLocaleDateString('ar-DZ')}</td>
@@ -530,19 +578,117 @@ const purchasesModule = (function() {
                 <td class="fw-bold text-success">${_formatCurrency(pur.total)}</td>
                 <td><span class="badge bg-info">${pur.items.length} أصناف</span></td>
                 <td>
-                    <button class="btn btn-sm btn-warning" onclick="purchasesModule.editPurchaseInvoice(${index})">
+                    <button class="btn btn-sm btn-info" onclick="purchasesModule.showPurchaseInvoiceDetails(${pur.number})">
+                        <i class="material-icons-round" style="font-size:16px;">visibility</i>
+                    </button>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="purchasesModule.editPurchaseInvoice(${originalIndex})">
                         <i class="material-icons-round" style="font-size:16px;">edit</i>
                     </button>
                 </td>
                 <td>
-                    <button class="btn btn-sm btn-danger" onclick="purchasesModule.deletePurchaseInvoice(${index})">
+                    <button class="btn btn-sm btn-danger" onclick="purchasesModule.deletePurchaseInvoice(${originalIndex})">
                         <i class="material-icons-round" style="font-size:16px;">delete</i>
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `}).join('');
     }
 
+    // ================== عرض تفاصيل فاتورة الشراء ==================
+    function showPurchaseInvoiceDetails(invoiceNumber) {
+        const purchase = purchases.find(p => p.number === invoiceNumber);
+        
+        if (!purchase) {
+            _showNotification('خطأ', 'الفاتورة غير موجودة', 'error');
+            return;
+        }
+        
+        let itemsHtml = '';
+        
+        purchase.items.forEach((item, index) => {
+            itemsHtml += `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.qty} ${item.unit}</td>
+                    <td>${item.price.toFixed(2)} دج</td>
+                    <td>${(item.qty * item.price).toFixed(2)} دج</td>
+                </tr>
+            `;
+        });
+        
+        const content = `
+            <div style="text-align:right; padding:10px;">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <p><strong>رقم الفاتورة:</strong> #${purchase.number}</p>
+                        <p><strong>التاريخ:</strong> ${purchase.date}</p>
+                    </div>
+                    <div class="col-6">
+                        <p><strong>المورد:</strong> ${purchase.supplier}</p>
+                        <p><strong>الإجمالي:</strong> ${purchase.total.toFixed(2)} دج</p>
+                    </div>
+                </div>
+                <hr>
+                <h6 class="text-center mb-3">تفاصيل المنتجات</h6>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>المنتج</th>
+                                <th>الكمية</th>
+                                <th>سعر الوحدة</th>
+                                <th>الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th colspan="4" class="text-left">المجموع النهائي:</th>
+                                <th>${purchase.total.toFixed(2)} دج</th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        // عرض التفاصيل في نافذة منبثقة
+        Swal.fire({
+            title: `فاتورة شراء رقم ${purchase.number}`,
+            html: content,
+            width: '800px',
+            confirmButtonText: 'إغلاق'
+        });
+    }
+
+    // ================== البحث في فواتير الشراء ==================
+    function searchPurchaseInvoices() {
+        const searchInput = document.getElementById('purchase-invoice-search');
+        if (!searchInput) return;
+        
+        const searchTerm = searchInput.value.trim().toLowerCase();
+        
+        if (searchTerm === '') {
+            renderPurchaseInvoices();
+            return;
+        }
+        
+        const filtered = purchases.filter(pur => 
+            pur.number.toString().includes(searchTerm) ||
+            pur.supplier.toLowerCase().includes(searchTerm) ||
+            pur.date.includes(searchTerm)
+        );
+        
+        renderPurchaseInvoices(filtered);
+    }
+
+    // ================== حذف فاتورة شراء ==================
     function deletePurchaseInvoice(index) {
         if (index < 0 || index >= purchases.length) return;
         
@@ -553,14 +699,15 @@ const purchasesModule = (function() {
             localStorage.setItem(CONFIG.STORAGE_KEYS.PURCHASES, JSON.stringify(purchases));
             renderPurchaseInvoices();
             
-            if (typeof reportsModule !== 'undefined') {
-                reportsModule.renderReports();
+            if (typeof window.reportsModule !== 'undefined') {
+                window.reportsModule.renderReports();
             }
             
             _showNotification('تم', 'تم حذف فاتورة الشراء', 'success');
         });
     }
 
+    // ================== تعديل فاتورة شراء ==================
     function editPurchaseInvoice(index) {
         if (index < 0 || index >= purchases.length) return;
         
@@ -570,8 +717,9 @@ const purchasesModule = (function() {
         const numberSpan = document.getElementById('edit-purchase-invoice-number');
         if (numberSpan) numberSpan.textContent = pur.number;
 
+        // التحقق من المنتجات المحذوفة
         const validItems = pur.items.filter(item => 
-            !item.productId || inventoryModule.stock.some(p => p.id === item.productId)
+            !item.productId || (window.inventoryModule && window.inventoryModule.stock.some(p => p.id === item.productId))
         );
         
         if (validItems.length !== pur.items.length) {
@@ -580,12 +728,13 @@ const purchasesModule = (function() {
             pur.items = validItems;
         }
 
+        // عرض عناصر التعديل
         const container = document.getElementById('edit-purchase-invoice-items-container');
         if (!container) return;
         
         container.innerHTML = pur.items.map((item, i) => {
-            const product = inventoryModule.stock.find(p => p.id === item.productId);
-            if (!product) return '';
+            const product = window.inventoryModule?.stock.find(p => p.id === item.productId);
+            if (!product && item.productId) return '';
             
             return `
                 <div class="edit-item-row p-3 mb-2 border rounded">
@@ -613,12 +762,14 @@ const purchasesModule = (function() {
         new bootstrap.Modal(document.getElementById('editPurchaseInvoiceModal')).show();
     }
 
+    // ================== تحديث فاتورة الشراء ==================
     function updatePurchaseInvoice() {
         if (currentEditPurchaseIndex === -1) return;
         
         const pur = purchases[currentEditPurchaseIndex];
         const newItems = [];
         
+        // جمع القيم المعدلة
         for (let i = 0; i < pur.items.length; i++) {
             const qtyInput = document.getElementById(`edit-purchase-qty-${i}`);
             const priceInput = document.getElementById(`edit-purchase-price-${i}`);
@@ -642,22 +793,31 @@ const purchasesModule = (function() {
             });
         }
         
-        pur.items.forEach(item => {
-            if (item.productId) {
-                const prod = inventoryModule.stock.find(p => p.id === item.productId);
-                if (prod) prod.qty -= item.qty;
-            }
-        });
+        // تحديث المخزون
+        if (window.inventoryModule) {
+            // استعادة الكميات القديمة (نقص)
+            pur.items.forEach(item => {
+                if (item.productId) {
+                    const prod = window.inventoryModule.stock.find(p => p.id === item.productId);
+                    if (prod) prod.qty -= item.qty;
+                }
+            });
+            
+            // تطبيق الكميات الجديدة (زيادة)
+            newItems.forEach(item => {
+                if (item.productId) {
+                    const prod = window.inventoryModule.stock.find(p => p.id === item.productId);
+                    if (prod) prod.qty += item.qty;
+                }
+            });
+            
+            window.inventoryModule.saveStock();
+        }
         
-        newItems.forEach(item => {
-            if (item.productId) {
-                const prod = inventoryModule.stock.find(p => p.id === item.productId);
-                if (prod) prod.qty += item.qty;
-            }
-        });
-        
+        // حساب الإجمالي الجديد
         const newTotal = newItems.reduce((sum, i) => sum + i.total, 0);
         
+        // تحديث الفاتورة
         purchases[currentEditPurchaseIndex] = { 
             ...pur, 
             items: newItems, 
@@ -666,23 +826,22 @@ const purchasesModule = (function() {
         };
         
         localStorage.setItem(CONFIG.STORAGE_KEYS.PURCHASES, JSON.stringify(purchases));
-        inventoryModule.saveStock();
         
         bootstrap.Modal.getInstance(document.getElementById('editPurchaseInvoiceModal'))?.hide();
         
         _showNotification('نجاح', 'تم تعديل فاتورة الشراء', 'success');
         
         renderPurchaseInvoices();
-        inventoryModule.renderStock();
+        if (window.inventoryModule) window.inventoryModule.renderStock();
         
-        if (typeof reportsModule !== 'undefined') {
-            reportsModule.renderReports();
+        if (typeof window.reportsModule !== 'undefined') {
+            window.reportsModule.renderReports();
         }
         
         currentEditPurchaseIndex = -1;
     }
 
-    // ================== البحث الصوتي المحسن للمشتريات ==================
+    // ================== البحث الصوتي للمشتريات ==================
     function initVoiceSearch() {
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         
@@ -723,6 +882,7 @@ const purchasesModule = (function() {
                 searchInput.value = transcript;
                 smartSearchPurchase(transcript);
                 
+                // تأثير بصري
                 searchInput.style.transition = 'background-color 0.3s';
                 searchInput.style.backgroundColor = '#e8f5e9';
                 setTimeout(() => searchInput.style.backgroundColor = '', 500);
@@ -747,41 +907,13 @@ const purchasesModule = (function() {
         }
     }
 
-    // ================== دالة showSubSection ==================
-    function showSubSection(subId) {
-        const parent = document.querySelector('.active-section');
-        if (!parent) return;
-        
-        parent.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
-        
-        const targetSection = document.getElementById(subId);
-        if (targetSection) {
-            targetSection.style.display = 'block';
-        }
-        
-        const tabs = parent.querySelectorAll('.tab-item');
-        tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
-        
-        tabs.forEach(t => {
-            if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(subId)) {
-                if (parent.id === 'purchases') t.classList.add('active-green');
-            }
-        });
-        
-        if (subId === 'purchase-invoices') {
-            renderPurchaseInvoices();
-        }
-        if (subId === 'suppliers' && typeof supplierModule !== 'undefined') {
-            supplierModule.renderSuppliers();
-        }
-    }
-
     // ================== تصدير الوحدة ==================
     return {
         purchaseCart: purchaseCart,
         purchases: purchases,
         getPurchaseCart,
         getPurchaseCartStats,
+        showSubSection,
         smartSearchPurchase,
         selectProductPurchase,
         openQuickAddModal,
@@ -792,11 +924,12 @@ const purchasesModule = (function() {
         clearPurchaseCart,
         finishPurchaseAndPrint,
         renderPurchaseInvoices,
+        searchPurchaseInvoices,
         deletePurchaseInvoice,
         editPurchaseInvoice,
         updatePurchaseInvoice,
+        showPurchaseInvoiceDetails,
         initVoiceSearch,
-        showSubSection,
         formatCurrency: _formatCurrency
     };
 })();
