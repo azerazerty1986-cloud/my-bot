@@ -1,3 +1,10 @@
+// تأكد من وجود هذه الدالة في utils.js
+window.switchSection = function(sectionId, element) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
+    document.getElementById(sectionId).classList.add('active-section');
+    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+    if (element) element.classList.add('active');
+};
 // ================== الأدوات المساعدة المتقدمة - نسخة كاملة ==================
 const utils = (function() {
     // ================== المتغيرات الخاصة ==================
