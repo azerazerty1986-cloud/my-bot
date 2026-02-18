@@ -66,18 +66,28 @@ const reportsModule = (function() {
         updateLowStockList();
         updateTopProducts();
         updateMovementsList();
+        renderProductsReport();
+        renderCategoriesReport();
     }
 
     // ================== إظهار تبويب التقارير ==================
     function showReportTab(tabId) {
+        // إخفاء جميع التقارير
         document.querySelectorAll('.report-content').forEach(c => c.classList.remove('active-report'));
-        document.getElementById(tabId).classList.add('active-report');
         
+        // إظهار التقرير المطلوب
+        const targetReport = document.getElementById(tabId);
+        if (targetReport) {
+            targetReport.classList.add('active-report');
+        }
+        
+        // تحديث التبويبات النشطة
         document.querySelectorAll('.report-tab').forEach(t => t.classList.remove('active'));
         if (event && event.target) {
             event.target.classList.add('active');
         }
         
+        // تحديث البيانات حسب التبويب
         switch(tabId) {
             case 'report-summary':
                 renderReports();
@@ -86,10 +96,10 @@ const reportsModule = (function() {
                 renderProductsReport();
                 break;
             case 'report-services':
-                renderServicesReport();
+                // لا تحتاج لتحديث
                 break;
             case 'report-stores':
-                renderStoresReport();
+                // لا تحتاج لتحديث
                 break;
             case 'report-categories':
                 renderCategoriesReport();
@@ -129,92 +139,35 @@ const reportsModule = (function() {
         const stock = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.STOCK)) || [];
         const categories = [...new Set(stock.map(p => p.category || 'عام'))];
         
-        let html = `
-            <div style="background: #f8f9fa; border-radius: 15px; padding: 15px;">
-                <h6 style="display: flex; align-items: center; gap: 5px; margin-bottom: 15px;">
-                    <i class="material-icons-round" style="color: #667eea;">inventory</i>
-                    <span>إحصائيات المنتجات</span>
-                </h6>
-                <div class="row g-2 mb-3">
-                    <div class="col-4 text-center">
-                        <div style="background: white; border-radius: 10px; padding: 10px;">
-                            <small class="text-muted">عدد المنتجات</small>
-                            <h5 class="mb-0">${stock.length}</h5>
-                        </div>
-                    </div>
-                    <div class="col-4 text-center">
-                        <div style="background: white; border-radius: 10px; padding: 10px;">
-                            <small class="text-muted">أصناف</small>
-                            <h5 class="mb-0">${categories.length}</h5>
-                        </div>
-                    </div>
-                    <div class="col-4 text-center">
-                        <div style="background: white; border-radius: 10px; padding: 10px;">
-                            <small class="text-muted">قيمة المخزون</small>
-                            <h5 class="mb-0">${stock.reduce((sum, p) => sum + (p.qty * p.buyPrice), 0).toFixed(2)} دج</h5>
-                        </div>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>الصنف</th>
-                                <th>عدد المنتجات</th>
-                                <th>إجمالي الكمية</th>
-                                <th>قيمة المخزون</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${categories.map(cat => {
-                                const catProducts = stock.filter(p => (p.category || 'عام') === cat);
-                                const totalQty = catProducts.reduce((sum, p) => sum + p.qty, 0);
-                                const totalValue = catProducts.reduce((sum, p) => sum + (p.qty * p.buyPrice), 0);
-                                return `
-                                    <tr>
-                                        <td>${cat}</td>
-                                        <td>${catProducts.length}</td>
-                                        <td>${totalQty}</td>
-                                        <td>${totalValue.toFixed(2)} دج</td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        // تحديث الإحصائيات العامة
+        document.getElementById('products-count').textContent = stock.length;
+        document.getElementById('categories-count').textContent = categories.length;
         
-        const container = document.getElementById('report-products');
-        if (container) container.innerHTML = html;
-    }
-
-    // ================== تقرير الخدمات ==================
-    function renderServicesReport() {
-        const html = `
-            <div style="background: #f8f9fa; border-radius: 15px; padding: 20px; text-align: center;">
-                <i class="material-icons-round" style="font-size: 60px; color: #6610f2; margin-bottom: 15px;">build</i>
-                <h6>الخدمات</h6>
-                <p class="text-muted small mb-3">قريباً - إدارة الخدمات</p>
-            </div>
-        `;
+        const totalValue = stock.reduce((sum, p) => sum + (p.qty * p.buyPrice), 0);
+        document.getElementById('stock-value').textContent = totalValue.toFixed(2) + ' دج';
         
-        const container = document.getElementById('report-services');
-        if (container) container.innerHTML = html;
-    }
-
-    // ================== تقرير المخازن ==================
-    function renderStoresReport() {
-        const html = `
-            <div style="background: #f8f9fa; border-radius: 15px; padding: 20px; text-align: center;">
-                <i class="material-icons-round" style="font-size: 60px; color: #fd7e14; margin-bottom: 15px;">store</i>
-                <h6>المخازن</h6>
-                <p class="text-muted small mb-3">قريباً - إدارة المخازن</p>
-            </div>
-        `;
+        // عرض تفاصيل الأصناف
+        const tbody = document.getElementById('products-category-tbody');
+        if (!tbody) return;
         
-        const container = document.getElementById('report-stores');
-        if (container) container.innerHTML = html;
+        if (categories.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">لا توجد بيانات</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = categories.map(cat => {
+            const catProducts = stock.filter(p => (p.category || 'عام') === cat);
+            const totalQty = catProducts.reduce((sum, p) => sum + p.qty, 0);
+            const totalValue = catProducts.reduce((sum, p) => sum + (p.qty * p.buyPrice), 0);
+            return `
+                <tr>
+                    <td>${cat}</td>
+                    <td>${catProducts.length}</td>
+                    <td>${totalQty}</td>
+                    <td>${totalValue.toFixed(2)} دج</td>
+                </tr>
+            `;
+        }).join('');
     }
 
     // ================== تقرير الأصناف ==================
@@ -238,41 +191,23 @@ const reportsModule = (function() {
             categories[cat].qty += p.qty;
         });
         
-        let html = `
-            <div style="background: #f8f9fa; border-radius: 15px; padding: 15px;">
-                <h6 style="display: flex; align-items: center; gap: 5px; margin-bottom: 15px;">
-                    <i class="material-icons-round" style="color: #667eea;">category</i>
-                    <span>الأصناف</span>
-                </h6>
-                <div class="table-responsive">
-                    <table class="table table-sm">
-                        <thead>
-                            <tr>
-                                <th>الصنف</th>
-                                <th>عدد المنتجات</th>
-                                <th>إجمالي الكمية</th>
-                                <th>سعر الشراء</th>
-                                <th>سعر البيع</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${Object.entries(categories).map(([cat, data]) => `
-                                <tr>
-                                    <td>${cat}</td>
-                                    <td>${data.count}</td>
-                                    <td>${data.qty}</td>
-                                    <td>${data.totalBuy.toFixed(2)} دج</td>
-                                    <td>${data.totalSell.toFixed(2)} دج</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        `;
+        const tbody = document.getElementById('categories-tbody');
+        if (!tbody) return;
         
-        const container = document.getElementById('report-categories');
-        if (container) container.innerHTML = html;
+        if (Object.keys(categories).length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">لا توجد بيانات</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = Object.entries(categories).map(([cat, data]) => `
+            <tr>
+                <td>${cat}</td>
+                <td>${data.count}</td>
+                <td>${data.qty}</td>
+                <td>${data.totalBuy.toFixed(2)} دج</td>
+                <td>${data.totalSell.toFixed(2)} دج</td>
+            </tr>
+        `).join('');
     }
 
     // ================== تقرير النواقص ==================
@@ -307,18 +242,20 @@ const reportsModule = (function() {
         const productSales = {};
         
         invoices.forEach(inv => {
-            inv.items.forEach(item => {
-                if (!productSales[item.name]) {
-                    productSales[item.name] = {
-                        qty: 0,
-                        total: 0,
-                        count: 0
-                    };
-                }
-                productSales[item.name].qty += item.qty;
-                productSales[item.name].total += item.total;
-                productSales[item.name].count += 1;
-            });
+            if (inv.items && Array.isArray(inv.items)) {
+                inv.items.forEach(item => {
+                    if (!productSales[item.name]) {
+                        productSales[item.name] = {
+                            qty: 0,
+                            total: 0,
+                            count: 0
+                        };
+                    }
+                    productSales[item.name].qty += item.qty || 0;
+                    productSales[item.name].total += item.total || 0;
+                    productSales[item.name].count += 1;
+                });
+            }
         });
         
         const sorted = Object.entries(productSales)
@@ -379,8 +316,8 @@ const reportsModule = (function() {
                 
                 return `
                     <div class="list-group-item d-flex justify-content-between align-items-center ${color}">
-                        <span>${icon} ${m.date}</span>
-                        <span>${m.type} - ${m.product} (${m.qty})</span>
+                        <span>${icon} ${m.date || ''}</span>
+                        <span>${m.type} - ${m.product || ''} (${m.qty || 0})</span>
                     </div>
                 `;
             }).join('');
@@ -404,11 +341,12 @@ const reportsModule = (function() {
         const invoices = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.INVOICES)) || [];
         
         const filtered = invoices.filter(inv => {
+            if (!inv.date) return false;
             const invDate = new Date(inv.date.split(' ')[0].split('/').reverse().join('-'));
             return invDate >= startDate && invDate <= endDate;
         });
 
-        const total = filtered.reduce((sum, inv) => sum + inv.total, 0);
+        const total = filtered.reduce((sum, inv) => sum + (inv.total || 0), 0);
         const count = filtered.length;
         const avgTicket = count > 0 ? total / count : 0;
         
@@ -450,10 +388,10 @@ const reportsModule = (function() {
                     <tbody>
                         ${filtered.map(inv => `
                             <tr>
-                                <td>#${inv.number}</td>
-                                <td>${inv.date}</td>
-                                <td>${inv.customer}</td>
-                                <td class="fw-bold">${inv.total.toFixed(2)} دج</td>
+                                <td>#${inv.number || ''}</td>
+                                <td>${inv.date || ''}</td>
+                                <td>${inv.customer || 'نقدي'}</td>
+                                <td class="fw-bold">${(inv.total || 0).toFixed(2)} دج</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -475,7 +413,7 @@ const reportsModule = (function() {
         
         customers.forEach(customer => {
             const customerInvoices = invoices.filter(inv => inv.customer === customer.name);
-            const totalPurchases = customerInvoices.reduce((sum, inv) => sum + inv.total, 0);
+            const totalPurchases = customerInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
             
             // المدفوعات السابقة (نفترض أن المدفوع 60% من المشتريات)
             const paid = totalPurchases * 0.6;
@@ -514,15 +452,19 @@ const reportsModule = (function() {
         const data = calculateCustomerDebts();
         const debts = filteredDebts || data.debts;
         
-        document.getElementById('total-customer-debt').textContent = data.totalDebt.toFixed(2) + ' دج';
-        document.getElementById('debtor-customers-count').textContent = data.debtorCount;
-        document.getElementById('creditor-customers-count').textContent = data.creditorCount;
+        const totalEl = document.getElementById('total-customer-debt');
+        const debtorEl = document.getElementById('debtor-customers-count');
+        const creditorEl = document.getElementById('creditor-customers-count');
+        
+        if (totalEl) totalEl.textContent = data.totalDebt.toFixed(2) + ' دج';
+        if (debtorEl) debtorEl.textContent = data.debtorCount;
+        if (creditorEl) creditorEl.textContent = data.creditorCount;
         
         const tbody = document.getElementById('customer-debts-tbody');
         if (!tbody) return;
         
         if (debts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4 text-muted">لا توجد بيانات</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted py-4">لا توجد بيانات</td></tr>';
             return;
         }
         
@@ -544,7 +486,6 @@ const reportsModule = (function() {
                 <td class="${d.remaining > 0 ? 'text-danger fw-bold' : 'text-success'}">${d.remaining.toFixed(2)} دج</td>
                 <td>${d.maxDebt} دج</td>
                 <td><span class="badge ${statusClass}">${statusText}</span></td>
-                <td>-</td>
                 <td>
                     ${d.remaining > 0 ? 
                         `<button class="btn btn-sm btn-success" onclick="reportsModule.payCustomerDebt('${d.name}')">
@@ -570,7 +511,7 @@ const reportsModule = (function() {
         
         suppliers.forEach(supplier => {
             const supplierPurchases = purchases.filter(p => p.supplier === supplier.name);
-            const totalPurchases = supplierPurchases.reduce((sum, p) => sum + p.total, 0);
+            const totalPurchases = supplierPurchases.reduce((sum, p) => sum + (p.total || 0), 0);
             
             // المدفوعات السابقة (نفترض أن المدفوع 70% من المشتريات)
             const paid = totalPurchases * 0.7;
@@ -581,7 +522,7 @@ const reportsModule = (function() {
                 const sortedInvoices = [...supplierPurchases].sort((a, b) => 
                     new Date(b.date || b.timestamp) - new Date(a.date || a.timestamp)
                 );
-                lastInvoice = sortedInvoices[0].date;
+                lastInvoice = sortedInvoices[0].date || '-';
             }
             
             if (remaining > 0) {
@@ -616,15 +557,19 @@ const reportsModule = (function() {
     function renderSupplierDebts() {
         const data = calculateSupplierDebts();
         
-        document.getElementById('total-supplier-debt').textContent = data.totalDebt.toFixed(2) + ' دج';
-        document.getElementById('debtor-suppliers-count').textContent = data.debtorCount;
-        document.getElementById('creditor-suppliers-count').textContent = data.creditorCount;
+        const totalEl = document.getElementById('total-supplier-debt');
+        const debtorEl = document.getElementById('debtor-suppliers-count');
+        const creditorEl = document.getElementById('creditor-suppliers-count');
+        
+        if (totalEl) totalEl.textContent = data.totalDebt.toFixed(2) + ' دج';
+        if (debtorEl) debtorEl.textContent = data.debtorCount;
+        if (creditorEl) creditorEl.textContent = data.creditorCount;
         
         const tbody = document.getElementById('supplier-debts-tbody');
         if (!tbody) return;
         
         if (data.debts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4 text-muted">لا توجد بيانات</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">لا توجد بيانات</td></tr>';
             return;
         }
         
@@ -680,7 +625,10 @@ const reportsModule = (function() {
 
     // ================== البحث في ديون العملاء ==================
     function searchCustomerDebts() {
-        const searchTerm = document.getElementById('debt-search').value.toLowerCase().trim();
+        const searchInput = document.getElementById('debt-search');
+        if (!searchInput) return;
+        
+        const searchTerm = searchInput.value.toLowerCase().trim();
         const data = calculateCustomerDebts();
         
         if (searchTerm === '') {
@@ -753,8 +701,6 @@ const reportsModule = (function() {
         searchCustomerDebts,
         payCustomerDebt,
         renderProductsReport,
-        renderServicesReport,
-        renderStoresReport,
         renderCategoriesReport
     };
 })();
@@ -765,6 +711,10 @@ window.reportsModule = reportsModule;
 // تهيئة تلقائية عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', function() {
     if (document.getElementById('reports')) {
-        reportsModule.renderReports();
+        setTimeout(() => {
+            if (typeof reportsModule !== 'undefined') {
+                reportsModule.renderReports();
+            }
+        }, 500);
     }
 });
