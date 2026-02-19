@@ -1,11 +1,4 @@
-// تأكد من وجود هذه الدالة في utils.js
-window.switchSection = function(sectionId, element) {
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
-    document.getElementById(sectionId).classList.add('active-section');
-    document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-    if (element) element.classList.add('active');
-};
-// ================== الأدوات المساعدة المتقدمة - نسخة كاملة ==================
+// ================== الأدوات المساعدة المتقدمة - نسخة كاملة جداً ==================
 const utils = (function() {
     // ================== المتغيرات الخاصة ==================
     let quaggaRunning = false;
@@ -38,6 +31,16 @@ const utils = (function() {
         return re.test(phone);
     }
 
+    // ================== التحقق من الرقم ==================
+    function isNumber(value) {
+        return !isNaN(parseFloat(value)) && isFinite(value);
+    }
+
+    // ================== التحقق من الحقل المطلوب ==================
+    function isRequired(value) {
+        return value !== null && value !== undefined && value.toString().trim() !== '';
+    }
+
     // ================== وظائف التنقل الرئيسية ==================
     function switchSection(sectionId, element) {
         console.log('🔄 الانتقال إلى:', sectionId);
@@ -61,17 +64,17 @@ const utils = (function() {
         if (element) element.classList.add('active');
         
         // تحديث المحتوى حسب القسم
-        if (sectionId === 'inventory' && typeof inventoryModule !== 'undefined') {
-            inventoryModule.renderStock();
+        if (sectionId === 'inventory' && typeof window.inventoryModule !== 'undefined') {
+            if (window.inventoryModule.renderStock) window.inventoryModule.renderStock();
         }
-        if (sectionId === 'reports' && typeof reportsModule !== 'undefined') {
-            reportsModule.renderReports();
+        if (sectionId === 'reports' && typeof window.reportsModule !== 'undefined') {
+            if (window.reportsModule.renderReports) window.reportsModule.renderReports();
         }
-        if (sectionId === 'customers' && typeof customerModule !== 'undefined') {
-            customerModule.renderCustomers();
+        if (sectionId === 'customers' && typeof window.customerModule !== 'undefined') {
+            if (window.customerModule.renderCustomers) window.customerModule.renderCustomers();
         }
-        if (sectionId === 'suppliers' && typeof supplierModule !== 'undefined') {
-            supplierModule.renderSuppliers();
+        if (sectionId === 'suppliers' && typeof window.supplierModule !== 'undefined') {
+            if (window.supplierModule.renderSuppliers) window.supplierModule.renderSuppliers();
         }
     }
 
@@ -110,17 +113,17 @@ const utils = (function() {
         });
         
         // تحديث البيانات حسب القسم الفرعي
-        if (subId === 'sale-invoices' && typeof salesModule !== 'undefined') {
-            salesModule.renderSaleInvoices();
+        if (subId === 'sale-invoices' && typeof window.salesModule !== 'undefined') {
+            if (window.salesModule.renderSaleInvoices) window.salesModule.renderSaleInvoices();
         }
-        if (subId === 'purchase-invoices' && typeof purchasesModule !== 'undefined') {
-            purchasesModule.renderPurchaseInvoices();
+        if (subId === 'purchase-invoices' && typeof window.purchasesModule !== 'undefined') {
+            if (window.purchasesModule.renderPurchaseInvoices) window.purchasesModule.renderPurchaseInvoices();
         }
-        if (subId === 'customers' && typeof customerModule !== 'undefined') {
-            customerModule.renderCustomers();
+        if (subId === 'customers' && typeof window.customerModule !== 'undefined') {
+            if (window.customerModule.renderCustomers) window.customerModule.renderCustomers();
         }
-        if (subId === 'suppliers' && typeof supplierModule !== 'undefined') {
-            supplierModule.renderSuppliers();
+        if (subId === 'suppliers' && typeof window.supplierModule !== 'undefined') {
+            if (window.supplierModule.renderSuppliers) window.supplierModule.renderSuppliers();
         }
     }
 
@@ -178,8 +181,14 @@ const utils = (function() {
 
             Quagga.onDetected((data) => {
                 const code = data.codeResult.code;
-                document.getElementById('new-barcode').value = code;
-                document.getElementById('barcode-result').innerText = 'تم المسح: ' + code;
+                const barcodeInput = document.getElementById('new-barcode');
+                if (barcodeInput) {
+                    barcodeInput.value = code;
+                }
+                const resultEl = document.getElementById('barcode-result');
+                if (resultEl) {
+                    resultEl.innerText = 'تم المسح: ' + code;
+                }
                 Quagga.stop();
                 quaggaRunning = false;
                 modal.hide();
@@ -188,8 +197,11 @@ const utils = (function() {
     }
 
     function showLargeImage(src) {
-        document.getElementById('modal-image').src = src;
-        new bootstrap.Modal(document.getElementById('imageModal')).show();
+        const modalImage = document.getElementById('modal-image');
+        if (modalImage) {
+            modalImage.src = src;
+            new bootstrap.Modal(document.getElementById('imageModal')).show();
+        }
     }
 
     // ================== دوال الإشعارات ==================
@@ -205,7 +217,23 @@ const utils = (function() {
         });
     }
 
-    function showConfirmation(title, text, confirmCallback) {
+    function showSuccess(title, message) {
+        showNotification(title, message, 'success');
+    }
+
+    function showError(title, message) {
+        showNotification(title, message, 'error');
+    }
+
+    function showWarning(title, message) {
+        showNotification(title, message, 'warning');
+    }
+
+    function showInfo(title, message) {
+        showNotification(title, message, 'info');
+    }
+
+    function showConfirmation(title, text, confirmCallback, cancelCallback) {
         Swal.fire({
             title: title,
             text: text,
@@ -218,6 +246,8 @@ const utils = (function() {
         }).then((result) => {
             if (result.isConfirmed && confirmCallback) {
                 confirmCallback();
+            } else if (cancelCallback) {
+                cancelCallback();
             }
         });
     }
@@ -237,6 +267,18 @@ const utils = (function() {
         recognition.continuous = false;
         recognition.maxAlternatives = 1;
         
+        recognition.onstart = () => {
+            console.log('البحث الصوتي بدأ');
+            const micBtn = document.getElementById('mic-sale');
+            if (micBtn) micBtn.classList.add('listening');
+        };
+        
+        recognition.onend = () => {
+            console.log('البحث الصوتي انتهى');
+            const micBtn = document.getElementById('mic-sale');
+            if (micBtn) micBtn.classList.remove('listening');
+        };
+        
         recognition.onresult = (event) => {
             const transcript = event.results[0][0].transcript;
             const input = document.getElementById(inputId);
@@ -248,27 +290,211 @@ const utils = (function() {
         
         recognition.onerror = (event) => {
             console.log('خطأ في التعرف على الصوت:', event.error);
-            showNotification('خطأ', 'فشل التعرف على الصوت', 'error');
+            showError('خطأ', 'فشل التعرف على الصوت');
         };
         
         return recognition;
     }
 
+    // ================== حفظ البيانات في localStorage ==================
+    function saveToLocalStorage(key, data) {
+        try {
+            localStorage.setItem(key, JSON.stringify(data));
+            return true;
+        } catch (e) {
+            console.error('خطأ في الحفظ:', e);
+            showError('خطأ', 'فشل حفظ البيانات');
+            return false;
+        }
+    }
+
+    function loadFromLocalStorage(key, defaultValue = null) {
+        try {
+            const data = localStorage.getItem(key);
+            return data ? JSON.parse(data) : defaultValue;
+        } catch (e) {
+            console.error('خطأ في التحميل:', e);
+            return defaultValue;
+        }
+    }
+
+    function removeFromLocalStorage(key) {
+        try {
+            localStorage.removeItem(key);
+            return true;
+        } catch (e) {
+            console.error('خطأ في الحذف:', e);
+            return false;
+        }
+    }
+
+    function clearLocalStorage() {
+        try {
+            localStorage.clear();
+            return true;
+        } catch (e) {
+            console.error('خطأ في المسح:', e);
+            return false;
+        }
+    }
+
+    // ================== دوال مساعدة للنماذج ==================
+    function clearForm(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+        
+        const inputs = form.querySelectorAll('input, select, textarea');
+        inputs.forEach(input => {
+            if (input.type === 'text' || input.type === 'number' || input.type === 'email' || input.type === 'tel') {
+                input.value = '';
+            } else if (input.type === 'checkbox' || input.type === 'radio') {
+                input.checked = false;
+            } else if (input.tagName === 'SELECT') {
+                input.selectedIndex = 0;
+            } else if (input.tagName === 'TEXTAREA') {
+                input.value = '';
+            }
+        });
+    }
+
+    function getFormData(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return {};
+        
+        const formData = {};
+        const inputs = form.querySelectorAll('input, select, textarea');
+        
+        inputs.forEach(input => {
+            if (input.id) {
+                if (input.type === 'checkbox') {
+                    formData[input.id] = input.checked;
+                } else if (input.type === 'radio') {
+                    if (input.checked) {
+                        formData[input.id] = input.value;
+                    }
+                } else {
+                    formData[input.id] = input.value;
+                }
+            }
+        });
+        
+        return formData;
+    }
+
+    // ================== دوال التاريخ ==================
+    function getCurrentDate() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function getCurrentTime() {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
+    }
+
+    function getCurrentDateTime() {
+        return `${getCurrentDate()} ${getCurrentTime()}`;
+    }
+
+    function formatDateForDisplay(dateStr) {
+        if (!dateStr) return '';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('ar-DZ');
+    }
+
+    // ================== دوال مساعدة للعملة ==================
+    function parseCurrency(currencyStr) {
+        if (!currencyStr) return 0;
+        return parseFloat(currencyStr.replace(/[^\d.-]/g, '')) || 0;
+    }
+
+    // ================== دوال مساعدة للأرقام ==================
+    function roundToTwo(num) {
+        return Math.round((num + Number.EPSILON) * 100) / 100;
+    }
+
+    function calculatePercentage(part, total) {
+        if (total === 0) return 0;
+        return (part / total) * 100;
+    }
+
+    // ================== دوال مساعدة للبحث ==================
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+
     // ================== تصدير الوحدة ==================
     return {
+        // توليد المعرفات
         generateId,
+        
+        // تنسيقات
         formatCurrency,
         formatDate,
+        formatDateForDisplay,
+        getCurrentDate,
+        getCurrentTime,
+        getCurrentDateTime,
+        
+        // تحقق
         isValidEmail,
         isValidPhone,
+        isNumber,
+        isRequired,
+        
+        // تنقل
         switchSection,
         showSubSection,
+        
+        // صور وباركود
         previewImage,
         openBarcodeScanner,
         showLargeImage,
+        
+        // إشعارات
         showNotification,
+        showSuccess,
+        showError,
+        showWarning,
+        showInfo,
         showConfirmation,
+        
+        // بحث صوتي
         initVoiceSearch,
+        
+        // تخزين محلي
+        saveToLocalStorage,
+        loadFromLocalStorage,
+        removeFromLocalStorage,
+        clearLocalStorage,
+        
+        // نماذج
+        clearForm,
+        getFormData,
+        
+        // عمليات حسابية
+        parseCurrency,
+        roundToTwo,
+        calculatePercentage,
+        
+        // دوال مساعدة
+        debounce,
+        
+        // الصورة المحددة
         getSelectedImage: () => selectedImageBase64,
         setSelectedImage: (val) => { selectedImageBase64 = val; }
     };
@@ -279,14 +505,23 @@ window.utils = utils;
 
 // ================== تهيئة تلقائية ==================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🛠️ الأدوات المساعدة جاهزة');
+    console.log('🛠️ الأدوات المساعدة جاهزة - الإصدار الكامل');
     
-    // تفعيل القسم النشط الأول
+    // تفعيل القسم النشط الأول إذا لم يكن موجوداً
     const activeSection = document.querySelector('.section.active-section');
     if (!activeSection) {
         const firstSection = document.querySelector('.section');
         if (firstSection) {
             firstSection.classList.add('active-section');
+        }
+    }
+    
+    // إضافة خاصية debounce للبحث
+    if (document.getElementById('sale-search')) {
+        const searchInput = document.getElementById('sale-search');
+        const originalHandler = searchInput.oninput;
+        if (originalHandler) {
+            searchInput.oninput = debounce(originalHandler, 300);
         }
     }
 });
