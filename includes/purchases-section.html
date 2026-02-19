@@ -1,208 +1,628 @@
-<!-- ================== قسم المشتريات ================== -->
-<div id="purchases" class="section">
-    <div class="nav-tabs-custom no-print" style="background: var(--light-green);">
-        <div class="tab-item active-green" onclick="purchasesModule.showSubSection('purchase-operation')">➕ عملية شراء</div>
-        <div class="tab-item" onclick="purchasesModule.showSubSection('purchase-invoices')">📋 فواتير الشراء</div>
-        <div class="tab-item" onclick="purchasesModule.showSubSection('suppliers')">👥 الموردون</div>
-    </div>
-
-    <!-- ===== 1. عملية شراء ===== -->
-    <div id="purchase-operation" class="sub-section">
-        <div class="main-card no-print">
-            <h6 class="text-center mb-3"><i class="material-icons-round text-success">shopping_basket</i> تسجيل مشتريات</h6>
-            
-            <div class="search-container mb-3">
-                <div class="input-group">
-                    <button class="btn btn-dark px-3" onclick="utils.openBarcodeScanner()">
-                        <i class="material-icons-round">qr_code_scanner</i>
-                    </button>
-                    <input type="text" id="purchase-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="purchasesModule.smartSearchPurchase(this.value)">
-                    <button class="mic-btn" id="mic-purchase" title="البحث بالصوت">
-                        <i class="material-icons-round">mic</i>
-                    </button>
-                </div>
-                <div id="purchase-search-box" class="search-results"></div>
-            </div>
-            
-            <div class="mb-3">
-                <label class="form-label">اختر المورد</label>
-                <select id="purchase-supplier" class="form-select">
-                    <option value="">—— اختر المورد (اختياري) ——</option>
-                </select>
-            </div>
-            
-            <div class="row g-2 mb-3">
-                <div class="col-5">
-                    <label class="form-label">السعر</label>
-                    <div class="input-group">
-                        <input type="number" id="purchase-price" class="form-control" placeholder="السعر" min="0" step="0.01">
-                        <span class="input-group-text">دج</span>
-                    </div>
-                </div>
-                <div class="col-5">
-                    <label class="form-label">الكمية</label>
-                    <input type="number" id="purchase-qty" class="form-control" placeholder="الكمية" min="1" value="1">
-                </div>
-                <div class="col-2 d-flex align-items-end">
-                    <button class="btn btn-success w-100" onclick="purchasesModule.addToPurchaseCart()">
-                        <i class="material-icons-round">add</i>
-                    </button>
-                </div>
-            </div>
-            
-            <button class="btn btn-outline-secondary w-100 mb-2" onclick="purchasesModule.clearPurchaseCart()">
-                <i class="material-icons-round">delete_sweep</i> مسح السلة
-            </button>
-        </div>
+// ================== إدارة المشتريات (عملية شراء + فواتير + موردون) ==================
+const purchasesModule = (function() {
+    // ================== البيانات ==================
+    let cart = []; // سلة المشتريات
+    let invoices = JSON.parse(localStorage.getItem('purchase_invoices')) || []; // فواتير المشتريات
+    
+    // ================== دوال مساعدة ==================
+    function formatCurrency(amount) {
+        return Number(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+    
+    function generateInvoiceNumber(prefix = 'PUR') {
+        const date = new Date();
+        const year = date.getFullYear().toString().slice(-2);
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        return `${prefix}-${year}${month}${day}-${random}`;
+    }
+    
+    function showNotification(title, message, type = 'success') {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: type,
+                title: title,
+                text: message,
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        } else {
+            alert(`${title}: ${message}`);
+        }
+    }
+    
+    function showConfirmation(title, text, confirmCallback) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'نعم',
+                cancelButtonText: 'إلغاء'
+            }).then((result) => {
+                if (result.isConfirmed && confirmCallback) {
+                    confirmCallback();
+                }
+            });
+        } else {
+            if (confirm(`${title}\n${text}`)) {
+                confirmCallback();
+            }
+        }
+    }
+    
+    // ==================第一部分: عملية الشراء ==================
+    
+    // إضافة منتج إلى سلة المشتريات
+    function addToCart() {
+        const searchInput = document.getElementById('purchase-search');
+        const productName = searchInput?.value.trim();
+        const price = parseFloat(document.getElementById('purchase-price')?.value) || 0;
+        const qty = parseInt(document.getElementById('purchase-qty')?.value) || 1;
         
-        <div class="main-card">
-            <h6 class="mb-3"><i class="material-icons-round">shopping_basket</i> سلة المشتريات</h6>
-            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                <table class="table-custom">
-                    <thead class="sticky-top bg-light">
-                        <tr>
-                            <th>المنتج</th>
-                            <th>الكمية</th>
-                            <th>تكلفة الوحدة</th>
-                            <th>الإجمالي</th>
-                            <th>تعديل</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="purchase-cart-table">
-                        <tr>
-                            <td colspan="6" class="text-center p-4 text-muted">
-                                <i class="material-icons-round" style="font-size:48px;">shopping_basket</i>
-                                <p>سلة المشتريات فارغة</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="summary-box mt-3 no-print" style="background: var(--main-green);">
-                <button class="btn-print" style="color: var(--main-green);" onclick="purchasesModule.finishPurchaseAndPrint()">
-                    <i class="material-icons-round">save</i> حفظ وطباعة
-                </button>
-                <div>المجموع: <b id="purchase-grand-total">0.00</b> دج</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== 2. فواتير الشراء ===== -->
-    <div id="purchase-invoices" class="sub-section" style="display: none;">
-        <div class="main-card">
-            <h5 class="text-center mb-4"><i class="material-icons-round text-success">receipt</i> سجل فواتير الشراء</h5>
-            
-            <div class="input-group mb-3">
-                <span class="input-group-text"><i class="material-icons-round">search</i></span>
-                <input type="text" id="purchase-invoice-search" class="form-control" placeholder="بحث برقم الفاتورة، المورد، أو التاريخ" oninput="purchasesModule.searchPurchaseInvoices()">
-                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('purchase-invoice-search').value=''; purchasesModule.searchPurchaseInvoices()">
-                    <i class="material-icons-round">refresh</i>
-                </button>
-            </div>
-            
-            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                <table class="table-custom">
-                    <thead class="sticky-top bg-light">
-                        <tr>
-                            <th>رقم</th>
-                            <th>التاريخ</th>
-                            <th>المورد</th>
-                            <th>المبلغ</th>
-                            <th>الأصناف</th>
-                            <th>عرض</th>
-                            <th>تعديل</th>
-                            <th>حذف</th>
-                        </tr>
-                    </thead>
-                    <tbody id="purchase-invoices-tbody">
-                        <tr>
-                            <td colspan="8" class="text-center p-4 text-muted">
-                                <i class="material-icons-round" style="font-size:48px;">receipt</i>
-                                <p>لا توجد فواتير شراء</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- ===== 3. إدارة الموردين ===== -->
-    <div id="suppliers" class="sub-section" style="display: none;">
-        <div class="main-card">
-            <h5 class="text-center mb-4"><i class="material-icons-round text-warning">business</i> إدارة الموردين</h5>
-            
-            <div class="input-group mb-3">
-                <span class="input-group-text"><i class="material-icons-round">search</i></span>
-                <input type="text" id="search-supplier" class="form-control" placeholder="ابحث عن مورد..." onkeyup="supplierModule.searchSuppliers()">
-                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('search-supplier').value=''; supplierModule.searchSuppliers()">
-                    <i class="material-icons-round">refresh</i>
-                </button>
-            </div>
-            
-            <button class="btn btn-success w-100 mb-3" onclick="utils.showSubSection('add-supplier')">
-                <i class="material-icons-round">business_center</i> إضافة مورد جديد
-            </button>
-            
-            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                <table class="table-custom">
-                    <thead class="sticky-top bg-light">
-                        <tr>
-                            <th>اسم المورد</th>
-                            <th>الهاتف</th>
-                            <th>هاتف آخر</th>
-                            <th>المدينة</th>
-                            <th>عدد الفواتير</th>
-                            <th>إجمالي المشتريات</th>
-                            <th>عرض الفواتير</th>
-                            <th>تعديل</th>
-                            <th>حذف</th>
-                        </tr>
-                    </thead>
-                    <tbody id="suppliers-tbody">
-                        <tr>
-                            <td colspan="9" class="text-center p-4 text-muted">
-                                <i class="material-icons-round" style="font-size:48px;">business</i>
-                                <p>لا يوجد موردين</p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <div id="supplier-invoices-view" style="display:none; margin-top:20px;">
-                <div class="card">
-                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                        <span><i class="material-icons-round">receipt</i> فواتير المورد: <span id="selected-supplier-name"></span></span>
-                        <button class="btn btn-sm btn-light" onclick="supplierModule.hideSupplierInvoices()">
-                            <i class="material-icons-round">close</i>
-                        </button>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
-                            <table class="table-custom">
-                                <thead>
-                                    <tr>
-                                        <th>رقم الفاتورة</th>
-                                        <th>التاريخ</th>
-                                        <th>عدد الأصناف</th>
-                                        <th>المبلغ</th>
-                                        <th>عرض التفاصيل</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="supplier-invoices-tbody">
-                                    <tr><td colspan="5" class="text-center p-3">لا توجد فواتير</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <button class="btn btn-secondary w-100 mt-2" onclick="supplierModule.hideSupplierInvoices()">
-                            <i class="material-icons-round">arrow_back</i> رجوع
-                        </button>
+        if (!productName) {
+            showNotification('تنبيه', 'الرجاء إدخال اسم المنتج', 'warning');
+            return;
+        }
+        
+        if (price <= 0) {
+            showNotification('تنبيه', 'السعر مطلوب', 'warning');
+            return;
+        }
+        
+        // التحقق من وجود المنتج في السلة مسبقاً
+        const existingItem = cart.find(item => item.name === productName);
+        if (existingItem) {
+            existingItem.qty += qty;
+            existingItem.price = price; // تحديث السعر (يمكن أن يتغير)
+            existingItem.total = existingItem.price * existingItem.qty;
+        } else {
+            // إضافة إلى السلة
+            const cartItem = {
+                id: Date.now() + Math.random(),
+                name: productName,
+                price: price,
+                qty: qty,
+                total: price * qty
+            };
+            cart.push(cartItem);
+        }
+        
+        renderCart();
+        
+        // مسح الحقول
+        if (searchInput) searchInput.value = '';
+        const priceInput = document.getElementById('purchase-price');
+        const qtyInput = document.getElementById('purchase-qty');
+        if (priceInput) priceInput.value = '';
+        if (qtyInput) qtyInput.value = '1';
+        
+        showNotification('نجاح', 'تم إضافة المنتج', 'success');
+    }
+    
+    // عرض سلة المشتريات
+    function renderCart() {
+        const tbody = document.getElementById('purchase-cart-table');
+        if (!tbody) return;
+        
+        if (cart.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
+            updateTotal();
+            return;
+        }
+        
+        tbody.innerHTML = cart.map((item, index) => `
+            <tr>
+                <td>${item.name}</td>
+                <td>${item.qty}</td>
+                <td>${formatCurrency(item.price)}</td>
+                <td>${formatCurrency(item.total)}</td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="purchasesModule.removeFromCart(${index})">
+                        <i class="material-icons-round">delete</i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+        
+        updateTotal();
+    }
+    
+    // تحديث المجموع
+    function updateTotal() {
+        const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
+        const totalEl = document.getElementById('purchase-grand-total');
+        if (totalEl) totalEl.textContent = formatCurrency(grandTotal);
+    }
+    
+    // حذف من السلة
+    function removeFromCart(index) {
+        cart.splice(index, 1);
+        renderCart();
+        showNotification('تم', 'تم حذف المنتج', 'success');
+    }
+    
+    // مسح السلة
+    function clearCart() {
+        if (cart.length === 0) return;
+        
+        showConfirmation('تأكيد', 'هل تريد تفريغ السلة؟', () => {
+            cart = [];
+            renderCart();
+            showNotification('تم', 'تم تفريغ السلة', 'success');
+        });
+    }
+    
+    // إنهاء الشراء والطباعة
+    function finishPurchaseAndPrint() {
+        if (cart.length === 0) {
+            showNotification('تنبيه', 'السلة فارغة', 'warning');
+            return;
+        }
+        
+        const supplierSelect = document.getElementById('purchase-supplier');
+        const supplierName = supplierSelect?.options[supplierSelect.selectedIndex]?.text || 'مورد';
+        
+        // حساب المجموع
+        const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
+        
+        // إنشاء فاتورة جديدة
+        const invoice = {
+            id: Date.now(),
+            number: generateInvoiceNumber('PUR'),
+            date: new Date().toISOString(),
+            supplier: supplierName,
+            items: [...cart],
+            grandTotal: grandTotal
+        };
+        
+        invoices.push(invoice);
+        saveInvoices();
+        
+        // تجهيز الطباعة
+        preparePrint(invoice);
+        
+        // تحديث المخزون (إضافة الكميات)
+        updateInventoryAfterPurchase(cart);
+        
+        // مسح السلة
+        cart = [];
+        renderCart();
+        
+        showNotification('نجاح', 'تم حفظ فاتورة الشراء', 'success');
+    }
+    
+    // تحديث المخزون بعد الشراء
+    function updateInventoryAfterPurchase(items) {
+        const inventory = window.inventoryModule;
+        if (!inventory || !inventory.products) return;
+        
+        items.forEach(item => {
+            const product = inventory.products.find(p => p.name === item.name);
+            if (product) {
+                product.quantity += item.qty;
+                product.buyPrice = item.price; // تحديث سعر الشراء
+            } else {
+                // إضافة منتج جديد
+                inventory.products.push({
+                    id: Date.now() + Math.random(),
+                    name: item.name,
+                    buyPrice: item.price,
+                    sellPrice: item.price * 1.3, // هامش ربح 30%
+                    quantity: item.qty,
+                    unit: 'قطعة',
+                    category: 'عام',
+                    minStock: 5,
+                    createdAt: new Date().toISOString()
+                });
+            }
+        });
+        
+        if (inventory.saveProducts) inventory.saveProducts();
+        if (inventory.renderStock) inventory.renderStock();
+    }
+    
+    // تجهيز طباعة فاتورة الشراء
+    function preparePrint(invoice) {
+        const dateTimeEl = document.getElementById('purchase-print-date-time');
+        const invoiceNoEl = document.getElementById('purchase-print-invoice-no');
+        const supplierEl = document.getElementById('print-supplier');
+        const tbody = document.getElementById('purchase-print-cart-items');
+        const grandTotalEl = document.getElementById('purchase-print-grand-total');
+        
+        if (dateTimeEl) dateTimeEl.textContent = new Date(invoice.date).toLocaleString('ar-EG');
+        if (invoiceNoEl) invoiceNoEl.textContent = invoice.number;
+        if (supplierEl) supplierEl.textContent = invoice.supplier;
+        
+        if (tbody) {
+            tbody.innerHTML = invoice.items.map((item, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.qty}</td>
+                    <td>${formatCurrency(item.price)}</td>
+                    <td>${formatCurrency(item.total)}</td>
+                </tr>
+            `).join('');
+        }
+        
+        if (grandTotalEl) grandTotalEl.textContent = formatCurrency(invoice.grandTotal);
+        
+        // طباعة
+        setTimeout(() => {
+            window.print();
+        }, 100);
+    }
+    
+    // البحث الذكي عن المنتجات
+    function smartSearch(term) {
+        const resultsBox = document.getElementById('purchase-search-box');
+        if (!resultsBox) return;
+        
+        if (!term || term.length < 2) {
+            resultsBox.classList.remove('show');
+            return;
+        }
+        
+        const products = window.inventoryModule?.products || [];
+        const results = products.filter(p => 
+            p.name.toLowerCase().includes(term.toLowerCase())
+        ).slice(0, 5);
+        
+        if (results.length === 0) {
+            resultsBox.innerHTML = '<div class="search-item text-muted">لا توجد نتائج</div>';
+            resultsBox.classList.add('show');
+            return;
+        }
+        
+        resultsBox.innerHTML = results.map(p => `
+            <div class="search-item" onclick="purchasesModule.selectProduct('${p.name}', ${p.buyPrice || 0})">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <strong>${p.name}</strong><br>
+                        <small>آخر سعر شراء: ${formatCurrency(p.buyPrice || 0)}</small>
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
+        `).join('');
+        
+        resultsBox.classList.add('show');
+    }
+    
+    // اختيار منتج من البحث
+    function selectProduct(name, lastPrice) {
+        const searchInput = document.getElementById('purchase-search');
+        if (searchInput) searchInput.value = name;
+        
+        const priceInput = document.getElementById('purchase-price');
+        if (priceInput && lastPrice > 0) priceInput.value = lastPrice;
+        
+        const resultsBox = document.getElementById('purchase-search-box');
+        if (resultsBox) resultsBox.classList.remove('show');
+        
+        // إظهار معلومات المنتج
+        Swal.fire({
+            icon: 'info',
+            title: name,
+            html: `
+                <div style="text-align:right">
+                    <p><strong>آخر سعر شراء:</strong> ${formatCurrency(lastPrice)}</p>
+                </div>
+            `,
+            showConfirmButton: false,
+            timer: 1500
+        });
+    }
+    
+    // ==================第二部分: إدارة فواتير الشراء ==================
+    
+    // حفظ الفواتير
+    function saveInvoices() {
+        localStorage.setItem('purchase_invoices', JSON.stringify(invoices));
+    }
+    
+    // تحميل فواتير الشراء
+    function loadInvoices() {
+        const tbody = document.getElementById('purchase-invoices-tbody');
+        if (!tbody) return;
+        
+        if (invoices.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">receipt</i><br>لا توجد فواتير</td></tr>';
+            return;
+        }
+        
+        // ترتيب الفواتير من الأحدث إلى الأقدم
+        const sortedInvoices = [...invoices].sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        tbody.innerHTML = sortedInvoices.map((inv, idx) => {
+            const originalIndex = invoices.findIndex(i => i.id === inv.id);
+            return `
+            <tr>
+                <td>${inv.number}</td>
+                <td>${new Date(inv.date).toLocaleDateString('ar-EG')}</td>
+                <td>${inv.supplier}</td>
+                <td>${formatCurrency(inv.grandTotal)}</td>
+                <td>${inv.items.length}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="purchasesModule.showInvoice(${originalIndex})">
+                        <i class="material-icons-round">visibility</i>
+                    </button>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="purchasesModule.deleteInvoice(${originalIndex})">
+                        <i class="material-icons-round">delete</i>
+                    </button>
+                </td>
+            </tr>
+        `}).join('');
+    }
+    
+    // عرض فاتورة شراء
+    function showInvoice(index) {
+        const invoice = invoices[index];
+        if (!invoice) return;
+        
+        let itemsHtml = '';
+        invoice.items.forEach((item, i) => {
+            itemsHtml += `
+                <tr>
+                    <td style="padding:5px; border:1px solid #ddd;">${i + 1}</td>
+                    <td style="padding:5px; border:1px solid #ddd;">${item.name}</td>
+                    <td style="padding:5px; border:1px solid #ddd;">${item.qty}</td>
+                    <td style="padding:5px; border:1px solid #ddd;">${formatCurrency(item.price)}</td>
+                    <td style="padding:5px; border:1px solid #ddd;">${formatCurrency(item.total)}</td>
+                </tr>
+            `;
+        });
+        
+        Swal.fire({
+            title: `فاتورة شراء رقم ${invoice.number}`,
+            html: `
+                <div style="text-align:right; max-height:400px; overflow-y:auto;">
+                    <p><strong>التاريخ:</strong> ${new Date(invoice.date).toLocaleString('ar-EG')}</p>
+                    <p><strong>المورد:</strong> ${invoice.supplier}</p>
+                    <hr>
+                    <table style="width:100%; border-collapse:collapse; text-align:center;">
+                        <thead>
+                            <tr style="background:#f5f5f5;">
+                                <th style="padding:5px; border:1px solid #ddd;">#</th>
+                                <th style="padding:5px; border:1px solid #ddd;">المنتج</th>
+                                <th style="padding:5px; border:1px solid #ddd;">الكمية</th>
+                                <th style="padding:5px; border:1px solid #ddd;">السعر</th>
+                                <th style="padding:5px; border:1px solid #ddd;">الإجمالي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+                    <hr>
+                    <h4><strong>الإجمالي:</strong> ${formatCurrency(invoice.grandTotal)}</h4>
+                </div>
+            `,
+            width: '800px',
+            showConfirmButton: true,
+            confirmButtonText: 'إغلاق',
+            showCancelButton: true,
+            cancelButtonText: 'طباعة',
+            cancelButtonColor: '#28a745'
+        }).then((result) => {
+            if (result.dismiss === Swal.DismissReason.cancel) {
+                preparePrint(invoice);
+            }
+        });
+    }
+    
+    // حذف فاتورة شراء
+    function deleteInvoice(index) {
+        const invoice = invoices[index];
+        
+        Swal.fire({
+            title: 'تأكيد الحذف',
+            html: `هل أنت متأكد من حذف فاتورة الشراء رقم <strong>${invoice.number}</strong>؟`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'نعم، احذف',
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                invoices.splice(index, 1);
+                saveInvoices();
+                loadInvoices();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'تم الحذف',
+                    text: 'تم حذف الفاتورة',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            }
+        });
+    }
+    
+    // ==================第三部分: إدارة الموردين (مدمجة) ==================
+    
+    // تحميل قائمة الموردين
+    function loadSuppliersList() {
+        const suppliers = window.supplierModule?.suppliers || [];
+        const select = document.getElementById('purchase-supplier');
+        if (select) {
+            select.innerHTML = '<option value="">اختر المورد (اختياري)</option>' + 
+                suppliers.map(s => `<option value="${s.name}">${s.name} ${s.phone ? '- ' + s.phone : ''}</option>`).join('');
+        }
+    }
+    
+    // إضافة مورد جديد (بسيط)
+    function addSupplier() {
+        const nameInput = document.getElementById('new-supplier');
+        const phoneInput = document.getElementById('new-supplier-phone');
+        
+        const name = nameInput?.value.trim();
+        const phone = phoneInput?.value.trim() || '';
+        
+        if (!name) {
+            showNotification('تنبيه', 'اسم المورد مطلوب', 'warning');
+            return;
+        }
+        
+        // إضافة المورد عبر supplierModule
+        if (window.supplierModule) {
+            window.supplierModule.suppliers.push({
+                id: Date.now(),
+                name: name,
+                phone: phone,
+                createdAt: new Date().toISOString()
+            });
+            
+            if (window.supplierModule.saveSuppliers) {
+                window.supplierModule.saveSuppliers();
+            }
+            
+            if (window.supplierModule.renderSuppliers) {
+                window.supplierModule.renderSuppliers();
+            }
+            
+            if (nameInput) nameInput.value = '';
+            if (phoneInput) phoneInput.value = '';
+            
+            showNotification('نجاح', 'تم إضافة المورد', 'success');
+            loadSuppliersList(); // تحديث القائمة
+        }
+    }
+    
+    // عرض الموردين
+    function renderSuppliers() {
+        const tbody = document.getElementById('suppliers-tbody');
+        if (!tbody) return;
+        
+        const suppliers = window.supplierModule?.suppliers || [];
+        
+        if (suppliers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">business</i><br>لا يوجد موردين</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = suppliers.map((s, idx) => `
+            <tr>
+                <td>${s.name}</td>
+                <td>${s.phone || '-'}</td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="purchasesModule.deleteSupplier(${idx})">
+                        <i class="material-icons-round">delete</i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    // حذف مورد
+    function deleteSupplier(index) {
+        const suppliers = window.supplierModule?.suppliers;
+        if (!suppliers) return;
+        
+        const supplier = suppliers[index];
+        
+        showConfirmation('تأكيد الحذف', `حذف المورد "${supplier.name}"؟`, () => {
+            suppliers.splice(index, 1);
+            if (window.supplierModule.saveSuppliers) {
+                window.supplierModule.saveSuppliers();
+            }
+            renderSuppliers();
+            loadSuppliersList();
+            showNotification('تم', 'تم حذف المورد', 'success');
+        });
+    }
+    
+    // ================== التهيئة ==================
+    function init() {
+        console.log('✅ purchasesModule initialized');
+        renderCart();
+        loadSuppliersList();
+        loadInvoices();
+        renderSuppliers();
+        
+        // إغلاق نتائج البحث عند النقر خارجها
+        document.addEventListener('click', (e) => {
+            const searchBox = document.getElementById('purchase-search-box');
+            const searchInput = document.getElementById('purchase-search');
+            if (searchBox && !searchBox.contains(e.target) && e.target !== searchInput) {
+                searchBox.classList.remove('show');
+            }
+        });
+        
+        // إضافة مستمع للبحث
+        const searchInput = document.getElementById('purchase-search');
+        if (searchInput) {
+            searchInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Enter') {
+                    addToCart();
+                }
+            });
+        }
+    }
+    
+    // ================== واجهة الوحدة العامة ==================
+    return {
+        // بيانات
+        cart: cart,
+        invoices: invoices,
+        
+        // عمليات الشراء
+        addToCart: addToCart,
+        removeFromCart: removeFromCart,
+        clearCart: clearCart,
+        finishPurchaseAndPrint: finishPurchaseAndPrint,
+        smartSearch: smartSearch,
+        selectProduct: selectProduct,
+        
+        // إدارة فواتير الشراء
+        loadInvoices: loadInvoices,
+        showInvoice: showInvoice,
+        deleteInvoice: deleteInvoice,
+        
+        // إدارة الموردين
+        loadSuppliersList: loadSuppliersList,
+        addSupplier: addSupplier,
+        renderSuppliers: renderSuppliers,
+        deleteSupplier: deleteSupplier,
+        
+        // تهيئة
+        init: init
+    };
+})();
+
+// ================== تصدير الوحدة ==================
+if (typeof window !== 'undefined') {
+    window.purchasesModule = purchasesModule;
+}
+
+// ================== دوال مساعدة للاستخدام في HTML ==================
+if (typeof window !== 'undefined') {
+    window.addToPurchaseCart = function() { purchasesModule.addToCart(); };
+    window.clearPurchaseCart = function() { purchasesModule.clearCart(); };
+    window.finishPurchaseAndPrint = function() { purchasesModule.finishPurchaseAndPrint(); };
+    window.smartSearchPurchase = function(term) { purchasesModule.smartSearch(term); };
+    window.selectPurchaseProduct = function(name, price) { purchasesModule.selectProduct(name, price); };
+    window.addSupplier = function() { purchasesModule.addSupplier(); };
+    window.deleteSupplier = function(index) { purchasesModule.deleteSupplier(index); };
+}
+
+// ================== تهيئة تلقائية ==================
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof purchasesModule !== 'undefined' && purchasesModule.init) {
+            setTimeout(function() {
+                purchasesModule.init();
+            }, 300);
+        }
+    });
+}
