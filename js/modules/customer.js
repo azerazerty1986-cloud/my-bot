@@ -1,9 +1,10 @@
+// ================== إدارة العملاء والموردين ==================
 
-// ================== إدارة العملاء - وحدة منفصلة ==================
+// ================== إدارة العملاء ==================
 const customerModule = (function() {
     let customers = JSON.parse(localStorage.getItem('ryan_customers')) || [];
     
-    // ================== هيكلة البيانات ==================
+    // تحويل العملاء القدامى إلى الشكل الجديد
     customers = customers.map(c => {
         if (typeof c === 'string') {
             return {
@@ -43,7 +44,7 @@ const customerModule = (function() {
         };
     });
 
-    // ================== حفظ البيانات ==================
+    // حفظ العملاء
     function saveCustomers() {
         localStorage.setItem('ryan_customers', JSON.stringify(customers));
     }
@@ -78,7 +79,7 @@ const customerModule = (function() {
         });
     }
 
-    // ================== إضافة عميل جديد ==================
+    // ================== إضافة عميل جديد (بسيط) ==================
     function addCustomer() {
         const name = document.getElementById('new-customer')?.value.trim();
         const phone = document.getElementById('new-customer-phone')?.value.trim() || '';
@@ -88,7 +89,7 @@ const customerModule = (function() {
             return;
         }
 
-        customers.push({
+        const newCustomer = {
             id: Date.now(),
             name: name,
             phone: phone,
@@ -104,8 +105,9 @@ const customerModule = (function() {
             alertDays: 0,
             notes: '',
             createdAt: new Date().toISOString()
-        });
+        };
 
+        customers.push(newCustomer);
         saveCustomers();
         renderCustomers();
         
@@ -116,280 +118,157 @@ const customerModule = (function() {
         _showNotification('نجاح', 'تم إضافة العميل', 'success');
     }
 
-    // ================== إضافة عميل كامل ==================
+    // ================== إضافة عميل كامل (مع جميع الحقول) ==================
     function saveNewCustomer() {
+        console.log('محاولة حفظ عميل جديد...');
+        
+        // الحصول على القيم من الحقول
         const name = document.getElementById('new-customer-name')?.value.trim();
+        const nickname = document.getElementById('new-customer-nickname')?.value.trim() || '';
         const phone = document.getElementById('new-customer-phone')?.value.trim() || '';
-        const secondaryPhone = document.getElementById('new-customer-phone2')?.value.trim() || '';
+        const phone2 = document.getElementById('new-customer-phone2')?.value.trim() || '';
+        const whatsapp = document.getElementById('new-customer-whatsapp')?.value.trim() || '';
+        const email = document.getElementById('new-customer-email')?.value.trim() || '';
+        const birthdate = document.getElementById('new-customer-birthdate')?.value || '';
+        const gender = document.getElementById('new-customer-gender')?.value || '';
+        
+        const country = document.getElementById('new-customer-country')?.value || 'الجزائر';
         const governorate = document.getElementById('new-customer-governorate')?.value.trim() || '';
         const city = document.getElementById('new-customer-city')?.value.trim() || '';
+        const district = document.getElementById('new-customer-district')?.value.trim() || '';
         const street = document.getElementById('new-customer-street')?.value.trim() || '';
+        const building = document.getElementById('new-customer-building')?.value.trim() || '';
         const address = document.getElementById('new-customer-address')?.value.trim() || '';
-        const taxNumber = document.getElementById('new-customer-tax')?.value.trim() || '';
-        const commercialRegister = document.getElementById('new-customer-commercial')?.value.trim() || '';
-        const email = document.getElementById('new-customer-email')?.value.trim() || '';
+        
         const maxDebt = parseFloat(document.getElementById('new-customer-max-debt')?.value) || 0;
         const alertDays = parseInt(document.getElementById('new-customer-alert-days')?.value) || 0;
+        const discount = parseFloat(document.getElementById('new-customer-discount')?.value) || 0;
+        const payment = document.getElementById('new-customer-payment')?.value || 'cash';
+        const rating = document.getElementById('new-customer-rating')?.value || 'D';
+        
+        const taxNumber = document.getElementById('new-customer-tax')?.value.trim() || '';
+        const commercial = document.getElementById('new-customer-commercial')?.value.trim() || '';
+        
+        const source = document.getElementById('new-customer-source')?.value || 'direct';
+        const lastContact = document.getElementById('new-customer-last-contact')?.value || '';
+        
         const notes = document.getElementById('new-customer-notes')?.value.trim() || '';
 
+        // التحقق من الحقول المطلوبة
         if (!name) {
-            _showNotification('تنبيه', 'اسم العميل مطلوب', 'warning');
+            Swal.fire({
+                icon: 'warning',
+                title: 'تنبيه',
+                text: 'اسم العميل مطلوب'
+            });
             return;
         }
 
-        if (customers.some(c => c.name === name)) {
-            _showNotification('تنبيه', 'يوجد عميل بنفس الاسم بالفعل', 'warning');
-            return;
-        }
-
-        customers.push({
+        // إنشاء كائن العميل
+        const newCustomer = {
             id: Date.now(),
             name: name,
+            nickname: nickname,
             phone: phone,
-            secondaryPhone: secondaryPhone,
+            phone2: phone2,
+            whatsapp: whatsapp,
+            email: email,
+            birthdate: birthdate,
+            gender: gender,
+            country: country,
             governorate: governorate,
             city: city,
+            district: district,
             street: street,
-            address: address || `${street}, ${city}, ${governorate}`,
-            taxNumber: taxNumber,
-            commercialRegister: commercialRegister,
-            email: email,
+            building: building,
+            address: address || `${street}, ${district}, ${city}, ${governorate}`,
             maxDebt: maxDebt,
             alertDays: alertDays,
+            discount: discount,
+            paymentMethod: payment,
+            rating: rating,
+            taxNumber: taxNumber,
+            commercialRegister: commercial,
+            source: source,
+            lastContact: lastContact,
             notes: notes,
-            createdAt: new Date().toISOString()
-        });
+            createdAt: new Date().toISOString(),
+            totalPurchases: 0,
+            invoiceCount: 0,
+            lastInvoiceDate: null
+        };
 
+        // إضافة العميل إلى القائمة
+        customers.push(newCustomer);
         saveCustomers();
-        renderCustomers();
-        _clearForm();
-        
-        _showNotification('نجاح', 'تم إضافة العميل', 'success');
-    }
 
-    function _clearForm() {
-        const fields = [
-            'new-customer-name', 'new-customer-phone', 'new-customer-phone2',
-            'new-customer-governorate', 'new-customer-city', 'new-customer-street',
-            'new-customer-address', 'new-customer-tax', 'new-customer-commercial',
-            'new-customer-email', 'new-customer-max-debt', 'new-customer-alert-days',
-            'new-customer-notes'
-        ];
-        fields.forEach(id => {
-            const el = document.getElementById(id);
-            if (el) el.value = '';
+        // رسالة نجاح
+        Swal.fire({
+            icon: 'success',
+            title: 'تم الحفظ',
+            text: 'تم إضافة العميل بنجاح',
+            timer: 1500,
+            showConfirmButton: false
         });
+
+        // إعادة تعيين الحقول
+        document.getElementById('new-customer-name').value = '';
+        if (document.getElementById('new-customer-nickname')) document.getElementById('new-customer-nickname').value = '';
+        if (document.getElementById('new-customer-phone')) document.getElementById('new-customer-phone').value = '';
+        if (document.getElementById('new-customer-phone2')) document.getElementById('new-customer-phone2').value = '';
+        if (document.getElementById('new-customer-whatsapp')) document.getElementById('new-customer-whatsapp').value = '';
+        if (document.getElementById('new-customer-email')) document.getElementById('new-customer-email').value = '';
+        if (document.getElementById('new-customer-birthdate')) document.getElementById('new-customer-birthdate').value = '';
+        if (document.getElementById('new-customer-gender')) document.getElementById('new-customer-gender').value = '';
+        
+        if (document.getElementById('new-customer-governorate')) document.getElementById('new-customer-governorate').value = '';
+        if (document.getElementById('new-customer-city')) document.getElementById('new-customer-city').value = '';
+        if (document.getElementById('new-customer-district')) document.getElementById('new-customer-district').value = '';
+        if (document.getElementById('new-customer-street')) document.getElementById('new-customer-street').value = '';
+        if (document.getElementById('new-customer-building')) document.getElementById('new-customer-building').value = '';
+        if (document.getElementById('new-customer-address')) document.getElementById('new-customer-address').value = '';
+        
+        if (document.getElementById('new-customer-max-debt')) document.getElementById('new-customer-max-debt').value = '0';
+        if (document.getElementById('new-customer-alert-days')) document.getElementById('new-customer-alert-days').value = '0';
+        if (document.getElementById('new-customer-discount')) document.getElementById('new-customer-discount').value = '0';
+        
+        if (document.getElementById('new-customer-tax')) document.getElementById('new-customer-tax').value = '';
+        if (document.getElementById('new-customer-commercial')) document.getElementById('new-customer-commercial').value = '';
+        
+        if (document.getElementById('new-customer-last-contact')) document.getElementById('new-customer-last-contact').value = '';
+        if (document.getElementById('new-customer-notes')) document.getElementById('new-customer-notes').value = '';
+
+        // تحديث عرض العملاء
+        renderCustomers();
+
+        console.log('تم حفظ العميل:', newCustomer);
     }
 
-    // ================== البحث عن العملاء ==================
-    function searchCustomers() {
-        const searchTerm = document.getElementById('search-customer')?.value.toLowerCase().trim() || '';
-        
-        let filtered = customers;
-        
-        if (searchTerm !== '') {
-            filtered = customers.filter(c => 
-                c.name.toLowerCase().includes(searchTerm) || 
-                (c.phone && c.phone.includes(searchTerm))
-            );
-        }
-        
-        renderFiltered(filtered);
-    }
-
-    function renderFiltered(filtered) {
+    // ================== عرض العملاء ==================
+    function renderCustomers() {
         const tbody = document.getElementById('customers-tbody');
         if (!tbody) return;
 
-        if (filtered.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="10" class="text-center p-4 text-muted">
-                        <i class="material-icons-round" style="font-size:48px;">search_off</i>
-                        <p>لا توجد نتائج</p>
-                    </td>
-                </tr>
-            `;
+        if (customers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4 text-muted"><i class="material-icons-round" style="font-size:48px;">people</i><p>لا يوجد عملاء</p></td></tr>';
             return;
         }
 
-        const invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
-
-        tbody.innerHTML = filtered.map((c, idx) => {
-            const originalIndex = customers.findIndex(item => item.id === c.id);
-            const customerInvoices = invoices.filter(inv => inv.customer === c.name);
-            const invoiceCount = customerInvoices.length;
-            const totalPurchases = customerInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
-            const totalDue = customerInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
-            const isOverdue = totalDue > c.maxDebt && c.maxDebt > 0;
-            
-            return `
+        tbody.innerHTML = customers.map((c, idx) => `
             <tr>
                 <td>${c.name}</td>
                 <td>${c.phone || '-'}</td>
-                <td>${c.secondaryPhone || '-'}</td>
-                <td>${c.city || '-'}</td>
-                <td>
-                    <span class="badge ${isOverdue ? 'bg-danger' : 'bg-success'}">
-                        ${totalDue.toFixed(2)} دج / ${c.maxDebt} دج
-                    </span>
-                </td>
-                <td><span class="badge bg-primary">${invoiceCount}</span></td>
-                <td>${totalPurchases.toFixed(2)} دج</td>
-                <td>
-                    <button class="btn btn-sm btn-info" onclick="customerModule.showCustomerInvoices(${originalIndex})">
-                        <i class="material-icons-round">receipt</i>
-                    </button>
-                </td>
-                <td>
-                    <button class="btn btn-sm btn-warning" onclick="customerModule.editCustomer(${originalIndex})">
-                        <i class="material-icons-round">edit</i>
-                    </button>
-                </td>
-                <td>
-                    <button class="btn btn-sm btn-danger" onclick="customerModule.deleteCustomer(${originalIndex})">
-                        <i class="material-icons-round">delete</i>
-                    </button>
-                </td>
+                <td><button class="btn btn-sm btn-info" onclick="customerModule.showCustomerInvoices(${idx})">الفواتير</button></td>
+                <td><button class="btn btn-sm btn-danger" onclick="customerModule.deleteCustomer(${idx})"><i class="material-icons-round" style="font-size:16px;">delete</i></button></td>
             </tr>
-        `}).join('');
-    }
+        `).join('');
 
-    function renderCustomers() {
-        renderFiltered(customers);
-        updateSelect();
-    }
-
-    function updateSelect() {
+        // تحديث قائمة العملاء في المبيعات
         const select = document.getElementById('sale-customer');
         if (select) {
             select.innerHTML = '<option value="">اختر العميل</option>' + 
                 customers.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
         }
-    }
-
-    // ================== عرض فواتير العميل ==================
-    function showCustomerInvoices(index) {
-        const customer = customers[index];
-        if (!customer) return;
-        
-        document.getElementById('selected-customer-name').textContent = customer.name;
-        
-        const invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
-        const customerInvoices = invoices.filter(inv => inv.customer === customer.name);
-        
-        const tbody = document.getElementById('customer-invoices-tbody');
-        if (tbody) {
-            if (customerInvoices.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center p-3">لا توجد فواتير</td></tr>';
-            } else {
-                tbody.innerHTML = customerInvoices.map(inv => `
-                    <tr>
-                        <td>#${inv.number || ''}</td>
-                        <td>${inv.date || ''}</td>
-                        <td>${inv.items ? inv.items.length : 0}</td>
-                        <td class="fw-bold">${(inv.total || 0).toFixed(2)} دج</td>
-                        <td>
-                            <button class="btn btn-sm btn-info" onclick="customerModule.showInvoiceDetails(${inv.number})">
-                                <i class="material-icons-round">visibility</i>
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
-            }
-        }
-        
-        document.querySelector('#customers .table-responsive').style.display = 'none';
-        document.getElementById('customer-invoices-view').style.display = 'block';
-    }
-
-    function hideCustomerInvoices() {
-        document.querySelector('#customers .table-responsive').style.display = 'block';
-        document.getElementById('customer-invoices-view').style.display = 'none';
-    }
-
-    function showInvoiceDetails(invoiceNumber) {
-        const invoices = JSON.parse(localStorage.getItem('ryan_invoices')) || [];
-        const invoice = invoices.find(inv => inv.number === invoiceNumber);
-        
-        if (!invoice) return;
-        
-        let itemsHtml = '';
-        invoice.items.forEach((item, index) => {
-            const itemTotal = item.price * item.qty * (1 - (item.discount || 0)/100);
-            itemsHtml += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.name}</td>
-                    <td>${item.qty}</td>
-                    <td>${item.price.toFixed(2)} دج</td>
-                    <td>${item.discount || 0}%</td>
-                    <td>${itemTotal.toFixed(2)} دج</td>
-                </tr>
-            `;
-        });
-        
-        Swal.fire({
-            title: `فاتورة رقم ${invoice.number}`,
-            html: `
-                <div style="text-align:right; max-height:400px; overflow-y:auto;">
-                    <p><strong>العميل:</strong> ${invoice.customer || 'نقدي'}</p>
-                    <p><strong>التاريخ:</strong> ${invoice.date}</p>
-                    <p><strong>الإجمالي:</strong> ${invoice.total.toFixed(2)} دج</p>
-                    <hr>
-                    <table style="width:100%; font-size:12px;">
-                        <thead>
-                            <tr><th>#</th><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الخصم</th><th>الإجمالي</th></tr>
-                        </thead>
-                        <tbody>${itemsHtml}</tbody>
-                    </table>
-                </div>
-            `,
-            width: '700px',
-            confirmButtonText: 'إغلاق'
-        });
-    }
-
-    // ================== تعديل العميل ==================
-    function editCustomer(index) {
-        const customer = customers[index];
-        if (!customer) return;
-
-        Swal.fire({
-            title: 'تعديل العميل',
-            html: `
-                <div style="text-align:right;">
-                    <input type="text" id="edit-name" class="form-control mb-2" value="${customer.name}">
-                    <input type="text" id="edit-phone" class="form-control mb-2" value="${customer.phone || ''}">
-                    <input type="text" id="edit-city" class="form-control mb-2" value="${customer.city || ''}">
-                    <input type="number" id="edit-max-debt" class="form-control mb-2" value="${customer.maxDebt}">
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'حفظ',
-            cancelButtonText: 'إلغاء',
-            preConfirm: () => {
-                const name = document.getElementById('edit-name').value.trim();
-                if (!name) {
-                    Swal.showValidationMessage('اسم العميل مطلوب');
-                    return false;
-                }
-                return {
-                    name: name,
-                    phone: document.getElementById('edit-phone').value.trim(),
-                    city: document.getElementById('edit-city').value.trim(),
-                    maxDebt: parseFloat(document.getElementById('edit-max-debt').value) || 0
-                };
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const updated = result.value;
-                customers[index] = { ...customer, ...updated };
-                saveCustomers();
-                renderCustomers();
-                _showNotification('نجاح', 'تم تعديل العميل', 'success');
-            }
-        });
     }
 
     // ================== حذف العميل ==================
@@ -400,9 +279,14 @@ const customerModule = (function() {
             customers.splice(idx, 1);
             saveCustomers();
             renderCustomers();
-            hideCustomerInvoices();
             _showNotification('تم', 'تم حذف العميل', 'success');
         });
+    }
+
+    // ================== عرض فواتير العميل ==================
+    function showCustomerInvoices(customerIndex) {
+        // هذه دالة بسيطة - يمكن تطويرها لاحقاً
+        Swal.fire('معلومات', 'سيتم إضافة عرض الفواتير قريباً', 'info');
     }
 
     return {
@@ -410,13 +294,196 @@ const customerModule = (function() {
         addCustomer,
         saveNewCustomer,
         renderCustomers,
-        editCustomer,
         deleteCustomer,
-        searchCustomers,
-        showCustomerInvoices,
-        hideCustomerInvoices,
-        showInvoiceDetails
+        showCustomerInvoices
     };
 })();
 
+// ================== إدارة الموردين (مبسطة) ==================
+const supplierModule = (function() {
+    let suppliers = JSON.parse(localStorage.getItem('ryan_suppliers')) || [];
+    
+    suppliers = suppliers.map(s => {
+        if (typeof s === 'string') {
+            return {
+                id: Date.now() + Math.random(),
+                name: s,
+                phone: '',
+                secondaryPhone: '',
+                governorate: '',
+                city: '',
+                street: '',
+                address: '',
+                taxNumber: '',
+                commercialRegister: '',
+                email: '',
+                notes: '',
+                createdAt: new Date().toISOString()
+            };
+        }
+        return {
+            id: s.id || Date.now() + Math.random(),
+            name: s.name || '',
+            phone: s.phone || '',
+            secondaryPhone: s.secondaryPhone || '',
+            governorate: s.governorate || '',
+            city: s.city || '',
+            street: s.street || '',
+            address: s.address || '',
+            taxNumber: s.taxNumber || '',
+            commercialRegister: s.commercialRegister || '',
+            email: s.email || '',
+            notes: s.notes || '',
+            createdAt: s.createdAt || new Date().toISOString()
+        };
+    });
+
+    function saveSuppliers() {
+        localStorage.setItem('ryan_suppliers', JSON.stringify(suppliers));
+    }
+
+    function _showNotification(title, message, type = 'success') {
+        Swal.fire({
+            icon: type,
+            title: title,
+            text: message,
+            timer: 2000,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    }
+
+    function _showConfirmation(title, text, confirmCallback) {
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'نعم',
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed && confirmCallback) {
+                confirmCallback();
+            }
+        });
+    }
+
+    function addSupplier() {
+        const name = document.getElementById('new-supplier')?.value.trim();
+        const phone = document.getElementById('new-supplier-phone')?.value.trim() || '';
+        
+        if (!name) {
+            _showNotification('تنبيه', 'اسم المورد مطلوب', 'warning');
+            return;
+        }
+
+        suppliers.push({
+            id: Date.now(),
+            name: name,
+            phone: phone,
+            secondaryPhone: '',
+            governorate: '',
+            city: '',
+            street: '',
+            address: '',
+            taxNumber: '',
+            commercialRegister: '',
+            email: '',
+            notes: '',
+            createdAt: new Date().toISOString()
+        });
+        
+        saveSuppliers();
+        renderSuppliers();
+        
+        if (document.getElementById('new-supplier')) {
+            document.getElementById('new-supplier').value = '';
+        }
+        
+        _showNotification('نجاح', 'تم إضافة المورد', 'success');
+    }
+
+    function saveNewSupplier() {
+        const name = document.getElementById('new-supplier-name')?.value.trim();
+        const phone = document.getElementById('new-supplier-phone')?.value.trim() || '';
+        
+        if (!name) {
+            _showNotification('تنبيه', 'اسم المورد مطلوب', 'warning');
+            return;
+        }
+
+        suppliers.push({
+            id: Date.now(),
+            name: name,
+            phone: phone,
+            secondaryPhone: '',
+            governorate: '',
+            city: '',
+            street: '',
+            address: '',
+            taxNumber: '',
+            commercialRegister: '',
+            email: '',
+            notes: '',
+            createdAt: new Date().toISOString()
+        });
+        
+        saveSuppliers();
+        renderSuppliers();
+        
+        document.getElementById('new-supplier-name').value = '';
+        if (document.getElementById('new-supplier-phone')) document.getElementById('new-supplier-phone').value = '';
+        
+        _showNotification('نجاح', 'تم إضافة المورد', 'success');
+    }
+
+    function renderSuppliers() {
+        const tbody = document.getElementById('suppliers-tbody');
+        if (!tbody) return;
+
+        if (suppliers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center p-4 text-muted"><i class="material-icons-round" style="font-size:48px;">business</i><p>لا يوجد موردين</p></td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = suppliers.map((s, idx) => `
+            <tr>
+                <td>${s.name}</td>
+                <td>${s.phone || '-'}</td>
+                <td><button class="btn btn-sm btn-danger" onclick="supplierModule.deleteSupplier(${idx})"><i class="material-icons-round" style="font-size:16px;">delete</i></button></td>
+            </tr>
+        `).join('');
+
+        const select = document.getElementById('purchase-supplier');
+        if (select) {
+            select.innerHTML = '<option value="">اختر المورد</option>' + 
+                suppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
+        }
+    }
+
+    function deleteSupplier(idx) {
+        const supplier = suppliers[idx];
+        
+        _showConfirmation('تأكيد الحذف', `حذف المورد "${supplier.name}"؟`, () => {
+            suppliers.splice(idx, 1);
+            saveSuppliers();
+            renderSuppliers();
+            _showNotification('تم', 'تم حذف المورد', 'success');
+        });
+    }
+
+    return {
+        suppliers,
+        addSupplier,
+        saveNewSupplier,
+        renderSuppliers,
+        deleteSupplier
+    };
+})();
+
+// ================== تصدير للاستخدام العام ==================
 window.customerModule = customerModule;
+window.supplierModule = supplierModule;
