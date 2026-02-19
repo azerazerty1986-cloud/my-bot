@@ -1,4 +1,4 @@
-// ================== إدارة المخزون والمنتجات - نسخة كاملة ==================
+// ================== إدارة المنتجات والمخزون - نسخة كاملة ==================
 const inventoryModule = (function() {
     let stock = JSON.parse(localStorage.getItem('ryan_stock')) || [];
     let movements = JSON.parse(localStorage.getItem('ryan_movements')) || [];
@@ -98,30 +98,46 @@ const inventoryModule = (function() {
         updateStats();
     }
 
-    // ================== إضافة منتج جديد ==================
+    // ================== إضافة منتج جديد (مع سعر الجملة) ==================
     function saveNewProduct() {
+        console.log('محاولة حفظ منتج جديد...');
+        
+        // الحصول على القيم من الحقول
         const name = document.getElementById('new-name')?.value.trim();
         const category = document.getElementById('new-category')?.value || 'عام';
-        const sell = parseFloat(document.getElementById('new-sell').value) || 0;
-        const buy = parseFloat(document.getElementById('new-buy').value) || 0;
+        const buy = parseFloat(document.getElementById('new-buy')?.value) || 0;
+        const sell = parseFloat(document.getElementById('new-sell')?.value) || 0;
         const wholesale = parseFloat(document.getElementById('new-wholesale')?.value) || 0;
-        const qty = parseFloat(document.getElementById('new-qty').value) || 0;
-        const unit = document.getElementById('new-unit').value;
-        const barcode = document.getElementById('new-barcode').value.trim();
+        const qty = parseFloat(document.getElementById('new-qty')?.value) || 0;
+        const unit = document.getElementById('new-unit')?.value || 'قطعة';
+        const barcode = document.getElementById('new-barcode')?.value.trim() || '';
         const minStock = parseInt(document.getElementById('new-min-stock')?.value) || 5;
         const location = document.getElementById('new-location')?.value || '';
         const notes = document.getElementById('new-notes')?.value || '';
         
-        if (!name || sell <= 0 || buy <= 0) {
-            _showNotification('تنبيه', 'الاسم وسعر البيع والشراء مطلوبة', 'warning');
+        // التحقق من الحقول المطلوبة
+        if (!name) {
+            Swal.fire('تنبيه', 'اسم المنتج مطلوب', 'warning');
             return;
         }
         
+        if (buy <= 0) {
+            Swal.fire('تنبيه', 'سعر الشراء مطلوب', 'warning');
+            return;
+        }
+        
+        if (sell <= 0) {
+            Swal.fire('تنبيه', 'سعر البيع مطلوب', 'warning');
+            return;
+        }
+        
+        // التحقق من عدم تكرار الاسم
         if (stock.some(p => p.name === name)) {
-            _showNotification('خطأ', 'يوجد منتج بنفس الاسم', 'error');
+            Swal.fire('خطأ', 'يوجد منتج بنفس الاسم', 'error');
             return;
         }
 
+        // معالجة الصورة
         const imageInput = document.getElementById('product-image');
         
         if (imageInput && imageInput.files.length > 0) {
@@ -135,33 +151,58 @@ const inventoryModule = (function() {
         }
 
         function finishSave(image) {
-            stock.push({
+            // إنشاء كائن المنتج
+            const newProduct = {
                 id: Date.now(),
                 name: name,
                 category: category,
-                barcode: barcode,
-                sellPrice: sell,
                 buyPrice: buy,
+                sellPrice: sell,
                 wholesalePrice: wholesale,
                 qty: qty,
-                minStock: minStock,
                 unit: unit,
+                barcode: barcode,
+                minStock: minStock,
                 location: location,
                 notes: notes,
                 image: image,
                 createdAt: new Date().toISOString(),
                 lastUpdated: new Date().toISOString()
-            });
+            };
             
+            // إضافة المنتج
+            stock.push(newProduct);
             saveStock();
             addMovement('إضافة منتج', name, qty);
             
-            _showNotification('نجاح', 'تم إضافة المنتج', 'success');
+            // رسالة نجاح
+            Swal.fire({
+                icon: 'success',
+                title: 'تم الحفظ',
+                text: 'تم إضافة المنتج بنجاح',
+                timer: 1500,
+                showConfirmButton: false
+            });
             
-            document.querySelectorAll('#add-product input, #add-product select').forEach(i => i.value = '');
-            document.getElementById('image-preview').style.display = 'none';
+            // إعادة تعيين الحقول
+            document.getElementById('new-name').value = '';
+            document.getElementById('new-buy').value = '';
+            document.getElementById('new-sell').value = '';
+            document.getElementById('new-wholesale').value = '';
+            document.getElementById('new-qty').value = '0';
+            document.getElementById('new-barcode').value = '';
+            if (document.getElementById('new-min-stock')) document.getElementById('new-min-stock').value = '5';
+            if (document.getElementById('new-location')) document.getElementById('new-location').value = '';
+            if (document.getElementById('new-notes')) document.getElementById('new-notes').value = '';
             
+            // إخفاء معاينة الصورة
+            const preview = document.getElementById('image-preview');
+            if (preview) preview.style.display = 'none';
+            
+            // تحديث العرض
             renderStock();
+            
+            console.log('تم حفظ المنتج:', newProduct);
         }
     }
 
@@ -174,6 +215,22 @@ const inventoryModule = (function() {
         document.getElementById('edit-product-buy').value = p.buyPrice;
         document.getElementById('edit-product-qty').value = p.qty;
         document.getElementById('edit-product-unit').value = p.unit;
+        
+        if (document.getElementById('edit-product-category')) {
+            document.getElementById('edit-product-category').value = p.category || 'عام';
+        }
+        if (document.getElementById('edit-product-wholesale')) {
+            document.getElementById('edit-product-wholesale').value = p.wholesalePrice || 0;
+        }
+        if (document.getElementById('edit-product-min-stock')) {
+            document.getElementById('edit-product-min-stock').value = p.minStock || 5;
+        }
+        if (document.getElementById('edit-product-location')) {
+            document.getElementById('edit-product-location').value = p.location || '';
+        }
+        if (document.getElementById('edit-product-notes')) {
+            document.getElementById('edit-product-notes').value = p.notes || '';
+        }
         
         const currentImageDiv = document.getElementById('edit-current-image');
         if (currentImageDiv) {
@@ -220,6 +277,11 @@ const inventoryModule = (function() {
             p.buyPrice = newBuy;
             p.qty = newQty;
             p.unit = newUnit;
+            p.category = document.getElementById('edit-product-category')?.value || p.category;
+            p.wholesalePrice = parseFloat(document.getElementById('edit-product-wholesale')?.value) || p.wholesalePrice;
+            p.minStock = parseInt(document.getElementById('edit-product-min-stock')?.value) || p.minStock;
+            p.location = document.getElementById('edit-product-location')?.value || p.location;
+            p.notes = document.getElementById('edit-product-notes')?.value || p.notes;
             p.lastUpdated = new Date().toISOString();
             
             saveStock();
@@ -353,6 +415,7 @@ const inventoryModule = (function() {
             'الكمية': p.qty + ' ' + p.unit,
             'سعر الشراء': p.buyPrice + ' دج',
             'سعر البيع': p.sellPrice + ' دج',
+            'سعر الجملة': p.wholesalePrice + ' دج',
             'الباركود': p.barcode || '-'
         }));
         
@@ -471,6 +534,7 @@ const inventoryModule = (function() {
         _showNotification('تمت الإضافة', `تم إضافة ${name}`, 'success');
     }
 
+    // ================== تصدير الوحدة ==================
     return {
         stock,
         movements,
