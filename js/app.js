@@ -1,201 +1,180 @@
-// ================== الملف الرئيسي للتطبيق - تهيئة وتشغيل ==================
+// ================== الملف الرئيسي للتطبيق ==================
+const app = {
+    // تهيئة التطبيق
+    init: function() {
+        console.log('✅ تم تهيئة التطبيق');
+        this.checkLoginStatus();
+        this.loadAllModules();
+        this.setupEventListeners();
+    },
+    
+    // التحقق من حالة تسجيل الدخول
+    checkLoginStatus: function() {
+        const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+        if (isLoggedIn) {
+            setTimeout(() => {
+                document.getElementById('login-screen').style.display = 'none';
+            }, 100);
+        }
+    },
+    
+    // تحميل جميع الوحدات
+    loadAllModules: function() {
+        if (window.customerModule) {
+            customerModule.init?.();
+            console.log('✅ customerModule loaded');
+        }
+        if (window.supplierModule) {
+            supplierModule.init?.();
+            console.log('✅ supplierModule loaded');
+        }
+        if (window.inventoryModule) {
+            inventoryModule.init?.();
+            console.log('✅ inventoryModule loaded');
+        }
+        if (window.salesModule) {
+            salesModule.init?.();
+            console.log('✅ salesModule loaded');
+        }
+        if (window.purchasesModule) {
+            purchasesModule.init?.();
+            console.log('✅ purchasesModule loaded');
+        }
+        if (window.reportsModule) {
+            reportsModule.init?.();
+            console.log('✅ reportsModule loaded');
+        }
+        if (window.backupModule) {
+            backupModule.init?.();
+            console.log('✅ backupModule loaded');
+        }
+    },
+    
+    // إعداد مستمعي الأحداث
+    setupEventListeners: function() {
+        // إغلاق القائمة الجانبية عند النقر خارجها
+        document.addEventListener('click', (e) => {
+            const sidebar = document.getElementById('sidebar');
+            const menuIcon = document.querySelector('.app-header i:first-child');
+            
+            if (sidebar?.classList.contains('show') && 
+                !sidebar.contains(e.target) && 
+                e.target !== menuIcon) {
+                sidebar.classList.remove('show');
+            }
+        });
+    },
+    
+    // التبديل بين الأقسام
+    switchSection: function(sectionId, element) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
+        const targetSection = document.getElementById(sectionId);
+        if (targetSection) targetSection.classList.add('active-section');
+        
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        if (element) element.classList.add('active');
+        
+        // تحديث البيانات حسب القسم
+        if (sectionId === 'inventory' && window.inventoryModule) {
+            inventoryModule.renderStock?.();
+        } else if (sectionId === 'reports' && window.reportsModule) {
+            reportsModule.loadReports?.();
+        } else if (sectionId === 'sales' && window.salesModule) {
+            salesModule.loadCustomersList?.();
+        } else if (sectionId === 'purchases' && window.purchasesModule) {
+            purchasesModule.loadSuppliersList?.();
+        }
+    },
+    
+    // التبديل بين الأقسام الفرعية
+    showSubSection: function(subId) {
+        const parent = document.querySelector('.active-section');
+        if (!parent) return;
+        
+        parent.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
+        const target = document.getElementById(subId);
+        if (target) target.style.display = 'block';
+        
+        // تحديث التبويبات
+        const tabs = parent.querySelectorAll('.tab-item');
+        tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
+        
+        tabs.forEach(t => {
+            if (t.getAttribute('onclick')?.includes(subId)) {
+                if (parent.id === 'sales') t.classList.add('active-red');
+                else if (parent.id === 'purchases') t.classList.add('active-green');
+                else if (parent.id === 'add') t.classList.add('active-nardo');
+            }
+        });
+        
+        // تحميل البيانات حسب القسم الفرعي
+        if (subId === 'customers' && window.customerModule) {
+            customerModule.renderCustomers?.();
+        } else if (subId === 'suppliers' && window.supplierModule) {
+            supplierModule.renderSuppliers?.();
+        } else if (subId === 'sale-invoices' && window.salesModule) {
+            salesModule.loadInvoices?.();
+        } else if (subId === 'purchase-invoices' && window.purchasesModule) {
+            purchasesModule.loadInvoices?.();
+        }
+    },
+    
+    // فتح القائمة الجانبية
+    toggleSidebar: function() {
+        const sidebar = document.getElementById('sidebar');
+        if (sidebar) {
+            sidebar.classList.toggle('show');
+        }
+    },
+    
+    // فتح قائمة المستخدم
+    openUserMenu: function() {
+        Swal.fire({
+            title: 'حساب المستخدم',
+            html: `
+                <div style="text-align:right">
+                    <p><strong>المستخدم:</strong> مدير النظام</p>
+                    <p><strong>الصلاحية:</strong> كاملة</p>
+                    <p><strong>آخر دخول:</strong> ${new Date().toLocaleDateString('ar-EG')}</p>
+                </div>
+            `,
+            confirmButtonText: 'تسجيل الخروج',
+            showCancelButton: true,
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                localStorage.removeItem('isLoggedIn');
+                location.reload();
+            }
+        });
+    },
+    
+    // تصدير نسخة احتياطية
+    exportBackup: function() {
+        if (window.backupModule) {
+            backupModule.exportBackup?.();
+        } else {
+            Swal.fire('معلومة', 'وحدة النسخ الاحتياطي غير متوفرة', 'info');
+        }
+    }
+};
 
-// انتظار تحميل الصفحة بالكامل
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 تطبيق سوبر - بدء التشغيل...');
-    
-    // ================== تهيئة جميع الوحدات ==================
-    initializeModules();
-    
-    // ================== التحقق من حالة تسجيل الدخول ==================
-    checkLoginStatus();
-    
-    // ================== تحديث البيانات الأولية ==================
-    refreshAllData();
-    
-    // ================== إعداد المستمعين ==================
-    setupEventListeners();
-    
-    console.log('✅ تم تهيئة التطبيق بنجاح');
-});
+// ================== دوال عامة للاستخدام في HTML ==================
 
-// ================== تهيئة الوحدات ==================
-function initializeModules() {
-    // تهيئة البحث الصوتي للمبيعات
-    if (typeof salesModule !== 'undefined' && salesModule.initVoiceSearch) {
-        salesModule.initVoiceSearch();
-        console.log('🎤 البحث الصوتي للمبيعات جاهز');
-    }
-    
-    // تهيئة البحث الصوتي للمشتريات
-    if (typeof purchasesModule !== 'undefined' && purchasesModule.initVoiceSearch) {
-        purchasesModule.initVoiceSearch();
-        console.log('🎤 البحث الصوتي للمشتريات جاهز');
-    }
-    
-    // تهيئة نظام الديون
-    if (typeof debtModule !== 'undefined' && debtModule.init) {
-        debtModule.init();
-        console.log('💰 نظام الديون جاهز');
-    }
-    
-    // تهيئة الذكاء الاصطناعي
-    if (typeof aiModule !== 'undefined') {
-        console.log('🤖 الذكاء الاصطناعي جاهز');
-    }
-}
+// دوال التنقل
+window.switchSection = (sectionId, element) => app.switchSection(sectionId, element);
+window.showSubSection = (subId) => app.showSubSection(subId);
+window.toggleSidebar = () => app.toggleSidebar();
+window.openUserMenu = () => app.openUserMenu();
+window.exportBackup = () => app.exportBackup();
 
-// ================== التحقق من حالة تسجيل الدخول ==================
-function checkLoginStatus() {
-    const isLoggedIn = localStorage.getItem('isLoggedIn');
-    const loginScreen = document.getElementById('login-screen');
-    const resetScreen = document.getElementById('reset-password-screen');
+// دوال تسجيل الدخول
+window.checkPassword = function() {
+    const password = document.getElementById('password-input').value;
+    const error = document.getElementById('error-message');
     
-    if (!loginScreen) return;
-    
-    if (isLoggedIn === 'true') {
-        // تم تسجيل الدخول مسبقاً
-        loginScreen.style.display = 'none';
-        if (resetScreen) resetScreen.style.display = 'none';
-        console.log('👤 مستخدم مسجل الدخول');
-    } else {
-        // لم يتم تسجيل الدخول
-        loginScreen.style.display = 'flex';
-        if (resetScreen) resetScreen.style.display = 'none';
-        console.log('👤 يرجى تسجيل الدخول');
-    }
-}
-
-// ================== تحديث جميع البيانات ==================
-function refreshAllData() {
-    // تحديث المبيعات
-    if (typeof salesModule !== 'undefined') {
-        if (salesModule.renderCart) salesModule.renderCart();
-        if (salesModule.renderSaleInvoices) salesModule.renderSaleInvoices();
-        console.log('📊 تم تحديث بيانات المبيعات');
-    }
-    
-    // تحديث المشتريات
-    if (typeof purchasesModule !== 'undefined') {
-        if (purchasesModule.renderPurchaseCart) purchasesModule.renderPurchaseCart();
-        if (purchasesModule.renderPurchaseInvoices) purchasesModule.renderPurchaseInvoices();
-        console.log('📦 تم تحديث بيانات المشتريات');
-    }
-    
-    // تحديث المخزون
-    if (typeof inventoryModule !== 'undefined' && inventoryModule.renderStock) {
-        inventoryModule.renderStock();
-        console.log('🏪 تم تحديث المخزون');
-    }
-    
-    // تحديث العملاء
-    if (typeof customerModule !== 'undefined' && customerModule.renderCustomers) {
-        customerModule.renderCustomers();
-        console.log('👥 تم تحديث العملاء');
-    }
-    
-    // تحديث الموردين
-    if (typeof supplierModule !== 'undefined' && supplierModule.renderSuppliers) {
-        supplierModule.renderSuppliers();
-        console.log('🏢 تم تحديث الموردين');
-    }
-    
-    // تحديث التقارير
-    if (typeof reportsModule !== 'undefined' && reportsModule.renderReports) {
-        reportsModule.renderReports();
-        console.log('📈 تم تحديث التقارير');
-    }
-    
-    // تحديث الديون
-    if (typeof debtModule !== 'undefined') {
-        if (debtModule.renderCustomerDebts) debtModule.renderCustomerDebts();
-        if (debtModule.renderSupplierDebts) debtModule.renderSupplierDebts();
-        if (debtModule.renderDebtSummary) debtModule.renderDebtSummary();
-        console.log('💰 تم تحديث الديون');
-    }
-}
-
-// ================== إعداد مستمعي الأحداث ==================
-function setupEventListeners() {
-    // إغلاق القوائم المنبثقة عند النقر خارجها
-    document.addEventListener('click', function(event) {
-        // يمكن إضافة منطق إغلاق القوائم هنا
-    });
-    
-    // مراقبة التغييرات في localStorage
-    window.addEventListener('storage', function(event) {
-        console.log('📝 تم تغيير البيانات في التخزين المحلي:', event.key);
-        // يمكن تحديث واجهة المستخدم عند تغيير البيانات من نافذة أخرى
-    });
-    
-    console.log('👂 تم إعداد مستمعي الأحداث');
-}
-
-// ================== دوال تسجيل الدخول ==================
-
-// إظهار نافذة استعادة كلمة السر
-function showResetPassword() {
-    const loginScreen = document.getElementById('login-screen');
-    const resetScreen = document.getElementById('reset-password-screen');
-    
-    if (loginScreen) loginScreen.style.display = 'none';
-    if (resetScreen) resetScreen.style.display = 'flex';
-}
-
-// العودة إلى شاشة تسجيل الدخول
-function backToLogin() {
-    const loginScreen = document.getElementById('login-screen');
-    const resetScreen = document.getElementById('reset-password-screen');
-    
-    if (resetScreen) resetScreen.style.display = 'none';
-    if (loginScreen) loginScreen.style.display = 'flex';
-}
-
-// استخدام كلمة السر الافتراضية
-function useDefaultPassword() {
-    const passwordInput = document.getElementById('password-input');
-    if (passwordInput) passwordInput.value = '123456';
-    
-    backToLogin();
-    
-    Swal.fire({
-        icon: 'info',
-        title: 'كلمة السر الافتراضية',
-        text: 'تم تعيين كلمة السر إلى 123456',
-        timer: 2000,
-        showConfirmButton: false
-    });
-}
-
-// إظهار/إخفاء كلمة السر
-function togglePasswordVisibility() {
-    const passwordInput = document.getElementById('password-input');
-    const toggleIcon = document.querySelector('.toggle-password');
-    
-    if (!passwordInput || !toggleIcon) return;
-    
-    if (passwordInput.type === 'password') {
-        passwordInput.type = 'text';
-        toggleIcon.textContent = 'visibility';
-    } else {
-        passwordInput.type = 'password';
-        toggleIcon.textContent = 'visibility_off';
-    }
-}
-
-// التحقق من كلمة السر
-function checkPassword() {
-    const passwordInput = document.getElementById('password-input');
-    const errorMessage = document.getElementById('error-message');
-    
-    if (!passwordInput || !errorMessage) return;
-    
-    const password = passwordInput.value;
-    
-    // كلمة السر الافتراضية (يمكن تغييرها)
     if (password === '123456') {
-        // تسجيل دخول ناجح
-        errorMessage.style.display = 'none';
+        error.style.display = 'none';
         document.getElementById('login-screen').style.display = 'none';
         localStorage.setItem('isLoggedIn', 'true');
         
@@ -206,103 +185,57 @@ function checkPassword() {
             timer: 1500,
             showConfirmButton: false
         });
-        
-        // تحديث البيانات
-        refreshAllData();
-        
     } else {
-        // كلمة سر خاطئة
-        errorMessage.style.display = 'flex';
-        passwordInput.value = '';
-        passwordInput.focus();
+        error.style.display = 'flex';
+        document.getElementById('password-input').value = '';
     }
-}
+};
 
-// ================== دوال القائمة الجانبية ==================
+window.togglePasswordVisibility = function() {
+    const input = document.getElementById('password-input');
+    const icon = document.querySelector('.toggle-password');
+    input.type = input.type === 'password' ? 'text' : 'password';
+    icon.textContent = input.type === 'password' ? 'visibility_off' : 'visibility';
+};
 
-// تبديل القائمة الجانبية
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const overlay = document.getElementById('sidebar-overlay');
-    
-    if (sidebar && overlay) {
-        const isVisible = sidebar.style.display !== 'none';
-        
-        sidebar.style.display = isVisible ? 'none' : 'block';
-        overlay.style.display = isVisible ? 'none' : 'block';
-    }
-}
+window.showResetPassword = function() {
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('reset-password-screen').style.display = 'flex';
+};
 
-// فتح قائمة المستخدم
-function openUserMenu() {
+window.backToLogin = function() {
+    document.getElementById('reset-password-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+};
+
+window.useDefaultPassword = function() {
+    document.getElementById('password-input').value = '123456';
+    backToLogin();
     Swal.fire({
-        title: 'قائمة المستخدم',
-        html: `
-            <div style="text-align:right">
-                <p><i class="material-icons-round">person</i> الملف الشخصي</p>
-                <p><i class="material-icons-round">settings</i> الإعدادات</p>
-                <p><i class="material-icons-round">exit_to_app</i> تسجيل الخروج</p>
-            </div>
-        `,
-        showConfirmButton: false,
-        showCloseButton: true
+        icon: 'info',
+        title: 'كلمة السر الافتراضية',
+        text: 'تم تعيين كلمة السر إلى 123456',
+        timer: 2000,
+        showConfirmButton: false
     });
-}
+};
 
-// تسجيل الخروج
-function logout() {
-    Swal.fire({
-        title: 'تسجيل الخروج',
-        text: 'هل أنت متأكد من تسجيل الخروج؟',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'نعم',
-        cancelButtonText: 'إلغاء'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            localStorage.removeItem('isLoggedIn');
-            location.reload();
-        }
-    });
-}
+// دوال افتراضية للطوارئ (تستبدل بواسطة الوحدات الحقيقية)
+window.openBarcodeScanner = () => Swal.fire('ماسح الباركود', 'جاري التفعيل', 'info');
+window.startVoiceSearch = () => Swal.fire('البحث الصوتي', 'قريباً إن شاء الله', 'info');
+window.smartSearch = () => {};
+window.smartSearchPurchase = () => {};
+window.addToCart = () => {};
+window.clearCart = () => {};
+window.finishSaleAndPrint = () => {};
+window.searchInvoices = () => {};
+window.addCustomer = () => window.customerModule?.addCustomer?.();
+window.addSupplier = () => window.supplierModule?.addSupplier?.();
+window.addToPurchaseCart = () => {};
+window.clearPurchaseCart = () => {};
+window.finishPurchaseAndPrint = () => {};
+window.uploadExcel = () => {};
+window.showReportTab = () => {};
 
-// ================== دوال الطباعة ==================
-
-// طباعة تفاصيل الفاتورة
-function printInvoiceDetails() {
-    window.print();
-}
-
-// ================== تصدير الدوال للاستخدام العام ==================
-// الدوال متاحة عالمياً بالفعل
-// ================== حل مشكلة التجمد ==================
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🔄 بدء حل مشكلة التجمد...');
-    
-    // تأخير بسيط لضمان تحميل كل شيء
-    setTimeout(function() {
-        // إخفاء شاشات الترحيب
-        const loginScreen = document.getElementById('login-screen');
-        const resetScreen = document.getElementById('reset-password-screen');
-        
-        if (loginScreen) loginScreen.style.display = 'none';
-        if (resetScreen) resetScreen.style.display = 'none';
-        
-        // إظهار القسم النشط
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
-        const salesSection = document.getElementById('sales');
-        if (salesSection) salesSection.classList.add('active-section');
-        
-        console.log('✅ تم حل مشكلة التجمد');
-    }, 500);
-});
-
-// ================== دوال إضافية للحركة ==================
-window.addEventListener('load', function() {
-    console.log('📱 الصفحة محملة بالكامل');
-    
-    // تفعيل الأزرار
-    document.querySelectorAll('[onclick]').forEach(el => {
-        console.log('🔘 زر موجود:', el.getAttribute('onclick'));
-    });
-});
+// تهيئة التطبيق بعد تحميل الصفحة
+document.addEventListener('DOMContentLoaded', () => app.init());
