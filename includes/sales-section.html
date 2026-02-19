@@ -1,4 +1,4 @@
-// ================== إدارة المبيعات (عملية بيع + فواتير + عملاء) ==================
+// ================== إدارة المبيعات ==================
 const salesModule = (function() {
     // ================== البيانات ==================
     let cart = []; // سلة المبيعات
@@ -19,35 +19,45 @@ const salesModule = (function() {
     }
     
     function showNotification(title, message, type = 'success') {
-        Swal.fire({
-            icon: type,
-            title: title,
-            text: message,
-            timer: 2000,
-            showConfirmButton: false,
-            toast: true,
-            position: 'top-end'
-        });
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: type,
+                title: title,
+                text: message,
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        } else {
+            alert(`${title}: ${message}`);
+        }
     }
     
     function showConfirmation(title, text, confirmCallback) {
-        Swal.fire({
-            title: title,
-            text: text,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'نعم',
-            cancelButtonText: 'إلغاء'
-        }).then((result) => {
-            if (result.isConfirmed && confirmCallback) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: title,
+                text: text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'نعم',
+                cancelButtonText: 'إلغاء'
+            }).then((result) => {
+                if (result.isConfirmed && confirmCallback) {
+                    confirmCallback();
+                }
+            });
+        } else {
+            if (confirm(`${title}\n${text}`)) {
                 confirmCallback();
             }
-        });
+        }
     }
     
-    // ==================第一部分: عملية البيع ==================
+    // ================== عمليات السلة ==================
     
     // إضافة منتج إلى السلة
     function addToCart() {
@@ -140,9 +150,13 @@ const salesModule = (function() {
         
         const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
         
-        document.getElementById('total-discount').textContent = formatCurrency(totalDiscount);
-        document.getElementById('grand-total').textContent = formatCurrency(grandTotal);
-        document.getElementById('final-grand-total').textContent = formatCurrency(grandTotal);
+        const totalDiscountEl = document.getElementById('total-discount');
+        const grandTotalEl = document.getElementById('grand-total');
+        const finalGrandTotalEl = document.getElementById('final-grand-total');
+        
+        if (totalDiscountEl) totalDiscountEl.textContent = formatCurrency(totalDiscount);
+        if (grandTotalEl) grandTotalEl.textContent = formatCurrency(grandTotal);
+        if (finalGrandTotalEl) finalGrandTotalEl.textContent = formatCurrency(grandTotal);
     }
     
     // حذف من السلة
@@ -178,6 +192,13 @@ const salesModule = (function() {
         if (paymentMethod === 'card') paymentText = 'بطاقة';
         if (paymentMethod === 'credit') paymentText = 'آجل';
         
+        // حساب المجاميع
+        const totalDiscount = cart.reduce((sum, item) => {
+            return sum + (item.price * item.qty * item.discount / 100);
+        }, 0);
+        
+        const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
+        
         // إنشاء فاتورة جديدة
         const invoice = {
             id: Date.now(),
@@ -185,8 +206,8 @@ const salesModule = (function() {
             date: new Date().toISOString(),
             customer: customerName,
             items: [...cart],
-            totalDiscount: parseFloat(document.getElementById('total-discount').textContent.replace(/,/g, '')) || 0,
-            grandTotal: parseFloat(document.getElementById('grand-total').textContent.replace(/,/g, '')) || 0,
+            totalDiscount: totalDiscount,
+            grandTotal: grandTotal,
             paymentMethod: paymentMethod,
             paymentText: paymentText
         };
@@ -219,31 +240,39 @@ const salesModule = (function() {
             }
         });
         
-        inventory.saveProducts?.();
-        inventory.renderStock?.();
+        if (inventory.saveProducts) inventory.saveProducts();
+        if (inventory.renderStock) inventory.renderStock();
     }
     
     // تجهيز الطباعة
     function preparePrint(invoice) {
         // تعبئة بيانات الطباعة
-        document.getElementById('print-date-time').textContent = new Date(invoice.date).toLocaleString('ar-EG');
-        document.getElementById('print-invoice-no').textContent = invoice.number;
-        document.getElementById('print-customer').textContent = invoice.customer;
-        
+        const dateTimeEl = document.getElementById('print-date-time');
+        const invoiceNoEl = document.getElementById('print-invoice-no');
+        const customerEl = document.getElementById('print-customer');
         const tbody = document.getElementById('print-cart-items');
-        tbody.innerHTML = invoice.items.map((item, i) => `
-            <tr>
-                <td>${i + 1}</td>
-                <td>${item.name}</td>
-                <td>${item.qty}</td>
-                <td>${formatCurrency(item.price)}</td>
-                <td>${item.discount}%</td>
-                <td>${formatCurrency(item.total)}</td>
-            </tr>
-        `).join('');
+        const totalDiscountEl = document.getElementById('print-total-discount');
+        const grandTotalEl = document.getElementById('print-grand-total');
         
-        document.getElementById('print-total-discount').textContent = formatCurrency(invoice.totalDiscount);
-        document.getElementById('print-grand-total').textContent = formatCurrency(invoice.grandTotal);
+        if (dateTimeEl) dateTimeEl.textContent = new Date(invoice.date).toLocaleString('ar-EG');
+        if (invoiceNoEl) invoiceNoEl.textContent = invoice.number;
+        if (customerEl) customerEl.textContent = invoice.customer;
+        
+        if (tbody) {
+            tbody.innerHTML = invoice.items.map((item, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.qty}</td>
+                    <td>${formatCurrency(item.price)}</td>
+                    <td>${item.discount}%</td>
+                    <td>${formatCurrency(item.total)}</td>
+                </tr>
+            `).join('');
+        }
+        
+        if (totalDiscountEl) totalDiscountEl.textContent = formatCurrency(invoice.totalDiscount);
+        if (grandTotalEl) grandTotalEl.textContent = formatCurrency(invoice.grandTotal);
         
         // طباعة
         setTimeout(() => {
@@ -280,7 +309,7 @@ const salesModule = (function() {
                         <small>السعر: ${formatCurrency(p.sellPrice)}</small>
                     </div>
                     <div>
-                        <span class="badge ${p.quantity > 0 ? 'badge-success' : 'badge-danger'}">
+                        <span class="badge ${p.quantity > 0 ? 'bg-success' : 'bg-danger'}" style="color:white; padding:5px;">
                             ${p.quantity} متوفر
                         </span>
                     </div>
@@ -293,8 +322,11 @@ const salesModule = (function() {
     
     // اختيار منتج من البحث
     function selectProduct(name, price, quantity) {
-        document.getElementById('sale-search').value = name;
-        document.getElementById('search-box').classList.remove('show');
+        const searchInput = document.getElementById('sale-search');
+        if (searchInput) searchInput.value = name;
+        
+        const resultsBox = document.getElementById('search-box');
+        if (resultsBox) resultsBox.classList.remove('show');
         
         // إظهار معلومات المنتج
         Swal.fire({
@@ -311,7 +343,7 @@ const salesModule = (function() {
         });
     }
     
-    // ==================第二部分: إدارة الفواتير ==================
+    // ================== إدارة الفواتير ==================
     
     // حفظ الفواتير
     function saveInvoices() {
@@ -363,12 +395,12 @@ const salesModule = (function() {
         invoice.items.forEach((item, i) => {
             itemsHtml += `
                 <tr>
-                    <td>${i + 1}</td>
-                    <td>${item.name}</td>
-                    <td>${item.qty}</td>
-                    <td>${formatCurrency(item.price)}</td>
-                    <td>${item.discount}%</td>
-                    <td>${formatCurrency(item.total)}</td>
+                    <td style="padding:5px; border:1px solid #ddd;">${i + 1}</td>
+                    <td style="padding:5px; border:1px solid #ddd;">${item.name}</td>
+                    <td style="padding:5px; border:1px solid #ddd;">${item.qty}</td>
+                    <td style="padding:5px; border:1px solid #ddd;">${formatCurrency(item.price)}</td>
+                    <td style="padding:5px; border:1px solid #ddd;">${item.discount}%</td>
+                    <td style="padding:5px; border:1px solid #ddd;">${formatCurrency(item.total)}</td>
                 </tr>
             `;
         });
@@ -381,15 +413,15 @@ const salesModule = (function() {
                     <p><strong>العميل:</strong> ${invoice.customer}</p>
                     <p><strong>طريقة الدفع:</strong> ${invoice.paymentText || 'نقدي'}</p>
                     <hr>
-                    <table style="width:100%; border-collapse:collapse;">
+                    <table style="width:100%; border-collapse:collapse; text-align:center;">
                         <thead>
                             <tr style="background:#f5f5f5;">
-                                <th style="padding:5px;">#</th>
-                                <th style="padding:5px;">المنتج</th>
-                                <th style="padding:5px;">الكمية</th>
-                                <th style="padding:5px;">السعر</th>
-                                <th style="padding:5px;">الخصم</th>
-                                <th style="padding:5px;">الإجمالي</th>
+                                <th style="padding:5px; border:1px solid #ddd;">#</th>
+                                <th style="padding:5px; border:1px solid #ddd;">المنتج</th>
+                                <th style="padding:5px; border:1px solid #ddd;">الكمية</th>
+                                <th style="padding:5px; border:1px solid #ddd;">السعر</th>
+                                <th style="padding:5px; border:1px solid #ddd;">الخصم</th>
+                                <th style="padding:5px; border:1px solid #ddd;">الإجمالي</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -446,7 +478,8 @@ const salesModule = (function() {
     
     // البحث في الفواتير
     function searchInvoices() {
-        const searchTerm = document.getElementById('invoice-search')?.value.toLowerCase().trim() || '';
+        const searchInput = document.getElementById('invoice-search');
+        const searchTerm = searchInput?.value.toLowerCase().trim() || '';
         const tbody = document.getElementById('sale-invoices-tbody');
         if (!tbody) return;
         
@@ -489,7 +522,7 @@ const salesModule = (function() {
         `}).join('');
     }
     
-    // ==================第三部分: إدارة العملاء (مدمجة) ==================
+    // ================== إدارة العملاء (مدمجة) ==================
     
     // تحميل قائمة العملاء
     function loadCustomersList() {
@@ -520,10 +553,17 @@ const salesModule = (function() {
                 id: Date.now(),
                 name: name,
                 phone: phone,
+                invoices: 0,
                 createdAt: new Date().toISOString()
             });
-            window.customerModule.saveCustomers();
-            window.customerModule.renderCustomers();
+            
+            if (window.customerModule.saveCustomers) {
+                window.customerModule.saveCustomers();
+            }
+            
+            if (window.customerModule.renderCustomers) {
+                window.customerModule.renderCustomers();
+            }
             
             if (nameInput) nameInput.value = '';
             if (phoneInput) phoneInput.value = '';
@@ -568,7 +608,9 @@ const salesModule = (function() {
         
         showConfirmation('تأكيد الحذف', `حذف العميل "${customer.name}"؟`, () => {
             customers.splice(index, 1);
-            window.customerModule.saveCustomers();
+            if (window.customerModule.saveCustomers) {
+                window.customerModule.saveCustomers();
+            }
             renderCustomers();
             loadCustomersList();
             showNotification('تم', 'تم حذف العميل', 'success');
@@ -606,52 +648,58 @@ const salesModule = (function() {
     // ================== واجهة الوحدة العامة ==================
     return {
         // بيانات
-        cart,
-        invoices,
+        cart: cart,
+        invoices: invoices,
         
-        // عملية بيع
-        addToCart,
-        removeFromCart,
-        clearCart,
-        finishSaleAndPrint,
-        smartSearch,
-        selectProduct,
+        // عمليات السلة
+        addToCart: addToCart,
+        removeFromCart: removeFromCart,
+        clearCart: clearCart,
+        finishSaleAndPrint: finishSaleAndPrint,
+        smartSearch: smartSearch,
+        selectProduct: selectProduct,
         
-        // فواتير
-        loadInvoices,
-        showInvoice,
-        deleteInvoice,
-        searchInvoices,
+        // إدارة الفواتير
+        loadInvoices: loadInvoices,
+        showInvoice: showInvoice,
+        deleteInvoice: deleteInvoice,
+        searchInvoices: searchInvoices,
         
-        // عملاء
-        loadCustomersList,
-        addCustomer,
-        renderCustomers,
-        deleteCustomer,
+        // إدارة العملاء
+        loadCustomersList: loadCustomersList,
+        addCustomer: addCustomer,
+        renderCustomers: renderCustomers,
+        deleteCustomer: deleteCustomer,
         
         // تهيئة
-        init
+        init: init
     };
 })();
 
 // ================== تصدير الوحدة ==================
-window.salesModule = salesModule;
+if (typeof window !== 'undefined') {
+    window.salesModule = salesModule;
+}
 
 // ================== دوال مساعدة للاستخدام في HTML ==================
-window.addToCart = () => salesModule.addToCart();
-window.clearCart = () => salesModule.clearCart();
-window.finishSaleAndPrint = () => salesModule.finishSaleAndPrint();
-window.smartSearch = (term) => salesModule.smartSearch(term);
-window.searchInvoices = () => salesModule.searchInvoices();
-window.selectProduct = (name, price, quantity) => salesModule.selectProduct(name, price, quantity);
-window.addCustomer = () => salesModule.addCustomer();
-window.deleteCustomer = (index) => salesModule.deleteCustomer(index);
+if (typeof window !== 'undefined') {
+    window.addToCart = function() { salesModule.addToCart(); };
+    window.clearCart = function() { salesModule.clearCart(); };
+    window.finishSaleAndPrint = function() { salesModule.finishSaleAndPrint(); };
+    window.smartSearch = function(term) { salesModule.smartSearch(term); };
+    window.searchInvoices = function() { salesModule.searchInvoices(); };
+    window.selectProduct = function(name, price, quantity) { salesModule.selectProduct(name, price, quantity); };
+    window.addCustomer = function() { salesModule.addCustomer(); };
+    window.deleteCustomer = function(index) { salesModule.deleteCustomer(index); };
+}
 
 // ================== تهيئة تلقائية ==================
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof salesModule !== 'undefined' && salesModule.init) {
-        setTimeout(() => {
-            salesModule.init();
-        }, 300);
-    }
-});
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof salesModule !== 'undefined' && salesModule.init) {
+            setTimeout(function() {
+                salesModule.init();
+            }, 300);
+        }
+    });
+}
