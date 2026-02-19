@@ -2,11 +2,13 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
     <title>سوبر - النظام المتكامل</title>
     
-    <!-- Bootstrap 5 و Material Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap 5 RTL -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    
+    <!-- Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
     
     <!-- SweetAlert2 -->
@@ -15,11 +17,397 @@
     <!-- QuaggaJS للباركود -->
     <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
     
-    <!-- مكتبة قراءة Excel -->
+    <!-- SheetJS لقراءة Excel -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     
     <!-- ملف CSS المخصص -->
     <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --main-red: #dc3545;
+            --light-red: #ffebee;
+            --main-green: #28a745;
+            --light-green: #e8f5e9;
+            --nardo-grey: #6c757d;
+            --light-nardo: #f8f9fa;
+            --primary-blue: #0d6efd;
+            --warning-yellow: #ffc107;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding-bottom: 80px;
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+        }
+
+        /* ===== شاشة الدخول ===== */
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            padding: 20px;
+        }
+
+        .login-container, .reset-password-container {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+        }
+
+        .login-icon, .reset-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+
+        .login-icon i, .reset-icon i {
+            font-size: 40px;
+            color: white;
+        }
+
+        .login-title, .reset-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .password-field {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .password-input {
+            width: 100%;
+            padding: 15px 50px 15px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #666;
+        }
+
+        .login-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .forgot-password {
+            margin-top: 20px;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* ===== رأس التطبيق ===== */
+        .app-header {
+            background: white;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .app-header i {
+            font-size: 28px;
+            color: var(--nardo-grey);
+            cursor: pointer;
+        }
+
+        .app-header span {
+            font-size: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ===== الأقسام ===== */
+        .section {
+            display: none;
+            padding: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .active-section {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== تبويبات التنقل ===== */
+        .nav-tabs-custom {
+            display: flex;
+            background: white;
+            border-radius: 50px;
+            padding: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .tab-item {
+            flex: 1;
+            text-align: center;
+            padding: 12px 5px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            color: #666;
+        }
+
+        .tab-item.active-red {
+            background: var(--main-red);
+            color: white;
+        }
+
+        .tab-item.active-green {
+            background: var(--main-green);
+            color: white;
+        }
+
+        .tab-item.active-nardo {
+            background: var(--nardo-grey);
+            color: white;
+        }
+
+        /* ===== البطاقات ===== */
+        .main-card {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .summary-box {
+            background: var(--main-red);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 18px;
+            box-shadow: 0 5px 20px rgba(220,53,69,0.3);
+        }
+
+        .btn-print {
+            background: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        /* ===== الجداول ===== */
+        .table-custom {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .table-custom th {
+            background: var(--light-nardo);
+            padding: 12px 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+        }
+
+        .table-custom td {
+            padding: 10px 8px;
+            border-bottom: 1px solid #eee;
+            text-align: center;
+        }
+
+        /* ===== البحث ===== */
+        .search-container {
+            position: relative;
+        }
+
+        .search-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+
+        .mic-btn {
+            background: var(--main-red);
+            color: white;
+            border: none;
+            width: 45px;
+            border-radius: 0 10px 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        /* ===== الشريط السفلي ===== */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            box-shadow: 0 -2px 20px rgba(0,0,0,0.1);
+            z-index: 1000;
+            direction: ltr;
+        }
+
+        .nav-link {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #999;
+            transition: all 0.3s;
+            font-size: 12px;
+            padding: 5px 10px;
+            border-radius: 10px;
+        }
+
+        .nav-link i {
+            font-size: 24px;
+            margin-bottom: 2px;
+        }
+
+        .nav-link.active {
+            color: var(--main-red);
+            background: var(--light-red);
+        }
+
+        .add-btn-main {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white !important;
+            margin-top: -25px;
+            box-shadow: 0 5px 20px rgba(102,126,234,0.4);
+        }
+
+        /* ===== الطباعة ===== */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            body {
+                padding: 20px;
+                background: white;
+            }
+            #print-area, #purchase-print-area {
+                display: block !important;
+            }
+        }
+
+        /* ===== التجاوب مع الجوال ===== */
+        @media (max-width: 768px) {
+            .main-card {
+                padding: 15px;
+            }
+            .table-custom th, .table-custom td {
+                font-size: 12px;
+                padding: 8px 4px;
+            }
+        }
+
+        /* ===== تنسيقات إضافية ===== */
+        .bg-light {
+            background-color: #f8f9fa !important;
+        }
+
+        .form-label {
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 5px;
+        }
+
+        .text-danger {
+            color: #dc3545;
+        }
+
+        .required {
+            color: #dc3545;
+            margin-right: 3px;
+        }
+    </style>
 </head>
 <body>
 
@@ -44,7 +432,7 @@
             <div class="forgot-password" onclick="showResetPassword()">
                 نسيت كلمة السر؟
             </div>
-            <div class="login-version">الإصدار 1.0.0</div>
+            <div class="login-version">الإصدار 2.0.0</div>
         </div>
     </div>
 
@@ -56,7 +444,7 @@
             </div>
             <h2 class="reset-title">استعادة كلمة السر</h2>
             <p class="reset-subtitle">كلمة السر الافتراضية هي <strong>123456</strong></p>
-            <p class="text-muted small mb-3">يمكنك تغييرها من ملف utils.js</p>
+            <p class="text-muted small mb-3">يمكنك تغييرها من الإعدادات</p>
             <div class="d-flex gap-2">
                 <button class="btn btn-primary flex-grow-1" onclick="useDefaultPassword()">
                     <i class="material-icons-round">check</i> استخدام 123456
@@ -69,16 +457,16 @@
     </div>
 
     <!-- مخفي لاختيار ملف الاستيراد -->
-    <input type="file" id="backup-file-input" accept=".json" style="display: none;" onchange="backupModule.importBackup(event)">
+    <input type="file" id="backup-file-input" accept=".json" style="display: none;">
 
     <!-- ================== رأس التطبيق ================== -->
     <div class="app-header no-print">
-        <i class="material-icons-round" onclick="toggleSidebar()" style="cursor: pointer;">menu</i>
+        <i class="material-icons-round" onclick="toggleSidebar()">menu</i>
         <span class="fw-bold">سوبر</span>
         <div style="display: flex; gap: 10px;">
-            <i class="material-icons-round" style="cursor: pointer;" onclick="backupModule.exportBackup()" title="تحميل نسخة احتياطية">cloud_download</i>
-            <i class="material-icons-round" style="cursor: pointer;" onclick="document.getElementById('backup-file-input').click()" title="استيراد نسخة احتياطية">cloud_upload</i>
-            <i class="material-icons-round" style="cursor: pointer;" onclick="openUserMenu()" title="القائمة">account_circle</i>
+            <i class="material-icons-round" onclick="exportBackup()" title="تحميل نسخة احتياطية">cloud_download</i>
+            <i class="material-icons-round" onclick="document.getElementById('backup-file-input').click()" title="استيراد نسخة احتياطية">cloud_upload</i>
+            <i class="material-icons-round" onclick="openUserMenu()" title="القائمة">account_circle</i>
         </div>
     </div>
 
@@ -93,15 +481,15 @@
         <!-- عملية بيع -->
         <div id="sale-operation" class="sub-section">
             <div class="main-card no-print">
-                <h6 class="text-center mb-3">تسجيل مبيعات</h6>
+                <h6 class="text-center mb-3">💰 تسجيل مبيعات</h6>
                 
                 <div class="search-container mb-3">
                     <div class="input-group">
-                        <button class="btn btn-dark px-3" onclick="openBarcodeScanner()">
+                        <button class="btn btn-dark px-3" type="button" onclick="openBarcodeScanner()">
                             <i class="material-icons-round">qr_code_scanner</i>
                         </button>
-                        <input type="text" id="sale-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearch(this.value)">
-                        <button class="mic-btn" id="mic-sale" title="البحث بالصوت">
+                        <input type="text" id="sale-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearch(this.value)" autocomplete="off">
+                        <button class="mic-btn" id="mic-sale" type="button" onclick="startVoiceSearch('sale')">
                             <i class="material-icons-round">mic</i>
                         </button>
                     </div>
@@ -120,27 +508,33 @@
                         <input type="number" id="sale-discount" class="form-control" placeholder="الخصم %" min="0" max="100" value="0">
                     </div>
                     <div class="col-4">
-                        <button class="btn btn-danger w-100" onclick="addToCart()">إضافة</button>
+                        <button class="btn btn-danger w-100" onclick="addToCart()">
+                            <i class="material-icons-round">add_shopping_cart</i>
+                        </button>
                     </div>
                 </div>
                 
-                <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearCart()">مسح السلة</button>
+                <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearCart()">
+                    <i class="material-icons-round">delete_sweep</i> مسح السلة
+                </button>
             </div>
             
             <div class="main-card">
-                <table class="table-custom">
-                    <thead>
-                        <tr>
-                            <th>المنتج</th>
-                            <th>الكمية</th>
-                            <th>سعر الوحدة</th>
-                            <th>الخصم %</th>
-                            <th>الإجمالي</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="cart-table"></tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>المنتج</th>
+                                <th>الكمية</th>
+                                <th>السعر</th>
+                                <th>الخصم</th>
+                                <th>الإجمالي</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart-table"></tbody>
+                    </table>
+                </div>
                 
                 <div class="d-flex justify-content-between mt-2">
                     <span>إجمالي الخصم: <b id="total-discount">0.00</b> دج</span>
@@ -148,8 +542,10 @@
                 </div>
                 
                 <div class="summary-box mt-3 no-print" style="background: var(--main-red);">
-                    <button class="btn-print" style="color: var(--main-red);" onclick="finishSaleAndPrint()">حفظ وطباعة</button>
-                    <div>المجموع النهائي: <b id="final-grand-total">0.00</b> دج</div>
+                    <button class="btn-print" style="color: var(--main-red);" onclick="finishSaleAndPrint()">
+                        <i class="material-icons-round">print</i> حفظ وطباعة
+                    </button>
+                    <div>المجموع: <b id="final-grand-total">0.00</b> دج</div>
                 </div>
             </div>
         </div>
@@ -157,45 +553,58 @@
         <!-- فواتير المبيعات -->
         <div id="sale-invoices" class="sub-section" style="display: none;">
             <div class="main-card">
-                <h5 class="text-center mb-4">سجل فواتير المبيعات</h5>
+                <h5 class="text-center mb-4">📋 سجل فواتير المبيعات</h5>
                 <div class="input-group mb-3">
                     <span class="input-group-text"><i class="material-icons-round">search</i></span>
                     <input type="text" id="invoice-search" class="form-control" placeholder="بحث برقم الفاتورة، العميل، أو التاريخ" oninput="searchInvoices()">
                 </div>
-                <table class="table-custom">
-                    <thead>
-                        <tr>
-                            <th>رقم</th>
-                            <th>التاريخ</th>
-                            <th>العميل</th>
-                            <th>المبلغ</th>
-                            <th>الأصناف</th>
-                            <th>تعديل</th>
-                            <th>حذف</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sale-invoices-tbody"></tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>رقم</th>
+                                <th>التاريخ</th>
+                                <th>العميل</th>
+                                <th>المبلغ</th>
+                                <th>الأصناف</th>
+                                <th>تعديل</th>
+                                <th>حذف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sale-invoices-tbody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- العملاء -->
         <div id="customers" class="sub-section" style="display: none;">
             <div class="main-card">
-                <h5 class="text-center mb-4">إدارة العملاء</h5>
-                <input type="text" id="new-customer" class="form-control mb-2" placeholder="اسم العميل الجديد">
-                <button class="btn btn-dark w-100" onclick="addCustomer()">إضافة عميل</button>
-                <table class="table-custom mt-3">
-                    <thead>
-                        <tr>
-                            <th>الاسم</th>
-                            <th>الهاتف</th>
-                            <th>الفواتير</th>
-                            <th>حذف</th>
-                        </tr>
-                    </thead>
-                    <tbody id="customers-tbody"></tbody>
-                </table>
+                <h5 class="text-center mb-4">👥 إدارة العملاء</h5>
+                <div class="row g-2 mb-3">
+                    <div class="col-8">
+                        <input type="text" id="new-customer" class="form-control" placeholder="اسم العميل الجديد">
+                    </div>
+                    <div class="col-4">
+                        <input type="text" id="new-customer-phone" class="form-control" placeholder="الهاتف">
+                    </div>
+                </div>
+                <button class="btn btn-dark w-100 mb-3" onclick="addCustomer()">
+                    <i class="material-icons-round">person_add</i> إضافة عميل
+                </button>
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>الهاتف</th>
+                                <th>الفواتير</th>
+                                <th>حذف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customers-tbody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
@@ -211,15 +620,15 @@
         <!-- عملية شراء -->
         <div id="purchase-operation" class="sub-section">
             <div class="main-card no-print">
-                <h6 class="text-center mb-3">تسجيل مشتريات</h6>
+                <h6 class="text-center mb-3">📦 تسجيل مشتريات</h6>
                 
                 <div class="search-container mb-3">
                     <div class="input-group">
-                        <button class="btn btn-dark px-3" onclick="openBarcodeScanner()">
+                        <button class="btn btn-dark px-3" type="button" onclick="openBarcodeScanner()">
                             <i class="material-icons-round">qr_code_scanner</i>
                         </button>
-                        <input type="text" id="purchase-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearchPurchase(this.value)">
-                        <button class="mic-btn" id="mic-purchase" title="البحث بالصوت">
+                        <input type="text" id="purchase-search" class="form-control" placeholder="ابحث باسم المنتج..." oninput="smartSearchPurchase(this.value)" autocomplete="off">
+                        <button class="mic-btn" id="mic-purchase" type="button" onclick="startVoiceSearch('purchase')">
                             <i class="material-icons-round">mic</i>
                         </button>
                     </div>
@@ -238,30 +647,37 @@
                         <input type="number" id="purchase-qty" class="form-control" placeholder="الكمية" min="1" value="1">
                     </div>
                     <div class="col-4">
-                        <button class="btn btn-success w-100" onclick="addToPurchaseCart()">إضافة</button>
+                        <button class="btn btn-success w-100" onclick="addToPurchaseCart()">
+                            <i class="material-icons-round">add</i>
+                        </button>
                     </div>
                 </div>
                 
-                <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearPurchaseCart()">مسح السلة</button>
+                <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearPurchaseCart()">
+                    <i class="material-icons-round">delete_sweep</i> مسح السلة
+                </button>
             </div>
             
             <div class="main-card">
-                <table class="table-custom">
-                    <thead>
-                        <tr>
-                            <th>المنتج</th>
-                            <th>الكمية</th>
-                            <th>تكلفة الوحدة</th>
-                            <th>الإجمالي</th>
-                            <th>تعديل</th>
-                            <th></th>
-                        </tr>
-                    </thead>
-                    <tbody id="purchase-cart-table"></tbody>
-                </table>
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>المنتج</th>
+                                <th>الكمية</th>
+                                <th>تكلفة الوحدة</th>
+                                <th>الإجمالي</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchase-cart-table"></tbody>
+                    </table>
+                </div>
                 
                 <div class="summary-box mt-3 no-print" style="background: var(--main-green);">
-                    <button class="btn-print" style="color: var(--main-green);" onclick="finishPurchaseAndPrint()">حفظ وطباعة</button>
+                    <button class="btn-print" style="color: var(--main-green);" onclick="finishPurchaseAndPrint()">
+                        <i class="material-icons-round">print</i> حفظ وطباعة
+                    </button>
                     <div>المجموع: <b id="purchase-grand-total">0.00</b> دج</div>
                 </div>
             </div>
@@ -270,433 +686,489 @@
         <!-- فواتير الشراء -->
         <div id="purchase-invoices" class="sub-section" style="display: none;">
             <div class="main-card">
-                <h5 class="text-center mb-4">سجل فواتير الشراء</h5>
-                <table class="table-custom">
-                    <thead>
-                        <tr>
-                            <th>رقم</th>
-                            <th>التاريخ</th>
-                            <th>المورد</th>
-                            <th>المبلغ</th>
-                            <th>الأصناف</th>
-                            <th>تعديل</th>
-                            <th>حذف</th>
-                        </tr>
-                    </thead>
-                    <tbody id="purchase-invoices-tbody"></tbody>
-                </table>
+                <h5 class="text-center mb-4">📋 سجل فواتير الشراء</h5>
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>رقم</th>
+                                <th>التاريخ</th>
+                                <th>المورد</th>
+                                <th>المبلغ</th>
+                                <th>الأصناف</th>
+                                <th>تعديل</th>
+                                <th>حذف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchase-invoices-tbody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
         <!-- الموردون -->
         <div id="suppliers" class="sub-section" style="display: none;">
             <div class="main-card">
-                <h5 class="text-center mb-4">إدارة الموردين</h5>
-                <input type="text" id="new-supplier" class="form-control mb-2" placeholder="اسم المورد الجديد">
-                <button class="btn btn-dark w-100" onclick="addSupplier()">إضافة مورد</button>
-                <table class="table-custom mt-3">
-                    <thead>
-                        <tr>
-                            <th>الاسم</th>
-                            <th>الهاتف</th>
-                            <th>حذف</th>
-                        </tr>
-                    </thead>
-                    <tbody id="suppliers-tbody"></tbody>
-                </table>
+                <h5 class="text-center mb-4">👥 إدارة الموردين</h5>
+                <div class="row g-2 mb-3">
+                    <div class="col-8">
+                        <input type="text" id="new-supplier" class="form-control" placeholder="اسم المورد الجديد">
+                    </div>
+                    <div class="col-4">
+                        <input type="text" id="new-supplier-phone" class="form-control" placeholder="الهاتف">
+                    </div>
+                </div>
+                <button class="btn btn-dark w-100 mb-3" onclick="addSupplier()">
+                    <i class="material-icons-round">person_add</i> إضافة مورد
+                </button>
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>الاسم</th>
+                                <th>الهاتف</th>
+                                <th>حذف</th>
+                            </tr>
+                        </thead>
+                        <tbody id="suppliers-tbody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- ================== قسم الإضافة ================== -->
+    <!-- ================== قسم الإضافة الشامل ================== -->
     <div id="add" class="section">
         <div class="nav-tabs-custom no-print">
-            <div class="tab-item active-nardo" onclick="showSubSection('add-product')">منتج</div>
-            <div class="tab-item" onclick="showSubSection('add-customer')">عميل</div>
-            <div class="tab-item" onclick="showSubSection('add-supplier')">مورد</div>
+            <div class="tab-item active-nardo" onclick="showSubSection('add-product')">📦 منتج</div>
+            <div class="tab-item" onclick="showSubSection('add-customer')">👤 عميل</div>
+            <div class="tab-item" onclick="showSubSection('add-supplier')">🤝 مورد</div>
         </div>
 
-        <!-- ===== إضافة منتج (كامل مع سعر الجملة) ===== -->
-<div id="add-product" class="sub-section">
-    <div class="main-card">
-        <h6 class="text-center mb-4"><i class="material-icons-round text-primary">inventory</i> إضافة منتج جديد</h6>
-        
-        <!-- ===== 1. اسم المنتج ===== -->
-        <div class="mb-3">
-            <label class="form-label">اسم المنتج <span class="text-danger">*</span></label>
-            <input type="text" id="new-name" class="form-control" maxlength="60" placeholder="أدخل اسم المنتج">
-            <small class="text-muted">0/60</small>
-        </div>
-        
-        <!-- ===== 2. الصنف/الفئة ===== -->
-        <div class="mb-3">
-            <label class="form-label">الصنف</label>
-            <select id="new-category" class="form-select">
-                <option value="عام">عام</option>
-                <option value="مواد غذائية">مواد غذائية</option>
-                <option value="مشروبات">مشروبات</option>
-                <option value="منظفات">منظفات</option>
-                <option value="الكترونيات">الكترونيات</option>
-                <option value="ملابس">ملابس</option>
-                <option value="أدوات منزلية">أدوات منزلية</option>
-            </select>
-        </div>
-        
-        <!-- ===== 3. الأسعار (الشراء، البيع، الجملة) ===== -->
-        <div class="row g-2 mb-3">
-            <div class="col-4">
-                <label class="form-label">سعر الشراء <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <input type="number" id="new-buy" class="form-control" step="0.01" placeholder="سعر الشراء">
-                    <span class="input-group-text">دج</span>
+        <!-- ===== إضافة منتج ===== -->
+        <div id="add-product" class="sub-section">
+            <div class="main-card">
+                <h6 class="text-center mb-4"><i class="material-icons-round text-primary">inventory</i> إضافة منتج جديد</h6>
+                
+                <div class="mb-3">
+                    <label class="form-label">اسم المنتج <span class="text-danger">*</span></label>
+                    <input type="text" id="new-name" class="form-control" maxlength="60" placeholder="أدخل اسم المنتج">
                 </div>
-            </div>
-            <div class="col-4">
-                <label class="form-label">سعر البيع <span class="text-danger">*</span></label>
-                <div class="input-group">
-                    <input type="number" id="new-sell" class="form-control" step="0.01" placeholder="سعر البيع">
-                    <span class="input-group-text">دج</span>
+                
+                <div class="mb-3">
+                    <label class="form-label">الصنف</label>
+                    <select id="new-category" class="form-select">
+                        <option value="عام">عام</option>
+                        <option value="مواد غذائية">مواد غذائية</option>
+                        <option value="مشروبات">مشروبات</option>
+                        <option value="منظفات">منظفات</option>
+                        <option value="الكترونيات">الكترونيات</option>
+                        <option value="ملابس">ملابس</option>
+                    </select>
                 </div>
-            </div>
-            <div class="col-4">
-                <label class="form-label">سعر الجملة</label>
-                <div class="input-group">
-                    <input type="number" id="new-wholesale" class="form-control" step="0.01" placeholder="سعر الجملة">
-                    <span class="input-group-text">دج</span>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <label class="form-label">سعر الشراء</label>
+                        <input type="number" id="new-buy" class="form-control" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">سعر البيع</label>
+                        <input type="number" id="new-sell" class="form-control" step="0.01" placeholder="0.00">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">الكمية</label>
+                        <input type="number" id="new-qty" class="form-control" value="0" min="0">
+                    </div>
                 </div>
-                <small class="text-muted">اختياري - للكميات الكبيرة</small>
-            </div>
-        </div>
-        
-        <!-- ===== 4. الكمية والوحدة ===== -->
-        <div class="row g-2 mb-3">
-            <div class="col-6">
-                <label class="form-label">الكمية</label>
-                <input type="number" id="new-qty" class="form-control" value="0" min="0" placeholder="الكمية">
-            </div>
-            <div class="col-6">
-                <label class="form-label">الوحدة</label>
-                <select id="new-unit" class="form-select">
-                    <option value="قطعة">قطعة</option>
-                    <option value="كغ">كغ</option>
-                    <option value="لتر">لتر</option>
-                    <option value="علبة">علبة</option>
-                    <option value="كرتونة">كرتونة</option>
-                    <option value="حزمة">حزمة</option>
-                </select>
-            </div>
-        </div>
-        
-        <!-- ===== 5. الحد الأدنى للمخزون ===== -->
-        <div class="mb-3">
-            <label class="form-label">الحد الأدنى للمخزون</label>
-            <input type="number" id="new-min-stock" class="form-control" value="5" min="0">
-            <small class="text-muted">تنبيه عند وصول المخزون لهذا الحد</small>
-        </div>
-        
-        <!-- ===== 6. الباركود ===== -->
-        <div class="mb-3">
-            <label class="form-label">الباركود</label>
-            <div class="input-group">
-                <input type="text" id="new-barcode" class="form-control" placeholder="باركود المنتج">
-                <button class="btn btn-outline-secondary" type="button" onclick="utils.openBarcodeScanner()">
-                    <i class="material-icons-round">camera_alt</i> مسح
+                
+                <div class="mb-3">
+                    <label class="form-label">الباركود</label>
+                    <input type="text" id="new-barcode" class="form-control" placeholder="اختياري">
+                </div>
+                
+                <button class="btn btn-dark w-100 py-3" onclick="inventoryModule.saveNewProduct()">
+                    <i class="material-icons-round">save</i> حفظ المنتج
                 </button>
             </div>
-            <small class="text-muted">اختياري - يمكن مسحه بالكاميرا</small>
         </div>
-        
-        <!-- ===== 7. موقع التخزين ===== -->
-        <div class="mb-3">
-            <label class="form-label">موقع التخزين</label>
-            <input type="text" id="new-location" class="form-control" placeholder="مثال: رف A - صف 3">
-            <small class="text-muted">اختياري - لتحديد مكان المنتج</small>
-        </div>
-        
-        <!-- ===== 8. صورة المنتج ===== -->
-        <div class="mb-3">
-            <label class="form-label">صورة المنتج (اختياري)</label>
-            <input type="file" id="product-image" class="form-control" accept="image/*" onchange="utils.previewImage(event)">
-            <div id="image-preview" class="mt-2" style="display:none; text-align:center;">
-                <img id="preview-img" src="#" alt="معاينة" style="max-width:150px; max-height:150px; border-radius:8px; border:1px solid #ddd; padding:5px;">
-            </div>
-        </div>
-        
-        <!-- ===== 9. ملاحظات ===== -->
-        <div class="mb-3">
-            <label class="form-label">ملاحظات</label>
-            <textarea id="new-notes" class="form-control" rows="2" placeholder="ملاحظات إضافية عن المنتج"></textarea>
-        </div>
-        
-        <!-- ===== 10. زر الحفظ ===== -->
-        <button class="btn btn-dark w-100 py-3" onclick="inventoryModule.saveNewProduct()">
-            <i class="material-icons-round">save</i> حفظ المنتج
-        </button>
-    </div>
-</div>
-        
 
-        <!-- ===== إضافة عميل (كامل بجميع الحقول) ===== -->
-<div id="add-customer" class="sub-section" style="display: none;">
-    <div class="main-card">
-        <h6 class="text-center mb-4"><i class="material-icons-round text-primary">person_add</i> إضافة عميل جديد</h6>
-        
-        <!-- ===== 1. بيانات شخصية ===== -->
-        <div class="bg-light p-2 mb-3 rounded d-flex align-items-center">
-            <i class="material-icons-round text-primary me-2">badge</i>
-            <span class="fw-bold">بيانات شخصية</span>
-        </div>
-        
-        <!-- اسم العميل -->
-        <div class="mb-3">
-            <label class="form-label">اسم العميل <span class="text-danger">*</span></label>
-            <input type="text" id="new-customer-name" class="form-control" maxlength="100" placeholder="الاسم الكامل">
-            <small class="text-muted">مطلوب</small>
-        </div>
-        
-        <!-- اللقب (اختياري) -->
-        <div class="mb-3">
-            <label class="form-label">اللقب (اختياري)</label>
-            <input type="text" id="new-customer-nickname" class="form-control" placeholder="الاسم المختصر">
-        </div>
-        
-        <!-- تاريخ الميلاد والجنس -->
-        <div class="row g-2 mb-3">
-            <div class="col-6">
-                <label class="form-label">تاريخ الميلاد</label>
-                <input type="date" id="new-customer-birthdate" class="form-control">
-            </div>
-            <div class="col-6">
-                <label class="form-label">الجنس</label>
-                <select id="new-customer-gender" class="form-select">
-                    <option value="">اختر</option>
-                    <option value="male">ذكر</option>
-                    <option value="female">أنثى</option>
-                </select>
-            </div>
-        </div>
-        
-        <!-- ===== 2. بيانات الاتصال ===== -->
-        <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
-            <i class="material-icons-round text-primary me-2">phone</i>
-            <span class="fw-bold">بيانات الاتصال</span>
-        </div>
-        
-        <!-- أرقام الهاتف -->
-        <div class="row g-2 mb-3">
-            <div class="col-6">
-                <label class="form-label">رقم الهاتف 1</label>
-                <input type="tel" id="new-customer-phone" class="form-control" placeholder="05XX XXX XXX" dir="ltr">
-            </div>
-            <div class="col-6">
-                <label class="form-label">رقم الهاتف 2</label>
-                <input type="tel" id="new-customer-phone2" class="form-control" placeholder="05XX XXX XXX" dir="ltr">
-            </div>
-        </div>
-        
-        <!-- واتساب وبريد إلكتروني -->
-        <div class="row g-2 mb-3">
-            <div class="col-6">
-                <label class="form-label">رقم الواتساب</label>
-                <input type="tel" id="new-customer-whatsapp" class="form-control" placeholder="05XX XXX XXX" dir="ltr">
-            </div>
-            <div class="col-6">
-                <label class="form-label">البريد الإلكتروني</label>
-                <input type="email" id="new-customer-email" class="form-control" placeholder="email@example.com" dir="ltr">
-            </div>
-        </div>
-        
-        <!-- ===== 3. العنوان ===== -->
-        <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
-            <i class="material-icons-round text-primary me-2">location_on</i>
-            <span class="fw-bold">العنوان</span>
-        </div>
-        
-        <!-- الدولة والمحافظة والمدينة -->
-        <div class="row g-2 mb-3">
-            <div class="col-4">
-                <label class="form-label">الدولة</label>
-                <input type="text" id="new-customer-country" class="form-control" value="الجزائر" placeholder="الدولة">
-            </div>
-            <div class="col-4">
-                <label class="form-label">المحافظة</label>
-                <input type="text" id="new-customer-governorate" class="form-control" placeholder="المحافظة">
-            </div>
-            <div class="col-4">
-                <label class="form-label">المدينة</label>
-                <input type="text" id="new-customer-city" class="form-control" placeholder="المدينة">
-            </div>
-        </div>
-        
-        <!-- الحي والشارع ورقم المبنى -->
-        <div class="row g-2 mb-3">
-            <div class="col-4">
-                <label class="form-label">الحي/المنطقة</label>
-                <input type="text" id="new-customer-district" class="form-control" placeholder="الحي">
-            </div>
-            <div class="col-4">
-                <label class="form-label">الشارع</label>
-                <input type="text" id="new-customer-street" class="form-control" placeholder="الشارع">
-            </div>
-            <div class="col-4">
-                <label class="form-label">رقم المبنى</label>
-                <input type="text" id="new-customer-building" class="form-control" placeholder="رقم المبنى">
-            </div>
-        </div>
-        
-        <!-- العنوان بالكامل -->
-        <div class="mb-3">
-            <label class="form-label">العنوان بالكامل</label>
-            <textarea id="new-customer-address" class="form-control" rows="2" placeholder="العنوان بالتفصيل"></textarea>
-        </div>
-        
-        <!-- ===== 4. بيانات مالية ===== -->
-        <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
-            <i class="material-icons-round text-primary me-2">account_balance_wallet</i>
-            <span class="fw-bold">بيانات مالية</span>
-        </div>
-        
-        <!-- الحد الأقصى للمديونية -->
-        <div class="row g-2 mb-3">
-            <div class="col-6">
-                <label class="form-label">الحد الأقصى للمديونية</label>
-                <div class="input-group">
-                    <input type="number" id="new-customer-max-debt" class="form-control" value="0" min="0">
-                    <span class="input-group-text">دج</span>
+        <!-- ===== إضافة عميل (كامل) ===== -->
+        <div id="add-customer" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h6 class="text-center mb-4"><i class="material-icons-round text-primary">person_add</i> إضافة عميل جديد</h6>
+                
+                <!-- بيانات شخصية -->
+                <div class="bg-light p-2 mb-3 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-primary me-2">badge</i>
+                    <span class="fw-bold">بيانات شخصية</span>
                 </div>
-                <small class="text-muted">0 = غير محدد</small>
-            </div>
-            <div class="col-6">
-                <label class="form-label">أيام التنبيه</label>
-                <input type="number" id="new-customer-alert-days" class="form-control" value="0" min="0">
-                <small class="text-muted">0 = بدون تنبيه</small>
-            </div>
-        </div>
-        
-        <!-- نسبة الخصم وطريقة الدفع -->
-        <div class="row g-2 mb-3">
-            <div class="col-6">
-                <label class="form-label">نسبة الخصم</label>
-                <div class="input-group">
-                    <input type="number" id="new-customer-discount" class="form-control" value="0" min="0" max="100">
-                    <span class="input-group-text">%</span>
+                
+                <div class="mb-3">
+                    <label class="form-label">اسم العميل <span class="text-danger">*</span></label>
+                    <input type="text" id="new-customer-name" class="form-control" maxlength="100" placeholder="الاسم الكامل">
                 </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">اللقب</label>
+                    <input type="text" id="new-customer-nickname" class="form-control" placeholder="الاسم المختصر">
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">تاريخ الميلاد</label>
+                        <input type="date" id="new-customer-birthdate" class="form-control">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">الجنس</label>
+                        <select id="new-customer-gender" class="form-select">
+                            <option value="">اختر</option>
+                            <option value="male">ذكر</option>
+                            <option value="female">أنثى</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- بيانات الاتصال -->
+                <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-primary me-2">phone</i>
+                    <span class="fw-bold">بيانات الاتصال</span>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">رقم الهاتف</label>
+                        <input type="tel" id="new-customer-phone" class="form-control" placeholder="05XX XXX XXX">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">هاتف آخر</label>
+                        <input type="tel" id="new-customer-phone2" class="form-control" placeholder="05XX XXX XXX">
+                    </div>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">الواتساب</label>
+                        <input type="tel" id="new-customer-whatsapp" class="form-control" placeholder="05XX XXX XXX">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">البريد الإلكتروني</label>
+                        <input type="email" id="new-customer-email" class="form-control" placeholder="email@example.com">
+                    </div>
+                </div>
+                
+                <!-- العنوان -->
+                <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-primary me-2">location_on</i>
+                    <span class="fw-bold">العنوان</span>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <label class="form-label">الدولة</label>
+                        <input type="text" id="new-customer-country" class="form-control" value="الجزائر">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">المحافظة</label>
+                        <input type="text" id="new-customer-governorate" class="form-control" placeholder="المحافظة">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">المدينة</label>
+                        <input type="text" id="new-customer-city" class="form-control" placeholder="المدينة">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">العنوان بالكامل</label>
+                    <textarea id="new-customer-address" class="form-control" rows="2" placeholder="العنوان بالتفصيل"></textarea>
+                </div>
+                
+                <!-- بيانات مالية -->
+                <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-primary me-2">account_balance_wallet</i>
+                    <span class="fw-bold">بيانات مالية</span>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">الحد الأقصى للمديونية</label>
+                        <input type="number" id="new-customer-max-debt" class="form-control" value="0">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">نسبة الخصم</label>
+                        <input type="number" id="new-customer-discount" class="form-control" value="0">
+                    </div>
+                </div>
+                
+                <!-- بيانات ضريبية -->
+                <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-primary me-2">receipt</i>
+                    <span class="fw-bold">بيانات ضريبية</span>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">الرقم الضريبي</label>
+                        <input type="text" id="new-customer-tax" class="form-control" placeholder="الرقم الضريبي">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">السجل التجاري</label>
+                        <input type="text" id="new-customer-commercial" class="form-control" placeholder="رقم السجل التجاري">
+                    </div>
+                </div>
+                
+                <!-- ملاحظات -->
+                <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-primary me-2">note</i>
+                    <span class="fw-bold">ملاحظات</span>
+                </div>
+                
+                <div class="mb-3">
+                    <textarea id="new-customer-notes" class="form-control" rows="3" placeholder="ملاحظات إضافية"></textarea>
+                </div>
+                
+                <button class="btn btn-primary w-100 py-3" onclick="customerModule.saveNewCustomer()">
+                    <i class="material-icons-round">save</i> حفظ العميل
+                </button>
             </div>
-            <div class="col-6">
-                <label class="form-label">طريقة الدفع المفضلة</label>
-                <select id="new-customer-payment" class="form-select">
-                    <option value="cash">نقدي</option>
-                    <option value="card">بطاقة</option>
-                    <option value="check">شيك</option>
-                    <option value="transfer">تحويل بنكي</option>
-                </select>
+        </div>
+
+        <!-- ===== إضافة مورد (كامل) ===== -->
+        <div id="add-supplier" class="sub-section" style="display: none;">
+            <div class="main-card">
+                <h6 class="text-center mb-4"><i class="material-icons-round text-success">business</i> إضافة مورد جديد</h6>
+                
+                <!-- معلومات الشركة -->
+                <div class="bg-light p-2 mb-3 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-success me-2">business</i>
+                    <span class="fw-bold">معلومات الشركة</span>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">اسم المورد <span class="text-danger">*</span></label>
+                    <input type="text" id="new-supplier-name" class="form-control" maxlength="100" placeholder="الاسم الكامل للمورد">
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">اسم الشركة</label>
+                    <input type="text" id="new-supplier-company" class="form-control" placeholder="اسم الشركة">
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">تصنيف المورد</label>
+                        <select id="new-supplier-category" class="form-select">
+                            <option value="">اختر التصنيف</option>
+                            <option value="مواد غذائية">مواد غذائية</option>
+                            <option value="مشروبات">مشروبات</option>
+                            <option value="منظفات">منظفات</option>
+                            <option value="الكترونيات">الكترونيات</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">التقييم</label>
+                        <select id="new-supplier-rating" class="form-select">
+                            <option value="A">A - ممتاز</option>
+                            <option value="B" selected>B - جيد</option>
+                            <option value="C">C - متوسط</option>
+                            <option value="D">D - جديد</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- بيانات الاتصال -->
+                <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-success me-2">phone</i>
+                    <span class="fw-bold">بيانات الاتصال</span>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">رقم الهاتف</label>
+                        <input type="tel" id="new-supplier-phone" class="form-control" placeholder="05XX XXX XXX">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">هاتف آخر</label>
+                        <input type="tel" id="new-supplier-phone2" class="form-control" placeholder="05XX XXX XXX">
+                    </div>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">البريد الإلكتروني</label>
+                        <input type="email" id="new-supplier-email" class="form-control" placeholder="email@company.com">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">الموقع الإلكتروني</label>
+                        <input type="url" id="new-supplier-website" class="form-control" placeholder="www.company.com">
+                    </div>
+                </div>
+                
+                <!-- العنوان -->
+                <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-success me-2">location_on</i>
+                    <span class="fw-bold">العنوان</span>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <label class="form-label">الدولة</label>
+                        <input type="text" id="new-supplier-country" class="form-control" value="الجزائر">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">المحافظة</label>
+                        <input type="text" id="new-supplier-governorate" class="form-control" placeholder="المحافظة">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">المدينة</label>
+                        <input type="text" id="new-supplier-city" class="form-control" placeholder="المدينة">
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">العنوان بالكامل</label>
+                    <textarea id="new-supplier-address" class="form-control" rows="2" placeholder="العنوان بالتفصيل"></textarea>
+                </div>
+                
+                <!-- معلومات ضريبية -->
+                <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-success me-2">receipt</i>
+                    <span class="fw-bold">معلومات ضريبية</span>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">الرقم الضريبي</label>
+                        <input type="text" id="new-supplier-tax-number" class="form-control" placeholder="الرقم الضريبي">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">السجل التجاري</label>
+                        <input type="text" id="new-supplier-commercial-reg" class="form-control" placeholder="رقم السجل التجاري">
+                    </div>
+                </div>
+                
+                <!-- الشخص المسؤول -->
+                <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-success me-2">person</i>
+                    <span class="fw-bold">الشخص المسؤول</span>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <label class="form-label">اسم المسؤول</label>
+                        <input type="text" id="new-supplier-contact-name" class="form-control" placeholder="اسم المسؤول">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">منصبه</label>
+                        <input type="text" id="new-supplier-contact-position" class="form-control" placeholder="المسمى الوظيفي">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">رقمه</label>
+                        <input type="tel" id="new-supplier-contact-phone" class="form-control" placeholder="رقم الهاتف">
+                    </div>
+                </div>
+                
+                <!-- معلومات مالية -->
+                <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-success me-2">account_balance</i>
+                    <span class="fw-bold">معلومات مالية</span>
+                </div>
+                
+                <div class="row g-2 mb-3">
+                    <div class="col-4">
+                        <label class="form-label">طريقة الدفع</label>
+                        <select id="new-supplier-payment-method" class="form-select">
+                            <option value="cash">نقدي</option>
+                            <option value="check">شيك</option>
+                            <option value="transfer">تحويل</option>
+                        </select>
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">مدة السداد</label>
+                        <input type="number" id="new-supplier-payment-days" class="form-control" value="0" placeholder="أيام">
+                    </div>
+                    <div class="col-4">
+                        <label class="form-label">الحد الائتماني</label>
+                        <input type="number" id="new-supplier-credit-limit" class="form-control" value="0" placeholder="دج">
+                    </div>
+                </div>
+                
+                <!-- معلومات بنكية -->
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label">اسم البنك</label>
+                        <input type="text" id="new-supplier-bank-name" class="form-control" placeholder="اسم البنك">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">رقم الحساب</label>
+                        <input type="text" id="new-supplier-bank-account" class="form-control" placeholder="رقم الحساب">
+                    </div>
+                </div>
+                
+                <!-- المنتجات -->
+                <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-success me-2">category</i>
+                    <span class="fw-bold">المنتجات</span>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">المنتجات الموردة</label>
+                    <textarea id="new-supplier-products" class="form-control" rows="2" placeholder="قائمة المنتجات"></textarea>
+                </div>
+                
+                <!-- ملاحظات -->
+                <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
+                    <i class="material-icons-round text-success me-2">note</i>
+                    <span class="fw-bold">ملاحظات</span>
+                </div>
+                
+                <div class="mb-3">
+                    <textarea id="new-supplier-notes" class="form-control" rows="3" placeholder="ملاحظات إضافية"></textarea>
+                </div>
+                
+                <button class="btn btn-success w-100 py-3" onclick="supplierModule.saveNewSupplier()">
+                    <i class="material-icons-round">save</i> حفظ المورد
+                </button>
             </div>
         </div>
-        
-        <!-- تصنيف العميل -->
-        <div class="mb-3">
-            <label class="form-label">تصنيف العميل</label>
-            <select id="new-customer-rating" class="form-select">
-                <option value="A">A - ممتاز</option>
-                <option value="B">B - جيد</option>
-                <option value="C">C - متوسط</option>
-                <option value="D">D - جديد</option>
-            </select>
-        </div>
-        
-        <!-- ===== 5. بيانات ضريبية ===== -->
-        <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
-            <i class="material-icons-round text-primary me-2">receipt</i>
-            <span class="fw-bold">بيانات ضريبية</span>
-        </div>
-        
-        <div class="row g-2 mb-3">
-            <div class="col-6">
-                <label class="form-label">الرقم الضريبي</label>
-                <input type="text" id="new-customer-tax" class="form-control" placeholder="الرقم الضريبي">
-            </div>
-            <div class="col-6">
-                <label class="form-label">السجل التجاري</label>
-                <input type="text" id="new-customer-commercial" class="form-control" placeholder="رقم السجل التجاري">
-            </div>
-        </div>
-        
-        <!-- ===== 6. معلومات إضافية ===== -->
-        <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
-            <i class="material-icons-round text-primary me-2">info</i>
-            <span class="fw-bold">معلومات إضافية</span>
-        </div>
-        
-        <div class="row g-2 mb-3">
-            <div class="col-6">
-                <label class="form-label">المصدر</label>
-                <select id="new-customer-source" class="form-select">
-                    <option value="direct">مباشر</option>
-                    <option value="social_media">تواصل اجتماعي</option>
-                    <option value="friend">صديق</option>
-                    <option value="advertisement">إعلان</option>
-                    <option value="other">آخر</option>
-                </select>
-            </div>
-            <div class="col-6">
-                <label class="form-label">آخر تفاعل</label>
-                <input type="date" id="new-customer-last-contact" class="form-control">
-            </div>
-        </div>
-        
-        <!-- ===== 7. ملاحظات ===== -->
-        <div class="bg-light p-2 mb-3 mt-4 rounded d-flex align-items-center">
-            <i class="material-icons-round text-primary me-2">note</i>
-            <span class="fw-bold">ملاحظات</span>
-        </div>
-        
-        <div class="mb-3">
-            <textarea id="new-customer-notes" class="form-control" rows="3" placeholder="ملاحظات إضافية عن العميل (تفضيلات، تحذيرات، ملاحظات خاصة...)"></textarea>
-        </div>
-        
-        <!-- ===== 8. زر الحفظ ===== -->
-        <button class="btn btn-primary w-100 py-3" onclick="customerModule.saveNewCustomer()">
-            <i class="material-icons-round">save</i> حفظ العميل
-        </button>
     </div>
-</div>
-        <!-- ================== إضافة مورد (كامل بجميع الحقول) ================== -->
-        
 
     <!-- ================== قسم المخزن ================== -->
     <div id="inventory" class="section">
         <div class="main-card">
-            <h5 class="text-center mb-4">المخزن الحالي</h5>
+            <h5 class="text-center mb-4">📦 المخزن الحالي</h5>
             <button class="btn btn-success w-100 mb-3" onclick="uploadExcel()">
                 <i class="material-icons-round">upload_file</i> رفع ملف Excel
             </button>
-            <table class="table-custom">
-                <thead>
-                    <tr>
-                        <th>الصورة</th>
-                        <th>المنتج</th>
-                        <th>الكمية</th>
-                        <th>سعر البيع</th>
-                        <th>سعر الشراء</th>
-                        <th>عمليات</th>
-                    </tr>
-                </thead>
-                <tbody id="stock-tbody"></tbody>
-            </table>
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>الصورة</th>
+                            <th>المنتج</th>
+                            <th>الكمية</th>
+                            <th>سعر البيع</th>
+                            <th>سعر الشراء</th>
+                            <th>عمليات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="stock-tbody"></tbody>
+                </table>
+            </div>
         </div>
     </div>
 
     <!-- ================== قسم التقارير ================== -->
     <div id="reports" class="section">
         <div class="main-card">
-            <h5 class="text-center mb-4">التقارير والإحصائيات</h5>
-            <div class="report-tabs no-print">
-                <span class="report-tab active" onclick="showReportTab('report-summary')">ملخص</span>
-                <span class="report-tab" onclick="showReportTab('report-lowstock')">النواقص</span>
-                <span class="report-tab" onclick="showReportTab('report-top')">الأكثر مبيعاً</span>
+            <h5 class="text-center mb-4">📊 التقارير والإحصائيات</h5>
+            <div class="report-tabs no-print d-flex gap-2 mb-3">
+                <span class="btn btn-outline-primary flex-grow-1 active" onclick="showReportTab('report-summary')">ملخص</span>
+                <span class="btn btn-outline-warning flex-grow-1" onclick="showReportTab('report-lowstock')">النواقص</span>
+                <span class="btn btn-outline-success flex-grow-1" onclick="showReportTab('report-top')">الأكثر مبيعاً</span>
             </div>
 
-            <div id="report-summary" class="report-content active-report">
+            <div id="report-summary" class="report-content">
                 <div class="summary-box mt-3" style="background: var(--nardo-grey);">
                     <div>إجمالي المبيعات: <b id="total-sales">0</b> دج</div>
                 </div>
@@ -705,13 +1177,13 @@
                 </div>
             </div>
             
-            <div id="report-lowstock" class="report-content">
-                <h6>المنتجات الناقصة</h6>
+            <div id="report-lowstock" class="report-content" style="display: none;">
+                <h6>⚠️ المنتجات الناقصة</h6>
                 <div id="low-stock-list"></div>
             </div>
             
-            <div id="report-top" class="report-content">
-                <h6>الأكثر مبيعاً</h6>
+            <div id="report-top" class="report-content" style="display: none;">
+                <h6>🔥 الأكثر مبيعاً</h6>
                 <div id="top-products-list"></div>
             </div>
         </div>
@@ -725,7 +1197,7 @@
             رقم: <b id="print-invoice-no"></b><br>
             العميل: <b id="print-customer"></b>
         </div>
-        <table style="width:100%">
+        <table style="width:100%; border-collapse: collapse;">
             <thead>
                 <tr>
                     <th>الصنف</th>
@@ -747,7 +1219,7 @@
             رقم: <b id="purchase-print-invoice-no"></b><br>
             المورد: <b id="print-supplier"></b>
         </div>
-        <table style="width:100%">
+        <table style="width:100%; border-collapse: collapse;">
             <thead>
                 <tr>
                     <th>الصنف</th>
@@ -801,81 +1273,12 @@
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5>مسح الباركود</h5>
+                    <h5>🔍 مسح الباركود</h5>
                     <button class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div id="barcode-video" style="width:100%; height:300px; background:#000;"></div>
-                    <p class="text-center" id="barcode-result"></p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- عرض الصورة المكبرة -->
-    <div class="modal fade" id="imageModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-body text-center">
-                    <img id="modal-image" src="#" style="max-width:100%">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- إضافة منتج سريع -->
-    <div class="modal fade" id="quickAddProductModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5>إضافة منتج سريع</h5>
-                    <button class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="text" id="quick-product-name" class="form-control mb-2" readonly>
-                    <div class="row">
-                        <div class="col-6"><input type="number" id="quick-sell-price" class="form-control" placeholder="سعر البيع"></div>
-                        <div class="col-6"><input type="number" id="quick-buy-price" class="form-control" placeholder="سعر الشراء"></div>
-                    </div>
-                    <select id="quick-unit" class="form-select my-2">
-                        <option>قطعة</option>
-                    </select>
-                    <div class="row">
-                        <div class="col-6"><input type="number" id="quick-cart-qty" class="form-control" value="1"></div>
-                        <div class="col-6"><input type="number" id="quick-discount" class="form-control" value="0"></div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button class="btn btn-primary" onclick="saveQuickProduct()">حفظ</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- تعديل المنتج -->
-    <div class="modal fade" id="editProductModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5>تعديل المنتج</h5>
-                    <button class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="edit-product-idx">
-                    <input type="text" id="edit-product-name" class="form-control mb-2">
-                    <input type="number" id="edit-product-sell" class="form-control mb-2">
-                    <input type="number" id="edit-product-buy" class="form-control mb-2">
-                    <input type="number" id="edit-product-qty" class="form-control mb-2">
-                    <select id="edit-product-unit" class="form-select mb-2">
-                        <option>قطعة</option>
-                    </select>
-                    <div id="edit-current-image"></div>
-                    <input type="file" id="edit-product-image" class="form-control">
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
-                    <button class="btn btn-primary" onclick="updateProduct()">حفظ</button>
+                    <div id="barcode-video" style="width:100%; height:300px; background:#000; border-radius: 10px;"></div>
+                    <p class="text-center mt-3" id="barcode-result">بانتظار المسح...</p>
                 </div>
             </div>
         </div>
@@ -920,7 +1323,7 @@
     <script src="js/app.js"></script>
 
     <script>
-        // ================== دوال بسيطة للتنقل ==================
+        // ================== دوال التنقل ==================
         function switchSection(sectionId, element) {
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active-section'));
             document.getElementById(sectionId).classList.add('active-section');
@@ -939,7 +1342,7 @@
             tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
             
             tabs.forEach(t => {
-                if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(subId)) {
+                if (t.getAttribute('onclick')?.includes(subId)) {
                     if (parent.id === 'sales') t.classList.add('active-red');
                     else if (parent.id === 'purchases') t.classList.add('active-green');
                     else if (parent.id === 'add') t.classList.add('active-nardo');
@@ -973,13 +1376,8 @@
         function togglePasswordVisibility() {
             const input = document.getElementById('password-input');
             const icon = document.querySelector('.toggle-password');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.textContent = 'visibility';
-            } else {
-                input.type = 'password';
-                icon.textContent = 'visibility_off';
-            }
+            input.type = input.type === 'password' ? 'text' : 'password';
+            icon.textContent = input.type === 'password' ? 'visibility_off' : 'visibility';
         }
         
         function checkPassword() {
@@ -1004,13 +1402,50 @@
             }
         }
 
-        // ================== حل مشكلة التجمد ==================
-        setTimeout(function() {
+        // دوال افتراضية
+        function toggleSidebar() {
+            Swal.fire('القائمة', 'جاري التجهيز', 'info');
+        }
+
+        function openUserMenu() {
+            Swal.fire({
+                title: 'حساب المستخدم',
+                html: '<p>مدير النظام</p>',
+                confirmButtonText: 'تسجيل الخروج'
+            }).then(() => {
+                localStorage.removeItem('isLoggedIn');
+                location.reload();
+            });
+        }
+
+        function openBarcodeScanner() {
+            Swal.fire('ماسح الباركود', 'جاري التفعيل', 'info');
+        }
+
+        function startVoiceSearch() {
+            Swal.fire('البحث الصوتي', 'قريباً', 'info');
+        }
+
+        function smartSearch() {}
+        function smartSearchPurchase() {}
+        function addToCart() {}
+        function clearCart() {}
+        function finishSaleAndPrint() {}
+        function searchInvoices() {}
+        function addCustomer() {}
+        function addToPurchaseCart() {}
+        function clearPurchaseCart() {}
+        function finishPurchaseAndPrint() {}
+        function uploadExcel() {}
+        function exportBackup() {}
+        function showReportTab() {}
+
+        // التحقق من حالة تسجيل الدخول
+        setTimeout(() => {
             if (localStorage.getItem('isLoggedIn') === 'true') {
                 document.getElementById('login-screen').style.display = 'none';
-                document.getElementById('reset-password-screen').style.display = 'none';
             }
-        }, 1000);
+        }, 100);
     </script>
 </body>
 </html>
