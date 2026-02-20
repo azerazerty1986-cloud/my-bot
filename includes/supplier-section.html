@@ -1,64 +1,191 @@
-<!-- ================== قسم الموردين ================== -->
-<div id="supplier" class="section">
-    <div class="main-card">
-        <h5 class="text-center mb-4">🤝 إدارة الموردين</h5>
-        
-        <div class="row g-2 mb-3">
-            <div class="col-8">
-                <input type="text" id="supplier-name" class="form-control" placeholder="اسم المورد">
+<!-- ================== قسم إدارة الموردين المتقدم ================== -->
+<div id="suppliers" class="section">
+    <div class="nav-tabs-custom no-print">
+        <div class="tab-item active-nardo" onclick="showSubSection('supplier-list')">
+            <i class="material-icons-round">business</i> قائمة الموردين
+        </div>
+        <div class="tab-item" onclick="showSubSection('supplier-debts')">
+            <i class="material-icons-round">account_balance_wallet</i> الديون
+        </div>
+        <div class="tab-item" onclick="showSubSection('supplier-payments')">
+            <i class="material-icons-round">payments</i> سجل الدفعات
+        </div>
+        <div class="tab-item" onclick="showSubSection('supplier-products')">
+            <i class="material-icons-round">category</i> منتجات الموردين
+        </div>
+    </div>
+
+    <!-- ===== قائمة الموردين ===== -->
+    <div id="supplier-list" class="sub-section">
+        <div class="main-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0"><i class="material-icons-round">business</i> قائمة الموردين</h5>
+                <button class="btn btn-primary" onclick="window.switchSection('add'); showSubSection('add-supplier')">
+                    <i class="material-icons-round">add</i> إضافة مورد جديد
+                </button>
             </div>
-            <div class="col-4">
-                <input type="text" id="supplier-phone" class="form-control" placeholder="رقم الهاتف">
+            
+            <div class="row g-2 mb-3">
+                <div class="col-md-8 col-12">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="material-icons-round">search</i></span>
+                        <input type="text" id="supplier-search" class="form-control" 
+                               placeholder="بحث باسم المورد أو رقم الهاتف..." 
+                               oninput="supplierModule.searchSuppliers(this.value)">
+                        <button class="btn btn-outline-secondary" type="button" onclick="startVoiceSearchSupplier()">
+                            <i class="material-icons-round">mic</i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4 col-12">
+                    <select id="supplier-category-filter" class="form-select" onchange="supplierModule.filterByCategory()">
+                        <option value="">جميع التصنيفات</option>
+                        <option value="مواد غذائية">مواد غذائية</option>
+                        <option value="مشروبات">مشروبات</option>
+                        <option value="منظفات">منظفات</option>
+                        <option value="الكترونيات">الكترونيات</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>اسم الشركة</th>
+                            <th>الشخص المسؤول</th>
+                            <th>رقم الهاتف</th>
+                            <th>البريد الإلكتروني</th>
+                            <th>التصنيف</th>
+                            <th>إجمالي المشتريات</th>
+                            <th>المديونية</th>
+                            <th>الحالة</th>
+                            <th>عمليات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="suppliers-tbody">
+                        <tr>
+                            <td colspan="10" class="text-center p-4">
+                                <i class="material-icons-round" style="font-size:48px;">business</i>
+                                <br>لا يوجد موردين
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-        
-        <div class="row g-2 mb-3">
-            <div class="col-6">
-                <input type="email" id="supplier-email" class="form-control" placeholder="البريد الإلكتروني">
-            </div>
-            <div class="col-6">
-                <input type="text" id="supplier-address" class="form-control" placeholder="العنوان">
+    </div>
+
+    <!-- ===== ديون الموردين ===== -->
+    <div id="supplier-debts" class="sub-section" style="display: none;">
+        <div class="main-card">
+            <h5 class="text-center mb-4"><i class="material-icons-round">account_balance_wallet</i> ديون الموردين</h5>
+            
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>المورد</th>
+                            <th>رقم الدين</th>
+                            <th>المبلغ</th>
+                            <th>المدفوع</th>
+                            <th>المتبقي</th>
+                            <th>تاريخ الاستحقاق</th>
+                            <th>الحالة</th>
+                            <th>عمليات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="supplier-debts-tbody">
+                        <tr>
+                            <td colspan="9" class="text-center p-4">لا توجد ديون</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-        
-        <div class="row g-2 mb-3">
-            <div class="col-12">
-                <textarea id="supplier-notes" class="form-control" rows="2" placeholder="ملاحظات"></textarea>
+    </div>
+
+    <!-- ===== سجل دفعات الموردين ===== -->
+    <div id="supplier-payments" class="sub-section" style="display: none;">
+        <div class="main-card">
+            <h5 class="text-center mb-4"><i class="material-icons-round">payments</i> سجل دفعات الموردين</h5>
+            
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>المورد</th>
+                            <th>رقم الدين</th>
+                            <th>المبلغ</th>
+                            <th>طريقة الدفع</th>
+                            <th>التاريخ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="supplier-payments-tbody">
+                        <tr>
+                            <td colspan="6" class="text-center p-4">لا توجد دفعات</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-        
-        <button class="btn btn-success w-100 mb-4" onclick="supplierModule.addSupplierFromForm()">
-            <i class="material-icons-round">person_add</i> إضافة مورد
-        </button>
-        
-        <div class="input-group mb-3">
-            <span class="input-group-text"><i class="material-icons-round">search</i></span>
-            <input type="text" id="supplier-search" class="form-control" 
-                   placeholder="بحث عن مورد..." 
-                   oninput="supplierModule.searchSuppliers()">
-        </div>
-        
-        <div class="table-responsive">
-            <table class="table-custom">
-                <thead>
-                    <tr>
-                        <th>الاسم</th>
-                        <th>الهاتف</th>
-                        <th>البريد</th>
-                        <th>المبيعات</th>
-                        <th>ديون</th>
-                        <th>عمليات</th>
-                    </tr>
-                </thead>
-                <tbody id="suppliers-full-tbody">
-                    <tr>
-                        <td colspan="6" class="text-center p-4">
-                            <i class="material-icons-round" style="font-size:48px;">business</i>
-                            <br>لا يوجد موردين
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+    </div>
+
+    <!-- ===== منتجات الموردين ===== -->
+    <div id="supplier-products" class="sub-section" style="display: none;">
+        <div class="main-card">
+            <h5 class="text-center mb-4"><i class="material-icons-round">category</i> منتجات الموردين</h5>
+            
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <select id="supplier-select" class="form-select" onchange="supplierModule.loadSupplierProducts()">
+                        <option value="">اختر المورد</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>المنتج</th>
+                            <th>سعر الشراء</th>
+                            <th>وقت التوريد</th>
+                            <th>آخر شراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="supplier-products-tbody">
+                        <tr>
+                            <td colspan="5" class="text-center p-4">اختر مورداً لعرض منتجاته</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    function startVoiceSearchSupplier() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ar-SA';
+            
+            recognition.onresult = function(event) {
+                const text = event.results[0][0].transcript;
+                document.getElementById('supplier-search').value = text;
+                supplierModule.searchSuppliers(text);
+            };
+            
+            recognition.start();
+            Swal.fire('🎤', 'تحدث الآن...', 'info');
+        } else {
+            Swal.fire('خطأ', 'المتصفح لا يدعم البحث الصوتي', 'error');
+        }
+    }
+</script>
