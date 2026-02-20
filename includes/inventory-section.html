@@ -1,87 +1,78 @@
 <!-- ================== قسم المخزن ================== -->
 <div id="inventory" class="section">
     <div class="main-card">
-        <h5 class="text-center mb-4"><i class="material-icons-round">inventory</i> المخزن الحالي</h5>
-        
-        <div class="row g-2 mb-3">
-            <div class="col-8">
-                <div class="input-group">
-                    <span class="input-group-text"><i class="material-icons-round">search</i></span>
-                    <input type="text" id="search-product" class="form-control" placeholder="ابحث عن منتج..." onkeyup="inventoryModule.searchProducts()">
-                    <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('search-product').value=''; inventoryModule.searchProducts()">
-                        <i class="material-icons-round">refresh</i>
-                    </button>
-                </div>
-            </div>
-            <div class="col-4">
-                <select id="filter-category" class="form-select" onchange="inventoryModule.filterByCategory()">
-                    <option value="all">كل الأصناف</option>
-                    <option value="مواد غذائية">مواد غذائية</option>
-                    <option value="مشروبات">مشروبات</option>
-                    <option value="منظفات">منظفات</option>
-                    <option value="الكترونيات">الكترونيات</option>
-                </select>
-            </div>
-        </div>
+        <h5 class="text-center mb-4">📦 المخزن الحالي</h5>
         
         <div class="row g-2 mb-3">
             <div class="col-6">
-                <button class="btn btn-outline-primary w-100" onclick="inventoryModule.showLowStock()">
-                    <i class="material-icons-round">warning</i> المنتجات الناقصة
+                <button class="btn btn-success w-100" onclick="uploadExcel()">
+                    <i class="material-icons-round">upload_file</i> رفع Excel
                 </button>
             </div>
             <div class="col-6">
-                <button class="btn btn-outline-success w-100" onclick="inventoryModule.exportToExcel()">
+                <button class="btn btn-primary w-100" onclick="exportInventory()">
                     <i class="material-icons-round">download</i> تصدير Excel
                 </button>
             </div>
         </div>
         
-        <button class="btn btn-success w-100 mb-3" onclick="inventoryModule.uploadExcelWithMapping()">
-            <i class="material-icons-round">upload_file</i> رفع ملف Excel
-        </button>
+        <div class="input-group mb-3">
+            <span class="input-group-text"><i class="material-icons-round">search</i></span>
+            <input type="text" id="inventory-search" class="form-control" 
+                   placeholder="بحث في المخزن..." 
+                   oninput="productModule.searchProducts(this.value)">
+        </div>
         
-        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <div class="table-responsive">
             <table class="table-custom">
-                <thead class="sticky-top bg-light">
+                <thead>
                     <tr>
-                        <th>الصورة</th>
+                        <th>#</th>
                         <th>المنتج</th>
                         <th>الصنف</th>
                         <th>الكمية</th>
+                        <th>الوحدة</th>
                         <th>سعر البيع</th>
                         <th>سعر الشراء</th>
-                        <th>عمليات</th>
+                        <th>الحالة</th>
+                        <th>تعديل</th>
                     </tr>
                 </thead>
-                <tbody id="stock-tbody">
+                <tbody id="inventory-tbody">
                     <tr>
-                        <td colspan="7" class="text-center p-4 text-muted">
+                        <td colspan="9" class="text-center p-4">
                             <i class="material-icons-round" style="font-size:48px;">inventory</i>
-                            <p>لا توجد منتجات</p>
+                            <br>لا توجد منتجات
                         </td>
                     </tr>
                 </tbody>
             </table>
         </div>
         
+        <!-- إحصائيات سريعة -->
         <div class="row g-2 mt-3">
-            <div class="col-4">
-                <div class="card bg-light p-2 text-center">
-                    <small>إجمالي المنتجات</small>
-                    <strong id="total-products">0</strong>
+            <div class="col-3">
+                <div class="summary-box" style="background: var(--primary-blue); padding: 10px;">
+                    <div>إجمالي المنتجات</div>
+                    <b id="total-products-count">0</b>
                 </div>
             </div>
-            <div class="col-4">
-                <div class="card bg-light p-2 text-center">
-                    <small>قيمة المخزون</small>
-                    <strong id="total-stock-value">0 دج</strong>
+            <div class="col-3">
+                <div class="summary-box" style="background: var(--main-green); padding: 10px;">
+                    <div>إجمالي الكميات</div>
+                    <b id="total-quantity">0</b>
                 </div>
             </div>
-            <div class="col-4">
-                <div class="card bg-light p-2 text-center">
-                    <small>منتجات ناقصة</small>
-                    <strong id="low-stock-count">0</strong>
+            <div class="col-3">
+                <div class="summary-box" style="background: var(--warning-yellow); padding: 10px;">
+                    <div>قيمة المخزون</div>
+                    <b id="total-stock-value">0</b>
+                </div>
+            </div>
+            <div class="col-3">
+                <div class="summary-box" style="background: var(--main-red); padding: 10px;">
+                    <div>منتجات ناقصة</div>
+                    <b id="low-stock-count">0</b>
                 </div>
             </div>
         </div>
