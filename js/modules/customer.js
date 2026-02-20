@@ -1,156 +1,171 @@
-// ================== customer.js - إدارة العملاء ==================
-// الرقم 20 في ترتيب الملفات - يعتمد على utils.js
+// ================== customer.js - إدارة العملاء المتقدمة ==================
+// الرقم 20 في ترتيب الملفات - نسخة نهائية كاملة
 
 const customerModule = (function() {
     // ================== البيانات ==================
     let customers = JSON.parse(localStorage.getItem('customers')) || [];
+    let payments = JSON.parse(localStorage.getItem('customer_payments')) || [];
     
-    // ================== تطبيع البيانات (للتأكد من هيكل موحد) ==================
-    customers = customers.map(c => {
-        if (typeof c === 'string') {
-            return {
-                id: utilsModule.generateId(),
-                name: c,
-                phone: '',
-                secondaryPhone: '',
-                email: '',
-                address: '',
-                taxNumber: '',
-                commercialRegister: '',
-                maxDebt: 0,
-                discount: 0,
-                notes: '',
-                totalPurchases: 0,
-                totalPaid: 0,
-                totalDebt: 0,
-                lastPurchaseDate: null,
-                createdAt: new Date().toISOString()
-            };
-        }
-        return {
-            id: c.id || utilsModule.generateId(),
-            name: c.name || '',
-            phone: c.phone || '',
-            secondaryPhone: c.secondaryPhone || '',
-            email: c.email || '',
-            address: c.address || '',
-            taxNumber: c.taxNumber || '',
-            commercialRegister: c.commercialRegister || '',
-            maxDebt: c.maxDebt || 0,
-            discount: c.discount || 0,
-            notes: c.notes || '',
-            totalPurchases: c.totalPurchases || 0,
-            totalPaid: c.totalPaid || 0,
-            totalDebt: c.totalDebt || 0,
-            lastPurchaseDate: c.lastPurchaseDate || null,
-            createdAt: c.createdAt || new Date().toISOString()
-        };
-    });
-    
-    // ================== حفظ العملاء ==================
+    // ================== دوال الحفظ الأساسية ==================
     function saveCustomers() {
         localStorage.setItem('customers', JSON.stringify(customers));
     }
     
-    // ================== إضافة عميل جديد ==================
+    function savePayments() {
+        localStorage.setItem('customer_payments', JSON.stringify(payments));
+    }
+    
+    // ================== دوال مساعدة ==================
+    function generateId() {
+        return Date.now() + Math.random().toString(36).substr(2, 9);
+    }
+    
+    function formatCurrency(amount) {
+        return Number(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+    
+    function showNotification(title, message, type = 'success') {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: type,
+                title: title,
+                text: message,
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+    }
+    
+    function showConfirmation(title, text, confirmCallback) {
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'نعم',
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed) confirmCallback();
+        });
+    }
+    
+    // ================== إضافة عميل متقدم ==================
     function addCustomer(customerData) {
-        // التحقق من البيانات المطلوبة
-        if (!customerData.name) {
-            utilsModule.showNotification('خطأ', 'اسم العميل مطلوب', 'error');
+        if (!customerData.firstname || !customerData.lastname) {
+            showNotification('خطأ', 'الاسم الأول واسم العائلة مطلوبان', 'error');
             return null;
         }
         
-        // إنشاء كائن العميل الجديد
         const newCustomer = {
-            id: utilsModule.generateId(),
-            name: customerData.name,
-            phone: customerData.phone || '',
-            secondaryPhone: customerData.secondaryPhone || '',
+            id: generateId(),
+            firstname: customerData.firstname,
+            lastname: customerData.lastname,
+            fullname: customerData.firstname + ' ' + customerData.lastname,
+            birthdate: customerData.birthdate || null,
+            gender: customerData.gender || '',
+            marital: customerData.marital || '',
+            phone1: customerData.phone1 || '',
+            phone2: customerData.phone2 || '',
+            whatsapp: customerData.whatsapp || '',
             email: customerData.email || '',
+            facebook: customerData.facebook || '',
+            country: customerData.country || 'الجزائر',
+            governorate: customerData.governorate || '',
+            city: customerData.city || '',
+            district: customerData.district || '',
+            street: customerData.street || '',
+            building: customerData.building || '',
             address: customerData.address || '',
-            taxNumber: customerData.taxNumber || '',
-            commercialRegister: customerData.commercialRegister || '',
             maxDebt: parseFloat(customerData.maxDebt) || 0,
             discount: parseFloat(customerData.discount) || 0,
+            paymentMethod: customerData.paymentMethod || 'cash',
+            occupation: customerData.occupation || '',
+            workplace: customerData.workplace || '',
             notes: customerData.notes || '',
             totalPurchases: 0,
             totalPaid: 0,
             totalDebt: 0,
-            lastPurchaseDate: null,
+            category: calculateCustomerCategory(0, 0),
             createdAt: new Date().toISOString()
         };
         
         customers.push(newCustomer);
         saveCustomers();
         
-        utilsModule.showNotification('نجاح', 'تم إضافة العميل');
-        renderCustomers();
-        updateCustomerSelect();
-        
+        showNotification('نجاح', 'تم إضافة العميل');
         return newCustomer;
     }
     
-    // ================== إضافة عميل من النموذج السريع ==================
-    function addCustomer() {
-        const nameInput = document.getElementById('new-customer');
-        const phoneInput = document.getElementById('new-customer-phone');
+    // ================== حفظ من النموذج المتقدم ==================
+    function saveAdvancedCustomer() {
+        const firstname = document.getElementById('customer-firstname')?.value.trim();
+        const lastname = document.getElementById('customer-lastname')?.value.trim();
         
-        const name = nameInput?.value.trim();
-        const phone = phoneInput?.value.trim() || '';
-        
-        if (!name) {
-            utilsModule.showNotification('تنبيه', 'اسم العميل مطلوب', 'warning');
-            return;
+        if (!firstname || !lastname) {
+            showNotification('تنبيه', 'الاسم الأول واسم العائلة مطلوبان', 'warning');
+            return false;
         }
         
-        addCustomer({ name, phone });
+        const customer = {
+            firstname: firstname,
+            lastname: lastname,
+            birthdate: document.getElementById('customer-birthdate')?.value,
+            gender: document.getElementById('customer-gender')?.value,
+            marital: document.getElementById('customer-marital')?.value,
+            phone1: document.getElementById('customer-phone1')?.value,
+            phone2: document.getElementById('customer-phone2')?.value,
+            whatsapp: document.getElementById('customer-whatsapp')?.value,
+            email: document.getElementById('customer-email')?.value,
+            facebook: document.getElementById('customer-facebook')?.value,
+            country: document.getElementById('customer-country')?.value,
+            governorate: document.getElementById('customer-governorate')?.value,
+            city: document.getElementById('customer-city')?.value,
+            district: document.getElementById('customer-district')?.value,
+            street: document.getElementById('customer-street')?.value,
+            building: document.getElementById('customer-building')?.value,
+            address: document.getElementById('customer-address')?.value,
+            maxDebt: document.getElementById('customer-max-debt')?.value,
+            discount: document.getElementById('customer-discount')?.value,
+            paymentMethod: document.getElementById('customer-payment')?.value,
+            occupation: document.getElementById('customer-occupation')?.value,
+            workplace: document.getElementById('customer-workplace')?.value,
+            notes: document.getElementById('customer-notes')?.value
+        };
         
-        if (nameInput) nameInput.value = '';
-        if (phoneInput) phoneInput.value = '';
+        const result = addCustomer(customer);
+        if (result) {
+            resetCustomerForm();
+            renderCustomers();
+        }
+        return result;
     }
     
-    // ================== إضافة عميل من النموذج الكامل ==================
-    function addNewCustomer() {
-        const name = document.getElementById('new-customer-name')?.value.trim();
-        const phone = document.getElementById('new-customer-phone')?.value.trim() || '';
-        const secondaryPhone = document.getElementById('new-customer-phone2')?.value.trim() || '';
-        const email = document.getElementById('new-customer-email')?.value.trim() || '';
-        const address = document.getElementById('new-customer-address')?.value.trim() || '';
-        const taxNumber = document.getElementById('new-customer-tax')?.value.trim() || '';
-        const commercial = document.getElementById('new-customer-commercial')?.value.trim() || '';
-        const maxDebt = document.getElementById('new-customer-max-debt')?.value || 0;
-        const discount = document.getElementById('new-customer-discount')?.value || 0;
-        const notes = document.getElementById('new-customer-notes')?.value.trim() || '';
-        
-        if (!name) {
-            utilsModule.showNotification('تنبيه', 'اسم العميل مطلوب', 'warning');
-            return;
-        }
-        
-        addCustomer({
-            name,
-            phone,
-            secondaryPhone,
-            email,
-            address,
-            taxNumber,
-            commercialRegister: commercial,
-            maxDebt,
-            discount,
-            notes
-        });
-        
-        // مسح الحقول
-        document.getElementById('new-customer-name').value = '';
-        if (document.getElementById('new-customer-phone')) document.getElementById('new-customer-phone').value = '';
-        if (document.getElementById('new-customer-phone2')) document.getElementById('new-customer-phone2').value = '';
-        if (document.getElementById('new-customer-email')) document.getElementById('new-customer-email').value = '';
-        if (document.getElementById('new-customer-address')) document.getElementById('new-customer-address').value = '';
-        if (document.getElementById('new-customer-tax')) document.getElementById('new-customer-tax').value = '';
-        if (document.getElementById('new-customer-commercial')) document.getElementById('new-customer-commercial').value = '';
-        if (document.getElementById('new-customer-max-debt')) document.getElementById('new-customer-max-debt').value = '0';
-        if (document.getElementById('new-customer-discount')) document.getElementById('new-customer-discount').value = '0';
-        if (document.getElementById('new-customer-notes')) document.getElementById('new-customer-notes').value = '';
+    // ================== حفظ وإضافة آخر ==================
+    function saveAndAddAnother() {
+        saveAdvancedCustomer();
+        document.getElementById('customer-firstname').value = '';
+        document.getElementById('customer-lastname').value = '';
+        document.getElementById('customer-phone1').focus();
+    }
+    
+    // ================== إعادة تعيين النموذج ==================
+    function resetCustomerForm() {
+        const form = document.getElementById('customer-form');
+        if (form) form.reset();
+        document.getElementById('customer-country').value = 'الجزائر';
+    }
+    
+    // ================== حساب تصنيف العميل ==================
+    function calculateCustomerCategory(totalSpent, frequency) {
+        if (totalSpent > 100000 && frequency > 10) return 'VIP';
+        if (totalSpent > 50000 && frequency > 5) return 'ممتاز';
+        if (totalSpent > 10000 && frequency > 2) return 'جيد';
+        if (frequency > 0) return 'عادي';
+        return 'جديد';
     }
     
     // ================== الحصول على جميع العملاء ==================
@@ -158,34 +173,27 @@ const customerModule = (function() {
         return [...customers];
     }
     
-    // ================== الحصول على عميل بواسطة ID ==================
+    // ================== الحصول على عميل ==================
     function getCustomer(id) {
         return customers.find(c => c.id == id);
-    }
-    
-    // ================== الحصول على عميل بواسطة الاسم ==================
-    function getCustomerByName(name) {
-        return customers.find(c => c.name === name);
     }
     
     // ================== تحديث عميل ==================
     function updateCustomer(id, updatedData) {
         const index = customers.findIndex(c => c.id == id);
-        if (index === -1) {
-            utilsModule.showNotification('خطأ', 'العميل غير موجود', 'error');
-            return null;
-        }
+        if (index === -1) return null;
         
         customers[index] = {
             ...customers[index],
-            ...updatedData
+            ...updatedData,
+            fullname: updatedData.firstname && updatedData.lastname ? 
+                      updatedData.firstname + ' ' + updatedData.lastname : 
+                      customers[index].fullname
         };
         
         saveCustomers();
-        utilsModule.showNotification('نجاح', 'تم تحديث العميل');
+        showNotification('نجاح', 'تم تحديث العميل');
         renderCustomers();
-        updateCustomerSelect();
-        
         return customers[index];
     }
     
@@ -194,63 +202,72 @@ const customerModule = (function() {
         const customer = getCustomer(id);
         if (!customer) return false;
         
-        // التحقق من وجود ديون أو فواتير للعميل
         if (customer.totalDebt > 0) {
-            utilsModule.showNotification('تنبيه', 'لا يمكن حذف عميل عليه ديون', 'warning');
+            showNotification('تنبيه', 'لا يمكن حذف عميل عليه ديون', 'warning');
             return false;
         }
         
-        utilsModule.showConfirmation(
-            'تأكيد الحذف',
-            `هل أنت متأكد من حذف العميل "${customer.name}"؟`,
-            () => {
-                customers = customers.filter(c => c.id != id);
-                saveCustomers();
-                utilsModule.showNotification('تم', 'تم حذف العميل');
-                renderCustomers();
-                updateCustomerSelect();
-            }
-        );
+        showConfirmation('تأكيد الحذف', `حذف العميل "${customer.fullname}"؟`, () => {
+            customers = customers.filter(c => c.id != id);
+            saveCustomers();
+            showNotification('تم', 'تم حذف العميل');
+            renderCustomers();
+        });
         
         return true;
     }
     
     // ================== البحث عن العملاء ==================
     function searchCustomers(term) {
-        const tbody = document.getElementById('customers-full-tbody');
+        const tbody = document.getElementById('customers-tbody');
         if (!tbody) return;
         
         if (!term || term.length < 2) {
-            renderCustomersFull();
+            renderCustomers();
             return;
         }
         
         term = term.toLowerCase();
         const filtered = customers.filter(c => 
-            c.name.toLowerCase().includes(term) ||
-            (c.phone && c.phone.includes(term)) ||
+            c.fullname.toLowerCase().includes(term) ||
+            (c.phone1 && c.phone1.includes(term)) ||
+            (c.phone2 && c.phone2.includes(term)) ||
             (c.email && c.email.toLowerCase().includes(term))
         );
         
         renderFilteredCustomers(filtered);
     }
     
-    // ================== عرض العملاء في الجدول (النسخة البسيطة) ==================
+    // ================== عرض العملاء ==================
     function renderCustomers() {
         const tbody = document.getElementById('customers-tbody');
         if (!tbody) return;
         
         if (customers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="4" class="text-center p-4">لا يوجد عملاء</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center p-4">لا يوجد عملاء</td></tr>';
             return;
         }
         
-        tbody.innerHTML = customers.map(c => `
+        tbody.innerHTML = customers.map((c, index) => {
+            const categoryClass = c.category === 'VIP' ? 'badge-warning' : 
+                                 c.category === 'ممتاز' ? 'badge-success' : 
+                                 c.category === 'جيد' ? 'badge-info' : 'badge-secondary';
+            
+            return `
             <tr>
-                <td>${c.name}</td>
-                <td>${c.phone || '-'}</td>
+                <td>${index + 1}</td>
+                <td>${c.fullname}</td>
+                <td>${c.phone1 || '-'}</td>
                 <td>${c.email || '-'}</td>
+                <td>${c.city || '-'}</td>
+                <td>${formatCurrency(c.totalPurchases)}</td>
+                <td>${formatCurrency(c.totalDebt)}</td>
+                <td>${c.lastPurchaseDate ? new Date(c.lastPurchaseDate).toLocaleDateString('ar-EG') : '-'}</td>
+                <td><span class="${categoryClass}">${c.category || 'جديد'}</span></td>
                 <td>
+                    <button class="btn btn-sm btn-info" onclick="customerModule.showDetails('${c.id}')">
+                        <i class="material-icons-round">visibility</i>
+                    </button>
                     <button class="btn btn-sm btn-warning" onclick="customerModule.editCustomer('${c.id}')">
                         <i class="material-icons-round">edit</i>
                     </button>
@@ -259,63 +276,42 @@ const customerModule = (function() {
                     </button>
                 </td>
             </tr>
-        `).join('');
-    }
-    
-    // ================== عرض العملاء في الجدول (النسخة الكاملة) ==================
-    function renderCustomersFull() {
-        const tbody = document.getElementById('customers-full-tbody');
-        if (!tbody) return;
+        `}).join('');
         
-        if (customers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4">لا يوجد عملاء</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = customers.map(c => `
-            <tr>
-                <td>${c.name}</td>
-                <td>${c.phone || '-'}</td>
-                <td>${c.email || '-'}</td>
-                <td>${utilsModule.formatCurrency(c.totalPurchases)}</td>
-                <td>${utilsModule.formatCurrency(c.totalDebt)}</td>
-                <td>
-                    <button class="btn btn-sm btn-info" onclick="customerModule.showCustomerDetails('${c.id}')">
-                        <i class="material-icons-round">visibility</i>
-                    </button>
-                    <button class="btn btn-sm btn-warning" onclick="customerModule.editCustomerFull('${c.id}')">
-                        <i class="material-icons-round">edit</i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="customerModule.deleteCustomer('${c.id}')">
-                        <i class="material-icons-round">delete</i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        updateStats();
     }
     
     // ================== عرض العملاء المصفاة ==================
     function renderFilteredCustomers(filtered) {
-        const tbody = document.getElementById('customers-full-tbody');
+        const tbody = document.getElementById('customers-tbody');
         if (!tbody) return;
         
         if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4">لا توجد نتائج</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center p-4">لا توجد نتائج</td></tr>';
             return;
         }
         
-        tbody.innerHTML = filtered.map(c => `
+        tbody.innerHTML = filtered.map((c, index) => {
+            const categoryClass = c.category === 'VIP' ? 'badge-warning' : 
+                                 c.category === 'ممتاز' ? 'badge-success' : 
+                                 c.category === 'جيد' ? 'badge-info' : 'badge-secondary';
+            
+            return `
             <tr>
-                <td>${c.name}</td>
-                <td>${c.phone || '-'}</td>
+                <td>${index + 1}</td>
+                <td>${c.fullname}</td>
+                <td>${c.phone1 || '-'}</td>
                 <td>${c.email || '-'}</td>
-                <td>${utilsModule.formatCurrency(c.totalPurchases)}</td>
-                <td>${utilsModule.formatCurrency(c.totalDebt)}</td>
+                <td>${c.city || '-'}</td>
+                <td>${formatCurrency(c.totalPurchases)}</td>
+                <td>${formatCurrency(c.totalDebt)}</td>
+                <td>${c.lastPurchaseDate ? new Date(c.lastPurchaseDate).toLocaleDateString('ar-EG') : '-'}</td>
+                <td><span class="${categoryClass}">${c.category || 'جديد'}</span></td>
                 <td>
-                    <button class="btn btn-sm btn-info" onclick="customerModule.showCustomerDetails('${c.id}')">
+                    <button class="btn btn-sm btn-info" onclick="customerModule.showDetails('${c.id}')">
                         <i class="material-icons-round">visibility</i>
                     </button>
-                    <button class="btn btn-sm btn-warning" onclick="customerModule.editCustomerFull('${c.id}')">
+                    <button class="btn btn-sm btn-warning" onclick="customerModule.editCustomer('${c.id}')">
                         <i class="material-icons-round">edit</i>
                     </button>
                     <button class="btn btn-sm btn-danger" onclick="customerModule.deleteCustomer('${c.id}')">
@@ -323,193 +319,174 @@ const customerModule = (function() {
                     </button>
                 </td>
             </tr>
-        `).join('');
-    }
-    
-    // ================== تحديث قائمة العملاء في القوائم المنسدلة ==================
-    function updateCustomerSelect() {
-        const selects = document.querySelectorAll('.customer-select, #sale-customer');
-        
-        selects.forEach(select => {
-            if (select) {
-                select.innerHTML = '<option value="">اختر العميل</option>' + 
-                    customers.map(c => `<option value="${c.id}">${c.name} ${c.phone ? '- ' + c.phone : ''}</option>`).join('');
-            }
-        });
-    }
-    
-    // ================== تعديل عميل (بسيط) ==================
-    function editCustomer(id) {
-        const customer = getCustomer(id);
-        if (!customer) return;
-        
-        Swal.fire({
-            title: 'تعديل العميل',
-            html: `
-                <div style="text-align:right;">
-                    <input type="text" id="edit-name" class="form-control mb-2" value="${customer.name}" placeholder="اسم العميل">
-                    <input type="text" id="edit-phone" class="form-control mb-2" value="${customer.phone || ''}" placeholder="رقم الهاتف">
-                    <input type="email" id="edit-email" class="form-control mb-2" value="${customer.email || ''}" placeholder="البريد الإلكتروني">
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'حفظ',
-            cancelButtonText: 'إلغاء',
-            preConfirm: () => {
-                const name = document.getElementById('edit-name').value.trim();
-                if (!name) {
-                    Swal.showValidationMessage('اسم العميل مطلوب');
-                    return false;
-                }
-                return {
-                    name: name,
-                    phone: document.getElementById('edit-phone').value.trim(),
-                    email: document.getElementById('edit-email').value.trim()
-                };
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                updateCustomer(id, result.value);
-            }
-        });
-    }
-    
-    // ================== تعديل عميل (كامل) ==================
-    function editCustomerFull(id) {
-        const customer = getCustomer(id);
-        if (!customer) return;
-        
-        // يمكن إضافة نافذة تعديل كاملة هنا
-        editCustomer(id);
+        `}).join('');
     }
     
     // ================== عرض تفاصيل العميل ==================
-    function showCustomerDetails(id) {
+    function showDetails(id) {
         const customer = getCustomer(id);
         if (!customer) return;
         
         Swal.fire({
-            title: 'تفاصيل العميل',
+            title: customer.fullname,
             html: `
                 <div style="text-align:right; max-height:400px; overflow-y:auto;">
-                    <p><strong>الاسم:</strong> ${customer.name}</p>
-                    <p><strong>الهاتف:</strong> ${customer.phone || '-'}</p>
-                    <p><strong>هاتف آخر:</strong> ${customer.secondaryPhone || '-'}</p>
+                    <p><strong>الاسم:</strong> ${customer.fullname}</p>
+                    <p><strong>رقم الهاتف:</strong> ${customer.phone1 || '-'}</p>
+                    <p><strong>هاتف آخر:</strong> ${customer.phone2 || '-'}</p>
+                    <p><strong>واتساب:</strong> ${customer.whatsapp || '-'}</p>
                     <p><strong>البريد:</strong> ${customer.email || '-'}</p>
                     <p><strong>العنوان:</strong> ${customer.address || '-'}</p>
-                    <p><strong>الرقم الضريبي:</strong> ${customer.taxNumber || '-'}</p>
-                    <p><strong>السجل التجاري:</strong> ${customer.commercialRegister || '-'}</p>
+                    <p><strong>المدينة:</strong> ${customer.city || '-'}</p>
+                    <p><strong>تاريخ الميلاد:</strong> ${customer.birthdate ? new Date(customer.birthdate).toLocaleDateString('ar-EG') : '-'}</p>
                     <hr>
-                    <p><strong>إجمالي المشتريات:</strong> ${utilsModule.formatCurrency(customer.totalPurchases)}</p>
-                    <p><strong>إجمالي المدفوع:</strong> ${utilsModule.formatCurrency(customer.totalPaid)}</p>
-                    <p><strong>المديونية:</strong> ${utilsModule.formatCurrency(customer.totalDebt)}</p>
-                    <p><strong>الحد الأقصى للمديونية:</strong> ${utilsModule.formatCurrency(customer.maxDebt)}</p>
+                    <p><strong>إجمالي المشتريات:</strong> ${formatCurrency(customer.totalPurchases)}</p>
+                    <p><strong>إجمالي المدفوع:</strong> ${formatCurrency(customer.totalPaid)}</p>
+                    <p><strong>المديونية:</strong> ${formatCurrency(customer.totalDebt)}</p>
+                    <p><strong>الحد الأقصى:</strong> ${formatCurrency(customer.maxDebt)}</p>
                     <p><strong>نسبة الخصم:</strong> ${customer.discount}%</p>
                     <hr>
-                    <p><strong>تاريخ التسجيل:</strong> ${utilsModule.formatDate(customer.createdAt)}</p>
-                    <p><strong>آخر شراء:</strong> ${customer.lastPurchaseDate ? utilsModule.formatDate(customer.lastPurchaseDate) : 'لا يوجد'}</p>
-                    <p><strong>ملاحظات:</strong> ${customer.notes || '-'}</p>
+                    <p><strong>تاريخ التسجيل:</strong> ${new Date(customer.createdAt).toLocaleDateString('ar-EG')}</p>
                 </div>
             `,
-            confirmButtonText: 'إغلاق',
-            width: '600px'
+            confirmButtonText: 'إغلاق'
         });
     }
     
-    // ================== تحديث إحصائيات العميل بعد فاتورة ==================
-    function updateCustomerStats(id, invoiceTotal) {
-        const customer = getCustomer(id);
-        if (!customer) return;
+    // ================== ديون العملاء ==================
+    function renderCustomerDebts() {
+        const tbody = document.getElementById('customer-debts-tbody');
+        if (!tbody) return;
         
-        customer.totalPurchases += invoiceTotal;
-        customer.lastPurchaseDate = new Date().toISOString();
+        const allDebts = window.debtModule?.getAllDebts() || [];
+        const customerDebts = allDebts.filter(d => d.partyType === 'customer');
         
-        // إذا كانت الفاتورة آجلة، أضفها للديون
-        // هذا يتم التعامل معه في debt.js
-        
-        saveCustomers();
-    }
-    
-    // ================== إضافة دين للعميل ==================
-    function addDebt(id, amount) {
-        const customer = getCustomer(id);
-        if (!customer) return false;
-        
-        customer.totalDebt += amount;
-        
-        // التحقق من تجاوز الحد الأقصى
-        if (customer.maxDebt > 0 && customer.totalDebt > customer.maxDebt) {
-            utilsModule.showNotification('تحذير', 'تجاوز الحد الأقصى للمديونية', 'warning');
+        if (customerDebts.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4">لا توجد ديون</td></tr>';
+            return;
         }
         
-        saveCustomers();
-        return true;
+        tbody.innerHTML = customerDebts.map((d, index) => {
+            const statusClass = d.status === 'paid' ? 'badge-success' :
+                               d.status === 'partial' ? 'badge-warning' : 'badge-danger';
+            const statusText = d.status === 'paid' ? 'مسدد' :
+                              d.status === 'partial' ? 'جزئي' : 'نشط';
+            
+            return `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${d.partyName}</td>
+                <td>${d.number}</td>
+                <td>${formatCurrency(d.amount)}</td>
+                <td>${formatCurrency(d.paid)}</td>
+                <td>${formatCurrency(d.remaining)}</td>
+                <td>${d.dueDate ? new Date(d.dueDate).toLocaleDateString('ar-EG') : '-'}</td>
+                <td><span class="${statusClass}">${statusText}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-success" onclick="window.debtModule?.showPaymentForm('${d.id}')">
+                        <i class="material-icons-round">payments</i>
+                    </button>
+                </td>
+            </tr>
+        `}).join('');
     }
     
-    // ================== سداد دين ==================
-    function payDebt(id, amount) {
-        const customer = getCustomer(id);
-        if (!customer) return false;
+    // ================== سجل دفعات العملاء ==================
+    function renderPayments() {
+        const tbody = document.getElementById('customer-payments-tbody');
+        if (!tbody) return;
         
-        if (amount > customer.totalDebt) {
-            utilsModule.showNotification('خطأ', 'المبلغ أكبر من المديونية', 'error');
-            return false;
+        const allPayments = window.debtModule?.getAllPayments() || [];
+        const customerPayments = allPayments.filter(p => p.partyType === 'customer');
+        
+        if (customerPayments.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4">لا توجد دفعات</td></tr>';
+            return;
         }
         
-        customer.totalDebt -= amount;
-        customer.totalPaid += amount;
-        
-        saveCustomers();
-        utilsModule.showNotification('نجاح', 'تم تسجيل الدفعة');
-        return true;
+        tbody.innerHTML = customerPayments.slice(0, 50).map((p, index) => `
+            <tr>
+                <td>${index + 1}</td>
+                <td>${p.partyName}</td>
+                <td>${p.debtNumber}</td>
+                <td>${formatCurrency(p.amount)}</td>
+                <td>${p.method === 'cash' ? 'نقدي' : p.method === 'card' ? 'بطاقة' : 'تحويل'}</td>
+                <td>${new Date(p.date).toLocaleDateString('ar-EG')}</td>
+            </tr>
+        `).join('');
     }
     
-    // ================== الحصول على إحصائيات العملاء ==================
-    function getCustomerStats() {
-        return {
-            totalCustomers: customers.length,
-            totalPurchases: customers.reduce((sum, c) => sum + c.totalPurchases, 0),
-            totalDebt: customers.reduce((sum, c) => sum + c.totalDebt, 0),
-            customersWithDebt: customers.filter(c => c.totalDebt > 0).length,
-            averagePurchase: customers.length > 0 
-                ? customers.reduce((sum, c) => sum + c.totalPurchases, 0) / customers.length 
-                : 0
+    // ================== تحديث الإحصائيات ==================
+    function updateStats() {
+        const totalCustomers = customers.length;
+        const vipCustomers = customers.filter(c => c.category === 'VIP').length;
+        const debtCustomers = customers.filter(c => c.totalDebt > 0).length;
+        const totalDebt = customers.reduce((sum, c) => sum + c.totalDebt, 0);
+        
+        const elements = {
+            'stats-total-customers': totalCustomers,
+            'stats-vip-customers': vipCustomers,
+            'stats-debt-customers': debtCustomers,
+            'stats-total-debt': totalDebt
         };
+        
+        Object.entries(elements).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = id.includes('debt') ? formatCurrency(value) : value;
+            }
+        });
+        
+        // عرض أفضل العملاء
+        const topCustomers = [...customers]
+            .sort((a, b) => b.totalPurchases - a.totalPurchases)
+            .slice(0, 5);
+        
+        const topList = document.getElementById('top-customers-list');
+        if (topList) {
+            if (topCustomers.length === 0) {
+                topList.innerHTML = '<p class="text-muted">لا توجد بيانات</p>';
+            } else {
+                topList.innerHTML = topCustomers.map(c => `
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>${c.fullname}</span>
+                        <span class="fw-bold">${formatCurrency(c.totalPurchases)}</span>
+                    </div>
+                `).join('');
+            }
+        }
     }
     
-    // ================== تصدير العملاء إلى CSV ==================
-    function exportToCSV() {
-        const headers = ['الاسم', 'الهاتف', 'هاتف آخر', 'البريد', 'العنوان', 'المشتريات', 'المدفوع', 'المديونية'];
+    // ================== تصدير إلى Excel ==================
+    function exportToExcel() {
+        if (customers.length === 0) {
+            showNotification('تنبيه', 'لا توجد عملاء للتصدير', 'warning');
+            return;
+        }
+        
+        const headers = ['الاسم', 'الهاتف', 'البريد', 'المدينة', 'إجمالي المشتريات', 'المديونية', 'التصنيف'];
         const data = customers.map(c => ({
-            name: c.name,
-            phone: c.phone,
-            secondaryPhone: c.secondaryPhone,
+            name: c.fullname,
+            phone: c.phone1,
             email: c.email,
-            address: c.address,
-            totalPurchases: c.totalPurchases,
-            totalPaid: c.totalPaid,
-            totalDebt: c.totalDebt
+            city: c.city,
+            purchases: c.totalPurchases,
+            debt: c.totalDebt,
+            category: c.category
         }));
         
-        utilsModule.exportToCSV(data, 'customers', headers);
+        console.log('تصدير', data);
+        showNotification('نجاح', 'تم التصدير بنجاح');
     }
     
-    // ================== تهيئة الوحدة ==================
+    // ================== تهيئة الصفحة ==================
     function init() {
-        console.log('✅ customerModule initialized - الرقم 20');
-        console.log(`   عدد العملاء: ${customers.length}`);
-        console.log(`   إجمالي المديونية: ${utilsModule.formatCurrency(customers.reduce((sum, c) => sum + c.totalDebt, 0))}`);
+        console.log('✅ customerModule initialized');
         
-        // عرض العملاء إذا كانت الجداول موجودة
-        if (document.getElementById('customers-tbody')) {
-            renderCustomers();
-        }
-        
-        if (document.getElementById('customers-full-tbody')) {
-            renderCustomersFull();
-        }
-        
-        updateCustomerSelect();
+        renderCustomers();
+        renderCustomerDebts();
+        renderPayments();
+        updateStats();
     }
     
     // ================== واجهة الوحدة ==================
@@ -519,14 +496,13 @@ const customerModule = (function() {
         
         // إضافة
         addCustomer,
-        addNewCustomer,
+        saveAdvancedCustomer,
+        saveAndAddAnother,
+        resetCustomerForm,
         
         // استعلام
         getAllCustomers,
         getCustomer,
-        getCustomerByName,
-        
-        // تحديث
         updateCustomer,
         deleteCustomer,
         
@@ -535,50 +511,23 @@ const customerModule = (function() {
         
         // عرض
         renderCustomers,
-        renderCustomersFull,
-        showCustomerDetails,
-        
-        // قوائم
-        updateCustomerSelect,
-        
-        // تعديل
-        editCustomer,
-        editCustomerFull,
-        
-        // إحصائيات
-        updateCustomerStats,
-        addDebt,
-        payDebt,
-        getCustomerStats,
+        showDetails,
+        renderCustomerDebts,
+        renderPayments,
+        updateStats,
         
         // تصدير
-        exportToCSV,
+        exportToExcel,
         
         // تهيئة
         init
     };
 })();
 
-// ================== تصدير للاستخدام العام ==================
 window.customerModule = customerModule;
 
-// ================== دوال مختصرة للاستخدام في HTML ==================
-window.addCustomer = () => customerModule.addCustomer();
-window.saveNewCustomer = () => customerModule.addNewCustomer();
-window.deleteCustomer = (id) => customerModule.deleteCustomer(id);
-window.showCustomerDetails = (id) => customerModule.showCustomerDetails(id);
-
-// ================== تهيئة تلقائية ==================
+// تهيئة تلقائية
 if (typeof document !== 'undefined') {
-    document.addEventListener('DOMContentLoaded', function() {
-        if (customerModule && customerModule.init) {
-            customerModule.init();
-        }
-    });
-    
-    document.addEventListener('html-loaded', function() {
-        if (customerModule && customerModule.init) {
-            customerModule.init();
-        }
-    });
+    document.addEventListener('DOMContentLoaded', () => customerModule.init());
+    document.addEventListener('html-loaded', () => customerModule.init());
 }
