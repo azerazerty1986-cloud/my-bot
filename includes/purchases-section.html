@@ -1,6 +1,5 @@
 <!-- ================== قسم المشتريات ================== -->
 <div id="purchases" class="section">
-    <!-- تبويبات التنقل -->
     <div class="nav-tabs-custom no-print" style="background: var(--light-green);">
         <div class="tab-item active-green" onclick="showSubSection('purchase-operation')">
             <i class="material-icons-round">add_shopping_cart</i> عملية شراء
@@ -13,77 +12,58 @@
         </div>
     </div>
 
-    <!-- ================== 1. عملية شراء ================== -->
+    <!-- عملية شراء -->
     <div id="purchase-operation" class="sub-section">
-        <!-- بطاقة الإدخال -->
         <div class="main-card no-print">
-            <h6 class="text-center mb-3">
-                <i class="material-icons-round text-success">shopping_cart</i> تسجيل مشتريات
-            </h6>
+            <h6 class="text-center mb-3">📦 تسجيل مشتريات</h6>
             
-            <!-- بحث المنتجات -->
             <div class="search-container mb-3">
                 <div class="input-group">
-                    <button class="btn btn-dark px-3" type="button" onclick="openBarcodeScanner()" title="مسح الباركود">
+                    <button class="btn btn-dark px-3" type="button" onclick="openBarcodeScanner()">
                         <i class="material-icons-round">qr_code_scanner</i>
                     </button>
                     <input type="text" id="purchase-search" class="form-control" 
                            placeholder="ابحث باسم المنتج..." 
-                           oninput="smartSearchPurchase(this.value)" 
+                           oninput="purchasesModule.searchProducts(this.value)" 
                            autocomplete="off">
-                    <button class="mic-btn" id="mic-purchase" type="button" onclick="startVoiceSearch('purchase')" title="بحث صوتي">
+                    <button class="mic-btn" id="mic-purchase" type="button" onclick="startVoiceSearch('purchase')">
                         <i class="material-icons-round">mic</i>
                     </button>
                 </div>
                 <div id="purchase-search-box" class="search-results"></div>
             </div>
             
-            <!-- اختيار المورد -->
-            <select id="purchase-supplier" class="form-select mb-3">
+            <select id="purchase-supplier" class="form-select mb-2">
                 <option value="">اختر المورد (اختياري)</option>
-                <!-- يتم تعبئتها تلقائياً من JavaScript -->
             </select>
             
-            <!-- حقول الإدخال -->
             <div class="row g-2 mb-3">
                 <div class="col-4">
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="material-icons-round">attach_money</i></span>
-                        <input type="number" id="purchase-price" class="form-control" 
-                               placeholder="السعر" min="0" step="0.01">
-                    </div>
+                    <input type="number" id="purchase-price" class="form-control" placeholder="السعر" min="0" step="0.01">
                 </div>
                 <div class="col-4">
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="material-icons-round">numbers</i></span>
-                        <input type="number" id="purchase-qty" class="form-control" 
-                               placeholder="الكمية" min="1" value="1">
-                    </div>
+                    <input type="number" id="purchase-qty" class="form-control" placeholder="الكمية" min="1" value="1">
                 </div>
                 <div class="col-4">
-                    <button class="btn btn-success w-100" onclick="addToPurchaseCart()">
-                        <i class="material-icons-round">add</i> إضافة
+                    <button class="btn btn-success w-100" onclick="purchasesModule.addToCart()">
+                        <i class="material-icons-round">add</i>
                     </button>
                 </div>
             </div>
             
-            <!-- زر مسح السلة -->
-            <button class="btn btn-outline-secondary w-100 mb-2" onclick="clearPurchaseCart()">
+            <button class="btn btn-outline-secondary w-100 mb-2" onclick="purchasesModule.clearCart()">
                 <i class="material-icons-round">delete_sweep</i> مسح السلة
             </button>
         </div>
         
-        <!-- بطاقة السلة -->
         <div class="main-card">
-            <h6 class="text-center mb-3">سلة المشتريات</h6>
-            
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
                         <tr>
                             <th>المنتج</th>
                             <th>الكمية</th>
-                            <th>سعر الوحدة</th>
+                            <th>تكلفة الوحدة</th>
                             <th>الإجمالي</th>
                             <th></th>
                         </tr>
@@ -99,44 +79,37 @@
                 </table>
             </div>
             
-            <!-- ملخص السلة -->
             <div class="summary-box mt-3 no-print" style="background: var(--main-green);">
-                <button class="btn-print" style="color: var(--main-green);" onclick="finishPurchaseAndPrint()">
+                <button class="btn-print" style="color: var(--main-green);" onclick="purchasesModule.finishPurchase()">
+                    <i class="material-icons-round">save</i> حفظ
+                </button>
+                <button class="btn-print" style="color: var(--main-green);" onclick="purchasesModule.finishPurchaseAndPrint()">
                     <i class="material-icons-round">print</i> حفظ وطباعة
                 </button>
-                <div>
-                    <i class="material-icons-round">payments</i>
-                    المجموع: <b id="purchase-grand-total">0.00</b> دج
-                </div>
+                <div>المجموع: <b id="purchase-grand-total">0.00</b> دج</div>
             </div>
         </div>
     </div>
 
-    <!-- ================== 2. فواتير الشراء ================== -->
+    <!-- فواتير الشراء -->
     <div id="purchase-invoices" class="sub-section" style="display: none;">
         <div class="main-card">
-            <h5 class="text-center mb-4">
-                <i class="material-icons-round">receipt_long</i> سجل فواتير الشراء
-            </h5>
-            
-            <!-- بحث في الفواتير -->
+            <h5 class="text-center mb-4">📋 سجل فواتير الشراء</h5>
             <div class="input-group mb-3">
                 <span class="input-group-text"><i class="material-icons-round">search</i></span>
                 <input type="text" id="purchase-invoice-search" class="form-control" 
-                       placeholder="بحث برقم الفاتورة، المورد، أو التاريخ" 
-                       oninput="searchPurchaseInvoices()">
+                       placeholder="بحث برقم الفاتورة أو المورد" 
+                       oninput="purchasesModule.searchInvoices()">
             </div>
-            
-            <!-- جدول الفواتير -->
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
                         <tr>
-                            <th>رقم الفاتورة</th>
+                            <th>رقم</th>
                             <th>التاريخ</th>
                             <th>المورد</th>
                             <th>المبلغ</th>
-                            <th>عدد الأصناف</th>
+                            <th>الأصناف</th>
                             <th>عرض</th>
                             <th>حذف</th>
                         </tr>
@@ -154,44 +127,28 @@
         </div>
     </div>
 
-    <!-- ================== 3. الموردون ================== -->
+    <!-- الموردون -->
     <div id="suppliers" class="sub-section" style="display: none;">
         <div class="main-card">
-            <h5 class="text-center mb-4">
-                <i class="material-icons-round">business_center</i> إدارة الموردين
-            </h5>
-            
-            <!-- نموذج إضافة مورد سريع -->
+            <h5 class="text-center mb-4">👥 إدارة الموردين</h5>
             <div class="row g-2 mb-3">
-                <div class="col-md-5 col-12">
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="material-icons-round">person</i></span>
-                        <input type="text" id="new-supplier" class="form-control" 
-                               placeholder="اسم المورد الجديد">
-                    </div>
+                <div class="col-8">
+                    <input type="text" id="new-supplier" class="form-control" placeholder="اسم المورد الجديد">
                 </div>
-                <div class="col-md-4 col-12">
-                    <div class="input-group">
-                        <span class="input-group-text"><i class="material-icons-round">phone</i></span>
-                        <input type="text" id="new-supplier-phone" class="form-control" 
-                               placeholder="رقم الهاتف">
-                    </div>
-                </div>
-                <div class="col-md-3 col-12">
-                    <button class="btn btn-dark w-100" onclick="addSupplier()">
-                        <i class="material-icons-round">person_add</i> إضافة
-                    </button>
+                <div class="col-4">
+                    <input type="text" id="new-supplier-phone" class="form-control" placeholder="الهاتف">
                 </div>
             </div>
-            
-            <!-- جدول الموردين -->
+            <button class="btn btn-dark w-100 mb-3" onclick="supplierModule.addSupplier()">
+                <i class="material-icons-round">person_add</i> إضافة مورد
+            </button>
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
                         <tr>
-                            <th>اسم المورد</th>
-                            <th>رقم الهاتف</th>
-                            <th>حذف</th>
+                            <th>الاسم</th>
+                            <th>الهاتف</th>
+                            <th>عمليات</th>
                         </tr>
                     </thead>
                     <tbody id="suppliers-tbody">
@@ -204,61 +161,6 @@
                     </tbody>
                 </table>
             </div>
-            
-            <!-- رابط إضافة مورد متقدم -->
-            <div class="text-center mt-3">
-                <small class="text-muted">
-                    <i class="material-icons-round" style="font-size:14px;">info</i>
-                    لإضافة مورد ببيانات كاملة، استخدم قسم <a href="#" onclick="switchSection('add', document.querySelector('[onclick*=\"add\"]'))">إضافة > مورد</a>
-                </small>
-            </div>
         </div>
     </div>
 </div>
-
-<!-- ================== سكربتات إضافية ================== -->
-<script>
-    // دوال مساعدة للبحث في فواتير الشراء
-    function searchPurchaseInvoices() {
-        if (window.purchasesModule && purchasesModule.searchInvoices) {
-            purchasesModule.searchInvoices();
-        }
-    }
-    
-    // دالة مساعدة لإضافة مورد
-    function addSupplier() {
-        if (window.purchasesModule && purchasesModule.addSupplier) {
-            purchasesModule.addSupplier();
-        } else {
-            Swal.fire({
-                icon: 'info',
-                title: 'معلومة',
-                text: 'وحدة الموردين جاري تحميلها'
-            });
-        }
-    }
-    
-    // تحديث قائمة الموردين عند عرض القسم
-    document.addEventListener('DOMContentLoaded', function() {
-        // مراقب لعرض القسم
-        const observer = new MutationObserver(function(mutations) {
-            mutations.forEach(function(mutation) {
-                if (mutation.target.id === 'purchases' && 
-                    mutation.target.classList.contains('active-section')) {
-                    // تحديث البيانات عند عرض القسم
-                    if (window.purchasesModule) {
-                        if (purchasesModule.loadSuppliersList) purchasesModule.loadSuppliersList();
-                        if (purchasesModule.loadInvoices) purchasesModule.loadInvoices();
-                        if (purchasesModule.renderSuppliers) purchasesModule.renderSuppliers();
-                        if (purchasesModule.renderCart) purchasesModule.renderCart();
-                    }
-                }
-            });
-        });
-        
-        const purchasesSection = document.getElementById('purchases');
-        if (purchasesSection) {
-            observer.observe(purchasesSection, { attributes: true, attributeFilter: ['class'] });
-        }
-    });
-</script>
