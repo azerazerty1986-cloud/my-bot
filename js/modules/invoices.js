@@ -25,7 +25,7 @@ const invoicesModule = (function() {
                 party: inv.customer,
                 partyId: inv.customerId,
                 icon: 'payments',
-                color: 'var(--main-red)'
+                color: '#dc3545'
             })),
             ...purchaseInvoices.map(inv => ({
                 ...inv,
@@ -34,7 +34,7 @@ const invoicesModule = (function() {
                 party: inv.supplier,
                 partyId: inv.supplierId,
                 icon: 'shopping_cart',
-                color: 'var(--main-green)'
+                color: '#28a745'
             }))
         ];
         
@@ -58,7 +58,6 @@ const invoicesModule = (function() {
         } else if (type === 'purchase') {
             return purchaseInvoices.find(inv => inv.id == id);
         } else {
-            // بحث في الكل
             return salesInvoices.find(inv => inv.id == id) || purchaseInvoices.find(inv => inv.id == id);
         }
     }
@@ -71,21 +70,8 @@ const invoicesModule = (function() {
         return all.filter(inv => 
             inv.number.toLowerCase().includes(term) ||
             (inv.party && inv.party.toLowerCase().includes(term)) ||
-            utilsModule.formatDate(inv.date).includes(term) ||
-            inv.typeText.includes(term)
+            utilsModule.formatDate(inv.date).includes(term)
         );
-    }
-    
-    // ================== تصفية الفواتير حسب التاريخ ==================
-    function filterByDateRange(startDate, endDate) {
-        const all = getAllInvoices();
-        const start = startDate ? new Date(startDate) : new Date(0);
-        const end = endDate ? new Date(endDate) : new Date();
-        
-        return all.filter(inv => {
-            const invDate = new Date(inv.date);
-            return invDate >= start && invDate <= end;
-        });
     }
     
     // ================== تصفية حسب النوع ==================
@@ -112,7 +98,7 @@ const invoicesModule = (function() {
             <tr>
                 <td>${inv.number}</td>
                 <td>
-                    <span class="badge" style="background: ${inv.color}; color: white;">
+                    <span style="background: ${inv.color}; color: white; padding: 5px 10px; border-radius: 50px; font-size: 12px;">
                         <i class="material-icons-round" style="font-size:14px;">${inv.icon}</i>
                         ${inv.typeText}
                     </span>
@@ -124,9 +110,6 @@ const invoicesModule = (function() {
                 <td>
                     <button class="btn btn-sm btn-info" onclick="invoicesModule.showInvoiceDetails('${inv.id}', '${inv.type}')">
                         <i class="material-icons-round">visibility</i>
-                    </button>
-                    <button class="btn btn-sm btn-warning" onclick="invoicesModule.editInvoice('${inv.id}', '${inv.type}')">
-                        <i class="material-icons-round">edit</i>
                     </button>
                     <button class="btn btn-sm btn-danger" onclick="invoicesModule.confirmDelete('${inv.id}', '${inv.type}')">
                         <i class="material-icons-round">delete</i>
@@ -154,7 +137,7 @@ const invoicesModule = (function() {
                 <td>${utilsModule.formatDate(inv.date)}</td>
                 <td>${inv.customer}</td>
                 <td>${utilsModule.formatCurrency(inv.grandTotal)}</td>
-                <td>${inv.paymentText}</td>
+                <td>${inv.paymentText || 'نقدي'}</td>
                 <td>
                     <button class="btn btn-sm btn-info" onclick="invoicesModule.showInvoiceDetails('${inv.id}', 'sale')">
                         عرض
@@ -182,7 +165,7 @@ const invoicesModule = (function() {
                 <td>${utilsModule.formatDate(inv.date)}</td>
                 <td>${inv.supplier}</td>
                 <td>${utilsModule.formatCurrency(inv.grandTotal)}</td>
-                <td>${inv.paymentText}</td>
+                <td>${inv.paymentText || 'نقدي'}</td>
                 <td>
                     <button class="btn btn-sm btn-info" onclick="invoicesModule.showInvoiceDetails('${inv.id}', 'purchase')">
                         عرض
@@ -223,7 +206,7 @@ const invoicesModule = (function() {
                         <span><strong>${party}:</strong> ${partyName}</span>
                     </div>
                     <div style="margin-bottom:15px;">
-                        <strong>طريقة الدفع:</strong> ${invoice.paymentText}
+                        <strong>طريقة الدفع:</strong> ${invoice.paymentText || 'نقدي'}
                     </div>
                     <hr>
                     <table style="width:100%; border-collapse:collapse; text-align:center; font-size:14px;">
@@ -245,7 +228,7 @@ const invoicesModule = (function() {
                                 <td colspan="${type === 'sale' ? '5' : '4'}" style="text-align:left; padding:8px;">
                                     <strong>الإجمالي:</strong>
                                 </td>
-                                <td style="padding:8px; font-weight:bold; color:var(--main-red);">
+                                <td style="padding:8px; font-weight:bold; color:#dc3545;">
                                     ${utilsModule.formatCurrency(invoice.grandTotal)}
                                 </td>
                             </tr>
@@ -269,102 +252,79 @@ const invoicesModule = (function() {
     
     // ================== طباعة فاتورة ==================
     function printInvoice(invoice, type) {
-        // استخدام منطقة الطباعة المناسبة
-        if (type === 'sale') {
-            prepareSalesPrint(invoice);
-        } else {
-            preparePurchasePrint(invoice);
-        }
-    }
-    
-    // ================== تجهيز طباعة فاتورة مبيعات ==================
-    function prepareSalesPrint(invoice) {
-        const dateTimeEl = document.getElementById('print-date-time');
-        const invoiceNoEl = document.getElementById('print-invoice-no');
-        const customerEl = document.getElementById('print-customer');
-        const tbody = document.getElementById('print-cart-items');
-        const totalDiscountEl = document.getElementById('print-total-discount');
-        const grandTotalEl = document.getElementById('print-grand-total');
+        const printWindow = window.open('', '_blank');
         
-        if (dateTimeEl) dateTimeEl.textContent = utilsModule.formatDate(invoice.date);
-        if (invoiceNoEl) invoiceNoEl.textContent = invoice.number;
-        if (customerEl) customerEl.textContent = invoice.customer;
-        
-        if (tbody) {
-            tbody.innerHTML = invoice.items.map((item, i) => `
+        let itemsHtml = '';
+        invoice.items.forEach((item, i) => {
+            itemsHtml += `
                 <tr>
                     <td style="padding:8px; border:1px solid #ddd;">${i + 1}</td>
                     <td style="padding:8px; border:1px solid #ddd;">${item.name}</td>
                     <td style="padding:8px; border:1px solid #ddd;">${item.qty}</td>
                     <td style="padding:8px; border:1px solid #ddd;">${utilsModule.formatCurrency(item.price)}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${item.discount || 0}%</td>
+                    ${type === 'sale' ? `<td style="padding:8px; border:1px solid #ddd;">${item.discount || 0}%</td>` : ''}
                     <td style="padding:8px; border:1px solid #ddd;">${utilsModule.formatCurrency(item.total)}</td>
                 </tr>
-            `).join('');
-        }
+            `;
+        });
         
-        if (totalDiscountEl) totalDiscountEl.textContent = utilsModule.formatCurrency(invoice.totalDiscount || 0);
-        if (grandTotalEl) grandTotalEl.textContent = utilsModule.formatCurrency(invoice.grandTotal);
+        const party = type === 'sale' ? 'العميل' : 'المورد';
+        const partyName = type === 'sale' ? invoice.customer : invoice.supplier;
         
-        setTimeout(() => {
-            window.print();
-        }, 100);
-    }
-    
-    // ================== تجهيز طباعة فاتورة مشتريات ==================
-    function preparePurchasePrint(invoice) {
-        const dateTimeEl = document.getElementById('purchase-print-date-time');
-        const invoiceNoEl = document.getElementById('purchase-print-invoice-no');
-        const supplierEl = document.getElementById('print-supplier');
-        const tbody = document.getElementById('purchase-print-cart-items');
-        const grandTotalEl = document.getElementById('purchase-print-grand-total');
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html dir="rtl">
+            <head>
+                <title>فاتورة ${invoice.number}</title>
+                <style>
+                    body { font-family: Arial; padding: 20px; }
+                    .header { text-align: center; margin-bottom: 30px; }
+                    h1 { color: #333; }
+                    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+                    th { background: #f5f5f5; padding: 10px; border: 1px solid #ddd; }
+                    td { padding: 8px; border: 1px solid #ddd; text-align: center; }
+                    .total { font-size: 18px; font-weight: bold; text-align: left; margin-top: 20px; }
+                    .footer { text-align: center; margin-top: 50px; color: #999; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>سوبر - النظام المتكامل</h1>
+                    <h3>فاتورة ${type === 'sale' ? 'بيع' : 'شراء'}</h3>
+                    <p>رقم: ${invoice.number}</p>
+                    <p>التاريخ: ${utilsModule.formatDate(invoice.date)}</p>
+                    <p>${party}: ${partyName}</p>
+                </div>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>المنتج</th>
+                            <th>الكمية</th>
+                            <th>السعر</th>
+                            ${type === 'sale' ? '<th>الخصم</th>' : ''}
+                            <th>الإجمالي</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+                
+                <div class="total">
+                    <p>الإجمالي: ${utilsModule.formatCurrency(invoice.grandTotal)} دج</p>
+                </div>
+                
+                <div class="footer">
+                    <p>شكراً لتعاملكم معنا</p>
+                </div>
+            </body>
+            </html>
+        `);
         
-        if (dateTimeEl) dateTimeEl.textContent = utilsModule.formatDate(invoice.date);
-        if (invoiceNoEl) invoiceNoEl.textContent = invoice.number;
-        if (supplierEl) supplierEl.textContent = invoice.supplier;
-        
-        if (tbody) {
-            tbody.innerHTML = invoice.items.map((item, i) => `
-                <tr>
-                    <td style="padding:8px; border:1px solid #ddd;">${i + 1}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${item.name}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${item.qty}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${utilsModule.formatCurrency(item.price)}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${utilsModule.formatCurrency(item.total)}</td>
-                </tr>
-            `).join('');
-        }
-        
-        if (grandTotalEl) grandTotalEl.textContent = utilsModule.formatCurrency(invoice.grandTotal);
-        
-        setTimeout(() => {
-            window.print();
-        }, 100);
-    }
-    
-    // ================== تعديل فاتورة ==================
-    function editInvoice(id, type) {
-        if (type === 'sale') {
-            // التوجيه إلى sales.js للتعديل
-            if (window.salesModule && window.salesModule.editInvoice) {
-                window.salesModule.editInvoice(id);
-                // التبديل إلى قسم المبيعات
-                const salesSection = document.getElementById('sales');
-                if (salesSection && window.app) {
-                    window.app.showSection('sales');
-                }
-            }
-        } else {
-            // التوجيه إلى purchases.js للتعديل
-            if (window.purchasesModule && window.purchasesModule.editInvoice) {
-                window.purchasesModule.editInvoice(id);
-                // التبديل إلى قسم المشتريات
-                const purchasesSection = document.getElementById('purchases');
-                if (purchasesSection && window.app) {
-                    window.app.showSection('purchases');
-                }
-            }
-        }
+        printWindow.document.close();
+        printWindow.print();
     }
     
     // ================== حذف فاتورة ==================
@@ -377,7 +337,6 @@ const invoicesModule = (function() {
             savePurchaseInvoices();
         }
         
-        // تحديث العرض
         refresh();
         return true;
     }
@@ -401,15 +360,9 @@ const invoicesModule = (function() {
     function getStats() {
         const now = new Date();
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-        const startOfYear = new Date(now.getFullYear(), 0, 1);
         
-        // فواتير هذا الشهر
         const thisMonthSales = salesInvoices.filter(inv => new Date(inv.date) >= startOfMonth);
         const thisMonthPurchases = purchaseInvoices.filter(inv => new Date(inv.date) >= startOfMonth);
-        
-        // فواتير هذا العام
-        const thisYearSales = salesInvoices.filter(inv => new Date(inv.date) >= startOfYear);
-        const thisYearPurchases = purchaseInvoices.filter(inv => new Date(inv.date) >= startOfYear);
         
         const stats = {
             total: {
@@ -423,23 +376,13 @@ const invoicesModule = (function() {
                 salesTotal: thisMonthSales.reduce((sum, inv) => sum + inv.grandTotal, 0),
                 purchasesTotal: thisMonthPurchases.reduce((sum, inv) => sum + inv.grandTotal, 0)
             },
-            thisYear: {
-                sales: thisYearSales.length,
-                purchases: thisYearPurchases.length,
-                salesTotal: thisYearSales.reduce((sum, inv) => sum + inv.grandTotal, 0),
-                purchasesTotal: thisYearPurchases.reduce((sum, inv) => sum + inv.grandTotal, 0)
-            },
             totals: {
                 salesTotal: salesInvoices.reduce((sum, inv) => sum + inv.grandTotal, 0),
-                purchasesTotal: purchaseInvoices.reduce((sum, inv) => sum + inv.grandTotal, 0),
-                profit: salesInvoices.reduce((sum, inv) => sum + inv.grandTotal, 0) - 
-                       purchaseInvoices.reduce((sum, inv) => sum + inv.grandTotal, 0)
+                purchasesTotal: purchaseInvoices.reduce((sum, inv) => sum + inv.grandTotal, 0)
             }
         };
         
-        // تحديث واجهة الإحصائيات
         updateStatsDisplay(stats);
-        
         return stats;
     }
     
@@ -466,96 +409,6 @@ const invoicesModule = (function() {
         });
     }
     
-    // ================== أكثر العملاء شراءً ==================
-    function getTopCustomers(limit = 5) {
-        const customerTotals = {};
-        
-        salesInvoices.forEach(inv => {
-            const customer = inv.customer || 'زبون نقدي';
-            if (!customerTotals[customer]) {
-                customerTotals[customer] = {
-                    name: customer,
-                    count: 0,
-                    total: 0
-                };
-            }
-            customerTotals[customer].count++;
-            customerTotals[customer].total += inv.grandTotal;
-        });
-        
-        return Object.values(customerTotals)
-            .sort((a, b) => b.total - a.total)
-            .slice(0, limit);
-    }
-    
-    // ================== أكثر الموردين تعاملاً ==================
-    function getTopSuppliers(limit = 5) {
-        const supplierTotals = {};
-        
-        purchaseInvoices.forEach(inv => {
-            const supplier = inv.supplier || 'مورد';
-            if (!supplierTotals[supplier]) {
-                supplierTotals[supplier] = {
-                    name: supplier,
-                    count: 0,
-                    total: 0
-                };
-            }
-            supplierTotals[supplier].count++;
-            supplierTotals[supplier].total += inv.grandTotal;
-        });
-        
-        return Object.values(supplierTotals)
-            .sort((a, b) => b.total - a.total)
-            .slice(0, limit);
-    }
-    
-    // ================== أكثر المنتجات مبيعاً ==================
-    function getTopProducts(limit = 10) {
-        const productSales = {};
-        
-        salesInvoices.forEach(inv => {
-            inv.items.forEach(item => {
-                if (!productSales[item.name]) {
-                    productSales[item.name] = {
-                        name: item.name,
-                        quantity: 0,
-                        total: 0
-                    };
-                }
-                productSales[item.name].quantity += item.qty;
-                productSales[item.name].total += item.total;
-            });
-        });
-        
-        return Object.values(productSales)
-            .sort((a, b) => b.quantity - a.quantity)
-            .slice(0, limit);
-    }
-    
-    // ================== تصدير جميع الفواتير إلى CSV ==================
-    function exportAllToCSV() {
-        const all = getAllInvoices();
-        
-        if (all.length === 0) {
-            utilsModule.showNotification('تنبيه', 'لا توجد فواتير للتصدير', 'warning');
-            return;
-        }
-        
-        const headers = ['رقم الفاتورة', 'النوع', 'التاريخ', 'الطرف', 'المبلغ', 'طريقة الدفع', 'عدد الأصناف'];
-        const data = all.map(inv => ({
-            number: inv.number,
-            type: inv.typeText,
-            date: utilsModule.formatDate(inv.date),
-            party: inv.party,
-            amount: inv.grandTotal,
-            payment: inv.paymentText,
-            items: inv.items.length
-        }));
-        
-        utilsModule.exportToCSV(data, 'all_invoices', headers);
-    }
-    
     // ================== تحديث جميع الجداول ==================
     function refresh() {
         renderAllInvoices();
@@ -564,41 +417,52 @@ const invoicesModule = (function() {
         getStats();
     }
     
-    // ================== البحث المتقدم ==================
-    function advancedSearch(criteria) {
-        let results = getAllInvoices();
+    // ================== دالة التصفية للاستخدام في HTML ==================
+    function filterInvoices() {
+        const type = document.getElementById('invoices-type-filter')?.value || 'all';
+        const searchTerm = document.getElementById('invoices-search')?.value || '';
         
-        // تصفية حسب النوع
-        if (criteria.type && criteria.type !== 'all') {
-            results = results.filter(inv => inv.type === criteria.type);
+        if (searchTerm) {
+            const results = searchInvoices(searchTerm);
+            renderFilteredResults(results);
+        } else {
+            const filtered = filterByType(type);
+            renderFilteredResults(filtered);
+        }
+    }
+    
+    function renderFilteredResults(results) {
+        const tbody = document.getElementById('all-invoices-tbody');
+        if (!tbody) return;
+        
+        if (results.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4">لا توجد نتائج</td></tr>';
+            return;
         }
         
-        // تصفية حسب التاريخ
-        if (criteria.startDate) {
-            const start = new Date(criteria.startDate);
-            results = results.filter(inv => new Date(inv.date) >= start);
-        }
-        
-        if (criteria.endDate) {
-            const end = new Date(criteria.endDate);
-            results = results.filter(inv => new Date(inv.date) <= end);
-        }
-        
-        // تصفية حسب المبلغ
-        if (criteria.minAmount) {
-            results = results.filter(inv => inv.grandTotal >= criteria.minAmount);
-        }
-        
-        if (criteria.maxAmount) {
-            results = results.filter(inv => inv.grandTotal <= criteria.maxAmount);
-        }
-        
-        // تصفية حسب طريقة الدفع
-        if (criteria.paymentMethod && criteria.paymentMethod !== 'all') {
-            results = results.filter(inv => inv.paymentMethod === criteria.paymentMethod);
-        }
-        
-        return results;
+        tbody.innerHTML = results.map(inv => `
+            <tr>
+                <td>${inv.number}</td>
+                <td>
+                    <span style="background: ${inv.color}; color: white; padding: 5px 10px; border-radius: 50px; font-size: 12px;">
+                        <i class="material-icons-round" style="font-size:14px;">${inv.icon}</i>
+                        ${inv.typeText}
+                    </span>
+                </td>
+                <td>${utilsModule.formatDate(inv.date)}</td>
+                <td>${inv.party}</td>
+                <td>${utilsModule.formatCurrency(inv.grandTotal)}</td>
+                <td>${inv.items?.length || 0}</td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="invoicesModule.showInvoiceDetails('${inv.id}', '${inv.type}')">
+                        عرض
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="invoicesModule.confirmDelete('${inv.id}', '${inv.type}')">
+                        حذف
+                    </button>
+                </td>
+            </tr>
+        `).join('');
     }
     
     // ================== تهيئة الوحدة ==================
@@ -606,56 +470,29 @@ const invoicesModule = (function() {
         console.log('✅ invoicesModule initialized - الرقم 24');
         console.log(`   فواتير المبيعات: ${salesInvoices.length}`);
         console.log(`   فواتير المشتريات: ${purchaseInvoices.length}`);
-        console.log(`   إجمالي الفواتير: ${salesInvoices.length + purchaseInvoices.length}`);
         
         refresh();
     }
     
     // ================== واجهة الوحدة ==================
     return {
-        // البيانات
         salesInvoices,
         purchaseInvoices,
-        
-        // استعلام
         getAllInvoices,
         getSalesInvoices,
         getPurchaseInvoices,
         getInvoice,
-        
-        // بحث
         searchInvoices,
-        advancedSearch,
-        
-        // تصفية
-        filterByDateRange,
         filterByType,
-        
-        // عرض
         renderAllInvoices,
         renderSalesInvoices,
         renderPurchaseInvoices,
         showInvoiceDetails,
-        
-        // عمليات
         deleteInvoice,
         confirmDelete,
-        editInvoice,
-        
-        // إحصائيات
         getStats,
-        getTopCustomers,
-        getTopSuppliers,
-        getTopProducts,
-        
-        // تصدير
-        exportAllToCSV,
-        printInvoice,
-        
-        // تحديث
         refresh,
-        
-        // تهيئة
+        filterInvoices,
         init
     };
 })();
@@ -666,19 +503,7 @@ window.invoicesModule = invoicesModule;
 // ================== دوال مختصرة للاستخدام في HTML ==================
 window.showInvoiceDetails = (id, type) => invoicesModule.showInvoiceDetails(id, type);
 window.deleteInvoice = (id, type) => invoicesModule.confirmDelete(id, type);
-window.exportAllInvoices = () => invoicesModule.exportAllToCSV();
-window.filterInvoices = () => {
-    const type = document.getElementById('invoices-type-filter')?.value || 'all';
-    const searchTerm = document.getElementById('invoices-search')?.value || '';
-    
-    if (searchTerm) {
-        const results = invoicesModule.searchInvoices(searchTerm);
-        invoicesModule.renderAllInvoices(results);
-    } else {
-        const filtered = invoicesModule.filterByType(type);
-        invoicesModule.renderAllInvoices(filtered);
-    }
-};
+window.filterInvoices = () => invoicesModule.filterInvoices();
 
 // ================== تهيئة تلقائية ==================
 if (typeof document !== 'undefined') {
