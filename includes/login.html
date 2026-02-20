@@ -1,44 +1,99 @@
-<!-- ================== شاشة تسجيل الدخول ================== -->
-<div id="login-screen" class="login-screen">
-    <div class="login-container">
-        <div class="login-icon">
-            <i class="material-icons-round">lock</i>
-        </div>
-        <h1 class="login-title">تطبيق سوبر</h1>
-        <p class="login-subtitle">الرجاء إدخال كلمة السر للدخول</p>
-        <div class="password-field">
-            <input type="password" id="password-input" class="password-input" placeholder="كلمة السر" maxlength="20" value="">
-            <i class="material-icons-round toggle-password" onclick="togglePasswordVisibility()">visibility_off</i>
-        </div>
-        <button class="login-button" onclick="checkPassword()">
-            <i class="material-icons-round">login</i> تسجيل الدخول
-        </button>
-        <div id="error-message" class="error-message" style="display: none;">
-            <i class="material-icons-round">error</i> كلمة السر غير صحيحة
-        </div>
-        <div class="forgot-password" onclick="showResetPassword()">
-            نسيت كلمة السر؟
-        </div>
-        <div class="login-version">الإصدار 1.0.0</div>
-    </div>
-</div>
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>سوبر - النظام المتكامل</title>
+    
+    <!-- Bootstrap 5 RTL -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- QuaggaJS للباركود -->
+    <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
+    
+    <!-- SheetJS لقراءة Excel -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
+    
+    <!-- ملف CSS المخصص -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- حاوية التطبيق الرئيسية -->
+    <div id="app"></div>
 
-<!-- ================== نافذة استعادة كلمة السر ================== -->
-<div id="reset-password-screen" class="login-screen" style="display: none;">
-    <div class="reset-password-container">
-        <div class="reset-icon">
-            <i class="material-icons-round">lock_reset</i>
-        </div>
-        <h2 class="reset-title">استعادة كلمة السر</h2>
-        <p class="reset-subtitle">كلمة السر الافتراضية هي <strong>123456</strong></p>
-        <p class="text-muted small mb-3">يمكنك تغييرها من ملف utils.js</p>
-        <div class="d-flex gap-2">
-            <button class="btn btn-primary flex-grow-1" onclick="useDefaultPassword()">
-                <i class="material-icons-round">check</i> استخدام 123456
-            </button>
-            <button class="btn btn-secondary" onclick="backToLogin()">
-                <i class="material-icons-round">arrow_back</i> رجوع
-            </button>
-        </div>
-    </div>
-</div>
+    <!-- ===== تحميل JavaScript Modules بالترتيب الصحيح ===== -->
+    
+    <!-- 1️⃣ الدوال المساعدة أولاً -->
+    <script src="js/modules/utils.js"></script>
+    
+    <!-- 2️⃣ ملفات البيانات الأساسية -->
+    <script src="js/modules/product.js"></script>
+    <script src="js/modules/inventory.js"></script>
+    <script src="js/modules/customer.js"></script>
+    <script src="js/modules/supplier.js"></script>
+    
+    <!-- 3️⃣ ملفات العمليات -->
+    <script src="js/modules/sales.js"></script>
+    <script src="js/modules/purchases.js"></script>
+    
+    <!-- 4️⃣ ملفات الفواتير والتقارير -->
+    <script src="js/modules/invoices.js"></script>
+    <script src="js/modules/reports.js"></script>
+    <script src="js/modules/debt.js"></script>
+    
+    <!-- 5️⃣ ملفات إضافية -->
+    <script src="js/modules/backup.js"></script>
+    <script src="js/modules/ai.js"></script>
+    
+    <!-- 6️⃣ الملف الرئيسي -->
+    <script src="js/app.js"></script>
+
+    <!-- ===== تحميل أقسام HTML ===== -->
+    <script>
+        // ترتيب تحميل الأقسام
+        const sections = [
+            'login.html',
+            'header.html',
+            'sales-section.html',
+            'purchases-section.html',
+            'add-section.html',
+            'inventory-section.html',
+            'reports-section.html',
+            'product-section.html',
+            'customer-section.html',
+            'supplier-section.html',
+            'invoices-section.html',
+            'modals.html',
+            'print-areas.html',
+            'footer.html',
+            'scripts.html'
+        ];
+
+        async function loadSections() {
+            const app = document.getElementById('app');
+            
+            for (const section of sections) {
+                try {
+                    const response = await fetch(`includes/${section}`);
+                    const html = await response.text();
+                    app.innerHTML += html;
+                    console.log(`✅ تم تحميل ${section}`);
+                } catch (error) {
+                    console.error(`❌ فشل تحميل ${section}:`, error);
+                }
+            }
+            
+            // إعلام أن HTML جاهز
+            document.dispatchEvent(new Event('html-loaded'));
+        }
+
+        document.addEventListener('DOMContentLoaded', loadSections);
+    </script>
+</body>
+</html>
