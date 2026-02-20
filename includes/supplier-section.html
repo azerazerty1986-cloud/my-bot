@@ -1,382 +1,64 @@
-// ================== إدارة الموردين ==================
-const supplierModule = (function() {
-    let suppliers = JSON.parse(localStorage.getItem('ryan_suppliers')) || [];
-    
-    // ================== هيكلة البيانات ==================
-    suppliers = suppliers.map(s => {
-        if (typeof s === 'string') {
-            return {
-                id: Date.now() + Math.random(),
-                name: s,
-                company: '',
-                phone: '',
-                secondaryPhone: '',
-                email: '',
-                website: '',
-                governorate: '',
-                city: '',
-                street: '',
-                address: '',
-                taxNumber: '',
-                commercialRegister: '',
-                contactPerson: '',
-                contactPosition: '',
-                contactPhone: '',
-                contactEmail: '',
-                paymentMethod: 'cash',
-                paymentDays: 0,
-                creditLimit: 0,
-                bankName: '',
-                bankAccount: '',
-                rating: 'B',
-                category: '',
-                products: '',
-                notes: '',
-                createdAt: new Date().toISOString()
-            };
-        }
-        return {
-            id: s.id || Date.now() + Math.random(),
-            name: s.name || '',
-            company: s.company || s.name || '',
-            phone: s.phone || '',
-            secondaryPhone: s.secondaryPhone || '',
-            email: s.email || '',
-            website: s.website || '',
-            governorate: s.governorate || '',
-            city: s.city || '',
-            street: s.street || '',
-            address: s.address || '',
-            taxNumber: s.taxNumber || '',
-            commercialRegister: s.commercialRegister || '',
-            contactPerson: s.contactPerson || '',
-            contactPosition: s.contactPosition || '',
-            contactPhone: s.contactPhone || '',
-            contactEmail: s.contactEmail || '',
-            paymentMethod: s.paymentMethod || 'cash',
-            paymentDays: s.paymentDays || 0,
-            creditLimit: s.creditLimit || 0,
-            bankName: s.bankName || '',
-            bankAccount: s.bankAccount || '',
-            rating: s.rating || 'B',
-            category: s.category || '',
-            products: s.products || '',
-            notes: s.notes || '',
-            createdAt: s.createdAt || new Date().toISOString()
-        };
-    });
-
-    // ================== حفظ الموردين ==================
-    function saveSuppliers() {
-        localStorage.setItem('ryan_suppliers', JSON.stringify(suppliers));
-    }
-
-    // ================== دوال مساعدة ==================
-    function _showNotification(title, message, type = 'success') {
-        Swal.fire({
-            icon: type,
-            title: title,
-            text: message,
-            timer: 2000,
-            showConfirmButton: false,
-            toast: true,
-            position: 'top-end'
-        });
-    }
-
-    function _showConfirmation(title, text, confirmCallback) {
-        Swal.fire({
-            title: title,
-            text: text,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'نعم',
-            cancelButtonText: 'إلغاء'
-        }).then((result) => {
-            if (result.isConfirmed && confirmCallback) {
-                confirmCallback();
-            }
-        });
-    }
-
-    // ================== إضافة مورد جديد (بسيط) ==================
-    function addSupplier() {
-        const name = document.getElementById('new-supplier')?.value.trim();
-        const phone = document.getElementById('new-supplier-phone')?.value.trim() || '';
+<!-- ================== قسم الموردين ================== -->
+<div id="supplier" class="section">
+    <div class="main-card">
+        <h5 class="text-center mb-4">🤝 إدارة الموردين</h5>
         
-        if (!name) {
-            _showNotification('تنبيه', 'اسم المورد مطلوب', 'warning');
-            return;
-        }
-
-        suppliers.push({
-            id: Date.now(),
-            name: name,
-            company: name,
-            phone: phone,
-            secondaryPhone: '',
-            email: '',
-            website: '',
-            governorate: '',
-            city: '',
-            street: '',
-            address: '',
-            taxNumber: '',
-            commercialRegister: '',
-            contactPerson: '',
-            contactPosition: '',
-            contactPhone: '',
-            contactEmail: '',
-            paymentMethod: 'cash',
-            paymentDays: 0,
-            creditLimit: 0,
-            bankName: '',
-            bankAccount: '',
-            rating: 'B',
-            category: '',
-            products: '',
-            notes: '',
-            createdAt: new Date().toISOString()
-        });
-
-        saveSuppliers();
-        renderSuppliers();
+        <div class="row g-2 mb-3">
+            <div class="col-8">
+                <input type="text" id="supplier-name" class="form-control" placeholder="اسم المورد">
+            </div>
+            <div class="col-4">
+                <input type="text" id="supplier-phone" class="form-control" placeholder="رقم الهاتف">
+            </div>
+        </div>
         
-        if (document.getElementById('new-supplier')) {
-            document.getElementById('new-supplier').value = '';
-        }
-        if (document.getElementById('new-supplier-phone')) {
-            document.getElementById('new-supplier-phone').value = '';
-        }
+        <div class="row g-2 mb-3">
+            <div class="col-6">
+                <input type="email" id="supplier-email" class="form-control" placeholder="البريد الإلكتروني">
+            </div>
+            <div class="col-6">
+                <input type="text" id="supplier-address" class="form-control" placeholder="العنوان">
+            </div>
+        </div>
         
-        _showNotification('نجاح', 'تم إضافة المورد', 'success');
-    }
-
-    // ================== إضافة مورد كامل ==================
-    function saveNewSupplier() {
-        console.log('محاولة حفظ مورد جديد...');
+        <div class="row g-2 mb-3">
+            <div class="col-12">
+                <textarea id="supplier-notes" class="form-control" rows="2" placeholder="ملاحظات"></textarea>
+            </div>
+        </div>
         
-        const name = document.getElementById('new-supplier-name')?.value.trim();
-        const company = document.getElementById('new-supplier-company')?.value.trim() || name;
-        const phone = document.getElementById('new-supplier-phone')?.value.trim() || '';
-        const phone2 = document.getElementById('new-supplier-phone2')?.value.trim() || '';
-        const email = document.getElementById('new-supplier-email')?.value.trim() || '';
-        const website = document.getElementById('new-supplier-website')?.value.trim() || '';
+        <button class="btn btn-success w-100 mb-4" onclick="supplierModule.addSupplierFromForm()">
+            <i class="material-icons-round">person_add</i> إضافة مورد
+        </button>
         
-        const country = document.getElementById('new-supplier-country')?.value || 'الجزائر';
-        const governorate = document.getElementById('new-supplier-governorate')?.value.trim() || '';
-        const city = document.getElementById('new-supplier-city')?.value.trim() || '';
-        const address = document.getElementById('new-supplier-address')?.value.trim() || '';
+        <div class="input-group mb-3">
+            <span class="input-group-text"><i class="material-icons-round">search</i></span>
+            <input type="text" id="supplier-search" class="form-control" 
+                   placeholder="بحث عن مورد..." 
+                   oninput="supplierModule.searchSuppliers()">
+        </div>
         
-        const taxNumber = document.getElementById('new-supplier-tax-number')?.value.trim() || '';
-        const commercialReg = document.getElementById('new-supplier-commercial-reg')?.value.trim() || '';
-        
-        const contactPerson = document.getElementById('new-supplier-contact-name')?.value.trim() || '';
-        const contactPosition = document.getElementById('new-supplier-contact-position')?.value.trim() || '';
-        const contactPhone = document.getElementById('new-supplier-contact-phone')?.value.trim() || '';
-        
-        const paymentMethod = document.getElementById('new-supplier-payment-method')?.value || 'cash';
-        const paymentDays = parseInt(document.getElementById('new-supplier-payment-days')?.value) || 0;
-        const creditLimit = parseFloat(document.getElementById('new-supplier-credit-limit')?.value) || 0;
-        
-        const bankName = document.getElementById('new-supplier-bank-name')?.value.trim() || '';
-        const bankAccount = document.getElementById('new-supplier-bank-account')?.value.trim() || '';
-        
-        const rating = document.getElementById('new-supplier-rating')?.value || 'B';
-        const category = document.getElementById('new-supplier-category')?.value || '';
-        const products = document.getElementById('new-supplier-products')?.value.trim() || '';
-        
-        const notes = document.getElementById('new-supplier-notes')?.value.trim() || '';
-
-        if (!name) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'تنبيه',
-                text: 'اسم المورد مطلوب'
-            });
-            return;
-        }
-
-        const newSupplier = {
-            id: Date.now(),
-            name: name,
-            company: company,
-            phone: phone,
-            secondaryPhone: phone2,
-            email: email,
-            website: website,
-            country: country,
-            governorate: governorate,
-            city: city,
-            address: address,
-            taxNumber: taxNumber,
-            commercialRegister: commercialReg,
-            contactPerson: contactPerson,
-            contactPosition: contactPosition,
-            contactPhone: contactPhone,
-            paymentMethod: paymentMethod,
-            paymentDays: paymentDays,
-            creditLimit: creditLimit,
-            bankName: bankName,
-            bankAccount: bankAccount,
-            rating: rating,
-            category: category,
-            products: products,
-            notes: notes,
-            createdAt: new Date().toISOString(),
-            totalPurchases: 0,
-            invoiceCount: 0
-        };
-
-        suppliers.push(newSupplier);
-        saveSuppliers();
-
-        Swal.fire({
-            icon: 'success',
-            title: 'تم الحفظ',
-            text: 'تم إضافة المورد بنجاح',
-            timer: 1500,
-            showConfirmButton: false
-        });
-
-        // إعادة تعيين الحقول
-        document.getElementById('new-supplier-name').value = '';
-        if (document.getElementById('new-supplier-company')) document.getElementById('new-supplier-company').value = '';
-        if (document.getElementById('new-supplier-phone')) document.getElementById('new-supplier-phone').value = '';
-        if (document.getElementById('new-supplier-phone2')) document.getElementById('new-supplier-phone2').value = '';
-        if (document.getElementById('new-supplier-email')) document.getElementById('new-supplier-email').value = '';
-        if (document.getElementById('new-supplier-website')) document.getElementById('new-supplier-website').value = '';
-        
-        if (document.getElementById('new-supplier-governorate')) document.getElementById('new-supplier-governorate').value = '';
-        if (document.getElementById('new-supplier-city')) document.getElementById('new-supplier-city').value = '';
-        if (document.getElementById('new-supplier-address')) document.getElementById('new-supplier-address').value = '';
-        
-        if (document.getElementById('new-supplier-tax-number')) document.getElementById('new-supplier-tax-number').value = '';
-        if (document.getElementById('new-supplier-commercial-reg')) document.getElementById('new-supplier-commercial-reg').value = '';
-        
-        if (document.getElementById('new-supplier-contact-name')) document.getElementById('new-supplier-contact-name').value = '';
-        if (document.getElementById('new-supplier-contact-position')) document.getElementById('new-supplier-contact-position').value = '';
-        if (document.getElementById('new-supplier-contact-phone')) document.getElementById('new-supplier-contact-phone').value = '';
-        
-        if (document.getElementById('new-supplier-payment-days')) document.getElementById('new-supplier-payment-days').value = '0';
-        if (document.getElementById('new-supplier-credit-limit')) document.getElementById('new-supplier-credit-limit').value = '0';
-        
-        if (document.getElementById('new-supplier-bank-name')) document.getElementById('new-supplier-bank-name').value = '';
-        if (document.getElementById('new-supplier-bank-account')) document.getElementById('new-supplier-bank-account').value = '';
-        
-        if (document.getElementById('new-supplier-products')) document.getElementById('new-supplier-products').value = '';
-        if (document.getElementById('new-supplier-notes')) document.getElementById('new-supplier-notes').value = '';
-
-        renderSuppliers();
-        console.log('تم حفظ المورد:', newSupplier);
-    }
-
-    // ================== عرض الموردين ==================
-    function renderSuppliers() {
-        const tbody = document.getElementById('suppliers-tbody');
-        if (!tbody) return;
-
-        if (suppliers.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-muted"><i class="material-icons-round" style="font-size:48px;">business</i><br>لا يوجد موردين</td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = suppliers.map((s, idx) => `
-            <tr>
-                <td>${s.name}</td>
-                <td>${s.phone || '-'}</td>
-                <td>
-                    <button class="btn btn-sm btn-warning" onclick="supplierModule.editSupplier(${idx})">
-                        <i class="material-icons-round">edit</i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="supplierModule.deleteSupplier(${idx})">
-                        <i class="material-icons-round">delete</i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
-
-        // تحديث قائمة الموردين في المشتريات
-        const select = document.getElementById('purchase-supplier');
-        if (select) {
-            select.innerHTML = '<option value="">اختر المورد</option>' + 
-                suppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join('');
-        }
-    }
-
-    // ================== تعديل المورد ==================
-    function editSupplier(index) {
-        const supplier = suppliers[index];
-        if (!supplier) return;
-
-        Swal.fire({
-            title: 'تعديل المورد',
-            html: `
-                <div style="text-align:right;">
-                    <input type="text" id="edit-name" class="form-control mb-2" value="${supplier.name}" placeholder="اسم المورد">
-                    <input type="text" id="edit-phone" class="form-control mb-2" value="${supplier.phone || ''}" placeholder="رقم الهاتف">
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'حفظ',
-            cancelButtonText: 'إلغاء',
-            preConfirm: () => {
-                const name = document.getElementById('edit-name').value.trim();
-                if (!name) {
-                    Swal.showValidationMessage('اسم المورد مطلوب');
-                    return false;
-                }
-                return {
-                    name: name,
-                    phone: document.getElementById('edit-phone').value.trim()
-                };
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const updated = result.value;
-                suppliers[index] = { ...supplier, ...updated };
-                saveSuppliers();
-                renderSuppliers();
-                _showNotification('نجاح', 'تم تعديل المورد', 'success');
-            }
-        });
-    }
-
-    // ================== حذف المورد ==================
-    function deleteSupplier(idx) {
-        const supplier = suppliers[idx];
-        
-        _showConfirmation('تأكيد الحذف', `حذف المورد "${supplier.name}"؟`, () => {
-            suppliers.splice(idx, 1);
-            saveSuppliers();
-            renderSuppliers();
-            _showNotification('تم', 'تم حذف المورد', 'success');
-        });
-    }
-
-    // ================== تهيئة الوحدة ==================
-    function init() {
-        renderSuppliers();
-    }
-
-    return {
-        suppliers,
-        addSupplier,
-        saveNewSupplier,
-        renderSuppliers,
-        editSupplier,
-        deleteSupplier,
-        init
-    };
-})();
-
-window.supplierModule = supplierModule;
-
-// تهيئة تلقائية
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof supplierModule !== 'undefined' && supplierModule.init) {
-        supplierModule.init();
-    }
-});
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>الاسم</th>
+                        <th>الهاتف</th>
+                        <th>البريد</th>
+                        <th>المبيعات</th>
+                        <th>ديون</th>
+                        <th>عمليات</th>
+                    </tr>
+                </thead>
+                <tbody id="suppliers-full-tbody">
+                    <tr>
+                        <td colspan="6" class="text-center p-4">
+                            <i class="material-icons-round" style="font-size:48px;">business</i>
+                            <br>لا يوجد موردين
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
