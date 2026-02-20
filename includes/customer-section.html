@@ -1,64 +1,210 @@
-<!-- ================== قسم العملاء ================== -->
-<div id="customer" class="section">
-    <div class="main-card">
-        <h5 class="text-center mb-4">👥 إدارة العملاء</h5>
-        
-        <div class="row g-2 mb-3">
-            <div class="col-8">
-                <input type="text" id="customer-name" class="form-control" placeholder="اسم العميل">
+<!-- ================== قسم إدارة العملاء المتقدم ================== -->
+<div id="customers" class="section">
+    <div class="nav-tabs-custom no-print">
+        <div class="tab-item active-nardo" onclick="showSubSection('customer-list')">
+            <i class="material-icons-round">people</i> قائمة العملاء
+        </div>
+        <div class="tab-item" onclick="showSubSection('customer-debts')">
+            <i class="material-icons-round">account_balance_wallet</i> الديون
+        </div>
+        <div class="tab-item" onclick="showSubSection('customer-payments')">
+            <i class="material-icons-round">payments</i> سجل الدفعات
+        </div>
+        <div class="tab-item" onclick="showSubSection('customer-stats')">
+            <i class="material-icons-round">bar_chart</i> إحصائيات
+        </div>
+    </div>
+
+    <!-- ===== قائمة العملاء ===== -->
+    <div id="customer-list" class="sub-section">
+        <div class="main-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0"><i class="material-icons-round">people</i> قائمة العملاء</h5>
+                <button class="btn btn-primary" onclick="window.switchSection('add'); showSubSection('add-customer')">
+                    <i class="material-icons-round">add</i> إضافة عميل جديد
+                </button>
             </div>
-            <div class="col-4">
-                <input type="text" id="customer-phone" class="form-control" placeholder="رقم الهاتف">
+            
+            <div class="row g-2 mb-3">
+                <div class="col-md-6 col-12">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="material-icons-round">search</i></span>
+                        <input type="text" id="customer-search" class="form-control" 
+                               placeholder="بحث باسم العميل أو رقم الهاتف..." 
+                               oninput="customerModule.searchCustomers(this.value)">
+                        <button class="btn btn-outline-secondary" type="button" onclick="startVoiceSearchCustomer()">
+                            <i class="material-icons-round">mic</i>
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-3 col-12">
+                    <select id="customer-type-filter" class="form-select" onchange="customerModule.filterByType()">
+                        <option value="all">جميع العملاء</option>
+                        <option value="vip">VIP</option>
+                        <option value="regular">عادي</option>
+                        <option value="new">جديد</option>
+                    </select>
+                </div>
+                <div class="col-md-3 col-12">
+                    <button class="btn btn-success w-100" onclick="customerModule.exportToExcel()">
+                        <i class="material-icons-round">download</i> تصدير
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>الاسم</th>
+                            <th>رقم الهاتف</th>
+                            <th>البريد الإلكتروني</th>
+                            <th>المدينة</th>
+                            <th>إجمالي المشتريات</th>
+                            <th>المديونية</th>
+                            <th>آخر شراء</th>
+                            <th>الحالة</th>
+                            <th>عمليات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customers-tbody">
+                        <tr>
+                            <td colspan="10" class="text-center p-4">
+                                <i class="material-icons-round" style="font-size:48px;">people</i>
+                                <br>لا يوجد عملاء
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-        
-        <div class="row g-2 mb-3">
-            <div class="col-6">
-                <input type="email" id="customer-email" class="form-control" placeholder="البريد الإلكتروني">
-            </div>
-            <div class="col-6">
-                <input type="text" id="customer-address" class="form-control" placeholder="العنوان">
+    </div>
+
+    <!-- ===== ديون العملاء ===== -->
+    <div id="customer-debts" class="sub-section" style="display: none;">
+        <div class="main-card">
+            <h5 class="text-center mb-4"><i class="material-icons-round">account_balance_wallet</i> ديون العملاء</h5>
+            
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>العميل</th>
+                            <th>رقم الدين</th>
+                            <th>المبلغ</th>
+                            <th>المدفوع</th>
+                            <th>المتبقي</th>
+                            <th>تاريخ الاستحقاق</th>
+                            <th>الحالة</th>
+                            <th>عمليات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customer-debts-tbody">
+                        <tr>
+                            <td colspan="9" class="text-center p-4">لا توجد ديون</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-        
-        <div class="row g-2 mb-3">
-            <div class="col-12">
-                <textarea id="customer-notes" class="form-control" rows="2" placeholder="ملاحظات"></textarea>
+    </div>
+
+    <!-- ===== سجل الدفعات ===== -->
+    <div id="customer-payments" class="sub-section" style="display: none;">
+        <div class="main-card">
+            <h5 class="text-center mb-4"><i class="material-icons-round">payments</i> سجل الدفعات</h5>
+            
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>العميل</th>
+                            <th>رقم الدين</th>
+                            <th>المبلغ</th>
+                            <th>طريقة الدفع</th>
+                            <th>التاريخ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="customer-payments-tbody">
+                        <tr>
+                            <td colspan="6" class="text-center p-4">لا توجد دفعات</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
-        
-        <button class="btn btn-primary w-100 mb-4" onclick="customerModule.addCustomerFromForm()">
-            <i class="material-icons-round">person_add</i> إضافة عميل
-        </button>
-        
-        <div class="input-group mb-3">
-            <span class="input-group-text"><i class="material-icons-round">search</i></span>
-            <input type="text" id="customer-search" class="form-control" 
-                   placeholder="بحث عن عميل..." 
-                   oninput="customerModule.searchCustomers()">
-        </div>
-        
-        <div class="table-responsive">
-            <table class="table-custom">
-                <thead>
-                    <tr>
-                        <th>الاسم</th>
-                        <th>الهاتف</th>
-                        <th>البريد</th>
-                        <th>المشتريات</th>
-                        <th>ديون</th>
-                        <th>عمليات</th>
-                    </tr>
-                </thead>
-                <tbody id="customers-full-tbody">
-                    <tr>
-                        <td colspan="6" class="text-center p-4">
-                            <i class="material-icons-round" style="font-size:48px;">people</i>
-                            <br>لا يوجد عملاء
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
+    </div>
+
+    <!-- ===== إحصائيات العملاء ===== -->
+    <div id="customer-stats" class="sub-section" style="display: none;">
+        <div class="main-card">
+            <h5 class="text-center mb-4"><i class="material-icons-round">bar_chart</i> إحصائيات العملاء</h5>
+            
+            <div class="row g-3">
+                <div class="col-md-3 col-6">
+                    <div class="summary-box" style="background: var(--primary-blue);">
+                        <div>إجمالي العملاء</div>
+                        <b id="stats-total-customers">0</b>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="summary-box" style="background: var(--main-green);">
+                        <div>عملاء VIP</div>
+                        <b id="stats-vip-customers">0</b>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="summary-box" style="background: var(--warning-yellow);">
+                        <div>عملاء مدينون</div>
+                        <b id="stats-debt-customers">0</b>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6">
+                    <div class="summary-box" style="background: var(--main-red);">
+                        <div>إجمالي الديون</div>
+                        <b id="stats-total-debt">0</b>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-md-6">
+                    <div class="main-card">
+                        <h6>أفضل 5 عملاء</h6>
+                        <div id="top-customers-list"></div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="main-card">
+                        <h6>آخر 5 مدفوعات</h6>
+                        <div id="latest-payments-list"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    function startVoiceSearchCustomer() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ar-SA';
+            
+            recognition.onresult = function(event) {
+                const text = event.results[0][0].transcript;
+                document.getElementById('customer-search').value = text;
+                customerModule.searchCustomers(text);
+            };
+            
+            recognition.start();
+            Swal.fire('🎤', 'تحدث الآن...', 'info');
+        } else {
+            Swal.fire('خطأ', 'المتصفح لا يدعم البحث الصوتي', 'error');
+        }
+    }
+</script>
