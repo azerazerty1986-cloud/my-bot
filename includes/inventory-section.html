@@ -1,46 +1,123 @@
-<!-- ================== قسم المخزن ================== -->
+<!-- ================== قسم المخزون المتقدم ================== -->
 <div id="inventory" class="section">
     <div class="main-card">
-        <h5 class="text-center mb-4">📦 المخزن الحالي</h5>
-        
-        <div class="row g-2 mb-3">
-            <div class="col-6">
-                <button class="btn btn-success w-100" onclick="uploadExcel()">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="mb-0">
+                <i class="material-icons-round">inventory</i> المخزون الحالي
+            </h5>
+            <div>
+                <button class="btn btn-success me-2" onclick="uploadExcel()">
                     <i class="material-icons-round">upload_file</i> رفع Excel
                 </button>
-            </div>
-            <div class="col-6">
-                <button class="btn btn-primary w-100" onclick="exportInventory()">
-                    <i class="material-icons-round">download</i> تصدير Excel
+                <button class="btn btn-primary" onclick="exportInventoryToExcel()">
+                    <i class="material-icons-round">download</i> تصدير
                 </button>
             </div>
         </div>
         
-        <div class="input-group mb-3">
-            <span class="input-group-text"><i class="material-icons-round">search</i></span>
-            <input type="text" id="inventory-search" class="form-control" 
-                   placeholder="بحث في المخزن..." 
-                   oninput="productModule.searchProducts(this.value)">
+        <!-- إحصائيات سريعة -->
+        <div class="row g-2 mb-4">
+            <div class="col-md-3 col-6">
+                <div class="stats-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="stats-icon">
+                        <i class="material-icons-round">inventory</i>
+                    </div>
+                    <div class="stats-details">
+                        <span class="stats-label">إجمالي المنتجات</span>
+                        <span class="stats-value" id="total-products-count">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="stats-icon">
+                        <i class="material-icons-round">category</i>
+                    </div>
+                    <div class="stats-details">
+                        <span class="stats-label">إجمالي الكميات</span>
+                        <span class="stats-value" id="total-quantity">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                    <div class="stats-icon">
+                        <i class="material-icons-round">payments</i>
+                    </div>
+                    <div class="stats-details">
+                        <span class="stats-label">قيمة المخزون</span>
+                        <span class="stats-value" id="total-stock-value">0</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6">
+                <div class="stats-card" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                    <div class="stats-icon">
+                        <i class="material-icons-round">warning</i>
+                    </div>
+                    <div class="stats-details">
+                        <span class="stats-label">منتجات ناقصة</span>
+                        <span class="stats-value" id="low-stock-count">0</span>
+                    </div>
+                </div>
+            </div>
         </div>
         
+        <!-- شريط البحث والتصفية -->
+        <div class="row g-2 mb-3">
+            <div class="col-md-5 col-12">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="material-icons-round">search</i></span>
+                    <input type="text" id="inventory-search" class="form-control" 
+                           placeholder="بحث باسم المنتج أو الباركود..." 
+                           oninput="searchInventory()">
+                    <button class="btn btn-outline-secondary" type="button" onclick="startVoiceSearchInventory()">
+                        <i class="material-icons-round">mic</i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-3 col-12">
+                <select id="inventory-category-filter" class="form-select" onchange="filterInventoryByCategory()">
+                    <option value="">جميع التصنيفات</option>
+                </select>
+            </div>
+            <div class="col-md-2 col-12">
+                <select id="inventory-status-filter" class="form-select" onchange="filterInventoryByStatus()">
+                    <option value="">جميع الحالات</option>
+                    <option value="low">منخفض المخزون</option>
+                    <option value="out">نافد</option>
+                    <option value="normal">طبيعي</option>
+                </select>
+            </div>
+            <div class="col-md-2 col-12">
+                <select id="inventory-location-filter" class="form-select" onchange="filterInventoryByLocation()">
+                    <option value="">جميع المواقع</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- جدول المخزون -->
         <div class="table-responsive">
             <table class="table-custom">
                 <thead>
                     <tr>
                         <th>#</th>
+                        <th>الصورة</th>
                         <th>المنتج</th>
-                        <th>الصنف</th>
+                        <th>التصنيف</th>
                         <th>الكمية</th>
                         <th>الوحدة</th>
+                        <th>موقع التخزين</th>
                         <th>سعر البيع</th>
                         <th>سعر الشراء</th>
+                        <th>الباركود</th>
                         <th>الحالة</th>
-                        <th>تعديل</th>
+                        <th>عمليات</th>
                     </tr>
                 </thead>
                 <tbody id="inventory-tbody">
                     <tr>
-                        <td colspan="9" class="text-center p-4">
+                        <td colspan="12" class="text-center p-4">
                             <i class="material-icons-round" style="font-size:48px;">inventory</i>
                             <br>لا توجد منتجات
                         </td>
@@ -49,32 +126,252 @@
             </table>
         </div>
         
-        <!-- إحصائيات سريعة -->
-        <div class="row g-2 mt-3">
-            <div class="col-3">
-                <div class="summary-box" style="background: var(--primary-blue); padding: 10px;">
-                    <div>إجمالي المنتجات</div>
-                    <b id="total-products-count">0</b>
+        <!-- ملخص المخزون -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="main-card p-3">
+                    <h6 class="mb-3"><i class="material-icons-round text-warning">warning</i> المنتجات الناقصة</h6>
+                    <div id="low-stock-preview" class="small-list">
+                        <p class="text-muted text-center">لا توجد منتجات ناقصة</p>
+                    </div>
                 </div>
             </div>
-            <div class="col-3">
-                <div class="summary-box" style="background: var(--main-green); padding: 10px;">
-                    <div>إجمالي الكميات</div>
-                    <b id="total-quantity">0</b>
-                </div>
-            </div>
-            <div class="col-3">
-                <div class="summary-box" style="background: var(--warning-yellow); padding: 10px;">
-                    <div>قيمة المخزون</div>
-                    <b id="total-stock-value">0</b>
-                </div>
-            </div>
-            <div class="col-3">
-                <div class="summary-box" style="background: var(--main-red); padding: 10px;">
-                    <div>منتجات ناقصة</div>
-                    <b id="low-stock-count">0</b>
+            <div class="col-md-6">
+                <div class="main-card p-3">
+                    <h6 class="mb-3"><i class="material-icons-round text-info">qr_code_scanner</i> آخر الباركودات الممسوحة</h6>
+                    <div id="recent-barcodes" class="small-list">
+                        <p class="text-muted text-center">لا توجد باركودات</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+    // دوال مساعدة لقسم المخزون
+    
+    // البحث في المخزون
+    function searchInventory() {
+        const term = document.getElementById('inventory-search').value.toLowerCase();
+        const rows = document.querySelectorAll('#inventory-tbody tr');
+        
+        rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            if (text.includes(term) || term === '') {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // تصفية حسب التصنيف
+    function filterInventoryByCategory() {
+        const category = document.getElementById('inventory-category-filter').value;
+        const rows = document.querySelectorAll('#inventory-tbody tr');
+        
+        rows.forEach(row => {
+            if (row.cells.length < 3) return;
+            const rowCategory = row.cells[3]?.textContent || '';
+            if (!category || rowCategory === category) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // تصفية حسب الحالة
+    function filterInventoryByStatus() {
+        const status = document.getElementById('inventory-status-filter').value;
+        const rows = document.querySelectorAll('#inventory-tbody tr');
+        
+        rows.forEach(row => {
+            if (row.cells.length < 10) return;
+            const quantity = parseInt(row.cells[4]?.textContent) || 0;
+            const minStock = 5; // يمكن جلبها من البيانات
+            
+            let rowStatus = 'normal';
+            if (quantity === 0) rowStatus = 'out';
+            else if (quantity <= minStock) rowStatus = 'low';
+            
+            if (!status || rowStatus === status) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // تصفية حسب الموقع
+    function filterInventoryByLocation() {
+        const location = document.getElementById('inventory-location-filter').value;
+        const rows = document.querySelectorAll('#inventory-tbody tr');
+        
+        rows.forEach(row => {
+            if (row.cells.length < 6) return;
+            const rowLocation = row.cells[6]?.textContent || '';
+            if (!location || rowLocation === location) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+    
+    // بحث صوتي للمخزون
+    function startVoiceSearchInventory() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ar-SA';
+            
+            recognition.onstart = function() {
+                Swal.fire({
+                    title: '🎤 استمع...',
+                    text: 'تحدث الآن',
+                    timer: 5000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
+            };
+            
+            recognition.onresult = function(event) {
+                const text = event.results[0][0].transcript;
+                document.getElementById('inventory-search').value = text;
+                searchInventory();
+            };
+            
+            recognition.onerror = function() {
+                Swal.fire('خطأ', 'فشل التعرف على الصوت', 'error');
+            };
+            
+            recognition.start();
+        } else {
+            Swal.fire('خطأ', 'المتصفح لا يدعم البحث الصوتي', 'error');
+        }
+    }
+    
+    // تصدير المخزون إلى Excel
+    function exportInventoryToExcel() {
+        const products = window.productModule?.products || [];
+        if (products.length === 0) {
+            Swal.fire('معلومة', 'لا توجد منتجات للتصدير', 'info');
+            return;
+        }
+        
+        let csv = 'المنتج,التصنيف,الكمية,الوحدة,موقع التخزين,سعر البيع,سعر الشراء,الباركود,الحالة\n';
+        
+        products.forEach(p => {
+            const status = p.quantity <= p.minStock ? 'منخفض' : 'جيد';
+            csv += `${p.name},${p.category || 'عام'},${p.quantity},${p.unit},${p.location || '-'},${p.sellPrice},${p.buyPrice},${p.barcode || '-'},${status}\n`;
+        });
+        
+        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `inventory_${new Date().toISOString().slice(0,10)}.csv`;
+        link.click();
+        
+        Swal.fire('نجاح', 'تم تصدير المخزون', 'success');
+    }
+    
+    // تحديث قوائم التصفية
+    function updateInventoryFilters() {
+        const products = window.productModule?.products || [];
+        
+        // تحديث قائمة التصنيفات
+        const categories = [...new Set(products.map(p => p.category || 'عام'))];
+        const categoryFilter = document.getElementById('inventory-category-filter');
+        if (categoryFilter) {
+            categoryFilter.innerHTML = '<option value="">جميع التصنيفات</option>' + 
+                categories.map(c => `<option value="${c}">${c}</option>`).join('');
+        }
+        
+        // تحديث قائمة المواقع
+        const locations = [...new Set(products.map(p => p.location || '-').filter(l => l !== '-'))];
+        const locationFilter = document.getElementById('inventory-location-filter');
+        if (locationFilter) {
+            locationFilter.innerHTML = '<option value="">جميع المواقع</option>' + 
+                locations.map(l => `<option value="${l}">${l}</option>`).join('');
+        }
+    }
+    
+    // مراقبة تغييرات المنتجات
+    setInterval(updateInventoryFilters, 5000);
+</script>
+
+<style>
+    .stats-card {
+        border-radius: 15px;
+        padding: 20px;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        transition: transform 0.3s;
+    }
+    
+    .stats-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .stats-icon {
+        background: rgba(255,255,255,0.2);
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .stats-icon i {
+        font-size: 30px;
+    }
+    
+    .stats-details {
+        flex: 1;
+    }
+    
+    .stats-label {
+        font-size: 12px;
+        opacity: 0.9;
+        display: block;
+    }
+    
+    .stats-value {
+        font-size: 24px;
+        font-weight: bold;
+        display: block;
+    }
+    
+    .small-list {
+        max-height: 200px;
+        overflow-y: auto;
+    }
+    
+    .small-list .list-item {
+        padding: 8px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .small-list .list-item:last-child {
+        border-bottom: none;
+    }
+    
+    @media (max-width: 768px) {
+        .stats-card {
+            padding: 15px;
+        }
+        
+        .stats-value {
+            font-size: 18px;
+        }
+    }
+</style>
