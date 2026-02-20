@@ -20,12 +20,55 @@
     <!-- SheetJS لقراءة Excel -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
     
+    <!-- مكتبة الباركود -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    
     <!-- ملف CSS المخصص -->
     <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        /* أنماط إضافية مؤقتة لحين تحميل style.css */
+        body {
+            font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+            background-color: #f5f5f5;
+            padding-bottom: 80px;
+            direction: rtl;
+            margin: 0;
+        }
+        
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: white;
+            font-size: 24px;
+        }
+    </style>
 </head>
 <body>
+    <!-- شاشة التحميل المؤقتة -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="text-center">
+            <div class="spinner-border text-light mb-3" role="status">
+                <span class="visually-hidden">جاري التحميل...</span>
+            </div>
+            <h3>سوبر - النظام المتكامل</h3>
+            <p>جاري تحميل التطبيق...</p>
+        </div>
+    </div>
+
     <!-- حاوية التطبيق الرئيسية -->
     <div id="app"></div>
+
+    <!-- مخفي لاختيار ملف الاستيراد -->
+    <input type="file" id="backup-file-input" accept=".json" style="display: none;">
 
     <!-- ===== تحميل JavaScript Modules بالترتيب الصحيح ===== -->
     
@@ -59,7 +102,7 @@
 
     <!-- ===== تحميل أقسام HTML ===== -->
     <script>
-        // ترتيب تحميل الأقسام (14 ملف)
+        // ترتيب تحميل الأقسام (17 ملف HTML في includes/)
         const sections = [
             'login.html',
             'header.html',
@@ -78,8 +121,10 @@
             'footer.html'
         ];
 
+        // دالة تحميل الأقسام
         async function loadSections() {
             const app = document.getElementById('app');
+            let loadedCount = 0;
             
             for (const section of sections) {
                 try {
@@ -87,22 +132,37 @@
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     const html = await response.text();
                     app.innerHTML += html;
-                    console.log(`✅ تم تحميل ${section}`);
+                    loadedCount++;
+                    console.log(`✅ تم تحميل ${section} (${loadedCount}/${sections.length})`);
                 } catch (error) {
                     console.error(`❌ فشل تحميل ${section}:`, error);
-                    // أنشئ قسم افتراضي في حالة الفشل
+                    
+                    // إنشاء أقسام افتراضية للفواتير والديون إذا فشل التحميل
                     if (section === 'invoices.html') {
                         app.innerHTML += `
                             <div id="invoices" class="section">
                                 <div class="main-card">
                                     <h3 class="text-center">قسم الفواتير</h3>
-                                    <p class="text-center">جاري التحميل...</p>
+                                    <p class="text-center text-muted">جاري تجهيز القسم...</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    if (section === 'debt-section.html') {
+                        app.innerHTML += `
+                            <div id="debt" class="section">
+                                <div class="main-card">
+                                    <h3 class="text-center">قسم الديون</h3>
+                                    <p class="text-center text-muted">جاري تجهيز القسم...</p>
                                 </div>
                             </div>
                         `;
                     }
                 }
             }
+            
+            // إخفاء شاشة التحميل
+            document.getElementById('loading-screen').style.display = 'none';
             
             // إعلام أن HTML جاهز
             document.dispatchEvent(new Event('html-loaded'));
@@ -115,7 +175,7 @@
 
     <!-- ===== دوال التنقل الأساسية ===== -->
     <script>
-        // التبديل بين الأقسام
+        // التبديل بين الأقسام الرئيسية
         function switchSection(sectionId, element) {
             console.log('🔄 التبديل إلى:', sectionId);
             
@@ -133,6 +193,9 @@
                 // تحديث الشريط السفلي
                 document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
                 if (element) element.classList.add('active');
+                
+                // تحديث بيانات القسم عند عرضه
+                refreshSectionData(sectionId);
             } else {
                 console.error('❌ القسم غير موجود:', sectionId);
                 Swal.fire({
@@ -140,6 +203,53 @@
                     title: 'خطأ',
                     text: `القسم "${sectionId}" غير موجود`
                 });
+            }
+        }
+
+        // تحديث بيانات القسم
+        function refreshSectionData(sectionId) {
+            switch(sectionId) {
+                case 'sales':
+                    if (window.salesModule) {
+                        if (salesModule.loadCustomers) salesModule.loadCustomers();
+                        if (salesModule.renderInvoices) salesModule.renderInvoices();
+                        if (salesModule.renderCart) salesModule.renderCart();
+                    }
+                    break;
+                case 'purchases':
+                    if (window.purchasesModule) {
+                        if (purchasesModule.loadSuppliers) purchasesModule.loadSuppliers();
+                        if (purchasesModule.renderInvoices) purchasesModule.renderInvoices();
+                        if (purchasesModule.renderCart) purchasesModule.renderCart();
+                    }
+                    break;
+                case 'inventory':
+                    if (window.productModule) productModule.renderProducts();
+                    if (window.inventoryModule) inventoryModule.renderInventory?.();
+                    break;
+                case 'reports':
+                    if (window.reportsModule) reportsModule.updateDashboard?.();
+                    break;
+                case 'invoices':
+                    if (window.invoicesModule) invoicesModule.refresh?.();
+                    break;
+                case 'debt':
+                    if (window.debtModule) {
+                        debtModule.renderAllDebts?.();
+                        debtModule.renderCustomerDebts?.();
+                        debtModule.renderSupplierDebts?.();
+                        debtModule.renderPayments?.();
+                    }
+                    break;
+                case 'products':
+                    if (window.productModule) productModule.renderProducts();
+                    break;
+                case 'customers':
+                    if (window.customerModule) customerModule.renderCustomers();
+                    break;
+                case 'suppliers':
+                    if (window.supplierModule) supplierModule.renderSuppliers();
+                    break;
             }
         }
 
@@ -160,7 +270,9 @@
                 if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(subId)) {
                     if (parent.id === 'sales') t.classList.add('active-red');
                     else if (parent.id === 'purchases') t.classList.add('active-green');
-                    else if (parent.id === 'add' || parent.id === 'invoices') t.classList.add('active-nardo');
+                    else if (parent.id === 'add' || parent.id === 'invoices' || parent.id === 'debt') {
+                        t.classList.add('active-nardo');
+                    }
                 }
             });
         }
@@ -260,21 +372,102 @@
             });
         }
 
-        // دوال مساعدة
-        function openBarcodeScanner() {
+        // دوال الباركود
+        function openBarcodeScanner(inputId) {
             const modal = document.getElementById('barcodeScannerModal');
             if (modal) {
                 const bsModal = new bootstrap.Modal(modal);
                 bsModal.show();
+                
+                // محاكاة مسح باركود بعد ثانيتين
+                setTimeout(() => {
+                    const mockBarcode = '2' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
+                    document.getElementById('barcode-result').textContent = `تم المسح: ${mockBarcode}`;
+                    
+                    if (inputId) {
+                        document.getElementById(inputId).value = mockBarcode;
+                    }
+                    
+                    // إطلاق حدث
+                    window.dispatchEvent(new CustomEvent('barcode-scanned', { 
+                        detail: { barcode: mockBarcode }
+                    }));
+                }, 2000);
             } else {
                 Swal.fire('معلومة', 'ماسح الباركود غير متوفر', 'info');
             }
         }
 
-        function startVoiceSearch() {
-            Swal.fire('البحث الصوتي', 'قريباً إن شاء الله', 'info');
+        function generateBarcode() {
+            return '2' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
         }
 
+        function printBarcode(barcode, text) {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html dir="rtl">
+                <head>
+                    <title>باركود</title>
+                    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+                    <style>
+                        body { text-align: center; padding: 20px; font-family: Arial; }
+                        .barcode-item { margin: 20px; padding: 20px; border: 1px solid #ddd; display: inline-block; }
+                    </style>
+                </head>
+                <body>
+                    <div class="barcode-item">
+                        <h3>${text || ''}</h3>
+                        <svg id="barcode-print"></svg>
+                        <p>${barcode}</p>
+                    </div>
+                    <script>
+                        JsBarcode("#barcode-print", "${barcode}", {
+                            format: "CODE128",
+                            lineColor: "#000",
+                            width: 2,
+                            height: 100,
+                            displayValue: true
+                        });
+                        window.print();
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+        }
+
+        function startVoiceSearch(callback) {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                const recognition = new SpeechRecognition();
+                recognition.lang = 'ar-SA';
+                
+                recognition.onstart = function() {
+                    Swal.fire({
+                        title: '🎤 استمع...',
+                        text: 'تحدث الآن',
+                        timer: 5000,
+                        timerProgressBar: true,
+                        showConfirmButton: false
+                    });
+                };
+                
+                recognition.onresult = function(event) {
+                    const text = event.results[0][0].transcript;
+                    if (callback) callback(text);
+                };
+                
+                recognition.onerror = function(event) {
+                    Swal.fire('خطأ', 'فشل التعرف على الصوت', 'error');
+                };
+                
+                recognition.start();
+            } else {
+                Swal.fire('خطأ', 'المتصفح لا يدعم البحث الصوتي', 'error');
+            }
+        }
+
+        // دوال النسخ الاحتياطي
         function exportBackup() {
             if (window.backupModule) {
                 backupModule.exportBackup();
@@ -283,6 +476,11 @@
             }
         }
 
+        function importBackup() {
+            document.getElementById('backup-file-input').click();
+        }
+
+        // دوال عامة
         function uploadExcel() {
             Swal.fire('رفع Excel', 'قريباً', 'info');
         }
@@ -305,6 +503,15 @@
                 e.target !== menuIcon) {
                 sidebar.classList.remove('show');
             }
+        });
+
+        // إغلاق نتائج البحث
+        document.addEventListener('click', function(e) {
+            document.querySelectorAll('.search-results').forEach(box => {
+                if (!box.contains(e.target) && !e.target.closest('.search-container')) {
+                    box.classList.remove('show');
+                }
+            });
         });
 
         console.log('✅ جميع الدوال العامة جاهزة');
