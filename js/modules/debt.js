@@ -1,456 +1,671 @@
+// ================== debt.js - إدارة الديون والمدفوعات ==================
+// الرقم 26 في ترتيب الملفات - يعتمد على utils.js, customer.js, supplier.js
 
-// ================== نظام الديون المتكامل - وحدة منفصلة ==================
 const debtModule = (function() {
-    let payments = JSON.parse(localStorage.getItem('payment_history')) || [];
+    // ================== البيانات ==================
+    let debts = JSON.parse(localStorage.getItem('debts')) || [];
+    let payments = JSON.parse(localStorage.getItem('payments')) || [];
     
-    const CONFIG = {
-        CURRENCY: 'دج',
-        STORAGE_KEYS: {
-            INVOICES: 'ryan_invoices',
-            PURCHASES: 'ryan_purchases',
-            CUSTOMERS: 'ryan_customers',
-            SUPPLIERS: 'ryan_suppliers',
-            PAYMENTS: 'payment_history'
+    // ================== دوال مساعدة داخلية ==================
+    function saveDebts() {
+        localStorage.setItem('debts', JSON.stringify(debts));
+    }
+    
+    function savePayments() {
+        localStorage.setItem('payments', JSON.stringify(payments));
+    }
+    
+    // ================== إنشاء دين جديد ==================
+    function createDebt(debtData) {
+        // التحقق من البيانات المطلوبة
+        if (!debtData.partyId || !debtData.partyType || !debtData.amount) {
+            utilsModule.showNotification('خطأ', 'البيانات غير مكتملة', 'error');
+            return null;
         }
-    };
-
-    // ================== دوال مساعدة ==================
-    function _formatCurrency(amount) {
-        return `${Number(amount).toFixed(2)} ${CONFIG.CURRENCY}`;
-    }
-
-    function _showNotification(title, message, type = 'success') {
-        Swal.fire({
-            icon: type,
-            title: title,
-            text: message,
-            timer: 2000,
-            showConfirmButton: false,
-            toast: true,
-            position: 'top-end'
-        });
-    }
-
-    function _savePayments() {
-        localStorage.setItem(CONFIG.STORAGE_KEYS.PAYMENTS, JSON.stringify(payments));
-    }
-
-    // ================== حساب ديون العملاء ==================
-    function calculateCustomerDebts() {
-        const customers = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.CUSTOMERS)) || [];
-        const invoices = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.INVOICES)) || [];
         
-        const debts = [];
-        let totalDebt = 0;
-        let debtorCount = 0;
-        let creditorCount = 0;
-        let maxDebt = 0;
-        let totalPaid = 0;
+        if (debtData.amount <= 0) {
+            utilsModule.showNotification('خطأ', 'المبلغ يجب أن يكون أكبر من صفر', 'error');
+            return null;
+        }
         
-        customers.forEach(customer => {
-            const customerInvoices = invoices.filter(inv => inv.customer === customer.name);
-            const totalPurchases = customerInvoices.reduce((sum, inv) => sum + (inv.total || 0), 0);
-            
-            const paid = payments
-                .filter(p => p.customer === customer.name)
-                .reduce((sum, p) => sum + (p.amount || 0), 0);
-            
-            const remaining = totalPurchases - paid;
-            totalPaid += paid;
-            
-            let lastInvoice = '-';
-            if (customerInvoices.length > 0) {
-                const sorted = customerInvoices.sort((a, b) => new Date(b.date) - new Date(a.date));
-                lastInvoice = sorted[0].date;
+        // الحصول على اسم الطرف
+        let partyName = '';
+        if (debtData.partyType === 'customer') {
+            const customer = window.customerModule?.getCustomer(debtData.partyId);
+            partyName = customer ? customer.name : 'عميل';
+        } else {
+            const supplier = window.supplierModule?.getSupplier(debtData.partyId);
+            partyName = supplier ? supplier.name : 'مورد';
+        }
+        
+        // إنشاء كائن الدين الجديد
+        const newDebt = {
+            id: utilsModule.generateId(),
+            number: generateDebtNumber(),
+            partyId: debtData.partyId,
+            partyType: debtData.partyType,
+            partyName: partyName,
+            amount: parseFloat(debtData.amount),
+            paid: 0,
+            remaining: parseFloat(debtData.amount),
+            dueDate: debtData.dueDate || null,
+            invoiceId: debtData.invoiceId || null,
+            invoiceNumber: debtData.invoiceNumber || null,
+            description: debtData.description || '',
+            status: 'active', // active, partial, paid, overdue
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            notes: debtData.notes || ''
+        };
+        
+        debts.push(newDebt);
+        saveDebts();
+        
+        // تحديث إحصائيات الطرف
+        updatePartyDebtStats(debtData.partyId, debtData.partyType);
+        
+        utilsModule.showNotification('نجاح', 'تم تسجيل الدين');
+        return newDebt;
+    }
+    
+    // ================== إنشاء رقم دين ==================
+    function generateDebtNumber() {
+        const date = new Date();
+        const year = date.getFullYear().toString().slice(-2);
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        return `DEBT-${year}${month}${day}-${random}`;
+    }
+    
+    // ================== تسجيل دفعة ==================
+    function addPayment(paymentData) {
+        // التحقق من البيانات
+        if (!paymentData.debtId || !paymentData.amount) {
+            utilsModule.showNotification('خطأ', 'البيانات غير مكتملة', 'error');
+            return null;
+        }
+        
+        if (paymentData.amount <= 0) {
+            utilsModule.showNotification('خطأ', 'المبلغ يجب أن يكون أكبر من صفر', 'error');
+            return null;
+        }
+        
+        // البحث عن الدين
+        const debt = debts.find(d => d.id == paymentData.debtId);
+        if (!debt) {
+            utilsModule.showNotification('خطأ', 'الدين غير موجود', 'error');
+            return null;
+        }
+        
+        if (paymentData.amount > debt.remaining) {
+            utilsModule.showNotification('خطأ', 'المبلغ أكبر من المتبقي', 'error');
+            return null;
+        }
+        
+        // إنشاء كائن الدفعة
+        const payment = {
+            id: utilsModule.generateId(),
+            number: generatePaymentNumber(),
+            debtId: debt.id,
+            debtNumber: debt.number,
+            partyId: debt.partyId,
+            partyType: debt.partyType,
+            partyName: debt.partyName,
+            amount: parseFloat(paymentData.amount),
+            method: paymentData.method || 'cash', // cash, card, check, transfer
+            date: paymentData.date || new Date().toISOString(),
+            reference: paymentData.reference || '',
+            description: paymentData.description || '',
+            createdBy: 'admin',
+            createdAt: new Date().toISOString()
+        };
+        
+        payments.push(payment);
+        
+        // تحديث الدين
+        debt.paid += payment.amount;
+        debt.remaining -= payment.amount;
+        debt.updatedAt = new Date().toISOString();
+        
+        // تحديث حالة الدين
+        if (debt.remaining <= 0) {
+            debt.status = 'paid';
+        } else if (debt.paid > 0) {
+            debt.status = 'partial';
+        }
+        
+        saveDebts();
+        savePayments();
+        
+        // تحديث إحصائيات الطرف
+        updatePartyDebtStats(debt.partyId, debt.partyType);
+        
+        utilsModule.showNotification('نجاح', 'تم تسجيل الدفعة');
+        return payment;
+    }
+    
+    // ================== إنشاء رقم دفعة ==================
+    function generatePaymentNumber() {
+        const date = new Date();
+        const year = date.getFullYear().toString().slice(-2);
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+        return `PAY-${year}${month}${day}-${random}`;
+    }
+    
+    // ================== تحديث إحصائيات ديون الطرف ==================
+    function updatePartyDebtStats(partyId, partyType) {
+        const partyDebts = debts.filter(d => d.partyId == partyId && d.partyType === partyType);
+        const totalDebt = partyDebts.reduce((sum, d) => sum + d.remaining, 0);
+        
+        if (partyType === 'customer') {
+            const customer = window.customerModule?.getCustomer(partyId);
+            if (customer) {
+                customer.totalDebt = totalDebt;
+                window.customerModule?.updateCustomer(partyId, { totalDebt });
             }
-            
-            let lastPayment = '-';
-            const customerPayments = payments.filter(p => p.customer === customer.name);
-            if (customerPayments.length > 0) {
-                const sorted = customerPayments.sort((a, b) => new Date(b.date) - new Date(a.date));
-                lastPayment = sorted[0].date;
+        } else {
+            const supplier = window.supplierModule?.getSupplier(partyId);
+            if (supplier) {
+                supplier.totalDebt = totalDebt;
+                window.supplierModule?.updateSupplier(partyId, { totalDebt });
             }
-            
-            const isOverdue = remaining > (customer.maxDebt || 0) && remaining > 0;
-            
-            if (remaining > 0) {
-                totalDebt += remaining;
-                debtorCount++;
-                if (remaining > maxDebt) maxDebt = remaining;
-            } else {
-                creditorCount++;
-            }
-            
-            debts.push({
-                name: customer.name,
-                phone: customer.phone || '-',
-                totalPurchases: totalPurchases,
-                paid: paid,
-                remaining: remaining,
-                maxDebt: customer.maxDebt || 0,
-                lastInvoice: lastInvoice,
-                lastPayment: lastPayment,
-                paymentCount: customerPayments.length,
-                isOverdue: isOverdue
-            });
-        });
+        }
+    }
+    
+    // ================== الحصول على ديون عميل ==================
+    function getCustomerDebts(customerId) {
+        return debts.filter(d => d.partyId == customerId && d.partyType === 'customer')
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    
+    // ================== الحصول على ديون مورد ==================
+    function getSupplierDebts(supplierId) {
+        return debts.filter(d => d.partyId == supplierId && d.partyType === 'supplier')
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    
+    // ================== الحصول على جميع الديون النشطة ==================
+    function getActiveDebts() {
+        return debts.filter(d => d.status !== 'paid')
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    
+    // ================== الحصول على الديون المتأخرة ==================
+    function getOverdueDebts() {
+        const now = new Date();
+        return debts.filter(d => {
+            if (d.status === 'paid' || !d.dueDate) return false;
+            const dueDate = new Date(d.dueDate);
+            return dueDate < now;
+        }).sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+    }
+    
+    // ================== الحصول على جميع الديون ==================
+    function getAllDebts() {
+        return [...debts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    
+    // ================== الحصول على دفعات دين معين ==================
+    function getDebtPayments(debtId) {
+        return payments.filter(p => p.debtId == debtId)
+            .sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+    
+    // ================== الحصول على جميع الدفعات ==================
+    function getAllPayments(limit = 100) {
+        return [...payments]
+            .sort((a, b) => new Date(b.date) - new Date(a.date))
+            .slice(0, limit);
+    }
+    
+    // ================== إجمالي الديون ==================
+    function getTotalDebts() {
+        const active = debts.filter(d => d.status !== 'paid');
         
         return {
-            debts: debts.sort((a, b) => b.remaining - a.remaining),
-            totalDebt: totalDebt,
-            totalPaid: totalPaid,
-            debtorCount: debtorCount,
-            creditorCount: creditorCount,
-            maxDebt: maxDebt,
-            avgDebt: debtorCount > 0 ? totalDebt / debtorCount : 0
+            total: debts.reduce((sum, d) => sum + d.amount, 0),
+            paid: debts.reduce((sum, d) => sum + d.paid, 0),
+            remaining: debts.reduce((sum, d) => sum + d.remaining, 0),
+            active: {
+                count: active.length,
+                amount: active.reduce((sum, d) => sum + d.remaining, 0)
+            },
+            byType: {
+                customer: {
+                    count: debts.filter(d => d.partyType === 'customer' && d.status !== 'paid').length,
+                    amount: debts.filter(d => d.partyType === 'customer' && d.status !== 'paid')
+                        .reduce((sum, d) => sum + d.remaining, 0)
+                },
+                supplier: {
+                    count: debts.filter(d => d.partyType === 'supplier' && d.status !== 'paid').length,
+                    amount: debts.filter(d => d.partyType === 'supplier' && d.status !== 'paid')
+                        .reduce((sum, d) => sum + d.remaining, 0)
+                }
+            }
         };
     }
-
-    // ================== عرض ديون العملاء ==================
-    function renderCustomerDebts() {
-        const data = calculateCustomerDebts();
+    
+    // ================== إحصائيات الدفعات ==================
+    function getPaymentsStats() {
+        const now = new Date();
+        const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         
-        const totalEl = document.getElementById('total-customer-debt');
-        const debtorEl = document.getElementById('debtor-customers-count');
-        const creditorEl = document.getElementById('creditor-customers-count');
+        const todayPayments = payments.filter(p => new Date(p.date) >= today);
+        const monthPayments = payments.filter(p => new Date(p.date) >= thisMonth);
         
-        if (totalEl) totalEl.innerHTML = data.totalDebt.toFixed(2) + ' دج';
-        if (debtorEl) debtorEl.innerHTML = data.debtorCount;
-        if (creditorEl) creditorEl.innerHTML = data.creditorCount;
+        return {
+            total: {
+                count: payments.length,
+                amount: payments.reduce((sum, p) => sum + p.amount, 0)
+            },
+            today: {
+                count: todayPayments.length,
+                amount: todayPayments.reduce((sum, p) => sum + p.amount, 0)
+            },
+            thisMonth: {
+                count: monthPayments.length,
+                amount: monthPayments.reduce((sum, p) => sum + p.amount, 0)
+            },
+            byMethod: {
+                cash: payments.filter(p => p.method === 'cash').reduce((sum, p) => sum + p.amount, 0),
+                card: payments.filter(p => p.method === 'card').reduce((sum, p) => sum + p.amount, 0),
+                check: payments.filter(p => p.method === 'check').reduce((sum, p) => sum + p.amount, 0),
+                transfer: payments.filter(p => p.method === 'transfer').reduce((sum, p) => sum + p.amount, 0)
+            }
+        };
+    }
+    
+    // ================== تسوية دين ==================
+    function settleDebt(debtId, paymentMethod = 'cash') {
+        const debt = debts.find(d => d.id == debtId);
+        if (!debt) return false;
         
-        const tbody = document.getElementById('customer-debts-tbody');
+        if (debt.remaining <= 0) {
+            utilsModule.showNotification('معلومة', 'الدين مسدد بالفعل', 'info');
+            return false;
+        }
+        
+        return addPayment({
+            debtId: debt.id,
+            amount: debt.remaining,
+            method: paymentMethod,
+            description: 'تسوية كاملة'
+        });
+    }
+    
+    // ================== حذف دين ==================
+    function deleteDebt(debtId) {
+        const debt = debts.find(d => d.id == debtId);
+        if (!debt) return false;
+        
+        // التحقق من وجود دفعات
+        const debtPayments = payments.filter(p => p.debtId == debtId);
+        if (debtPayments.length > 0) {
+            utilsModule.showNotification('خطأ', 'لا يمكن حذف دين له دفعات', 'error');
+            return false;
+        }
+        
+        utilsModule.showConfirmation(
+            'تأكيد الحذف',
+            `هل أنت متأكد من حذف الدين رقم ${debt.number}؟`,
+            () => {
+                debts = debts.filter(d => d.id != debtId);
+                saveDebts();
+                updatePartyDebtStats(debt.partyId, debt.partyType);
+                utilsModule.showNotification('تم', 'تم حذف الدين');
+                renderDebts();
+            }
+        );
+        
+        return true;
+    }
+    
+    // ================== عرض الديون في الجدول ==================
+    function renderDebts() {
+        const tbody = document.getElementById('debts-tbody');
         if (!tbody) return;
         
-        if (data.debts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4">لا توجد بيانات</td></tr>';
+        const activeDebts = getActiveDebts();
+        
+        if (activeDebts.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4">لا توجد ديون نشطة</td></tr>';
             return;
         }
         
-        tbody.innerHTML = data.debts.map(d => {
-            let statusClass = 'bg-success';
-            let statusText = 'دائن';
+        tbody.innerHTML = activeDebts.map(debt => {
+            const statusClass = debt.status === 'overdue' ? 'badge-danger' : 
+                               debt.status === 'partial' ? 'badge-warning' : 'badge-info';
+            const statusText = debt.status === 'overdue' ? 'متأخر' :
+                              debt.status === 'partial' ? 'مسدد جزئياً' : 'نشط';
             
-            if (d.remaining > 0) {
-                statusClass = d.isOverdue ? 'bg-danger' : 'bg-warning';
-                statusText = d.isOverdue ? 'متأخر' : 'مدين';
-            }
+            const dueDate = debt.dueDate ? new Date(debt.dueDate).toLocaleDateString('ar-EG') : '-';
+            const isOverdue = debt.dueDate && new Date(debt.dueDate) < new Date() && debt.status !== 'paid';
             
             return `
             <tr>
-                <td>${d.name}</td>
-                <td>${d.phone}</td>
-                <td>${_formatCurrency(d.totalPurchases)}</td>
-                <td>${_formatCurrency(d.paid)}</td>
-                <td class="${d.remaining > 0 ? 'text-danger fw-bold' : 'text-success'}">${_formatCurrency(d.remaining)}</td>
-                <td>${_formatCurrency(d.maxDebt)}</td>
-                <td><span class="badge ${statusClass}">${statusText}</span></td>
+                <td>${debt.number}</td>
+                <td>${debt.partyName}</td>
+                <td>${debt.partyType === 'customer' ? 'عميل' : 'مورد'}</td>
+                <td>${utilsModule.formatCurrency(debt.amount)}</td>
+                <td>${utilsModule.formatCurrency(debt.paid)}</td>
+                <td>${utilsModule.formatCurrency(debt.remaining)}</td>
+                <td>${dueDate} ${isOverdue ? '⚠️' : ''}</td>
                 <td>
-                    ${d.remaining > 0 ? 
-                        `<button class="btn btn-sm btn-success" onclick="debtModule.payCustomerDebt('${d.name}')">
-                            <i class="material-icons-round">payment</i> تسديد
-                        </button>` : 
-                        `<span class="badge bg-success">مدفوع</span>`
-                    }
+                    <span class="${statusClass}">${statusText}</span>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="debtModule.showDebtDetails('${debt.id}')">
+                        <i class="material-icons-round">visibility</i>
+                    </button>
+                    <button class="btn btn-sm btn-success" onclick="debtModule.showPaymentForm('${debt.id}')">
+                        <i class="material-icons-round">payments</i>
+                    </button>
+                    ${debt.paid === 0 ? `
+                        <button class="btn btn-sm btn-danger" onclick="debtModule.deleteDebt('${debt.id}')">
+                            <i class="material-icons-round">delete</i>
+                        </button>
+                    ` : ''}
                 </td>
             </tr>
         `}).join('');
     }
-
-    // ================== تسديد دين عميل ==================
-    function payCustomerDebt(customerName) {
-        const data = calculateCustomerDebts();
-        const customer = data.debts.find(d => d.name === customerName);
+    
+    // ================== عرض تفاصيل الدين ==================
+    function showDebtDetails(debtId) {
+        const debt = debts.find(d => d.id == debtId);
+        if (!debt) return;
         
-        if (!customer) {
-            _showNotification('خطأ', 'العميل غير موجود', 'error');
-            return;
-        }
+        const debtPayments = getDebtPayments(debtId);
         
-        if (customer.remaining <= 0) {
-            _showNotification('معلومات', 'لا توجد ديون مستحقة', 'info');
-            return;
+        let paymentsHtml = '';
+        if (debtPayments.length > 0) {
+            paymentsHtml = `
+                <h4 style="margin-top:20px;">الدفعات</h4>
+                <table style="width:100%; border-collapse:collapse;">
+                    <thead>
+                        <tr style="background:#f5f5f5;">
+                            <th style="padding:8px; border:1px solid #ddd;">#</th>
+                            <th style="padding:8px; border:1px solid #ddd;">التاريخ</th>
+                            <th style="padding:8px; border:1px solid #ddd;">المبلغ</th>
+                            <th style="padding:8px; border:1px solid #ddd;">طريقة الدفع</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${debtPayments.map((p, i) => `
+                            <tr>
+                                <td style="padding:8px; border:1px solid #ddd;">${i + 1}</td>
+                                <td style="padding:8px; border:1px solid #ddd;">${utilsModule.formatDate(p.date)}</td>
+                                <td style="padding:8px; border:1px solid #ddd;">${utilsModule.formatCurrency(p.amount)}</td>
+                                <td style="padding:8px; border:1px solid #ddd;">${p.method === 'cash' ? 'نقدي' : p.method === 'card' ? 'بطاقة' : p.method === 'check' ? 'شيك' : 'تحويل'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
         }
         
         Swal.fire({
-            title: 'تسديد دين',
+            title: `تفاصيل الدين ${debt.number}`,
             html: `
-                <div style="text-align:right; padding:10px;">
-                    <p><strong>العميل:</strong> ${customerName}</p>
-                    <p><strong>المتبقي:</strong> ${_formatCurrency(customer.remaining)}</p>
+                <div style="text-align:right; max-height:500px; overflow-y:auto; padding:10px;">
+                    <p><strong>الطرف:</strong> ${debt.partyName} (${debt.partyType === 'customer' ? 'عميل' : 'مورد'})</p>
+                    <p><strong>تاريخ الإنشاء:</strong> ${utilsModule.formatDate(debt.createdAt)}</p>
+                    <p><strong>تاريخ الاستحقاق:</strong> ${debt.dueDate ? utilsModule.formatDate(debt.dueDate) : 'غير محدد'}</p>
+                    <p><strong>المبلغ الأصلي:</strong> ${utilsModule.formatCurrency(debt.amount)}</p>
+                    <p><strong>المدفوع:</strong> ${utilsModule.formatCurrency(debt.paid)}</p>
+                    <p><strong>المتبقي:</strong> ${utilsModule.formatCurrency(debt.remaining)}</p>
+                    <p><strong>الحالة:</strong> ${debt.status === 'paid' ? 'مسدد' : debt.status === 'partial' ? 'مسدد جزئياً' : 'نشط'}</p>
+                    ${debt.invoiceNumber ? `<p><strong>رقم الفاتورة:</strong> ${debt.invoiceNumber}</p>` : ''}
+                    ${debt.description ? `<p><strong>الوصف:</strong> ${debt.description}</p>` : ''}
+                    ${debt.notes ? `<p><strong>ملاحظات:</strong> ${debt.notes}</p>` : ''}
+                    ${paymentsHtml}
+                </div>
+            `,
+            width: '800px',
+            confirmButtonText: 'إغلاق'
+        });
+    }
+    
+    // ================== عرض نموذج الدفع ==================
+    function showPaymentForm(debtId) {
+        const debt = debts.find(d => d.id == debtId);
+        if (!debt) return;
+        
+        Swal.fire({
+            title: 'تسجيل دفعة',
+            html: `
+                <div style="text-align:right;">
+                    <p><strong>الدين:</strong> ${debt.number}</p>
+                    <p><strong>الطرف:</strong> ${debt.partyName}</p>
+                    <p><strong>المتبقي:</strong> ${utilsModule.formatCurrency(debt.remaining)}</p>
                     <hr>
                     <div class="form-group">
-                        <label>المبلغ المدفوع</label>
-                        <input type="number" id="payment-amount" class="form-control" value="${customer.remaining}" min="1" max="${customer.remaining}">
+                        <label>المبلغ</label>
+                        <input type="number" id="payment-amount" class="form-control" value="${debt.remaining}" min="1" max="${debt.remaining}">
                     </div>
                     <div class="form-group">
                         <label>طريقة الدفع</label>
-                        <select id="payment-method" class="form-select">
-                            <option value="نقدي">💰 نقدي</option>
-                            <option value="بطاقة">💳 بطاقة</option>
-                            <option value="شيك">📝 شيك</option>
+                        <select id="payment-method" class="form-control">
+                            <option value="cash">نقدي</option>
+                            <option value="card">بطاقة</option>
+                            <option value="check">شيك</option>
+                            <option value="transfer">تحويل بنكي</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label>التاريخ</label>
+                        <input type="date" id="payment-date" class="form-control" value="${new Date().toISOString().split('T')[0]}">
+                    </div>
+                    <div class="form-group">
+                        <label>ملاحظات</label>
+                        <textarea id="payment-notes" class="form-control" rows="2" placeholder="اختياري"></textarea>
                     </div>
                 </div>
             `,
             showCancelButton: true,
-            confirmButtonText: 'تأكيد الدفع',
+            confirmButtonText: 'تسجيل',
             cancelButtonText: 'إلغاء',
             preConfirm: () => {
                 const amount = parseFloat(document.getElementById('payment-amount').value);
-                if (isNaN(amount) || amount <= 0) {
-                    Swal.showValidationMessage('الرجاء إدخال مبلغ صحيح');
+                if (!amount || amount <= 0) {
+                    Swal.showValidationMessage('المبلغ مطلوب');
                     return false;
                 }
-                return amount;
+                if (amount > debt.remaining) {
+                    Swal.showValidationMessage('المبلغ أكبر من المتبقي');
+                    return false;
+                }
+                return {
+                    amount: amount,
+                    method: document.getElementById('payment-method').value,
+                    date: document.getElementById('payment-date').value,
+                    notes: document.getElementById('payment-notes').value
+                };
             }
         }).then((result) => {
             if (result.isConfirmed) {
-                const amount = result.value;
-                const method = document.getElementById('payment-method').value;
-                
-                payments.push({
-                    id: Date.now(),
-                    customer: customerName,
-                    amount: amount,
-                    method: method,
-                    date: new Date().toLocaleString('ar-DZ'),
-                    timestamp: new Date().toISOString()
+                const payment = addPayment({
+                    debtId: debt.id,
+                    amount: result.value.amount,
+                    method: result.value.method,
+                    date: new Date(result.value.date).toISOString(),
+                    description: result.value.notes
                 });
                 
-                _savePayments();
-                
-                _showNotification('نجاح', 'تم تسديد الدين بنجاح', 'success');
-                renderCustomerDebts();
+                if (payment) {
+                    renderDebts();
+                    updateStats();
+                }
             }
         });
     }
-
-    // ================== حساب ديون الموردين ==================
-    function calculateSupplierDebts() {
-        const suppliers = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.SUPPLIERS)) || [];
-        const purchases = JSON.parse(localStorage.getItem(CONFIG.STORAGE_KEYS.PURCHASES)) || [];
+    
+    // ================== تحديث الإحصائيات ==================
+    function updateStats() {
+        const stats = getTotalDebts();
+        const paymentsStats = getPaymentsStats();
         
-        const debts = [];
-        let totalDebt = 0;
-        let debtorCount = 0;
-        let creditorCount = 0;
-        let maxDebt = 0;
+        const elements = {
+            'total-debt': stats.remaining,
+            'customer-debt': stats.byType.customer.amount,
+            'supplier-debt': stats.byType.supplier.amount,
+            'active-debts': stats.active.count,
+            'total-paid': stats.paid,
+            'today-payments': paymentsStats.today.amount,
+            'month-payments': paymentsStats.thisMonth.amount
+        };
         
-        suppliers.forEach(supplier => {
-            const supplierPurchases = purchases.filter(p => p.supplier === supplier.name);
-            const totalPurchases = supplierPurchases.reduce((sum, p) => sum + (p.total || 0), 0);
-            
-            const paid = totalPurchases * 0.7;
-            const remaining = totalPurchases - paid;
-            
-            let lastInvoice = '-';
-            if (supplierPurchases.length > 0) {
-                const sorted = supplierPurchases.sort((a, b) => new Date(b.date) - new Date(a.date));
-                lastInvoice = sorted[0].date;
+        Object.entries(elements).forEach(([id, value]) => {
+            const el = document.getElementById(id);
+            if (el) {
+                if (id.includes('debt') || id.includes('paid') || id.includes('payments')) {
+                    el.textContent = utilsModule.formatCurrency(value);
+                } else {
+                    el.textContent = value;
+                }
             }
-            
-            if (remaining > 0) {
-                totalDebt += remaining;
-                debtorCount++;
-                if (remaining > maxDebt) maxDebt = remaining;
-            } else {
-                creditorCount++;
-            }
-            
-            debts.push({
-                name: supplier.name,
-                phone: supplier.phone || '-',
-                totalPurchases: totalPurchases,
-                paid: paid,
-                remaining: remaining,
-                lastInvoice: lastInvoice
-            });
         });
+    }
+    
+    // ================== تقرير الديون ==================
+    function getDebtReport() {
+        const stats = getTotalDebts();
+        const overdue = getOverdueDebts();
         
         return {
-            debts: debts.sort((a, b) => b.remaining - a.remaining),
-            totalDebt: totalDebt,
-            debtorCount: debtorCount,
-            creditorCount: creditorCount,
-            maxDebt: maxDebt,
-            avgDebt: debtorCount > 0 ? totalDebt / debtorCount : 0
+            summary: stats,
+            overdue: {
+                count: overdue.length,
+                amount: overdue.reduce((sum, d) => sum + d.remaining, 0),
+                details: overdue
+            },
+            byParty: {
+                customers: debts.filter(d => d.partyType === 'customer' && d.status !== 'paid')
+                    .map(d => ({
+                        name: d.partyName,
+                        amount: d.remaining,
+                        dueDate: d.dueDate
+                    })),
+                suppliers: debts.filter(d => d.partyType === 'supplier' && d.status !== 'paid')
+                    .map(d => ({
+                        name: d.partyName,
+                        amount: d.remaining,
+                        dueDate: d.dueDate
+                    }))
+            }
         };
     }
-
-    // ================== عرض ديون الموردين ==================
-    function renderSupplierDebts() {
-        const data = calculateSupplierDebts();
-        
-        const totalEl = document.getElementById('total-supplier-debt');
-        const debtorEl = document.getElementById('debtor-suppliers-count');
-        const creditorEl = document.getElementById('creditor-suppliers-count');
-        
-        if (totalEl) totalEl.innerHTML = data.totalDebt.toFixed(2) + ' دج';
-        if (debtorEl) debtorEl.innerHTML = data.debtorCount;
-        if (creditorEl) creditorEl.innerHTML = data.creditorCount;
-        
-        const tbody = document.getElementById('supplier-debts-tbody');
-        if (!tbody) return;
-        
-        if (data.debts.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4">لا توجد بيانات</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = data.debts.map(d => `
-            <tr>
-                <td>${d.name}</td>
-                <td>${d.phone}</td>
-                <td>${_formatCurrency(d.totalPurchases)}</td>
-                <td>${_formatCurrency(d.paid)}</td>
-                <td class="${d.remaining > 0 ? 'text-danger fw-bold' : 'text-success'}">${_formatCurrency(d.remaining)}</td>
-                <td>${d.lastInvoice}</td>
-            </tr>
-        `).join('');
-    }
-
-    // ================== عرض ملخص الديون ==================
-    function renderDebtSummary() {
-        const customerData = calculateCustomerDebts();
-        const supplierData = calculateSupplierDebts();
-        
-        const summaryCustomerDebt = document.getElementById('summary-customer-debt');
-        const summaryDebtorCustomers = document.getElementById('summary-debtor-customers');
-        const maxCustomerDebt = document.getElementById('max-customer-debt');
-        const avgCustomerDebt = document.getElementById('avg-customer-debt');
-        
-        if (summaryCustomerDebt) summaryCustomerDebt.innerHTML = customerData.totalDebt.toFixed(2) + ' دج';
-        if (summaryDebtorCustomers) summaryDebtorCustomers.innerHTML = customerData.debtorCount;
-        if (maxCustomerDebt) maxCustomerDebt.innerHTML = customerData.maxDebt.toFixed(2) + ' دج';
-        if (avgCustomerDebt) avgCustomerDebt.innerHTML = customerData.avgDebt.toFixed(2) + ' دج';
-        
-        const summarySupplierDebt = document.getElementById('summary-supplier-debt');
-        const summaryDebtorSuppliers = document.getElementById('summary-debtor-suppliers');
-        const maxSupplierDebt = document.getElementById('max-supplier-debt');
-        const avgSupplierDebt = document.getElementById('avg-supplier-debt');
-        
-        if (summarySupplierDebt) summarySupplierDebt.innerHTML = supplierData.totalDebt.toFixed(2) + ' دج';
-        if (summaryDebtorSuppliers) summaryDebtorSuppliers.innerHTML = supplierData.debtorCount;
-        if (maxSupplierDebt) maxSupplierDebt.innerHTML = supplierData.maxDebt.toFixed(2) + ' دج';
-        if (avgSupplierDebt) avgSupplierDebt.innerHTML = supplierData.avgDebt.toFixed(2) + ' دج';
-        
-        const netDebt = document.getElementById('net-debt');
-        if (netDebt) netDebt.innerHTML = (customerData.totalDebt - supplierData.totalDebt).toFixed(2) + ' دج';
-    }
-
-    // ================== فلترة ديون العملاء ==================
-    function filterCustomerDebts() {
-        const filter = document.getElementById('debt-filter')?.value || 'all';
-        const searchTerm = document.getElementById('debt-search')?.value.toLowerCase().trim() || '';
-        
-        const data = calculateCustomerDebts();
-        let filtered = data.debts;
-        
-        if (filter === 'debtor') filtered = filtered.filter(d => d.remaining > 0);
-        else if (filter === 'clean') filtered = filtered.filter(d => d.remaining <= 0);
-        
-        if (searchTerm) {
-            filtered = filtered.filter(d => 
-                d.name.toLowerCase().includes(searchTerm) || 
-                d.phone.includes(searchTerm)
-            );
-        }
-        
-        renderFilteredCustomerDebts(filtered);
-    }
-
-    function renderFilteredCustomerDebts(filtered) {
-        const tbody = document.getElementById('customer-debts-tbody');
-        if (!tbody) return;
-        
-        if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4">لا توجد نتائج</td></tr>';
-            return;
-        }
-        
-        tbody.innerHTML = filtered.map(d => {
-            let statusClass = 'bg-success';
-            let statusText = 'دائن';
-            
-            if (d.remaining > 0) {
-                statusClass = d.isOverdue ? 'bg-danger' : 'bg-warning';
-                statusText = d.isOverdue ? 'متأخر' : 'مدين';
-            }
-            
-            return `
-            <tr>
-                <td>${d.name}</td>
-                <td>${d.phone}</td>
-                <td>${_formatCurrency(d.totalPurchases)}</td>
-                <td>${_formatCurrency(d.paid)}</td>
-                <td class="${d.remaining > 0 ? 'text-danger fw-bold' : 'text-success'}">${_formatCurrency(d.remaining)}</td>
-                <td>${_formatCurrency(d.maxDebt)}</td>
-                <td><span class="badge ${statusClass}">${statusText}</span></td>
-                <td>
-                    ${d.remaining > 0 ? 
-                        `<button class="btn btn-sm btn-success" onclick="debtModule.payCustomerDebt('${d.name}')">
-                            <i class="material-icons-round">payment</i>
-                        </button>` : 
-                        `<span class="badge bg-success">✓</span>`
-                    }
-                </td>
-            </tr>
-        `}).join('');
-    }
-
-    function searchCustomerDebts() {
-        filterCustomerDebts();
-    }
-
-    // ================== تصدير ديون العملاء إلى Excel ==================
-    function exportDebtsToExcel() {
-        const data = calculateCustomerDebts();
-        
-        const rows = data.debts.map(d => ({
-            'العميل': d.name,
-            'الهاتف': d.phone,
-            'إجمالي المشتريات': d.totalPurchases.toFixed(2),
-            'المدفوع': d.paid.toFixed(2),
-            'المتبقي': d.remaining.toFixed(2),
-            'الحد المسموح': d.maxDebt,
-            'آخر فاتورة': d.lastInvoice,
-            'آخر دفعة': d.lastPayment,
-            'الحالة': d.remaining > 0 ? (d.isOverdue ? 'متأخر' : 'مدين') : 'دائن'
+    
+    // ================== تصدير الديون إلى CSV ==================
+    function exportDebtsToCSV() {
+        const headers = ['رقم الدين', 'الطرف', 'النوع', 'المبلغ', 'المدفوع', 'المتبقي', 'تاريخ الاستحقاق', 'الحالة'];
+        const data = debts.map(d => ({
+            number: d.number,
+            party: d.partyName,
+            type: d.partyType === 'customer' ? 'عميل' : 'مورد',
+            amount: d.amount,
+            paid: d.paid,
+            remaining: d.remaining,
+            dueDate: d.dueDate ? utilsModule.formatDate(d.dueDate) : '-',
+            status: d.status === 'paid' ? 'مسدد' : d.status === 'partial' ? 'مسدد جزئياً' : d.status === 'overdue' ? 'متأخر' : 'نشط'
         }));
         
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(rows);
-        XLSX.utils.book_append_sheet(wb, ws, "ديون العملاء");
-        
-        const today = new Date();
-        const dateStr = `${today.getDate()}-${today.getMonth()+1}-${today.getFullYear()}`;
-        XLSX.writeFile(wb, `ديون_العملاء_${dateStr}.xlsx`);
-        
-        _showNotification('نجاح', 'تم تصدير التقرير', 'success');
+        utilsModule.exportToCSV(data, 'debts', headers);
     }
-
+    
+    // ================== تصدير الدفعات إلى CSV ==================
+    function exportPaymentsToCSV() {
+        const headers = ['رقم الدفعة', 'رقم الدين', 'الطرف', 'النوع', 'المبلغ', 'طريقة الدفع', 'التاريخ'];
+        const data = payments.map(p => ({
+            number: p.number,
+            debtNumber: p.debtNumber,
+            party: p.partyName,
+            type: p.partyType === 'customer' ? 'عميل' : 'مورد',
+            amount: p.amount,
+            method: p.method === 'cash' ? 'نقدي' : p.method === 'card' ? 'بطاقة' : p.method === 'check' ? 'شيك' : 'تحويل',
+            date: utilsModule.formatDate(p.date)
+        }));
+        
+        utilsModule.exportToCSV(data, 'payments', headers);
+    }
+    
+    // ================== تهيئة الوحدة ==================
     function init() {
-        if (document.getElementById('customer-debts-tbody')) renderCustomerDebts();
-        if (document.getElementById('supplier-debts-tbody')) renderSupplierDebts();
-        if (document.getElementById('summary-customer-debt')) renderDebtSummary();
+        console.log('✅ debtModule initialized - الرقم 26');
+        console.log(`   عدد الديون: ${debts.length}`);
+        console.log(`   إجمالي المتبقي: ${utilsModule.formatCurrency(debts.reduce((sum, d) => sum + d.remaining, 0))}`);
+        
+        renderDebts();
+        updateStats();
     }
-
+    
+    // ================== واجهة الوحدة ==================
     return {
-        calculateCustomerDebts,
-        calculateSupplierDebts,
-        renderCustomerDebts,
-        renderSupplierDebts,
-        renderDebtSummary,
-        payCustomerDebt,
-        filterCustomerDebts,
-        searchCustomerDebts,
-        exportDebtsToExcel,
+        // البيانات
+        debts,
+        payments,
+        
+        // إنشاء
+        createDebt,
+        addPayment,
+        settleDebt,
+        
+        // استعلام
+        getCustomerDebts,
+        getSupplierDebts,
+        getActiveDebts,
+        getOverdueDebts,
+        getAllDebts,
+        getDebtPayments,
+        getAllPayments,
+        
+        // إحصائيات
+        getTotalDebts,
+        getPaymentsStats,
+        getDebtReport,
+        
+        // عرض
+        renderDebts,
+        showDebtDetails,
+        showPaymentForm,
+        updateStats,
+        
+        // عمليات
+        deleteDebt,
+        
+        // تصدير
+        exportDebtsToCSV,
+        exportPaymentsToCSV,
+        
+        // تهيئة
         init
     };
 })();
 
+// ================== تصدير للاستخدام العام ==================
 window.debtModule = debtModule;
 
-document.addEventListener('DOMContentLoaded', function() {
-    if (typeof debtModule !== 'undefined' && debtModule.init) debtModule.init();
-});
+// ================== دوال مختصرة للاستخدام في HTML ==================
+window.showDebtDetails = (id) => debtModule.showDebtDetails(id);
+window.showPaymentForm = (id) => debtModule.showPaymentForm(id);
+window.exportDebts = () => debtModule.exportDebtsToCSV();
+window.exportPayments = () => debtModule.exportPaymentsToCSV();
+
+// ================== تهيئة تلقائية ==================
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function() {
+        if (debtModule && debtModule.init) {
+            debtModule.init();
+        }
+    });
+    
+    document.addEventListener('html-loaded', function() {
+        if (debtModule && debtModule.init) {
+            debtModule.init();
+        }
+    });
+}
