@@ -29,34 +29,37 @@
 
     <!-- ===== تحميل JavaScript Modules بالترتيب الصحيح ===== -->
     
-    <!-- 1️⃣ الدوال المساعدة أولاً -->
+    <!-- 1️⃣ المكتبات الخارجية -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- 2️⃣ الدوال المساعدة أولاً -->
     <script src="js/modules/utils.js"></script>
     
-    <!-- 2️⃣ ملفات البيانات الأساسية -->
+    <!-- 3️⃣ ملفات البيانات الأساسية -->
     <script src="js/modules/product.js"></script>
     <script src="js/modules/inventory.js"></script>
     <script src="js/modules/customer.js"></script>
     <script src="js/modules/supplier.js"></script>
     
-    <!-- 3️⃣ ملفات العمليات -->
+    <!-- 4️⃣ ملفات العمليات -->
     <script src="js/modules/sales.js"></script>
     <script src="js/modules/purchases.js"></script>
     
-    <!-- 4️⃣ ملفات الفواتير والتقارير -->
+    <!-- 5️⃣ ملفات الفواتير والتقارير -->
     <script src="js/modules/invoices.js"></script>
     <script src="js/modules/reports.js"></script>
     <script src="js/modules/debt.js"></script>
     
-    <!-- 5️⃣ ملفات إضافية -->
+    <!-- 6️⃣ ملفات إضافية -->
     <script src="js/modules/backup.js"></script>
     <script src="js/modules/ai.js"></script>
     
-    <!-- 6️⃣ الملف الرئيسي -->
+    <!-- 7️⃣ الملف الرئيسي -->
     <script src="js/app.js"></script>
 
     <!-- ===== تحميل أقسام HTML ===== -->
     <script>
-        // ترتيب تحميل الأقسام
+        // ترتيب تحميل الأقسام (14 ملف)
         const sections = [
             'login.html',
             'header.html',
@@ -68,11 +71,10 @@
             'product-section.html',
             'customer-section.html',
             'supplier-section.html',
-            'invoices-section.html',
+            'invoices.html',
             'modals.html',
             'print-areas.html',
-            'footer.html',
-            'scripts.html'
+            'footer.html'
         ];
 
         async function loadSections() {
@@ -81,19 +83,230 @@
             for (const section of sections) {
                 try {
                     const response = await fetch(`includes/${section}`);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     const html = await response.text();
                     app.innerHTML += html;
                     console.log(`✅ تم تحميل ${section}`);
                 } catch (error) {
                     console.error(`❌ فشل تحميل ${section}:`, error);
+                    // أنشئ قسم افتراضي في حالة الفشل
+                    if (section === 'invoices.html') {
+                        app.innerHTML += `
+                            <div id="invoices" class="section">
+                                <div class="main-card">
+                                    <h3 class="text-center">قسم الفواتير</h3>
+                                    <p class="text-center">جاري التحميل...</p>
+                                </div>
+                            </div>
+                        `;
+                    }
                 }
             }
             
             // إعلام أن HTML جاهز
             document.dispatchEvent(new Event('html-loaded'));
+            console.log('✅ جميع أقسام HTML محملة');
         }
 
+        // بدأ التحميل بعد تحميل الصفحة
         document.addEventListener('DOMContentLoaded', loadSections);
+    </script>
+
+    <!-- ===== دوال التنقل الأساسية ===== -->
+    <script>
+        // التبديل بين الأقسام
+        function switchSection(sectionId, element) {
+            console.log('🔄 التبديل إلى:', sectionId);
+            
+            // إخفاء جميع الأقسام
+            document.querySelectorAll('.section').forEach(s => {
+                s.classList.remove('active-section');
+            });
+            
+            // إظهار القسم المطلوب
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.add('active-section');
+                console.log('✅ تم العثور على القسم:', sectionId);
+                
+                // تحديث الشريط السفلي
+                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+                if (element) element.classList.add('active');
+            } else {
+                console.error('❌ القسم غير موجود:', sectionId);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'خطأ',
+                    text: `القسم "${sectionId}" غير موجود`
+                });
+            }
+        }
+
+        // التبديل بين الأقسام الفرعية
+        function showSubSection(subId) {
+            const parent = document.querySelector('.active-section');
+            if (!parent) return;
+            
+            parent.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
+            const target = document.getElementById(subId);
+            if (target) target.style.display = 'block';
+            
+            // تحديث التبويبات
+            const tabs = parent.querySelectorAll('.tab-item');
+            tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
+            
+            tabs.forEach(t => {
+                if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(subId)) {
+                    if (parent.id === 'sales') t.classList.add('active-red');
+                    else if (parent.id === 'purchases') t.classList.add('active-green');
+                    else if (parent.id === 'add' || parent.id === 'invoices') t.classList.add('active-nardo');
+                }
+            });
+        }
+
+        // دوال القائمة الجانبية
+        function toggleSidebar() {
+            document.getElementById('sidebar')?.classList.toggle('show');
+        }
+
+        function openUserMenu() {
+            Swal.fire({
+                title: 'حساب المستخدم',
+                html: `
+                    <div style="text-align:right">
+                        <p><strong>المستخدم:</strong> مدير النظام</p>
+                        <p><strong>الصلاحية:</strong> كاملة</p>
+                        <p><strong>الإصدار:</strong> 2.0.0</p>
+                        <p><strong>آخر دخول:</strong> ${new Date().toLocaleDateString('ar-EG')}</p>
+                    </div>
+                `,
+                confirmButtonText: 'تسجيل الخروج',
+                showCancelButton: true,
+                cancelButtonText: 'إلغاء'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    logout();
+                }
+            });
+        }
+
+        function openSettings() {
+            Swal.fire({
+                title: 'الإعدادات',
+                text: 'قريباً...',
+                icon: 'info'
+            });
+        }
+
+        function logout() {
+            localStorage.removeItem('isLoggedIn');
+            location.reload();
+        }
+
+        // دوال تسجيل الدخول
+        function checkPassword() {
+            const password = document.getElementById('password-input')?.value;
+            const error = document.getElementById('error-message');
+            
+            if (password === '123456') {
+                if (error) error.style.display = 'none';
+                document.getElementById('login-screen').style.display = 'none';
+                localStorage.setItem('isLoggedIn', 'true');
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'مرحباً بك',
+                    text: 'تم تسجيل الدخول بنجاح',
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            } else {
+                if (error) error.style.display = 'flex';
+            }
+        }
+
+        function togglePasswordVisibility() {
+            const input = document.getElementById('password-input');
+            const icon = document.querySelector('.toggle-password');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.textContent = 'visibility';
+            } else {
+                input.type = 'password';
+                icon.textContent = 'visibility_off';
+            }
+        }
+
+        function showResetPassword() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('reset-password-screen').style.display = 'flex';
+        }
+
+        function backToLogin() {
+            document.getElementById('reset-password-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+        }
+
+        function useDefaultPassword() {
+            document.getElementById('password-input').value = '123456';
+            backToLogin();
+            Swal.fire({
+                icon: 'info',
+                title: 'تم',
+                text: 'تم تعيين كلمة السر إلى 123456',
+                timer: 2000,
+                showConfirmButton: false
+            });
+        }
+
+        // دوال مساعدة
+        function openBarcodeScanner() {
+            const modal = document.getElementById('barcodeScannerModal');
+            if (modal) {
+                const bsModal = new bootstrap.Modal(modal);
+                bsModal.show();
+            } else {
+                Swal.fire('معلومة', 'ماسح الباركود غير متوفر', 'info');
+            }
+        }
+
+        function startVoiceSearch() {
+            Swal.fire('البحث الصوتي', 'قريباً إن شاء الله', 'info');
+        }
+
+        function exportBackup() {
+            if (window.backupModule) {
+                backupModule.exportBackup();
+            } else {
+                Swal.fire('معلومة', 'النسخ الاحتياطي غير متوفر', 'info');
+            }
+        }
+
+        function uploadExcel() {
+            Swal.fire('رفع Excel', 'قريباً', 'info');
+        }
+
+        // التحقق من حالة تسجيل الدخول
+        (function() {
+            if (localStorage.getItem('isLoggedIn') === 'true') {
+                setTimeout(() => {
+                    document.getElementById('login-screen')?.style.display = 'none';
+                }, 100);
+            }
+        })();
+
+        // إغلاق القائمة الجانبية عند النقر خارجها
+        document.addEventListener('click', function(e) {
+            const sidebar = document.getElementById('sidebar');
+            const menuIcon = document.querySelector('.app-header i:first-child');
+            if (sidebar?.classList.contains('show') && 
+                !sidebar.contains(e.target) && 
+                e.target !== menuIcon) {
+                sidebar.classList.remove('show');
+            }
+        });
+
+        console.log('✅ جميع الدوال العامة جاهزة');
     </script>
 </body>
 </html>
