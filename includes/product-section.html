@@ -1,4 +1,4 @@
-<!-- ================== قسم إدارة المنتجات ================== -->
+<!-- ================== قسم إدارة المنتجات المتقدم ================== -->
 <div id="products" class="section">
     <div class="nav-tabs-custom no-print">
         <div class="tab-item active-nardo" onclick="showSubSection('product-list')">
@@ -7,33 +7,56 @@
         <div class="tab-item" onclick="showSubSection('product-categories')">
             <i class="material-icons-round">category</i> التصنيفات
         </div>
+        <div class="tab-item" onclick="showSubSection('product-brands')">
+            <i class="material-icons-round">star</i> الماركات
+        </div>
         <div class="tab-item" onclick="showSubSection('product-low-stock')">
             <i class="material-icons-round">warning</i> المنتجات الناقصة
         </div>
+        <div class="tab-item" onclick="showSubSection('product-barcodes')">
+            <i class="material-icons-round">qr_code_scanner</i> الباركود
+        </div>
     </div>
 
-    <!-- قائمة المنتجات -->
+    <!-- ===== قائمة المنتجات ===== -->
     <div id="product-list" class="sub-section">
         <div class="main-card">
-            <h5 class="text-center mb-4">📋 قائمة المنتجات</h5>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="mb-0"><i class="material-icons-round">inventory</i> قائمة المنتجات</h5>
+                <button class="btn btn-primary" onclick="window.switchSection('add'); showSubSection('add-product')">
+                    <i class="material-icons-round">add</i> إضافة منتج جديد
+                </button>
+            </div>
             
             <div class="row g-2 mb-3">
-                <div class="col-8">
+                <div class="col-md-5 col-12">
                     <div class="input-group">
                         <span class="input-group-text"><i class="material-icons-round">search</i></span>
                         <input type="text" id="product-search" class="form-control" 
-                               placeholder="بحث عن منتج..." 
+                               placeholder="بحث باسم المنتج أو الباركود..." 
                                oninput="productModule.searchProducts(this.value)">
+                        <button class="btn btn-outline-secondary" type="button" onclick="startVoiceSearch('products')">
+                            <i class="material-icons-round">mic</i>
+                        </button>
                     </div>
                 </div>
-                <div class="col-4">
+                <div class="col-md-3 col-12">
                     <select id="product-category-filter" class="form-select" onchange="productModule.filterByCategory()">
                         <option value="">جميع التصنيفات</option>
-                        <option value="مواد غذائية">مواد غذائية</option>
-                        <option value="مشروبات">مشروبات</option>
-                        <option value="منظفات">منظفات</option>
-                        <option value="الكترونيات">الكترونيات</option>
                     </select>
+                </div>
+                <div class="col-md-2 col-12">
+                    <select id="product-status-filter" class="form-select" onchange="productModule.filterByStatus()">
+                        <option value="all">جميع الحالات</option>
+                        <option value="active">نشط</option>
+                        <option value="inactive">غير نشط</option>
+                        <option value="lowstock">منخفض المخزون</option>
+                    </select>
+                </div>
+                <div class="col-md-2 col-12">
+                    <button class="btn btn-success w-100" onclick="productModule.exportToExcel()">
+                        <i class="material-icons-round">download</i> تصدير
+                    </button>
                 </div>
             </div>
             
@@ -42,19 +65,23 @@
                     <thead>
                         <tr>
                             <th>#</th>
+                            <th>الصورة</th>
                             <th>المنتج</th>
                             <th>التصنيف</th>
+                            <th>الماركة</th>
                             <th>الكمية</th>
                             <th>الوحدة</th>
                             <th>سعر الشراء</th>
                             <th>سعر البيع</th>
+                            <th>سعر الجملة</th>
+                            <th>الباركود</th>
                             <th>الحالة</th>
-                            <th>تعديل</th>
+                            <th>عمليات</th>
                         </tr>
                     </thead>
                     <tbody id="products-tbody">
                         <tr>
-                            <td colspan="9" class="text-center p-4">
+                            <td colspan="13" class="text-center p-4">
                                 <i class="material-icons-round" style="font-size:48px;">inventory</i>
                                 <br>لا توجد منتجات
                             </td>
@@ -65,18 +92,23 @@
         </div>
     </div>
 
-    <!-- التصنيفات -->
+    <!-- ===== التصنيفات ===== -->
     <div id="product-categories" class="sub-section" style="display: none;">
         <div class="main-card">
-            <h5 class="text-center mb-4">🏷️ إدارة التصنيفات</h5>
+            <h5 class="text-center mb-4"><i class="material-icons-round">category</i> إدارة التصنيفات</h5>
             
             <div class="row g-2 mb-3">
-                <div class="col-8">
+                <div class="col-md-5 col-12">
                     <input type="text" id="new-category-name" class="form-control" placeholder="اسم التصنيف الجديد">
                 </div>
-                <div class="col-4">
+                <div class="col-md-4 col-12">
+                    <select id="new-category-parent" class="form-select">
+                        <option value="">تصنيف رئيسي</option>
+                    </select>
+                </div>
+                <div class="col-md-3 col-12">
                     <button class="btn btn-primary w-100" onclick="productModule.addCategory()">
-                        <i class="material-icons-round">add</i> إضافة
+                        <i class="material-icons-round">add</i> إضافة تصنيف
                     </button>
                 </div>
             </div>
@@ -87,13 +119,15 @@
                         <tr>
                             <th>#</th>
                             <th>اسم التصنيف</th>
+                            <th>التصنيف الأب</th>
                             <th>عدد المنتجات</th>
-                            <th>حذف</th>
+                            <th>الحالة</th>
+                            <th>عمليات</th>
                         </tr>
                     </thead>
                     <tbody id="categories-tbody">
                         <tr>
-                            <td colspan="4" class="text-center p-4">لا توجد تصنيفات</td>
+                            <td colspan="6" class="text-center p-4">لا توجد تصنيفات</td>
                         </tr>
                     </tbody>
                 </table>
@@ -101,10 +135,50 @@
         </div>
     </div>
 
-    <!-- المنتجات الناقصة -->
+    <!-- ===== الماركات ===== -->
+    <div id="product-brands" class="sub-section" style="display: none;">
+        <div class="main-card">
+            <h5 class="text-center mb-4"><i class="material-icons-round">star</i> إدارة الماركات</h5>
+            
+            <div class="row g-2 mb-3">
+                <div class="col-md-6 col-12">
+                    <input type="text" id="new-brand-name" class="form-control" placeholder="اسم الماركة الجديدة">
+                </div>
+                <div class="col-md-3 col-12">
+                    <input type="text" id="new-brand-logo" class="form-control" placeholder="رابط الشعار (اختياري)">
+                </div>
+                <div class="col-md-3 col-12">
+                    <button class="btn btn-primary w-100" onclick="productModule.addBrand()">
+                        <i class="material-icons-round">add</i> إضافة ماركة
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>الشعار</th>
+                            <th>اسم الماركة</th>
+                            <th>عدد المنتجات</th>
+                            <th>عمليات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="brands-tbody">
+                        <tr>
+                            <td colspan="5" class="text-center p-4">لا توجد ماركات</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== المنتجات الناقصة ===== -->
     <div id="product-low-stock" class="sub-section" style="display: none;">
         <div class="main-card">
-            <h5 class="text-center mb-4">⚠️ المنتجات الناقصة</h5>
+            <h5 class="text-center mb-4"><i class="material-icons-round">warning</i> المنتجات الناقصة</h5>
             
             <div class="table-responsive">
                 <table class="table-custom">
@@ -112,15 +186,77 @@
                         <tr>
                             <th>#</th>
                             <th>المنتج</th>
-                            <th>الكمية</th>
+                            <th>الكمية الحالية</th>
                             <th>الحد الأدنى</th>
                             <th>النقص</th>
+                            <th>سعر الشراء</th>
+                            <th>تكلفة الطلب</th>
+                            <th>المورد المفضل</th>
                             <th>إجراء</th>
                         </tr>
                     </thead>
                     <tbody id="low-stock-tbody">
                         <tr>
-                            <td colspan="6" class="text-center p-4">لا توجد منتجات ناقصة</td>
+                            <td colspan="9" class="text-center p-4">لا توجد منتجات ناقصة</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="text-center mt-3">
+                <button class="btn btn-success" onclick="productModule.orderAllLowStock()">
+                    <i class="material-icons-round">shopping_cart</i> طلب جميع المنتجات الناقصة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== الباركود ===== -->
+    <div id="product-barcodes" class="sub-section" style="display: none;">
+        <div class="main-card">
+            <h5 class="text-center mb-4"><i class="material-icons-round">qr_code_scanner</i> إدارة الباركود</h5>
+            
+            <div class="row g-2 mb-3">
+                <div class="col-md-8 col-12">
+                    <div class="input-group">
+                        <input type="text" id="barcode-input" class="form-control" placeholder="أدخل رقم الباركود أو امسحه">
+                        <button class="btn btn-primary" onclick="startBarcodeScanner('barcode-input')">
+                            <i class="material-icons-round">qr_code_scanner</i> مسح
+                        </button>
+                        <button class="btn btn-secondary" onclick="generateBarcode()">
+                            <i class="material-icons-round">autorenew</i> توليد
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-4 col-12">
+                    <select id="barcode-product-select" class="form-select">
+                        <option value="">اختر المنتج</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row g-2 mb-3">
+                <div class="col-12">
+                    <button class="btn btn-success w-100" onclick="assignBarcode()">
+                        <i class="material-icons-round">link</i> ربط الباركود بالمنتج
+                    </button>
+                </div>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table-custom">
+                    <thead>
+                        <tr>
+                            <th>المنتج</th>
+                            <th>الباركود</th>
+                            <th>صورة الباركود</th>
+                            <th>الحالة</th>
+                            <th>عمليات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="barcodes-tbody">
+                        <tr>
+                            <td colspan="5" class="text-center p-4">لا توجد باركودات</td>
                         </tr>
                     </tbody>
                 </table>
@@ -128,3 +264,52 @@
         </div>
     </div>
 </div>
+
+<script>
+    // دوال مساعدة
+    function startVoiceSearch(section) {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ar-SA';
+            
+            recognition.onresult = function(event) {
+                const text = event.results[0][0].transcript;
+                document.getElementById('product-search').value = text;
+                productModule.searchProducts(text);
+            };
+            
+            recognition.start();
+            Swal.fire('🎤', 'تحدث الآن...', 'info');
+        } else {
+            Swal.fire('خطأ', 'المتصفح لا يدعم البحث الصوتي', 'error');
+        }
+    }
+    
+    function startBarcodeScanner(inputId) {
+        const modal = new bootstrap.Modal(document.getElementById('barcodeScannerModal'));
+        modal.show();
+        
+        // بعد المسح، ضع القيمة في الحقل المطلوب
+        window.addEventListener('barcode-scanned', function(e) {
+            document.getElementById(inputId).value = e.detail.barcode;
+        });
+    }
+    
+    function generateBarcode() {
+        const barcode = '2' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
+        document.getElementById('barcode-input').value = barcode;
+    }
+    
+    function assignBarcode() {
+        const barcode = document.getElementById('barcode-input').value;
+        const productId = document.getElementById('barcode-product-select').value;
+        
+        if (!barcode || !productId) {
+            Swal.fire('تنبيه', 'الرجاء إدخال الباركود واختيار المنتج', 'warning');
+            return;
+        }
+        
+        productModule.assignBarcode(productId, barcode);
+    }
+</script>
