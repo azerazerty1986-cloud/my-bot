@@ -1,557 +1,597 @@
-// ================== إدارة المنتجات والمخزون - نسخة كاملة ==================
+// ================== inventory.js - إدارة المخزون ==================
+// الرقم 19 في ترتيب الملفات - يعتمد على utils.js و product.js
+
 const inventoryModule = (function() {
-    let stock = JSON.parse(localStorage.getItem('ryan_stock')) || [];
-    let movements = JSON.parse(localStorage.getItem('ryan_movements')) || [];
-
-    // ================== هيكلة البيانات ==================
-    stock = stock.map((p, index) => ({ 
-        id: p.id || Date.now() + index, 
-        name: p.name || '',
-        barcode: p.barcode || '',
-        sellPrice: p.sellPrice || 0,
-        buyPrice: p.buyPrice || 0,
-        wholesalePrice: p.wholesalePrice || 0,
-        qty: p.qty || 0,
-        minStock: p.minStock || 5,
-        unit: p.unit || 'قطعة',
-        category: p.category || 'عام',
-        location: p.location || '',
-        image: p.image || null,
-        notes: p.notes || '',
-        createdAt: p.createdAt || new Date().toISOString(),
-        lastUpdated: p.lastUpdated || new Date().toISOString()
-    }));
-
-    // ================== حفظ البيانات ==================
-    function saveStock() {
-        localStorage.setItem('ryan_stock', JSON.stringify(stock));
+    // ================== البيانات ==================
+    let inventoryLogs = JSON.parse(localStorage.getItem('inventory_logs')) || [];
+    let stockAlerts = JSON.parse(localStorage.getItem('stock_alerts')) || [];
+    
+    // ================== دوال مساعدة داخلية ==================
+    function saveLogs() {
+        localStorage.setItem('inventory_logs', JSON.stringify(inventoryLogs));
     }
-
-    // ================== إضافة حركة مخزون ==================
-    function addMovement(type, product, qty) {
-        movements.push({
-            id: Date.now() + Math.random(),
-            date: new Date().toLocaleString('ar-DZ'),
-            type: type,
-            product: product,
-            qty: qty
-        });
-        if (movements.length > 100) movements = movements.slice(-100);
-        localStorage.setItem('ryan_movements', JSON.stringify(movements));
+    
+    function saveAlerts() {
+        localStorage.setItem('stock_alerts', JSON.stringify(stockAlerts));
     }
-
-    // ================== دوال مساعدة ==================
-    function _showNotification(title, message, type = 'success') {
-        Swal.fire({
-            icon: type,
-            title: title,
-            text: message,
-            timer: 2000,
-            showConfirmButton: false,
-            toast: true,
-            position: 'top-end'
-        });
-    }
-
-    function _showConfirmation(title, text, confirmCallback) {
-        Swal.fire({
-            title: title,
-            text: text,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'نعم',
-            cancelButtonText: 'إلغاء'
-        }).then((result) => {
-            if (result.isConfirmed && confirmCallback) {
-                confirmCallback();
-            }
-        });
-    }
-
-    // ================== عرض المخزون ==================
-    function renderStock() {
-        const tbody = document.getElementById('stock-tbody');
-        if (!tbody) return;
-
-        if (stock.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-muted"><i class="material-icons-round" style="font-size:48px;">inventory</i><p>لا توجد منتجات</p></td></tr>';
-            return;
-        }
-
-        tbody.innerHTML = stock.map((p, idx) => `
-            <tr>
-                <td>${p.image ? `<img src="${p.image}" class="product-thumb" onclick="utils.showLargeImage('${p.image}')" style="width:40px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;">` : 'لا توجد'}</td>
-                <td>${p.name}</td>
-                <td>${p.category || 'عام'}</td>
-                <td>${p.qty} ${p.unit} ${p.qty < p.minStock ? '<span class="badge bg-danger">ناقص</span>' : ''}</td>
-                <td>${p.sellPrice} دج</td>
-                <td>${p.buyPrice} دج</td>
-                <td>
-                    <button class="btn btn-sm btn-warning" onclick="inventoryModule.openEditProductModal(${idx})"><i class="material-icons-round">edit</i></button>
-                    <button class="btn btn-sm btn-danger" onclick="inventoryModule.deleteProduct(${idx})"><i class="material-icons-round">delete</i></button>
-                </td>
-            </tr>
-        `).join('');
-        
-        updateStats();
-    }
-
-    // ================== إضافة منتج جديد (مع سعر الجملة) ==================
-    function saveNewProduct() {
-        console.log('محاولة حفظ منتج جديد...');
-        
-        // الحصول على القيم من الحقول
-        const name = document.getElementById('new-name')?.value.trim();
-        const category = document.getElementById('new-category')?.value || 'عام';
-        const buy = parseFloat(document.getElementById('new-buy')?.value) || 0;
-        const sell = parseFloat(document.getElementById('new-sell')?.value) || 0;
-        const wholesale = parseFloat(document.getElementById('new-wholesale')?.value) || 0;
-        const qty = parseFloat(document.getElementById('new-qty')?.value) || 0;
-        const unit = document.getElementById('new-unit')?.value || 'قطعة';
-        const barcode = document.getElementById('new-barcode')?.value.trim() || '';
-        const minStock = parseInt(document.getElementById('new-min-stock')?.value) || 5;
-        const location = document.getElementById('new-location')?.value || '';
-        const notes = document.getElementById('new-notes')?.value || '';
-        
-        // التحقق من الحقول المطلوبة
-        if (!name) {
-            Swal.fire('تنبيه', 'اسم المنتج مطلوب', 'warning');
-            return;
+    
+    // ================== إضافة مخزون ==================
+    function addStock(productId, quantity, price = null, notes = '') {
+        // التحقق من وجود المنتج
+        const product = window.productModule?.getProduct(productId);
+        if (!product) {
+            utilsModule.showNotification('خطأ', 'المنتج غير موجود', 'error');
+            return false;
         }
         
-        if (buy <= 0) {
-            Swal.fire('تنبيه', 'سعر الشراء مطلوب', 'warning');
-            return;
+        if (quantity <= 0) {
+            utilsModule.showNotification('خطأ', 'الكمية يجب أن تكون أكبر من صفر', 'error');
+            return false;
         }
         
-        if (sell <= 0) {
-            Swal.fire('تنبيه', 'سعر البيع مطلوب', 'warning');
-            return;
+        // تحديث كمية المنتج
+        const oldQuantity = product.quantity;
+        product.quantity += quantity;
+        
+        // تحديث سعر الشراء إذا تم توفيره
+        if (price && price > 0) {
+            product.buyPrice = price;
         }
         
-        // التحقق من عدم تكرار الاسم
-        if (stock.some(p => p.name === name)) {
-            Swal.fire('خطأ', 'يوجد منتج بنفس الاسم', 'error');
-            return;
-        }
-
-        // معالجة الصورة
-        const imageInput = document.getElementById('product-image');
-        
-        if (imageInput && imageInput.files.length > 0) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                finishSave(e.target.result);
-            };
-            reader.readAsDataURL(imageInput.files[0]);
-        } else {
-            finishSave(null);
-        }
-
-        function finishSave(image) {
-            // إنشاء كائن المنتج
-            const newProduct = {
-                id: Date.now(),
-                name: name,
-                category: category,
-                buyPrice: buy,
-                sellPrice: sell,
-                wholesalePrice: wholesale,
-                qty: qty,
-                unit: unit,
-                barcode: barcode,
-                minStock: minStock,
-                location: location,
-                notes: notes,
-                image: image,
-                createdAt: new Date().toISOString(),
-                lastUpdated: new Date().toISOString()
-            };
-            
-            // إضافة المنتج
-            stock.push(newProduct);
-            saveStock();
-            addMovement('إضافة منتج', name, qty);
-            
-            // رسالة نجاح
-            Swal.fire({
-                icon: 'success',
-                title: 'تم الحفظ',
-                text: 'تم إضافة المنتج بنجاح',
-                timer: 1500,
-                showConfirmButton: false
+        // حفظ التغييرات في product.js
+        if (window.productModule?.updateProduct) {
+            window.productModule.updateProduct(productId, {
+                quantity: product.quantity,
+                buyPrice: product.buyPrice
             });
-            
-            // إعادة تعيين الحقول
-            document.getElementById('new-name').value = '';
-            document.getElementById('new-buy').value = '';
-            document.getElementById('new-sell').value = '';
-            document.getElementById('new-wholesale').value = '';
-            document.getElementById('new-qty').value = '0';
-            document.getElementById('new-barcode').value = '';
-            if (document.getElementById('new-min-stock')) document.getElementById('new-min-stock').value = '5';
-            if (document.getElementById('new-location')) document.getElementById('new-location').value = '';
-            if (document.getElementById('new-notes')) document.getElementById('new-notes').value = '';
-            
-            // إخفاء معاينة الصورة
-            const preview = document.getElementById('image-preview');
-            if (preview) preview.style.display = 'none';
-            
-            // تحديث العرض
-            renderStock();
-            
-            console.log('تم حفظ المنتج:', newProduct);
+        }
+        
+        // تسجيل الحركة في المخزون
+        const log = {
+            id: utilsModule.generateId(),
+            productId: productId,
+            productName: product.name,
+            type: 'add',
+            quantity: quantity,
+            oldQuantity: oldQuantity,
+            newQuantity: product.quantity,
+            price: price || product.buyPrice,
+            notes: notes,
+            date: new Date().toISOString(),
+            user: 'admin'
+        };
+        
+        inventoryLogs.push(log);
+        saveLogs();
+        
+        utilsModule.showNotification('نجاح', `تم إضافة ${quantity} ${product.unit} إلى المخزون`);
+        
+        // التحقق من تجاوز الحد الأقصى
+        if (product.maxStock && product.quantity > product.maxStock) {
+            createAlert({
+                productId: product.id,
+                productName: product.name,
+                type: 'max_stock',
+                message: `تجاوز الحد الأقصى للمخزون (${product.quantity} > ${product.maxStock})`,
+                level: 'warning'
+            });
+        }
+        
+        return log;
+    }
+    
+    // ================== خصم مخزون ==================
+    function removeStock(productId, quantity, notes = '') {
+        // التحقق من وجود المنتج
+        const product = window.productModule?.getProduct(productId);
+        if (!product) {
+            utilsModule.showNotification('خطأ', 'المنتج غير موجود', 'error');
+            return false;
+        }
+        
+        if (quantity <= 0) {
+            utilsModule.showNotification('خطأ', 'الكمية يجب أن تكون أكبر من صفر', 'error');
+            return false;
+        }
+        
+        if (product.quantity < quantity) {
+            utilsModule.showNotification('خطأ', 'الكمية غير متوفرة في المخزون', 'error');
+            return false;
+        }
+        
+        // تحديث كمية المنتج
+        const oldQuantity = product.quantity;
+        product.quantity -= quantity;
+        
+        // حفظ التغييرات في product.js
+        if (window.productModule?.updateProduct) {
+            window.productModule.updateProduct(productId, {
+                quantity: product.quantity
+            });
+        }
+        
+        // تسجيل الحركة في المخزون
+        const log = {
+            id: utilsModule.generateId(),
+            productId: productId,
+            productName: product.name,
+            type: 'remove',
+            quantity: -quantity,
+            oldQuantity: oldQuantity,
+            newQuantity: product.quantity,
+            notes: notes,
+            date: new Date().toISOString(),
+            user: 'admin'
+        };
+        
+        inventoryLogs.push(log);
+        saveLogs();
+        
+        utilsModule.showNotification('نجاح', `تم خصم ${quantity} ${product.unit} من المخزون`);
+        
+        // التحقق من الوصول للحد الأدنى
+        if (product.quantity <= product.minStock) {
+            createAlert({
+                productId: product.id,
+                productName: product.name,
+                type: 'min_stock',
+                message: `وصل المخزون للحد الأدنى (${product.quantity} <= ${product.minStock})`,
+                level: 'danger'
+            });
+        }
+        
+        return log;
+    }
+    
+    // ================== تعديل المخزون يدوياً ==================
+    function adjustStock(productId, newQuantity, notes = '') {
+        const product = window.productModule?.getProduct(productId);
+        if (!product) {
+            utilsModule.showNotification('خطأ', 'المنتج غير موجود', 'error');
+            return false;
+        }
+        
+        if (newQuantity < 0) {
+            utilsModule.showNotification('خطأ', 'الكمية لا يمكن أن تكون سالبة', 'error');
+            return false;
+        }
+        
+        const oldQuantity = product.quantity;
+        const difference = newQuantity - oldQuantity;
+        
+        if (difference === 0) {
+            utilsModule.showNotification('معلومة', 'لم يتغير شيء', 'info');
+            return false;
+        }
+        
+        // تحديث كمية المنتج
+        product.quantity = newQuantity;
+        
+        // حفظ التغييرات في product.js
+        if (window.productModule?.updateProduct) {
+            window.productModule.updateProduct(productId, {
+                quantity: newQuantity
+            });
+        }
+        
+        // تسجيل الحركة في المخزون
+        const log = {
+            id: utilsModule.generateId(),
+            productId: productId,
+            productName: product.name,
+            type: difference > 0 ? 'adjust_increase' : 'adjust_decrease',
+            quantity: difference,
+            oldQuantity: oldQuantity,
+            newQuantity: newQuantity,
+            notes: notes || 'تعديل يدوي',
+            date: new Date().toISOString(),
+            user: 'admin'
+        };
+        
+        inventoryLogs.push(log);
+        saveLogs();
+        
+        utilsModule.showNotification('نجاح', `تم تعديل مخزون ${product.name} إلى ${newQuantity}`);
+        
+        // التحقق من الحدود
+        checkProductLimits(product);
+        
+        return log;
+    }
+    
+    // ================== التحقق من حدود المنتج ==================
+    function checkProductLimits(product) {
+        // التحقق من الحد الأدنى
+        if (product.quantity <= product.minStock) {
+            createAlert({
+                productId: product.id,
+                productName: product.name,
+                type: 'min_stock',
+                message: `المخزون منخفض: ${product.quantity} <= ${product.minStock}`,
+                level: 'warning'
+            });
+        }
+        
+        // التحقق من الحد الأقصى
+        if (product.maxStock && product.quantity > product.maxStock) {
+            createAlert({
+                productId: product.id,
+                productName: product.name,
+                type: 'max_stock',
+                message: `المخزون مرتفع: ${product.quantity} > ${product.maxStock}`,
+                level: 'info'
+            });
+        }
+        
+        // التحقق من نفاد المخزون
+        if (product.quantity === 0) {
+            createAlert({
+                productId: product.id,
+                productName: product.name,
+                type: 'out_of_stock',
+                message: `المنتج نفد من المخزون`,
+                level: 'danger'
+            });
         }
     }
-
-    // ================== فتح نافذة تعديل المنتج ==================
-    function openEditProductModal(idx) {
-        const p = stock[idx];
-        document.getElementById('edit-product-idx').value = idx;
-        document.getElementById('edit-product-name').value = p.name;
-        document.getElementById('edit-product-sell').value = p.sellPrice;
-        document.getElementById('edit-product-buy').value = p.buyPrice;
-        document.getElementById('edit-product-qty').value = p.qty;
-        document.getElementById('edit-product-unit').value = p.unit;
+    
+    // ================== إنشاء تنبيه مخزون ==================
+    function createAlert(alertData) {
+        // التحقق من وجود تنبيه مشابه لم يتم حله
+        const existingAlert = stockAlerts.find(a => 
+            a.productId == alertData.productId && 
+            a.type === alertData.type && 
+            a.status === 'active'
+        );
         
-        if (document.getElementById('edit-product-category')) {
-            document.getElementById('edit-product-category').value = p.category || 'عام';
-        }
-        if (document.getElementById('edit-product-wholesale')) {
-            document.getElementById('edit-product-wholesale').value = p.wholesalePrice || 0;
-        }
-        if (document.getElementById('edit-product-min-stock')) {
-            document.getElementById('edit-product-min-stock').value = p.minStock || 5;
-        }
-        if (document.getElementById('edit-product-location')) {
-            document.getElementById('edit-product-location').value = p.location || '';
-        }
-        if (document.getElementById('edit-product-notes')) {
-            document.getElementById('edit-product-notes').value = p.notes || '';
-        }
-        
-        const currentImageDiv = document.getElementById('edit-current-image');
-        if (currentImageDiv) {
-            currentImageDiv.innerHTML = p.image ? `<img src="${p.image}" style="max-width:100px; border-radius:5px;">` : 'لا توجد صورة';
-        }
-        
-        document.getElementById('edit-image-preview').style.display = 'none';
-        document.getElementById('edit-product-image').value = '';
-        
-        new bootstrap.Modal(document.getElementById('editProductModal')).show();
-    }
-
-    // ================== تعديل المنتج ==================
-    function updateProduct() {
-        const idx = document.getElementById('edit-product-idx').value;
-        const p = stock[idx];
-        
-        const newName = document.getElementById('edit-product-name').value.trim();
-        const newSell = parseFloat(document.getElementById('edit-product-sell').value);
-        const newBuy = parseFloat(document.getElementById('edit-product-buy').value);
-        const newQty = parseFloat(document.getElementById('edit-product-qty').value);
-        const newUnit = document.getElementById('edit-product-unit').value;
-
-        if (!newName || isNaN(newSell) || isNaN(newBuy) || isNaN(newQty)) {
-            _showNotification('خطأ', 'يرجى ملء جميع الحقول', 'error');
-            return;
-        }
-
-        const fileInput = document.getElementById('edit-product-image');
-        if (fileInput.files.length > 0) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                p.image = e.target.result;
-                finishUpdate();
-            };
-            reader.readAsDataURL(fileInput.files[0]);
+        if (existingAlert) {
+            // تحديث التنبيه الموجود
+            existingAlert.message = alertData.message;
+            existingAlert.date = new Date().toISOString();
+            existingAlert.count = (existingAlert.count || 1) + 1;
         } else {
-            finishUpdate();
+            // إنشاء تنبيه جديد
+            stockAlerts.push({
+                id: utilsModule.generateId(),
+                ...alertData,
+                status: 'active',
+                date: new Date().toISOString(),
+                resolvedAt: null,
+                count: 1
+            });
         }
-
-        function finishUpdate() {
-            p.name = newName;
-            p.sellPrice = newSell;
-            p.buyPrice = newBuy;
-            p.qty = newQty;
-            p.unit = newUnit;
-            p.category = document.getElementById('edit-product-category')?.value || p.category;
-            p.wholesalePrice = parseFloat(document.getElementById('edit-product-wholesale')?.value) || p.wholesalePrice;
-            p.minStock = parseInt(document.getElementById('edit-product-min-stock')?.value) || p.minStock;
-            p.location = document.getElementById('edit-product-location')?.value || p.location;
-            p.notes = document.getElementById('edit-product-notes')?.value || p.notes;
-            p.lastUpdated = new Date().toISOString();
-            
-            saveStock();
-            bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
-            renderStock();
-            
-            _showNotification('نجاح', 'تم تعديل المنتج', 'success');
+        
+        saveAlerts();
+        renderAlerts();
+    }
+    
+    // ================== حل تنبيه ==================
+    function resolveAlert(alertId) {
+        const alert = stockAlerts.find(a => a.id == alertId);
+        if (alert) {
+            alert.status = 'resolved';
+            alert.resolvedAt = new Date().toISOString();
+            saveAlerts();
+            renderAlerts();
+            utilsModule.showNotification('تم', 'تم حل التنبيه');
         }
     }
-
-    // ================== حذف المنتج ==================
-    function deleteProduct(idx) {
-        const product = stock[idx];
+    
+    // ================== عرض التنبيهات ==================
+    function renderAlerts() {
+        const container = document.getElementById('stock-alerts');
+        if (!container) return;
         
-        _showConfirmation('تأكيد الحذف', `حذف المنتج "${product.name}"؟`, () => {
-            stock.splice(idx, 1);
-            saveStock();
-            renderStock();
-            _showNotification('تم', 'تم حذف المنتج', 'success');
-        });
-    }
-
-    // ================== البحث عن المنتجات ==================
-    function searchProducts() {
-        const searchTerm = document.getElementById('search-product')?.value.toLowerCase().trim() || '';
-        const categoryFilter = document.getElementById('filter-category')?.value || 'all';
+        const activeAlerts = stockAlerts.filter(a => a.status === 'active');
         
-        let filtered = stock;
-        
-        if (searchTerm !== '') {
-            filtered = filtered.filter(p => 
-                p.name.toLowerCase().includes(searchTerm) || 
-                (p.barcode && p.barcode.toLowerCase().includes(searchTerm))
-            );
-        }
-        
-        if (categoryFilter !== 'all') {
-            filtered = filtered.filter(p => p.category === categoryFilter);
-        }
-        
-        renderFilteredStock(filtered);
-    }
-
-    function renderFilteredStock(filtered) {
-        const tbody = document.getElementById('stock-tbody');
-        if (!tbody) return;
-
-        if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4 text-muted"><i class="material-icons-round" style="font-size:48px;">search_off</i><p>لا توجد نتائج</p></td></tr>';
+        if (activeAlerts.length === 0) {
+            container.innerHTML = '<div class="alert alert-success">لا توجد تنبيهات</div>';
             return;
         }
-
-        tbody.innerHTML = filtered.map((p, idx) => {
-            const originalIndex = stock.findIndex(item => item.id === p.id);
-            const isLowStock = p.qty < p.minStock;
+        
+        container.innerHTML = activeAlerts.map(alert => {
+            const alertClass = alert.level === 'danger' ? 'alert-danger' : 
+                              alert.level === 'warning' ? 'alert-warning' : 'alert-info';
+            
+            return `
+            <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                <strong>${alert.productName}:</strong> ${alert.message}
+                <button type="button" class="btn-close" onclick="inventoryModule.resolveAlert('${alert.id}')"></button>
+            </div>
+        `}).join('');
+    }
+    
+    // ================== جرد المخزون ==================
+    function startInventoryCount() {
+        const products = window.productModule?.getAllProducts() || [];
+        
+        // إنشاء جلسة جرد جديدة
+        const inventorySession = {
+            id: utilsModule.generateId(),
+            date: new Date().toISOString(),
+            items: products.map(p => ({
+                productId: p.id,
+                productName: p.name,
+                systemQuantity: p.quantity,
+                actualQuantity: p.quantity,
+                difference: 0,
+                counted: false
+            })),
+            status: 'in_progress',
+            completedAt: null
+        };
+        
+        // حفظ جلسة الجرد
+        const sessions = JSON.parse(localStorage.getItem('inventory_sessions')) || [];
+        sessions.push(inventorySession);
+        localStorage.setItem('inventory_sessions', JSON.stringify(sessions));
+        
+        return inventorySession;
+    }
+    
+    // ================== تحديث كمية الجرد ==================
+    function updateInventoryCount(sessionId, productId, actualQuantity) {
+        const sessions = JSON.parse(localStorage.getItem('inventory_sessions')) || [];
+        const session = sessions.find(s => s.id == sessionId);
+        
+        if (!session) return false;
+        
+        const item = session.items.find(i => i.productId == productId);
+        if (item) {
+            item.actualQuantity = actualQuantity;
+            item.difference = actualQuantity - item.systemQuantity;
+            item.counted = true;
+            
+            localStorage.setItem('inventory_sessions', JSON.stringify(sessions));
+            
+            // إذا كان هناك فرق، نقترح تعديل المخزون
+            if (item.difference !== 0) {
+                utilsModule.showConfirmation(
+                    'فرق في الجرد',
+                    `الفرق: ${item.difference} وحدة. هل تريد تعديل المخزون؟`,
+                    () => {
+                        adjustStock(productId, actualQuantity, 'تعديل بعد الجرد');
+                    }
+                );
+            }
+        }
+        
+        return session;
+    }
+    
+    // ================== إنهاء جرد ==================
+    function completeInventoryCount(sessionId) {
+        const sessions = JSON.parse(localStorage.getItem('inventory_sessions')) || [];
+        const session = sessions.find(s => s.id == sessionId);
+        
+        if (!session) return false;
+        
+        session.status = 'completed';
+        session.completedAt = new Date().toISOString();
+        
+        localStorage.setItem('inventory_sessions', JSON.stringify(sessions));
+        
+        // حساب إحصائيات الجرد
+        const totalItems = session.items.length;
+        const countedItems = session.items.filter(i => i.counted).length;
+        const itemsWithDiff = session.items.filter(i => i.difference !== 0);
+        
+        utilsModule.showNotification(
+            'تم الجرد',
+            `تم جرد ${countedItems} من ${totalItems} منتج، وجود فروق في ${itemsWithDiff.length} منتج`
+        );
+        
+        return session;
+    }
+    
+    // ================== الحصول على حركات المخزون ==================
+    function getInventoryLogs(productId = null, limit = 100) {
+        let logs = [...inventoryLogs].sort((a, b) => new Date(b.date) - new Date(a.date));
+        
+        if (productId) {
+            logs = logs.filter(log => log.productId == productId);
+        }
+        
+        return logs.slice(0, limit);
+    }
+    
+    // ================== عرض حركات المخزون ==================
+    function renderInventoryLogs(containerId, productId = null) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        
+        const logs = getInventoryLogs(productId, 50);
+        
+        if (logs.length === 0) {
+            container.innerHTML = '<tr><td colspan="6" class="text-center p-4">لا توجد حركات مخزون</td></tr>';
+            return;
+        }
+        
+        container.innerHTML = logs.map(log => {
+            const typeText = log.type === 'add' ? 'إضافة' : 
+                            log.type === 'remove' ? 'خصم' : 'تعديل';
+            const typeClass = log.type === 'add' ? 'badge-success' : 
+                             log.type === 'remove' ? 'badge-danger' : 'badge-warning';
             
             return `
             <tr>
-                <td>${p.image ? `<img src="${p.image}" class="product-thumb" onclick="utils.showLargeImage('${p.image}')" style="width:40px;height:40px;object-fit:cover;border-radius:5px;cursor:pointer;">` : 'لا توجد'}</td>
-                <td>${p.name}</td>
-                <td>${p.category || 'عام'}</td>
-                <td class="${isLowStock ? 'low-stock-item' : ''}">${p.qty} ${p.unit}</td>
-                <td>${p.sellPrice} دج</td>
-                <td>${p.buyPrice} دج</td>
-                <td>
-                    <button class="btn btn-sm btn-warning" onclick="inventoryModule.openEditProductModal(${originalIndex})"><i class="material-icons-round">edit</i></button>
-                    <button class="btn btn-sm btn-danger" onclick="inventoryModule.deleteProduct(${originalIndex})"><i class="material-icons-round">delete</i></button>
-                </td>
+                <td>${utilsModule.formatDate(log.date)}</td>
+                <td>${log.productName}</td>
+                <td><span class="${typeClass}">${typeText}</span></td>
+                <td>${Math.abs(log.quantity)}</td>
+                <td>${log.oldQuantity} → ${log.newQuantity}</td>
+                <td>${log.notes || '-'}</td>
             </tr>
         `}).join('');
-
-        updateStats();
     }
-
-    function filterByCategory() {
-        searchProducts();
+    
+    // ================== إحصائيات المخزون ==================
+    function getInventoryStats() {
+        const products = window.productModule?.getAllProducts() || [];
+        
+        const totalProducts = products.length;
+        const totalQuantity = products.reduce((sum, p) => sum + p.quantity, 0);
+        const totalValue = products.reduce((sum, p) => sum + (p.buyPrice * p.quantity), 0);
+        const lowStock = products.filter(p => p.quantity <= p.minStock).length;
+        const outOfStock = products.filter(p => p.quantity === 0).length;
+        
+        // حركات اليوم
+        const today = new Date().toDateString();
+        const todayLogs = inventoryLogs.filter(log => 
+            new Date(log.date).toDateString() === today
+        );
+        
+        const todayAdditions = todayLogs.filter(l => l.type === 'add').reduce((sum, l) => sum + l.quantity, 0);
+        const todayRemovals = todayLogs.filter(l => l.type === 'remove').reduce((sum, l) => sum + Math.abs(l.quantity), 0);
+        
+        return {
+            totalProducts,
+            totalQuantity,
+            totalValue: utilsModule.formatCurrency(totalValue),
+            lowStock,
+            outOfStock,
+            todayAdditions,
+            todayRemovals,
+            todayNet: todayAdditions - todayRemovals,
+            alerts: stockAlerts.filter(a => a.status === 'active').length
+        };
     }
-
-    function updateStats() {
-        const totalProducts = stock.length;
-        const totalValue = stock.reduce((sum, p) => sum + (p.qty * p.buyPrice), 0);
-        const lowStockCount = stock.filter(p => p.qty < p.minStock).length;
+    
+    // ================== تقرير المخزون ==================
+    function generateInventoryReport() {
+        const products = window.productModule?.getAllProducts() || [];
+        const stats = getInventoryStats();
         
-        const totalEl = document.getElementById('total-products');
-        const valueEl = document.getElementById('total-stock-value');
-        const lowEl = document.getElementById('low-stock-count');
-        
-        if (totalEl) totalEl.textContent = totalProducts;
-        if (valueEl) valueEl.textContent = totalValue.toFixed(2) + ' دج';
-        if (lowEl) lowEl.textContent = lowStockCount;
-    }
-
-    // ================== عرض المنتجات الناقصة ==================
-    function showLowStock() {
-        const lowStock = stock.filter(p => p.qty < p.minStock);
-        
-        if (lowStock.length === 0) {
-            Swal.fire({
-                icon: 'success',
-                title: 'لا توجد منتجات ناقصة',
-                text: 'جميع المنتجات متوفرة',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        } else {
-            let items = '';
-            lowStock.forEach(p => {
-                items += `• ${p.name}: ${p.qty} ${p.unit} (الحد الأدنى: ${p.minStock})\n`;
-            });
-            
-            Swal.fire({
-                icon: 'warning',
-                title: 'المنتجات الناقصة',
-                text: items,
-                confirmButtonText: 'حسناً'
-            });
-        }
-    }
-
-    // ================== تصدير إلى Excel ==================
-    function exportToExcel() {
-        if (stock.length === 0) {
-            Swal.fire('تنبيه', 'لا توجد منتجات للتصدير', 'warning');
-            return;
-        }
-        
-        const data = stock.map((p, index) => ({
-            'الرقم': index + 1,
-            'المنتج': p.name,
-            'الصنف': p.category || 'عام',
-            'الكمية': p.qty + ' ' + p.unit,
-            'سعر الشراء': p.buyPrice + ' دج',
-            'سعر البيع': p.sellPrice + ' دج',
-            'سعر الجملة': p.wholesalePrice + ' دج',
-            'الباركود': p.barcode || '-'
-        }));
-        
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(data);
-        XLSX.utils.book_append_sheet(wb, ws, "المخزون");
-        
-        const today = new Date();
-        const dateStr = `${today.getDate()}-${today.getMonth()+1}-${today.getFullYear()}`;
-        XLSX.writeFile(wb, `المخزون_${dateStr}.xlsx`);
-        
-        Swal.fire({
-            icon: 'success',
-            title: 'تم التصدير',
-            text: 'تم تصدير الملف بنجاح',
-            timer: 2000,
-            showConfirmButton: false
-        });
-    }
-
-    // ================== رفع Excel ==================
-    function uploadExcelWithMapping() {
-        Swal.fire({
-            icon: 'info',
-            title: 'قريباً',
-            text: 'سيتم إضافة رفع Excel قريباً',
-            timer: 2000,
-            showConfirmButton: false
-        });
-    }
-
-    // ================== حفظ منتج سريع ==================
-    function saveQuickProduct() {
-        const mode = document.getElementById('quick-mode')?.value || 'sale';
-        const name = document.getElementById('quick-product-name')?.value.trim() || '';
-        const sellPrice = parseFloat(document.getElementById('quick-sell-price')?.value) || 0;
-        const buyPrice = parseFloat(document.getElementById('quick-buy-price')?.value) || 0;
-        const unit = document.getElementById('quick-unit')?.value || 'قطعة';
-        const qty = parseFloat(document.getElementById('quick-qty')?.value) || 0;
-        const cartQty = parseFloat(document.getElementById('quick-cart-qty')?.value) || 1;
-        const discount = parseFloat(document.getElementById('quick-discount')?.value) || 0;
-
-        if (!name || sellPrice <= 0 || buyPrice <= 0) {
-            _showNotification('تنبيه', 'الاسم وسعر البيع والشراء مطلوبة', 'warning');
-            return;
-        }
-
-        const newProduct = {
-            id: Date.now(),
-            name: name,
-            barcode: '',
-            sellPrice: sellPrice,
-            buyPrice: buyPrice,
-            wholesalePrice: 0,
-            qty: qty,
-            minStock: 5,
-            unit: unit,
-            category: 'عام',
-            location: '',
-            image: null,
-            notes: '',
-            createdAt: new Date().toISOString(),
-            lastUpdated: new Date().toISOString()
+        const report = {
+            date: new Date().toISOString(),
+            stats,
+            products: products.map(p => ({
+                name: p.name,
+                category: p.category,
+                quantity: p.quantity,
+                unit: p.unit,
+                buyPrice: p.buyPrice,
+                sellPrice: p.sellPrice,
+                value: p.buyPrice * p.quantity,
+                status: p.quantity <= p.minStock ? 'منخفض' : 'جيد'
+            }))
         };
         
-        stock.push(newProduct);
-        saveStock();
-        addMovement('إضافة منتج', name, qty);
-
-        if (mode === 'sale') {
-            if (cartQty > newProduct.qty) {
-                _showNotification('خطأ', 'الكمية المطلوبة أكبر من المتوفر', 'error');
-                return;
-            }
-            const total = cartQty * sellPrice * (1 - discount / 100);
-            if (typeof window.salesModule !== 'undefined' && window.salesModule.getCart) {
-                const cart = window.salesModule.getCart();
-                cart.push({
-                    id: Date.now() + Math.random(),
-                    productId: newProduct.id,
-                    name: name,
-                    qty: cartQty,
-                    price: sellPrice,
-                    discount: discount,
-                    total: total
-                });
-            }
-            newProduct.qty -= cartQty;
-            saveStock();
-            addMovement('بيع', name, cartQty);
-            if (typeof window.salesModule !== 'undefined' && window.salesModule.renderCart) {
-                window.salesModule.renderCart();
-            }
-        } else {
-            const total = cartQty * buyPrice;
-            if (typeof window.purchasesModule !== 'undefined' && window.purchasesModule.getPurchaseCart) {
-                const cart = window.purchasesModule.getPurchaseCart();
-                cart.push({
-                    id: Date.now() + Math.random(),
-                    productId: newProduct.id,
-                    name: name,
-                    qty: cartQty,
-                    price: buyPrice,
-                    total: total
-                });
-            }
-            newProduct.qty += cartQty;
-            saveStock();
-            addMovement('شراء', name, cartQty);
-            if (typeof window.purchasesModule !== 'undefined' && window.purchasesModule.renderPurchaseCart) {
-                window.purchasesModule.renderPurchaseCart();
-            }
-        }
-
-        bootstrap.Modal.getInstance(document.getElementById('quickAddProductModal')).hide();
-        _showNotification('تمت الإضافة', `تم إضافة ${name}`, 'success');
+        return report;
     }
-
-    // ================== تصدير الوحدة ==================
+    
+    // ================== طباعة تقرير المخزون ==================
+    function printInventoryReport() {
+        const report = generateInventoryReport();
+        
+        // تعبئة بيانات الطباعة
+        const tbody = document.getElementById('print-inventory-items');
+        const dateEl = document.getElementById('inventory-report-date');
+        const totalEl = document.getElementById('print-total-value');
+        
+        if (tbody) {
+            tbody.innerHTML = report.products.map((p, i) => `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${p.name}</td>
+                    <td>${p.category}</td>
+                    <td>${p.quantity} ${p.unit}</td>
+                    <td>${utilsModule.formatCurrency(p.buyPrice)}</td>
+                    <td>${utilsModule.formatCurrency(p.sellPrice)}</td>
+                    <td>${utilsModule.formatCurrency(p.value)}</td>
+                </tr>
+            `).join('');
+        }
+        
+        if (dateEl) {
+            dateEl.textContent = utilsModule.formatDate(report.date);
+        }
+        
+        if (totalEl) {
+            totalEl.textContent = report.stats.totalValue;
+        }
+        
+        // طباعة
+        window.print();
+    }
+    
+    // ================== التحقق الدوري من المخزون ==================
+    function checkAllProducts() {
+        const products = window.productModule?.getAllProducts() || [];
+        
+        products.forEach(product => {
+            checkProductLimits(product);
+        });
+        
+        utilsModule.showNotification('تم', 'تم التحقق من جميع المنتجات');
+    }
+    
+    // ================== تهيئة الوحدة ==================
+    function init() {
+        console.log('✅ inventoryModule initialized - الرقم 19');
+        console.log(`   عدد حركات المخزون: ${inventoryLogs.length}`);
+        console.log(`   عدد التنبيهات النشطة: ${stockAlerts.filter(a => a.status === 'active').length}`);
+        
+        // عرض التنبيهات
+        renderAlerts();
+        
+        // التحقق الدوري كل 5 دقائق
+        setInterval(checkAllProducts, 5 * 60 * 1000);
+    }
+    
+    // ================== واجهة الوحدة ==================
     return {
-        stock,
-        movements,
-        saveStock,
-        addMovement,
-        renderStock,
-        saveNewProduct,
-        saveQuickProduct,
-        openEditProductModal,
-        updateProduct,
-        deleteProduct,
-        searchProducts,
-        filterByCategory,
-        showLowStock,
-        exportToExcel,
-        uploadExcelWithMapping
+        // البيانات
+        inventoryLogs,
+        stockAlerts,
+        
+        // عمليات المخزون
+        addStock,
+        removeStock,
+        adjustStock,
+        
+        // التنبيهات
+        createAlert,
+        resolveAlert,
+        renderAlerts,
+        checkAllProducts,
+        checkProductLimits,
+        
+        // الجرد
+        startInventoryCount,
+        updateInventoryCount,
+        completeInventoryCount,
+        
+        // التقارير
+        getInventoryLogs,
+        renderInventoryLogs,
+        getInventoryStats,
+        generateInventoryReport,
+        printInventoryReport,
+        
+        // تهيئة
+        init
     };
 })();
 
+// ================== تصدير للاستخدام العام ==================
 window.inventoryModule = inventoryModule;
+
+// ================== دوال مختصرة للاستخدام في HTML ==================
+window.resolveAlert = (id) => inventoryModule.resolveAlert(id);
+window.printInventoryReport = () => inventoryModule.printInventoryReport();
+
+// ================== تهيئة تلقائية ==================
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function() {
+        if (inventoryModule && inventoryModule.init) {
+            inventoryModule.init();
+        }
+    });
+    
+    document.addEventListener('html-loaded', function() {
+        if (inventoryModule && inventoryModule.init) {
+            inventoryModule.init();
+        }
+    });
+}
