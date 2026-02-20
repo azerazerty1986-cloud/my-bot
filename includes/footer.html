@@ -1,25 +1,129 @@
-<!-- ================== الشريط السفلي ================== -->
-<div class="bottom-nav no-print">
-    <a href="#" class="nav-link active" onclick="utils.switchSection('sales', this)">
-        <i class="material-icons-round">payments</i>
-        <span>المبيعات</span>
-    </a>
-    <a href="#" class="nav-link" onclick="utils.switchSection('purchases', this)">
-        <i class="material-icons-round">shopping_cart</i>
-        <span>المشتريات</span>
-    </a>
-    <div class="nav-link text-center">
-        <a href="#" class="add-btn-main" onclick="utils.switchSection('add', this)">
-            <i class="material-icons-round">add</i>
-        </a>
-        <div style="margin-top:6px; font-size:11px;">إضافة</div>
-    </div>
-    <a href="#" class="nav-link" onclick="utils.switchSection('inventory', this)">
-        <i class="material-icons-round">inventory_2</i>
-        <span>المخزن</span>
-    </a>
-    <a href="#" class="nav-link" onclick="utils.switchSection('reports', this)">
-        <i class="material-icons-round">dashboard</i>
-        <span>التقارير</span>
-    </a>
+<!-- ================== التذييل ================== -->
+<div class="footer no-print" style="text-align: center; padding: 10px; color: #999; font-size: 12px;">
+    <hr>
+    <p>جميع الحقوق محفوظة © 2024 - تطبيق سوبر</p>
+    <p>الإصدار 2.0.0</p>
 </div>
+
+<!-- ================== سكربتات إضافية ================== -->
+<script>
+    // دوال مساعدة للتنقل
+    function showSubSection(subId) {
+        const parent = document.querySelector('.active-section');
+        if (!parent) return;
+        
+        parent.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
+        const target = document.getElementById(subId);
+        if (target) target.style.display = 'block';
+        
+        // تحديث التبويبات
+        const tabs = parent.querySelectorAll('.tab-item');
+        tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
+        
+        tabs.forEach(t => {
+            if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(subId)) {
+                if (parent.id === 'sales') t.classList.add('active-red');
+                else if (parent.id === 'purchases') t.classList.add('active-green');
+                else if (parent.id === 'add' || parent.id === 'invoices') t.classList.add('active-nardo');
+            }
+        });
+    }
+
+    function showReportTab(tabId) {
+        document.querySelectorAll('.report-content').forEach(r => r.style.display = 'none');
+        document.getElementById(tabId).style.display = 'block';
+        
+        // تحميل البيانات حسب التبويب
+        if (tabId === 'report-summary' && window.reportsModule) {
+            const stats = reportsModule.getDashboardStats();
+            document.getElementById('total-sales').textContent = stats.totalSales;
+            document.getElementById('total-purchases').textContent = stats.totalPurchases;
+            document.getElementById('total-invoices').textContent = stats.invoicesCount;
+            document.getElementById('total-products').textContent = stats.productsCount;
+            document.getElementById('today-sales').textContent = stats.todaySales;
+            document.getElementById('month-sales').textContent = stats.monthSales;
+        } else if (tabId === 'report-lowstock') {
+            const lowStock = reportsModule.getLowStockProducts();
+            displayLowStock(lowStock);
+        } else if (tabId === 'report-top') {
+            const topProducts = reportsModule.getTopProducts();
+            displayTopProducts(topProducts);
+        }
+    }
+
+    function toggleSidebar() {
+        document.getElementById('sidebar')?.classList.toggle('show');
+    }
+
+    function logout() {
+        localStorage.removeItem('isLoggedIn');
+        location.reload();
+    }
+
+    function openBarcodeScanner() {
+        $('#barcodeScannerModal').modal('show');
+    }
+
+    function startVoiceSearch(type) {
+        Swal.fire('البحث الصوتي', 'قريباً إن شاء الله', 'info');
+    }
+
+    function uploadExcel() {
+        Swal.fire('رفع Excel', 'قريباً إن شاء الله', 'info');
+    }
+
+    function exportInventory() {
+        Swal.fire('تصدير Excel', 'قريباً إن شاء الله', 'info');
+    }
+
+    function exportBackup() {
+        if (window.backupModule) {
+            backupModule.exportBackup();
+        }
+    }
+
+    function openUserMenu() {
+        Swal.fire({
+            title: 'حساب المستخدم',
+            html: '<p>مدير النظام</p>',
+            confirmButtonText: 'تسجيل الخروج'
+        }).then(() => {
+            logout();
+        });
+    }
+
+    // دوال العرض المساعدة
+    function displayLowStock(products) {
+        const container = document.getElementById('low-stock-list');
+        if (!container) return;
+        
+        if (!products || products.length === 0) {
+            container.innerHTML = '<p class="text-center text-muted">لا توجد منتجات ناقصة</p>';
+            return;
+        }
+        
+        let html = '<table class="table-custom"><thead><tr><th>المنتج</th><th>الكمية</th><th>الحد الأدنى</th><th>النقص</th></tr></thead><tbody>';
+        products.forEach(p => {
+            html += `<tr><td>${p.name}</td><td>${p.quantity}</td><td>${p.minStock}</td><td>${p.minStock - p.quantity}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function displayTopProducts(products) {
+        const container = document.getElementById('top-products-list');
+        if (!container) return;
+        
+        if (!products || products.length === 0) {
+            container.innerHTML = '<p class="text-center text-muted">لا توجد مبيعات كافية</p>';
+            return;
+        }
+        
+        let html = '<table class="table-custom"><thead><tr><th>#</th><th>المنتج</th><th>الكمية</th><th>الإجمالي</th></tr></thead><tbody>';
+        products.forEach((p, i) => {
+            html += `<tr><td>${i+1}</td><td>${p.name}</td><td>${p.quantity}</td><td>${p.total}</td></tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+</script>
