@@ -1,4 +1,4 @@
-<!-- ================== قسم المبيعات ================== -->
+<!-- ================== قسم المبيعات المتقدم ================== -->
 <div id="sales" class="section active-section">
     <div class="nav-tabs-custom no-print">
         <div class="tab-item active-red" onclick="showSubSection('sale-operation')">
@@ -12,34 +12,43 @@
         </div>
     </div>
 
-    <!-- عملية بيع -->
+    <!-- ===== عملية بيع ===== -->
     <div id="sale-operation" class="sub-section">
+        <!-- بطاقة تسجيل المبيعات -->
         <div class="main-card no-print">
-            <h6 class="text-center mb-3">💰 تسجيل مبيعات</h6>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">
+                    <i class="material-icons-round text-danger">payments</i> تسجيل مبيعات
+                </h6>
+                <span class="badge bg-info" id="cart-count">0</span>
+            </div>
             
+            <!-- شريط البحث المتقدم -->
             <div class="search-container mb-3">
                 <div class="input-group">
-                    <button class="btn btn-dark px-3" type="button" onclick="openBarcodeScanner()">
+                    <button class="btn btn-dark px-3" type="button" onclick="openBarcodeScanner('sale-search')" title="مسح الباركود">
                         <i class="material-icons-round">qr_code_scanner</i>
                     </button>
                     <input type="text" id="sale-search" class="form-control" 
-                           placeholder="ابحث باسم المنتج..." 
+                           placeholder="ابحث باسم المنتج أو امسح الباركود..." 
                            oninput="salesModule.searchProducts(this.value)" 
+                           onkeyup="if(event.key==='Enter') salesModule.addToCart()"
                            autocomplete="off">
-                    <button class="mic-btn" id="mic-sale" type="button" onclick="startVoiceSearch('sale')">
+                    <button class="mic-btn" id="mic-sale" type="button" onclick="startVoiceSearchForSales()" title="بحث صوتي">
                         <i class="material-icons-round">mic</i>
                     </button>
                 </div>
                 <div id="search-box" class="search-results"></div>
             </div>
             
-            <div class="row g-2 mb-3">
-                <div class="col-6">
+            <!-- خيارات إضافية -->
+            <div class="row g-2 mb-2">
+                <div class="col-md-6 col-12">
                     <select id="sale-customer" class="form-select">
                         <option value="">اختر العميل (اختياري)</option>
                     </select>
                 </div>
-                <div class="col-6">
+                <div class="col-md-6 col-12">
                     <select id="sale-payment-method" class="form-select">
                         <option value="cash">💰 نقدي</option>
                         <option value="card">💳 بطاقة</option>
@@ -48,12 +57,21 @@
                 </div>
             </div>
             
-            <div class="row g-2 mb-3">
+            <!-- حقول الكمية والخصم -->
+            <div class="row g-2 mb-2">
                 <div class="col-4">
-                    <input type="number" id="sale-qty" class="form-control" placeholder="الكمية" min="1" value="1">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="material-icons-round">numbers</i></span>
+                        <input type="number" id="sale-qty" class="form-control" 
+                               placeholder="الكمية" min="1" value="1">
+                    </div>
                 </div>
                 <div class="col-4">
-                    <input type="number" id="sale-discount" class="form-control" placeholder="الخصم %" min="0" max="100" value="0">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="material-icons-round">percent</i></span>
+                        <input type="number" id="sale-discount" class="form-control" 
+                               placeholder="الخصم %" min="0" max="100" value="0">
+                    </div>
                 </div>
                 <div class="col-4">
                     <button class="btn btn-danger w-100" onclick="salesModule.addToCart()">
@@ -62,15 +80,32 @@
                 </div>
             </div>
             
-            <button class="btn btn-outline-secondary w-100 mb-2" onclick="salesModule.clearCart()">
+            <!-- خيار سعر الجملة -->
+            <div class="row g-2 mb-2">
+                <div class="col-12">
+                    <div class="form-check">
+                        <input type="checkbox" id="use-wholesale" class="form-check-input">
+                        <label class="form-check-label" for="use-wholesale">
+                            <i class="material-icons-round" style="color:var(--main-green);">inventory</i>
+                            استخدام سعر الجملة (للكميات الكبيرة)
+                        </label>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- زر مسح السلة -->
+            <button class="btn btn-outline-secondary w-100" onclick="salesModule.clearCart()">
                 <i class="material-icons-round">delete_sweep</i> مسح السلة
             </button>
         </div>
         
+        <!-- سلة المبيعات -->
         <div class="main-card">
-            <div class="table-responsive">
+            <h6 class="text-center mb-3">🛒 سلة المبيعات</h6>
+            
+            <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
                 <table class="table-custom">
-                    <thead>
+                    <thead class="sticky-top bg-white">
                         <tr>
                             <th>المنتج</th>
                             <th>الكمية</th>
@@ -91,33 +126,61 @@
                 </table>
             </div>
             
-            <div class="d-flex justify-content-between mt-2">
-                <span>إجمالي الخصم: <b id="total-discount">0.00</b> دج</span>
-                <span>المجموع: <b id="grand-total">0.00</b> دج</span>
+            <!-- ملخص السلة -->
+            <div class="row g-2 mt-3">
+                <div class="col-6">
+                    <div class="p-2 bg-light rounded">
+                        <small>إجمالي الخصم</small>
+                        <h6 class="mb-0 text-danger" id="total-discount">0.00 دج</h6>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="p-2 bg-light rounded">
+                        <small>المجموع</small>
+                        <h6 class="mb-0 text-primary" id="grand-total">0.00 دج</h6>
+                    </div>
+                </div>
             </div>
             
+            <!-- أزرار الإجراءات -->
+            <div class="row g-2 mt-3">
+                <div class="col-6">
+                    <button class="btn btn-success w-100" onclick="salesModule.finishSale()">
+                        <i class="material-icons-round">save</i> حفظ
+                    </button>
+                </div>
+                <div class="col-6">
+                    <button class="btn btn-primary w-100" onclick="salesModule.finishSaleAndPrint()">
+                        <i class="material-icons-round">print</i> حفظ وطباعة
+                    </button>
+                </div>
+            </div>
+            
+            <!-- المجموع النهائي -->
             <div class="summary-box mt-3 no-print" style="background: var(--main-red);">
-                <button class="btn-print" style="color: var(--main-red);" onclick="salesModule.finishSale()">
-                    <i class="material-icons-round">save</i> حفظ
-                </button>
-                <button class="btn-print" style="color: var(--main-red);" onclick="salesModule.finishSaleAndPrint()">
-                    <i class="material-icons-round">print</i> حفظ وطباعة
-                </button>
-                <div>المجموع: <b id="final-grand-total">0.00</b> دج</div>
+                <span>المجموع النهائي:</span>
+                <h4 class="mb-0" id="final-grand-total">0.00 دج</h4>
             </div>
         </div>
     </div>
 
-    <!-- فواتير المبيعات -->
+    <!-- ===== فواتير المبيعات ===== -->
     <div id="sale-invoices" class="sub-section" style="display: none;">
         <div class="main-card">
-            <h5 class="text-center mb-4">📋 سجل فواتير المبيعات</h5>
+            <h5 class="text-center mb-4">
+                <i class="material-icons-round">receipt_long</i> سجل فواتير المبيعات
+            </h5>
+            
             <div class="input-group mb-3">
                 <span class="input-group-text"><i class="material-icons-round">search</i></span>
                 <input type="text" id="invoice-search" class="form-control" 
-                       placeholder="بحث برقم الفاتورة أو العميل" 
+                       placeholder="بحث برقم الفاتورة، العميل، أو التاريخ" 
                        oninput="salesModule.searchInvoices()">
+                <button class="btn btn-outline-secondary" onclick="exportInvoicesToExcel()">
+                    <i class="material-icons-round">download</i>
+                </button>
             </div>
+            
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
@@ -126,9 +189,9 @@
                             <th>التاريخ</th>
                             <th>العميل</th>
                             <th>المبلغ</th>
+                            <th>طريقة الدفع</th>
                             <th>الأصناف</th>
-                            <th>عرض</th>
-                            <th>حذف</th>
+                            <th>عمليات</th>
                         </tr>
                     </thead>
                     <tbody id="sale-invoices-tbody">
@@ -144,21 +207,29 @@
         </div>
     </div>
 
-    <!-- العملاء -->
+    <!-- ===== العملاء ===== -->
     <div id="customers" class="sub-section" style="display: none;">
         <div class="main-card">
-            <h5 class="text-center mb-4">👥 إدارة العملاء</h5>
+            <h5 class="text-center mb-4">
+                <i class="material-icons-round">people_outline</i> إدارة العملاء
+            </h5>
+            
+            <!-- إضافة عميل سريع -->
             <div class="row g-2 mb-3">
-                <div class="col-8">
-                    <input type="text" id="new-customer" class="form-control" placeholder="اسم العميل الجديد">
+                <div class="col-md-5 col-12">
+                    <input type="text" id="new-customer" class="form-control" placeholder="اسم العميل">
                 </div>
-                <div class="col-4">
-                    <input type="text" id="new-customer-phone" class="form-control" placeholder="الهاتف">
+                <div class="col-md-4 col-12">
+                    <input type="text" id="new-customer-phone" class="form-control" placeholder="رقم الهاتف">
+                </div>
+                <div class="col-md-3 col-12">
+                    <button class="btn btn-dark w-100" onclick="addQuickCustomer()">
+                        <i class="material-icons-round">person_add</i> إضافة
+                    </button>
                 </div>
             </div>
-            <button class="btn btn-dark w-100 mb-3" onclick="customerModule.addCustomer()">
-                <i class="material-icons-round">person_add</i> إضافة عميل
-            </button>
+            
+            <!-- جدول العملاء -->
             <div class="table-responsive">
                 <table class="table-custom">
                     <thead>
@@ -166,12 +237,14 @@
                             <th>الاسم</th>
                             <th>الهاتف</th>
                             <th>البريد</th>
+                            <th>المشتريات</th>
+                            <th>الديون</th>
                             <th>عمليات</th>
                         </tr>
                     </thead>
                     <tbody id="customers-tbody">
                         <tr>
-                            <td colspan="4" class="text-center p-4">
+                            <td colspan="6" class="text-center p-4">
                                 <i class="material-icons-round" style="font-size:48px;">people</i>
                                 <br>لا يوجد عملاء
                             </td>
@@ -179,6 +252,130 @@
                     </tbody>
                 </table>
             </div>
+            
+            <div class="text-center mt-2">
+                <small class="text-muted">
+                    <i class="material-icons-round" style="font-size:14px;">info</i>
+                    لإضافة عميل ببيانات كاملة، استخدم <a href="#" onclick="switchSection('add'); showSubSection('add-customer')">قسم الإضافة</a>
+                </small>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    // دوال مساعدة لقسم المبيعات
+    
+    // بحث صوتي للمبيعات
+    function startVoiceSearchForSales() {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'ar-SA';
+            
+            recognition.onstart = function() {
+                document.getElementById('mic-sale').classList.add('recording');
+                Swal.fire({
+                    title: '🎤 استمع...',
+                    text: 'تحدث الآن',
+                    timer: 5000,
+                    timerProgressBar: true,
+                    showConfirmButton: false
+                });
+            };
+            
+            recognition.onresult = function(event) {
+                const text = event.results[0][0].transcript;
+                document.getElementById('sale-search').value = text;
+                if (window.salesModule) {
+                    salesModule.searchProducts(text);
+                }
+            };
+            
+            recognition.onend = function() {
+                document.getElementById('mic-sale').classList.remove('recording');
+            };
+            
+            recognition.onerror = function(event) {
+                document.getElementById('mic-sale').classList.remove('recording');
+                Swal.fire('خطأ', 'فشل التعرف على الصوت', 'error');
+            };
+            
+            recognition.start();
+        } else {
+            Swal.fire('خطأ', 'المتصفح لا يدعم البحث الصوتي', 'error');
+        }
+    }
+    
+    // إضافة عميل سريع
+    function addQuickCustomer() {
+        const name = document.getElementById('new-customer').value;
+        const phone = document.getElementById('new-customer-phone').value;
+        
+        if (!name) {
+            Swal.fire('تنبيه', 'اسم العميل مطلوب', 'warning');
+            return;
+        }
+        
+        if (window.customerModule) {
+            customerModule.addCustomer({ name, phone });
+            document.getElementById('new-customer').value = '';
+            document.getElementById('new-customer-phone').value = '';
+        }
+    }
+    
+    // تصدير الفواتير إلى Excel
+    function exportInvoicesToExcel() {
+        if (window.salesModule && salesModule.invoices) {
+            // تحويل الفواتير إلى CSV
+            const invoices = salesModule.invoices;
+            if (invoices.length === 0) {
+                Swal.fire('معلومة', 'لا توجد فواتير للتصدير', 'info');
+                return;
+            }
+            
+            let csv = 'رقم الفاتورة,التاريخ,العميل,المبلغ,طريقة الدفع\n';
+            invoices.forEach(inv => {
+                csv += `${inv.number},${new Date(inv.date).toLocaleDateString()},${inv.customer},${inv.grandTotal},${inv.paymentText}\n`;
+            });
+            
+            // تحميل الملف
+            const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `sales_invoices_${new Date().toISOString().slice(0,10)}.csv`;
+            link.click();
+            
+            Swal.fire('نجاح', 'تم تصدير الفواتير', 'success');
+        }
+    }
+    
+    // تحديث عداد السلة
+    function updateCartCount() {
+        const cart = window.salesModule?.cart || [];
+        document.getElementById('cart-count').textContent = cart.length;
+    }
+    
+    // مراقبة تغييرات السلة
+    setInterval(updateCartCount, 1000);
+</script>
+
+<style>
+    /* تأثيرات إضافية */
+    .mic-btn.recording {
+        background-color: #dc3545;
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+    
+    .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+</style>
