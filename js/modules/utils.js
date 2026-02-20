@@ -1,4 +1,4 @@
-// ================== utils.js - الدوال المساعدة ==================
+// ================== utils.js - الدوال المساعدة النهائية ==================
 // الرقم 17 في ترتيب الملفات - الأساس لكل الملفات الأخرى
 
 const utilsModule = (function() {
@@ -39,6 +39,11 @@ const utilsModule = (function() {
         const minutes = date.getMinutes().toString().padStart(2, '0');
         const seconds = date.getSeconds().toString().padStart(2, '0');
         return `${prefix}-${year}${month}${day}-${hours}${minutes}${seconds}`;
+    }
+    
+    // ================== إنشاء معرف فريد ==================
+    function generateId() {
+        return Date.now() + Math.random().toString(36).substr(2, 9);
     }
     
     // ================== إظهار إشعار ==================
@@ -108,120 +113,35 @@ const utilsModule = (function() {
         }
     }
     
-    // ================== مسح الباركود ==================
-    function openBarcodeScanner(inputElementId, callback) {
-        const modal = document.getElementById('barcodeScannerModal');
-        if (modal) {
-            const bsModal = new bootstrap.Modal(modal);
-            bsModal.show();
-            
-            // محاكاة مسح باركود بعد ثانيتين (للتجربة)
-            setTimeout(() => {
-                const mockBarcode = '123456789';
-                document.getElementById('barcode-result').textContent = `تم المسح: ${mockBarcode}`;
-                
-                if (inputElementId) {
-                    document.getElementById(inputElementId).value = mockBarcode;
-                }
-                
-                if (callback) callback(mockBarcode);
-            }, 2000);
-        } else {
-            showNotification('معلومة', 'ماسح الباركود غير متوفر', 'info');
-        }
-    }
-    
-    // ================== معاينة الصورة ==================
-    function previewImage(input, previewId) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            
-            reader.onload = function(e) {
-                const preview = document.getElementById(previewId);
-                if (preview) {
-                    preview.src = e.target.result;
-                    preview.style.display = 'block';
-                }
-            };
-            
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-    
-    // ================== تصدير إلى CSV ==================
-    function exportToCSV(data, filename, headers) {
-        if (!data || data.length === 0) {
-            showNotification('تنبيه', 'لا توجد بيانات للتصدير', 'warning');
+    // ================== حذف من localStorage ==================
+    function removeFromStorage(key) {
+        try {
+            localStorage.removeItem(key);
+            return true;
+        } catch (e) {
+            console.error('خطأ في الحذف:', e);
             return false;
         }
-        
-        // تحويل البيانات إلى CSV
-        const csvRows = [];
-        
-        // إضافة headers
-        if (headers) {
-            csvRows.push(headers.join(','));
-        }
-        
-        // إضافة البيانات
-        for (const row of data) {
-            const values = Object.values(row).map(val => {
-                if (typeof val === 'string') return `"${val.replace(/"/g, '""')}"`;
-                return val;
-            });
-            csvRows.push(values.join(','));
-        }
-        
-        const csvString = csvRows.join('\n');
-        const blob = new Blob(['\uFEFF' + csvString], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${filename}_${new Date().toISOString().slice(0,10)}.csv`;
-        link.click();
-        
-        showNotification('نجاح', 'تم التصدير بنجاح');
-        return true;
     }
     
-    // ================== استيراد من CSV ==================
-    function importFromCSV(file, callback) {
-        const reader = new FileReader();
-        
-        reader.onload = function(e) {
-            const text = e.target.result;
-            const rows = text.split('\n').map(row => row.trim()).filter(row => row);
-            
-            // أول صف هو headers
-            const headers = rows[0].split(',').map(h => h.replace(/"/g, '').trim());
-            const data = [];
-            
-            for (let i = 1; i < rows.length; i++) {
-                const values = rows[i].split(',').map(v => v.replace(/"/g, '').trim());
-                const item = {};
-                
-                for (let j = 0; j < headers.length; j++) {
-                    item[headers[j]] = values[j] || '';
-                }
-                
-                data.push(item);
-            }
-            
-            if (callback) callback(data);
-            showNotification('نجاح', `تم استيراد ${data.length} سجل`);
-        };
-        
-        reader.readAsText(file);
+    // ================== مسح الكل ==================
+    function clearStorage() {
+        try {
+            localStorage.clear();
+            return true;
+        } catch (e) {
+            console.error('خطأ في المسح:', e);
+            return false;
+        }
     }
     
-    // ================== تحقق من صحة البريد الإلكتروني ==================
+    // ================== التحقق من البريد الإلكتروني ==================
     function validateEmail(email) {
         const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return re.test(email);
     }
     
-    // ================== تحقق من صحة رقم الهاتف ==================
+    // ================== التحقق من رقم الهاتف ==================
     function validatePhone(phone) {
         const re = /^(05|06|07)[0-9]{8}$/;
         return re.test(phone);
@@ -237,33 +157,108 @@ const utilsModule = (function() {
         return (amount * discountRate) / 100;
     }
     
-    // ================== حساب الربح ==================
-    function calculateProfit(buyPrice, sellPrice, quantity = 1) {
-        return (sellPrice - buyPrice) * quantity;
-    }
-    
-    // ================== إنشاء معرف فريد ==================
-    function generateId() {
-        return Date.now() + Math.random().toString(36).substr(2, 9);
-    }
-    
     // ================== تقريب الرقم ==================
     function roundNumber(num, decimals = 2) {
         return Math.round(num * Math.pow(10, decimals)) / Math.pow(10, decimals);
     }
     
-    // ================== إحصائيات سريعة ==================
-    function calculateStats(numbers) {
-        if (!numbers || numbers.length === 0) {
-            return { min: 0, max: 0, avg: 0, sum: 0 };
+    // ================== نسخ نص إلى الحافظة ==================
+    function copyToClipboard(text) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('تم', 'تم النسخ إلى الحافظة', 'success');
+            }).catch(() => {
+                fallbackCopy(text);
+            });
+        } else {
+            fallbackCopy(text);
+        }
+    }
+    
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showNotification('تم', 'تم النسخ إلى الحافظة', 'success');
+        } catch (err) {
+            showNotification('خطأ', 'فشل النسخ', 'error');
+        }
+        document.body.removeChild(textarea);
+    }
+    
+    // ================== انتظار عنصر ==================
+    function waitForElement(selector, timeout = 5000) {
+        return new Promise((resolve, reject) => {
+            const startTime = Date.now();
+            
+            const checkExist = setInterval(() => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    clearInterval(checkExist);
+                    resolve(element);
+                } else if (Date.now() - startTime > timeout) {
+                    clearInterval(checkExist);
+                    reject(new Error(`العنصر ${selector} غير موجود بعد ${timeout}ms`));
+                }
+            }, 100);
+        });
+    }
+    
+    // ================== تحميل ملف ==================
+    function downloadFile(content, filename, type = 'text/plain') {
+        const blob = new Blob([content], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+    
+    // ================== تصدير إلى CSV ==================
+    function exportToCSV(data, filename, headers) {
+        if (!data || data.length === 0) {
+            showNotification('تنبيه', 'لا توجد بيانات للتصدير', 'warning');
+            return false;
         }
         
-        const sum = numbers.reduce((a, b) => a + b, 0);
-        const avg = sum / numbers.length;
-        const min = Math.min(...numbers);
-        const max = Math.max(...numbers);
+        const csvRows = [];
         
-        return { min, max, avg, sum };
+        if (headers) {
+            csvRows.push(headers.join(','));
+        }
+        
+        for (const row of data) {
+            const values = Object.values(row).map(val => {
+                if (typeof val === 'string') return `"${val.replace(/"/g, '""')}"`;
+                return val;
+            });
+            csvRows.push(values.join(','));
+        }
+        
+        const csvString = csvRows.join('\n');
+        downloadFile('\uFEFF' + csvString, `${filename}_${new Date().toISOString().slice(0,10)}.csv`, 'text/csv;charset=utf-8;');
+        
+        showNotification('نجاح', 'تم التصدير بنجاح');
+        return true;
+    }
+    
+    // ================== الحصول على معلمات URL ==================
+    function getUrlParams() {
+        const params = {};
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        
+        for (const [key, value] of urlParams.entries()) {
+            params[key] = value;
+        }
+        
+        return params;
     }
     
     // ================== تهيئة الوحدة ==================
@@ -290,12 +285,8 @@ const utilsModule = (function() {
         // تخزين
         saveToStorage,
         loadFromStorage,
-        
-        // أدوات
-        openBarcodeScanner,
-        previewImage,
-        exportToCSV,
-        importFromCSV,
+        removeFromStorage,
+        clearStorage,
         
         // تحقق
         validateEmail,
@@ -304,9 +295,14 @@ const utilsModule = (function() {
         // حسابات
         calculateTax,
         calculateDiscount,
-        calculateProfit,
         roundNumber,
-        calculateStats,
+        
+        // أدوات
+        copyToClipboard,
+        waitForElement,
+        downloadFile,
+        exportToCSV,
+        getUrlParams,
         
         // تهيئة
         init
@@ -316,6 +312,13 @@ const utilsModule = (function() {
 // ================== تصدير للاستخدام العام ==================
 window.utilsModule = utilsModule;
 
+// ================== دوال مختصرة للاستخدام السريع ==================
+window.formatCurrency = (amount) => utilsModule.formatCurrency(amount);
+window.formatDate = (date) => utilsModule.formatDate(date);
+window.showNotification = (title, msg, type) => utilsModule.showNotification(title, msg, type);
+window.showConfirmation = (title, text, confirm) => utilsModule.showConfirmation(title, text, confirm);
+window.copyToClipboard = (text) => utilsModule.copyToClipboard(text);
+
 // ================== تهيئة تلقائية ==================
 if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', function() {
@@ -323,9 +326,11 @@ if (typeof document !== 'undefined') {
             utilsModule.init();
         }
     });
+    
+    // إعادة المحاولة بعد تحميل HTML
+    document.addEventListener('html-loaded', function() {
+        if (utilsModule && utilsModule.init) {
+            utilsModule.init();
+        }
+    });
 }
-
-// ================== دوال مختصرة للاستخدام السريع ==================
-window.formatCurrency = (amount) => utilsModule.formatCurrency(amount);
-window.showNotification = (title, msg, type) => utilsModule.showNotification(title, msg, type);
-window.showConfirmation = (title, text, confirm) => utilsModule.showConfirmation(title, text, confirm);
