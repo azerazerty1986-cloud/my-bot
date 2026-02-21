@@ -385,7 +385,7 @@ const App = {
             title: 'حساب المستخدم',
             html: `
                 <div style="text-align:right">
-                    <p><strong>المستخدم:</strong> مدير النظام</p>
+                    <p><strong>المستخدم:</strong> ريان ولدي</p>
                     <p><strong>الصلاحية:</strong> كاملة</p>
                     <p><strong>الإصدار:</strong> ${this.version}</p>
                     <p><strong>آخر دخول:</strong> ${new Date().toLocaleDateString('ar-EG')}</p>
