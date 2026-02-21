@@ -41,12 +41,25 @@
                 <div id="search-box" class="search-results"></div>
             </div>
             
-            <!-- خيارات إضافية -->
+            <!-- خيارات إضافية مع بحث العملاء -->
             <div class="row g-2 mb-2">
                 <div class="col-md-6 col-12">
-                    <select id="sale-customer" class="form-select">
-                        <option value="">اختر العميل (اختياري)</option>
-                    </select>
+                    <!-- حقل بحث العملاء بدلاً من القائمة المنسدلة -->
+                    <div class="customer-search-container">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="material-icons-round">person</i></span>
+                            <input type="text" id="customer-search" class="form-control" 
+                                   placeholder="ابحث عن عميل..." 
+                                   oninput="searchCustomers(this.value)"
+                                   autocomplete="off">
+                        </div>
+                        <!-- نتائج البحث -->
+                        <div id="customer-results" class="search-results" style="display: none;"></div>
+                        <!-- القائمة المنسدلة الأصلية (مخفية) -->
+                        <select id="sale-customer" class="form-select mt-2" style="display: none;">
+                            <option value="">اختر العميل (اختياري)</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="col-md-6 col-12">
                     <select id="sale-payment-method" class="form-select">
@@ -307,6 +320,81 @@
         }
     }
     
+    // بحث العملاء
+    function searchCustomers(query) {
+        const resultsDiv = document.getElementById('customer-results');
+        
+        if (!query.trim()) {
+            resultsDiv.style.display = 'none';
+            resultsDiv.innerHTML = '';
+            return;
+        }
+        
+        // جلب العملاء من localStorage
+        const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+        
+        // فلترة النتائج
+        const results = customers.filter(c => 
+            c.name.toLowerCase().includes(query.toLowerCase()) ||
+            (c.phone && c.phone.includes(query))
+        ).slice(0, 5);
+        
+        if (results.length === 0) {
+            resultsDiv.innerHTML = '<div class="search-item text-center text-muted">لا توجد نتائج</div>';
+            resultsDiv.style.display = 'block';
+            return;
+        }
+        
+        // عرض النتائج
+        let html = '';
+        results.forEach(customer => {
+            html += `
+                <div class="search-item" onclick="selectCustomer('${customer.id}')">
+                    <i class="material-icons-round">person</i>
+                    <div>
+                        <strong>${customer.name}</strong>
+                        <small class="text-muted d-block">${customer.phone || 'لا يوجد رقم'}</small>
+                    </div>
+                </div>
+            `;
+        });
+        
+        resultsDiv.innerHTML = html;
+        resultsDiv.style.display = 'block';
+    }
+    
+    // تحديد عميل
+    function selectCustomer(customerId) {
+        const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+        const customer = customers.find(c => c.id === customerId);
+        
+        if (customer) {
+            document.getElementById('customer-search').value = customer.name;
+            document.getElementById('customer-results').style.display = 'none';
+            
+            // تحديث القائمة المنسدلة المخفية
+            const selectBox = document.getElementById('sale-customer');
+            
+            // إضافة الخيار إذا لم يكن موجوداً
+            if (!selectBox.querySelector(`option[value="${customer.id}"]`)) {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = customer.name;
+                selectBox.appendChild(option);
+            }
+            selectBox.value = customer.id;
+            
+            // رسالة تأكيد
+            Swal.fire({
+                icon: 'success',
+                title: 'تم تحديد العميل',
+                text: customer.name,
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+    }
+    
     // إضافة عميل سريع
     function addQuickCustomer() {
         const name = document.getElementById('new-customer').value;
@@ -317,17 +405,106 @@
             return;
         }
         
-        if (window.customerModule) {
-            customerModule.addCustomer({ name, phone });
-            document.getElementById('new-customer').value = '';
-            document.getElementById('new-customer-phone').value = '';
+        // إنشاء كائن العميل
+        const customer = {
+            id: Date.now().toString(),
+            name: name,
+            phone: phone,
+            purchases: 0,
+            debts: 0,
+            dateAdded: new Date().toISOString()
+        };
+        
+        // حفظ في localStorage
+        const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+        customers.push(customer);
+        localStorage.setItem('customers', JSON.stringify(customers));
+        
+        // تفريغ الحقول
+        document.getElementById('new-customer').value = '';
+        document.getElementById('new-customer-phone').value = '';
+        
+        // تحديث قائمة العملاء إذا كانت مفتوحة
+        if (document.getElementById('customers').style.display !== 'none') {
+            loadCustomersList();
         }
+        
+        Swal.fire('نجاح', 'تم إضافة العميل', 'success');
+    }
+    
+    // تحميل قائمة العملاء (لقسم العملاء)
+    function loadCustomersList() {
+        const tbody = document.getElementById('customers-tbody');
+        const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+        
+        if (customers.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center p-4">
+                        <i class="material-icons-round" style="font-size:48px;">people</i>
+                        <br>لا يوجد عملاء
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        let html = '';
+        customers.forEach(customer => {
+            html += `
+                <tr>
+                    <td>${customer.name}</td>
+                    <td>${customer.phone || '-'}</td>
+                    <td>${customer.email || '-'}</td>
+                    <td>${customer.purchases || 0}</td>
+                    <td class="${customer.debts > 0 ? 'text-danger' : ''}">${customer.debts || 0} دج</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="selectCustomerFromList('${customer.id}')">
+                            <i class="material-icons-round">check_circle</i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCustomer('${customer.id}')">
+                            <i class="material-icons-round">delete</i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+    
+    // تحديد عميل من القائمة
+    function selectCustomerFromList(customerId) {
+        selectCustomer(customerId);
+        showSubSection('sale-operation');
+    }
+    
+    // حذف عميل
+    function deleteCustomer(customerId) {
+        Swal.fire({
+            title: 'تأكيد الحذف',
+            text: 'هل أنت متأكد من حذف هذا العميل؟',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'حذف',
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+                const updated = customers.filter(c => c.id !== customerId);
+                localStorage.setItem('customers', JSON.stringify(updated));
+                
+                loadCustomersList();
+                Swal.fire('تم الحذف', 'تم حذف العميل بنجاح', 'success');
+            }
+        });
     }
     
     // تصدير الفواتير إلى Excel
     function exportInvoicesToExcel() {
         if (window.salesModule && salesModule.invoices) {
-            // تحويل الفواتير إلى CSV
             const invoices = salesModule.invoices;
             if (invoices.length === 0) {
                 Swal.fire('معلومة', 'لا توجد فواتير للتصدير', 'info');
@@ -339,7 +516,6 @@
                 csv += `${inv.number},${new Date(inv.date).toLocaleDateString()},${inv.customer},${inv.grandTotal},${inv.paymentText}\n`;
             });
             
-            // تحميل الملف
             const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
@@ -356,8 +532,16 @@
         document.getElementById('cart-count').textContent = cart.length;
     }
     
-    // مراقبة تغييرات السلة
-    setInterval(updateCartCount, 1000);
+    // تهيئة الصفحة
+    document.addEventListener('DOMContentLoaded', function() {
+        // تحميل العملاء إذا كان القسم ظاهراً
+        if (document.getElementById('customers').style.display !== 'none') {
+            loadCustomersList();
+        }
+        
+        // مراقبة تغييرات السلة
+        setInterval(updateCartCount, 1000);
+    });
 </script>
 
 <style>
@@ -377,5 +561,42 @@
         position: sticky;
         top: 0;
         z-index: 10;
+    }
+    
+    /* تنسيقات بحث العملاء */
+    .customer-search-container {
+        position: relative;
+        width: 100%;
+    }
+    
+    #customer-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        max-height: 200px;
+        overflow-y: auto;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .search-item {
+        padding: 8px 12px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .search-item:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .search-item i {
+        color: #6c757d;
     }
 </style>
