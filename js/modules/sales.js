@@ -1,5 +1,5 @@
 // ================== sales.js - إدارة المبيعات المتقدمة ==================
-// الرقم 23 في ترتيب الملفات - نسخة محسنة مع دعم سعر الجملة والبحث عن العملاء
+// الرقم 23 في ترتيب الملفات - نسخة محسنة مع دعم سعر الجملة والمخزون والمبلغ المسدد
 
 const salesModule = (function() {
     // ================== البيانات ==================
@@ -68,21 +68,22 @@ const salesModule = (function() {
         }
         
         const products = window.productModule?.getAllProducts?.() || [];
-        const product = products.find(p => p.name === productName);
+        const product = products.find(p => p.name === productName || p.barcode === productName);
         
         if (!product) {
             showNotification('تنبيه', 'المنتج غير موجود', 'warning');
             return false;
         }
         
+        // التحقق من المخزون
+        if (product.quantity < qty) {
+            showNotification('تنبيه', `الكمية غير متوفرة - المتوفر: ${product.quantity}`, 'warning');
+            return false;
+        }
+        
         // اختيار السعر المناسب (تجزئة أو جملة)
         const price = useWholesale && product.wholesalePrice ? product.wholesalePrice : product.sellPrice;
         const priceType = useWholesale && product.wholesalePrice ? 'جملة' : 'تجزئة';
-        
-        if (product.quantity < qty) {
-            showNotification('تنبيه', 'الكمية غير متوفرة في المخزون', 'warning');
-            return false;
-        }
         
         const existingItem = cart.find(item => item.productId === product.id);
         if (existingItem) {
@@ -98,7 +99,8 @@ const salesModule = (function() {
                 priceType: priceType,
                 qty: qty,
                 discount: discount,
-                total: (price * qty) * (1 - discount / 100)
+                total: (price * qty) * (1 - discount / 100),
+                stock: product.quantity // إضافة المخزون المتبقي
             });
         }
         
@@ -108,8 +110,9 @@ const salesModule = (function() {
         document.getElementById('sale-qty').value = '1';
         document.getElementById('sale-discount').value = '0';
         
-        showNotification('نجاح', `تم إضافة المنتج (${priceType})`);
+        showNotification('نجاح', `تم إضافة المنتج (${priceType}) - المخزون المتبقي: ${product.quantity - qty}`);
         updateCartCount();
+        updateRemainingAmount(); // تحديث الباقي
         return true;
     }
     
@@ -119,9 +122,10 @@ const salesModule = (function() {
         if (!tbody) return;
         
         if (cart.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
             updateTotals();
             updateCartCount();
+            updateRemainingAmount();
             return;
         }
         
@@ -132,6 +136,7 @@ const salesModule = (function() {
                 <td>${formatCurrency(item.price)}</td>
                 <td>${item.discount}%</td>
                 <td>${formatCurrency(item.total)}</td>
+                <td><small class="badge bg-info">مخزون: ${item.stock}</small></td>
                 <td>
                     <button class="btn btn-sm btn-danger" onclick="salesModule.removeFromCart('${item.id}')">
                         <i class="material-icons-round">delete</i>
@@ -159,6 +164,9 @@ const salesModule = (function() {
         if (totalDiscountEl) totalDiscountEl.textContent = formatCurrency(totalDiscount) + ' دج';
         if (grandTotalEl) grandTotalEl.textContent = formatCurrency(grandTotal) + ' دج';
         if (finalGrandTotalEl) finalGrandTotalEl.textContent = formatCurrency(grandTotal) + ' دج';
+        
+        // تحديث الباقي
+        updateRemainingAmount();
     }
     
     // ================== تحديث عداد السلة ==================
@@ -167,11 +175,25 @@ const salesModule = (function() {
         if (countEl) countEl.textContent = cart.length;
     }
     
+    // ================== حساب المبلغ المتبقي ==================
+    function updateRemainingAmount() {
+        const paidAmount = parseFloat(document.getElementById('paid-amount')?.value) || 0;
+        const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
+        const remaining = paidAmount - grandTotal;
+        
+        const remainingEl = document.getElementById('remaining-amount');
+        if (remainingEl) {
+            remainingEl.textContent = formatCurrency(remaining) + ' دج';
+            remainingEl.style.color = remaining >= 0 ? 'green' : 'red';
+        }
+    }
+    
     // ================== حذف من السلة ==================
     function removeFromCart(itemId) {
         cart = cart.filter(item => item.id !== itemId);
         renderCart();
         showNotification('تم', 'تم حذف المنتج');
+        updateRemainingAmount();
     }
     
     // ================== مسح السلة ==================
@@ -181,11 +203,13 @@ const salesModule = (function() {
         showConfirmation('تأكيد', 'هل تريد تفريغ السلة؟', () => {
             cart = [];
             renderCart();
+            document.getElementById('paid-amount').value = '';
             showNotification('تم', 'تم تفريغ السلة');
+            updateRemainingAmount();
         });
     }
     
-    // ================== دوال البحث عن العملاء (جديد) ==================
+    // ================== دوال البحث عن العملاء مع قائمة منسدلة ==================
     
     // بحث العملاء المباشر
     function searchCustomers(query) {
@@ -243,7 +267,6 @@ const salesModule = (function() {
         if (!customer) return;
         
         const customerName = customer.fullname || customer.name || 'بدون اسم';
-        const customerPhone = customer.phone1 || customer.phone || '';
         
         // تحديث حقل البحث
         const searchInput = document.getElementById('customer-search');
@@ -257,23 +280,15 @@ const salesModule = (function() {
             resultsDiv.style.display = 'none';
         }
         
-        // تحديث القائمة المنسدلة المخفية
+        // تحديث القائمة المنسدلة
         const selectBox = document.getElementById('sale-customer');
         if (selectBox) {
-            // إضافة الخيار إذا لم يكن موجوداً
-            if (!selectBox.querySelector(`option[value="${customer.id}"]`)) {
-                const option = document.createElement('option');
-                option.value = customer.id;
-                option.textContent = customerName;
-                selectBox.appendChild(option);
-            }
-            selectBox.value = customer.id;
+            selectBox.value = customerId;
         }
         
         // عرض شارة العميل المحدد
         showSelectedCustomerBadge(customerName, customerPhone, customer.id);
         
-        // رسالة تأكيد
         showNotification('تم التحديد', `العميل: ${customerName}`, 'success');
     }
     
@@ -292,19 +307,16 @@ const salesModule = (function() {
     
     // إلغاء تحديد العميل
     function clearSelectedCustomer() {
-        // تفريغ حقل البحث
         const searchInput = document.getElementById('customer-search');
         if (searchInput) {
             searchInput.value = '';
         }
         
-        // إخفاء شارة العميل
         const badgeContainer = document.getElementById('selected-customer-badge');
         if (badgeContainer) {
             badgeContainer.style.display = 'none';
         }
         
-        // إعادة تعيين القائمة المنسدلة
         const selectBox = document.getElementById('sale-customer');
         if (selectBox) {
             selectBox.value = '';
@@ -315,79 +327,159 @@ const salesModule = (function() {
     
     // فتح نافذة إضافة عميل
     function openAddCustomerModal() {
-        if (window.customerModule?.openAddModal) {
-            window.customerModule.openAddModal();
-        } else {
-            // بديل إذا لم توجد الدالة
-            Swal.fire({
-                title: 'إضافة عميل جديد',
-                html: `
-                    <div style="text-align:right">
-                        <input type="text" id="new-customer-name" class="swal2-input" placeholder="اسم العميل">
-                        <input type="text" id="new-customer-phone" class="swal2-input" placeholder="رقم الهاتف">
-                    </div>
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'حفظ',
-                cancelButtonText: 'إلغاء',
-                preConfirm: () => {
-                    const name = document.getElementById('new-customer-name').value;
-                    const phone = document.getElementById('new-customer-phone').value;
-                    
-                    if (!name) {
-                        Swal.showValidationMessage('اسم العميل مطلوب');
-                        return false;
-                    }
-                    
-                    return { name, phone };
+        Swal.fire({
+            title: 'إضافة عميل جديد',
+            html: `
+                <div style="text-align:right">
+                    <input type="text" id="new-customer-name" class="swal2-input" placeholder="اسم العميل">
+                    <input type="text" id="new-customer-phone" class="swal2-input" placeholder="رقم الهاتف">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'حفظ',
+            cancelButtonText: 'إلغاء',
+            preConfirm: () => {
+                const name = document.getElementById('new-customer-name').value;
+                const phone = document.getElementById('new-customer-phone').value;
+                
+                if (!name) {
+                    Swal.showValidationMessage('اسم العميل مطلوب');
+                    return false;
                 }
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    const newCustomer = {
-                        id: Date.now().toString(),
-                        name: result.value.name,
-                        phone: result.value.phone,
-                        fullname: result.value.name
-                    };
-                    
-                    // حفظ في localStorage مؤقتاً
-                    const customers = JSON.parse(localStorage.getItem('customers') || '[]');
-                    customers.push(newCustomer);
-                    localStorage.setItem('customers', JSON.stringify(customers));
-                    
-                    // تحديث customerModule إذا وجد
-                    if (window.customerModule?.loadCustomers) {
-                        window.customerModule.loadCustomers();
-                    }
-                    
-                    selectCustomer(newCustomer.id);
-                    showNotification('نجاح', 'تم إضافة العميل');
+                
+                return { name, phone };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const newCustomer = {
+                    id: Date.now().toString(),
+                    name: result.value.name,
+                    phone: result.value.phone,
+                    fullname: result.value.name
+                };
+                
+                const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+                customers.push(newCustomer);
+                localStorage.setItem('customers', JSON.stringify(customers));
+                
+                if (window.customerModule?.loadCustomers) {
+                    window.customerModule.loadCustomers();
                 }
-            });
-        }
+                
+                loadCustomersDropdown(); // تحديث القائمة المنسدلة
+                selectCustomer(newCustomer.id);
+                showNotification('نجاح', 'تم إضافة العميل');
+            }
+        });
     }
     
-    // تحميل العملاء للقائمة المنسدلة
-    function loadCustomers() {
+    // تحميل العملاء في القائمة المنسدلة
+    function loadCustomersDropdown() {
         const customers = window.customerModule?.getAllCustomers?.() || [];
-        // محاولة تحميل من localStorage إذا كانت customerModule غير موجودة
+        
+        // محاولة تحميل من localStorage
         if (customers.length === 0) {
             const stored = JSON.parse(localStorage.getItem('customers') || '[]');
             customers.push(...stored);
         }
         
         const select = document.getElementById('sale-customer');
-        
         if (select) {
             select.innerHTML = '<option value="">اختر العميل (اختياري)</option>' + 
-                customers.map(c => `<option value="${c.id}">${c.fullname || c.name} ${c.phone1 || c.phone ? '- ' + (c.phone1 || c.phone) : ''}</option>`).join('');
+                customers.map(c => {
+                    const customerName = c.fullname || c.name || 'بدون اسم';
+                    const customerPhone = c.phone1 || c.phone || '';
+                    return `<option value="${c.id}">${customerName} ${customerPhone ? '- ' + customerPhone : ''}</option>`;
+                }).join('');
         }
+    }
+    
+    // ================== البحث عن المنتجات مع قائمة منسدلة ==================
+    function searchProducts(term) {
+        const resultsBox = document.getElementById('search-box');
+        if (!resultsBox) return;
+        
+        if (!term || term.length < 2) {
+            resultsBox.classList.remove('show');
+            return;
+        }
+        
+        const products = window.productModule?.getAllProducts?.() || [];
+        const results = products.filter(p => 
+            p.name.toLowerCase().includes(term.toLowerCase()) ||
+            (p.barcode && p.barcode.includes(term))
+        ).slice(0, 5);
+        
+        if (results.length === 0) {
+            resultsBox.innerHTML = '<div class="search-item text-muted">لا توجد نتائج</div>';
+            resultsBox.classList.add('show');
+            return;
+        }
+        
+        resultsBox.innerHTML = results.map(p => {
+            const wholesaleInfo = p.wholesalePrice ? 
+                `<br><small class="text-success">الجملة: ${formatCurrency(p.wholesalePrice)}</small>` : '';
+            const stockClass = p.quantity > 0 ? 'badge-success' : 'badge-danger';
+            const stockText = p.quantity > 0 ? `${p.quantity} متوفر` : 'غير متوفر';
+            
+            return `
+            <div class="search-item" onclick="salesModule.selectProduct('${p.name}', ${p.sellPrice}, ${p.wholesalePrice || 0}, ${p.quantity})">
+                <div style="display: flex; justify-content: space-between; align-items: center; width:100%;">
+                    <div>
+                        <strong>${p.name}</strong>
+                        ${wholesaleInfo}
+                    </div>
+                    <div>
+                        <span class="badge ${stockClass}">
+                            ${stockText}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `}).join('');
+        
+        resultsBox.classList.add('show');
+    }
+    
+    // ================== اختيار منتج ==================
+    function selectProduct(name, sellPrice, wholesalePrice, quantity) {
+        document.getElementById('sale-search').value = name;
+        document.getElementById('search-box').classList.remove('show');
+        
+        // تحديث معلومات المنتج
+        const wholesaleCheck = document.getElementById('use-wholesale');
+        if (wholesaleCheck && wholesalePrice) {
+            // يمكن تفعيل خيار الجملة تلقائياً للكميات الكبيرة
+        }
+        
+        // إظهار معلومات المنتج
+        Swal.fire({
+            icon: 'info',
+            title: name,
+            html: `
+                <div style="text-align:right">
+                    <p><strong>سعر التجزئة:</strong> ${formatCurrency(sellPrice)}</p>
+                    ${wholesalePrice ? `<p><strong>سعر الجملة:</strong> ${formatCurrency(wholesalePrice)}</p>` : ''}
+                    <p><strong>المخزون المتبقي:</strong> ${quantity}</p>
+                </div>
+            `,
+            timer: 2000,
+            showConfirmButton: false
+        });
     }
     
     // ================== إنهاء البيع (محدث) ==================
     function finishSale() {
         if (cart.length === 0) {
             showNotification('تنبيه', 'السلة فارغة', 'warning');
+            return null;
+        }
+        
+        const paidAmount = parseFloat(document.getElementById('paid-amount')?.value) || 0;
+        const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
+        
+        if (paidAmount < grandTotal) {
+            showNotification('تنبيه', 'المبلغ المدفوع أقل من الإجمالي', 'warning');
             return null;
         }
         
@@ -411,7 +503,7 @@ const salesModule = (function() {
             return sum + (item.price * item.qty * item.discount / 100);
         }, 0);
         
-        const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
+        const remaining = paidAmount - grandTotal;
         
         const invoice = {
             id: Date.now(),
@@ -423,6 +515,8 @@ const salesModule = (function() {
             subtotal: grandTotal + totalDiscount,
             totalDiscount: totalDiscount,
             grandTotal: grandTotal,
+            paidAmount: paidAmount,
+            remaining: remaining,
             paymentMethod: paymentMethod,
             paymentText: paymentText,
             status: 'completed',
@@ -452,8 +546,15 @@ const salesModule = (function() {
         
         // إلغاء تحديد العميل
         clearSelectedCustomer();
+        document.getElementById('paid-amount').value = '';
         
-        showNotification('نجاح', 'تم حفظ الفاتورة');
+        // عرض باقي المبلغ
+        if (remaining > 0) {
+            showNotification('نجاح', `تمت العملية - الباقي: ${formatCurrency(remaining)} دج`);
+        } else {
+            showNotification('نجاح', 'تم حفظ الفاتورة');
+        }
+        
         return invoice;
     }
     
@@ -465,7 +566,7 @@ const salesModule = (function() {
         }
     }
     
-    // ================== تجهيز الطباعة ==================
+    // ================== تجهيز الطباعة (محدث) ==================
     function preparePrint(invoice) {
         const printWindow = window.open('', '_blank');
         
@@ -526,6 +627,8 @@ const salesModule = (function() {
                 
                 <div class="total">
                     <p>الإجمالي: ${formatCurrency(invoice.grandTotal)} دج</p>
+                    <p>المدفوع: ${formatCurrency(invoice.paidAmount)} دج</p>
+                    <p>الباقي: ${formatCurrency(invoice.remaining)} دج</p>
                 </div>
                 
                 <div class="footer">
@@ -537,72 +640,6 @@ const salesModule = (function() {
         
         printWindow.document.close();
         printWindow.print();
-    }
-    
-    // ================== البحث عن المنتجات ==================
-    function searchProducts(term) {
-        const resultsBox = document.getElementById('search-box');
-        if (!resultsBox) return;
-        
-        if (!term || term.length < 2) {
-            resultsBox.classList.remove('show');
-            return;
-        }
-        
-        const products = window.productModule?.getAllProducts?.() || [];
-        const results = products.filter(p => 
-            p.name.toLowerCase().includes(term.toLowerCase()) ||
-            (p.barcode && p.barcode.includes(term))
-        ).slice(0, 5);
-        
-        if (results.length === 0) {
-            resultsBox.innerHTML = '<div class="search-item text-muted">لا توجد نتائج</div>';
-            resultsBox.classList.add('show');
-            return;
-        }
-        
-        resultsBox.innerHTML = results.map(p => {
-            const wholesaleInfo = p.wholesalePrice ? 
-                `<br><small class="text-success">الجملة: ${formatCurrency(p.wholesalePrice)}</small>` : '';
-            
-            return `
-            <div class="search-item" onclick="salesModule.selectProduct('${p.name}', ${p.sellPrice}, ${p.wholesalePrice || 0}, ${p.quantity})">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong>${p.name}</strong>
-                        ${wholesaleInfo}
-                    </div>
-                    <div>
-                        <span class="badge ${p.quantity > 0 ? 'badge-success' : 'badge-danger'}">
-                            ${p.quantity} متوفر
-                        </span>
-                    </div>
-                </div>
-            </div>
-        `}).join('');
-        
-        resultsBox.classList.add('show');
-    }
-    
-    // ================== اختيار منتج ==================
-    function selectProduct(name, sellPrice, wholesalePrice, quantity) {
-        document.getElementById('sale-search').value = name;
-        document.getElementById('search-box').classList.remove('show');
-        
-        // إظهار معلومات المنتج
-        Swal.fire({
-            icon: 'info',
-            title: name,
-            html: `
-                <div style="text-align:right">
-                    <p><strong>سعر التجزئة:</strong> ${formatCurrency(sellPrice)}</p>
-                    ${wholesalePrice ? `<p><strong>سعر الجملة:</strong> ${formatCurrency(wholesalePrice)}</p>` : ''}
-                    <p><strong>المتوفر:</strong> ${quantity}</p>
-                </div>
-            `,
-            timer: 2000,
-            showConfirmButton: false
-        });
     }
     
     // ================== الحصول على الفواتير ==================
@@ -618,7 +655,7 @@ const salesModule = (function() {
         const sortedInvoices = getInvoices();
         
         if (sortedInvoices.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">receipt</i><br>لا توجد فواتير</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">receipt</i><br>لا توجد فواتير</td></tr>';
             return;
         }
         
@@ -628,6 +665,8 @@ const salesModule = (function() {
                 <td>${new Date(inv.date).toLocaleDateString('ar-EG')}</td>
                 <td>${inv.customer}</td>
                 <td>${formatCurrency(inv.grandTotal)} دج</td>
+                <td>${formatCurrency(inv.paidAmount)} دج</td>
+                <td>${formatCurrency(inv.remaining)} دج</td>
                 <td>${inv.paymentText}</td>
                 <td>${inv.items.length}</td>
                 <td>
@@ -674,7 +713,9 @@ const salesModule = (function() {
                     </table>
                     <hr>
                     <p><strong>إجمالي الخصم:</strong> ${formatCurrency(invoice.totalDiscount)} دج</p>
-                    <h4><strong>الإجمالي:</strong> ${formatCurrency(invoice.grandTotal)} دج</h4>
+                    <p><strong>الإجمالي:</strong> ${formatCurrency(invoice.grandTotal)} دج</p>
+                    <p><strong>المدفوع:</strong> ${formatCurrency(invoice.paidAmount)} دج</p>
+                    <p><strong>الباقي:</strong> ${formatCurrency(invoice.remaining)} دج</p>
                 </div>
             `,
             width: '800px'
@@ -711,7 +752,7 @@ const salesModule = (function() {
         );
         
         if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center p-4">لا توجد نتائج</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4">لا توجد نتائج</td></tr>';
             return;
         }
         
@@ -721,6 +762,8 @@ const salesModule = (function() {
                 <td>${new Date(inv.date).toLocaleDateString('ar-EG')}</td>
                 <td>${inv.customer}</td>
                 <td>${formatCurrency(inv.grandTotal)} دج</td>
+                <td>${formatCurrency(inv.paidAmount)} دج</td>
+                <td>${formatCurrency(inv.remaining)} دج</td>
                 <td>${inv.paymentText}</td>
                 <td>${inv.items.length}</td>
                 <td>
@@ -761,8 +804,33 @@ const salesModule = (function() {
         console.log(`   عدد الفواتير: ${invoices.length}`);
         
         renderCart();
-        loadCustomers();
+        loadCustomersDropdown();
         renderInvoices();
+        
+        // إضافة حقل المبلغ المسدد إذا لم يكن موجوداً
+        if (!document.getElementById('paid-amount')) {
+            const paymentSection = document.querySelector('.summary-box');
+            if (paymentSection) {
+                const paidDiv = document.createElement('div');
+                paidDiv.className = 'row g-2 mt-2';
+                paidDiv.innerHTML = `
+                    <div class="col-6">
+                        <div class="p-2 bg-light rounded">
+                            <small>المبلغ المسدد</small>
+                            <input type="number" id="paid-amount" class="form-control form-control-sm" 
+                                   placeholder="المبلغ المسدد" oninput="salesModule.updateRemainingAmount()">
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 bg-light rounded">
+                            <small>الباقي</small>
+                            <h6 class="mb-0" id="remaining-amount">0.00 دج</h6>
+                        </div>
+                    </div>
+                `;
+                paymentSection.parentNode.insertBefore(paidDiv, paymentSection);
+            }
+        }
         
         // إغلاق نتائج البحث عند النقر خارجها
         document.addEventListener('click', (e) => {
@@ -772,7 +840,6 @@ const salesModule = (function() {
                 searchBox.classList.remove('show');
             }
             
-            // إغلاق نتائج بحث العملاء
             const customerResults = document.getElementById('customer-results');
             const customerSearch = document.getElementById('customer-search');
             if (customerResults && !customerResults.contains(e.target) && e.target !== customerSearch) {
@@ -792,17 +859,18 @@ const salesModule = (function() {
         finishSaleAndPrint,
         searchProducts,
         selectProduct,
-        searchCustomers,      // دالة بحث العملاء
-        selectCustomer,       // دالة تحديد العميل
-        clearSelectedCustomer, // دالة إلغاء التحديد
-        openAddCustomerModal, // دالة فتح إضافة عميل
-        loadCustomers,
+        searchCustomers,
+        selectCustomer,
+        clearSelectedCustomer,
+        openAddCustomerModal,
+        loadCustomers: loadCustomersDropdown,
         getInvoices,
         renderInvoices,
         showInvoice,
         deleteInvoice,
         searchInvoices,
         getSalesStats,
+        updateRemainingAmount,
         init
     };
 })();
@@ -815,7 +883,8 @@ window.clearCart = () => salesModule.clearCart();
 window.finishSale = () => salesModule.finishSale();
 window.finishSaleAndPrint = () => salesModule.finishSaleAndPrint();
 window.searchInvoices = () => salesModule.searchInvoices();
-window.searchCustomers = (q) => salesModule.searchCustomers(q); // دالة مختصرة للبحث عن العملاء
+window.searchCustomers = (q) => salesModule.searchCustomers(q);
+window.updateRemainingAmount = () => salesModule.updateRemainingAmount();
 
 // تهيئة تلقائية
 if (typeof document !== 'undefined') {
