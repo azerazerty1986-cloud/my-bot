@@ -1,5 +1,5 @@
 // ================== sales.js - إدارة المبيعات المتقدمة ==================
-// الرقم 23 في ترتيب الملفات - نسخة محسنة مع دعم سعر الجملة
+// الرقم 23 في ترتيب الملفات - نسخة محسنة مع دعم سعر الجملة والبحث عن العملاء
 
 const salesModule = (function() {
     // ================== البيانات ==================
@@ -185,16 +185,222 @@ const salesModule = (function() {
         });
     }
     
-    // ================== إنهاء البيع ==================
+    // ================== دوال البحث عن العملاء (جديد) ==================
+    
+    // بحث العملاء المباشر
+    function searchCustomers(query) {
+        const resultsDiv = document.getElementById('customer-results');
+        if (!resultsDiv) return;
+        
+        if (!query || query.length < 1) {
+            resultsDiv.style.display = 'none';
+            resultsDiv.innerHTML = '';
+            return;
+        }
+        
+        // جلب العملاء من customerModule
+        const customers = window.customerModule?.getAllCustomers?.() || [];
+        
+        // فلترة النتائج
+        const results = customers.filter(c => 
+            (c.fullname && c.fullname.toLowerCase().includes(query.toLowerCase())) ||
+            (c.name && c.name.toLowerCase().includes(query.toLowerCase())) ||
+            (c.phone1 && c.phone1.includes(query)) ||
+            (c.phone && c.phone.includes(query))
+        ).slice(0, 5);
+        
+        if (results.length === 0) {
+            resultsDiv.innerHTML = '<div class="search-item text-center text-muted">لا توجد نتائج</div>';
+            resultsDiv.style.display = 'block';
+            return;
+        }
+        
+        // عرض النتائج
+        let html = '';
+        results.forEach(customer => {
+            const customerName = customer.fullname || customer.name || 'بدون اسم';
+            const customerPhone = customer.phone1 || customer.phone || '';
+            html += `
+                <div class="search-item" onclick="salesModule.selectCustomer('${customer.id}')">
+                    <i class="material-icons-round">person</i>
+                    <div>
+                        <strong>${customerName}</strong>
+                        <small class="text-muted d-block">${customerPhone || 'لا يوجد رقم'}</small>
+                    </div>
+                </div>
+            `;
+        });
+        
+        resultsDiv.innerHTML = html;
+        resultsDiv.style.display = 'block';
+    }
+    
+    // تحديد عميل
+    function selectCustomer(customerId) {
+        const customers = window.customerModule?.getAllCustomers?.() || [];
+        const customer = customers.find(c => c.id === customerId);
+        
+        if (!customer) return;
+        
+        const customerName = customer.fullname || customer.name || 'بدون اسم';
+        const customerPhone = customer.phone1 || customer.phone || '';
+        
+        // تحديث حقل البحث
+        const searchInput = document.getElementById('customer-search');
+        if (searchInput) {
+            searchInput.value = customerName;
+        }
+        
+        // إخفاء نتائج البحث
+        const resultsDiv = document.getElementById('customer-results');
+        if (resultsDiv) {
+            resultsDiv.style.display = 'none';
+        }
+        
+        // تحديث القائمة المنسدلة المخفية
+        const selectBox = document.getElementById('sale-customer');
+        if (selectBox) {
+            // إضافة الخيار إذا لم يكن موجوداً
+            if (!selectBox.querySelector(`option[value="${customer.id}"]`)) {
+                const option = document.createElement('option');
+                option.value = customer.id;
+                option.textContent = customerName;
+                selectBox.appendChild(option);
+            }
+            selectBox.value = customer.id;
+        }
+        
+        // عرض شارة العميل المحدد
+        showSelectedCustomerBadge(customerName, customerPhone, customer.id);
+        
+        // رسالة تأكيد
+        showNotification('تم التحديد', `العميل: ${customerName}`, 'success');
+    }
+    
+    // عرض شارة العميل المحدد
+    function showSelectedCustomerBadge(name, phone, id) {
+        const badgeContainer = document.getElementById('selected-customer-badge');
+        if (!badgeContainer) return;
+        
+        const nameSpan = document.getElementById('selected-customer-name');
+        if (nameSpan) {
+            nameSpan.textContent = name;
+        }
+        
+        badgeContainer.style.display = 'block';
+    }
+    
+    // إلغاء تحديد العميل
+    function clearSelectedCustomer() {
+        // تفريغ حقل البحث
+        const searchInput = document.getElementById('customer-search');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        
+        // إخفاء شارة العميل
+        const badgeContainer = document.getElementById('selected-customer-badge');
+        if (badgeContainer) {
+            badgeContainer.style.display = 'none';
+        }
+        
+        // إعادة تعيين القائمة المنسدلة
+        const selectBox = document.getElementById('sale-customer');
+        if (selectBox) {
+            selectBox.value = '';
+        }
+        
+        showNotification('تم', 'تم إلغاء تحديد العميل');
+    }
+    
+    // فتح نافذة إضافة عميل
+    function openAddCustomerModal() {
+        if (window.customerModule?.openAddModal) {
+            window.customerModule.openAddModal();
+        } else {
+            // بديل إذا لم توجد الدالة
+            Swal.fire({
+                title: 'إضافة عميل جديد',
+                html: `
+                    <div style="text-align:right">
+                        <input type="text" id="new-customer-name" class="swal2-input" placeholder="اسم العميل">
+                        <input type="text" id="new-customer-phone" class="swal2-input" placeholder="رقم الهاتف">
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'حفظ',
+                cancelButtonText: 'إلغاء',
+                preConfirm: () => {
+                    const name = document.getElementById('new-customer-name').value;
+                    const phone = document.getElementById('new-customer-phone').value;
+                    
+                    if (!name) {
+                        Swal.showValidationMessage('اسم العميل مطلوب');
+                        return false;
+                    }
+                    
+                    return { name, phone };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const newCustomer = {
+                        id: Date.now().toString(),
+                        name: result.value.name,
+                        phone: result.value.phone,
+                        fullname: result.value.name
+                    };
+                    
+                    // حفظ في localStorage مؤقتاً
+                    const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+                    customers.push(newCustomer);
+                    localStorage.setItem('customers', JSON.stringify(customers));
+                    
+                    // تحديث customerModule إذا وجد
+                    if (window.customerModule?.loadCustomers) {
+                        window.customerModule.loadCustomers();
+                    }
+                    
+                    selectCustomer(newCustomer.id);
+                    showNotification('نجاح', 'تم إضافة العميل');
+                }
+            });
+        }
+    }
+    
+    // تحميل العملاء للقائمة المنسدلة
+    function loadCustomers() {
+        const customers = window.customerModule?.getAllCustomers?.() || [];
+        // محاولة تحميل من localStorage إذا كانت customerModule غير موجودة
+        if (customers.length === 0) {
+            const stored = JSON.parse(localStorage.getItem('customers') || '[]');
+            customers.push(...stored);
+        }
+        
+        const select = document.getElementById('sale-customer');
+        
+        if (select) {
+            select.innerHTML = '<option value="">اختر العميل (اختياري)</option>' + 
+                customers.map(c => `<option value="${c.id}">${c.fullname || c.name} ${c.phone1 || c.phone ? '- ' + (c.phone1 || c.phone) : ''}</option>`).join('');
+        }
+    }
+    
+    // ================== إنهاء البيع (محدث) ==================
     function finishSale() {
         if (cart.length === 0) {
             showNotification('تنبيه', 'السلة فارغة', 'warning');
             return null;
         }
         
+        // الحصول على العميل المحدد
         const customerSelect = document.getElementById('sale-customer');
         const customerId = customerSelect?.value;
-        const customerName = customerSelect?.options[customerSelect.selectedIndex]?.text || 'زبون نقدي';
+        
+        let customerName = 'زبون نقدي';
+        if (customerId) {
+            const customers = window.customerModule?.getAllCustomers?.() || [];
+            const customer = customers.find(c => c.id === customerId);
+            customerName = customer?.fullname || customer?.name || 'زبون نقدي';
+        }
         
         const paymentMethod = document.getElementById('sale-payment-method')?.value || 'cash';
         let paymentText = 'نقدي';
@@ -243,6 +449,9 @@ const salesModule = (function() {
         
         cart = [];
         renderCart();
+        
+        // إلغاء تحديد العميل
+        clearSelectedCustomer();
         
         showNotification('نجاح', 'تم حفظ الفاتورة');
         return invoice;
@@ -330,7 +539,7 @@ const salesModule = (function() {
         printWindow.print();
     }
     
-    // ================== البحث عن المنتجات (محدث) ==================
+    // ================== البحث عن المنتجات ==================
     function searchProducts(term) {
         const resultsBox = document.getElementById('search-box');
         if (!resultsBox) return;
@@ -381,11 +590,6 @@ const salesModule = (function() {
         document.getElementById('search-box').classList.remove('show');
         
         // إظهار معلومات المنتج
-        let priceInfo = `سعر التجزئة: ${formatCurrency(sellPrice)}`;
-        if (wholesalePrice) {
-            priceInfo += `\nسعر الجملة: ${formatCurrency(wholesalePrice)}`;
-        }
-        
         Swal.fire({
             icon: 'info',
             title: name,
@@ -399,17 +603,6 @@ const salesModule = (function() {
             timer: 2000,
             showConfirmButton: false
         });
-    }
-    
-    // ================== تحميل العملاء ==================
-    function loadCustomers() {
-        const customers = window.customerModule?.getAllCustomers?.() || [];
-        const select = document.getElementById('sale-customer');
-        
-        if (select) {
-            select.innerHTML = '<option value="">اختر العميل (اختياري)</option>' + 
-                customers.map(c => `<option value="${c.id}">${c.fullname || c.name} ${c.phone1 ? '- ' + c.phone1 : ''}</option>`).join('');
-        }
     }
     
     // ================== الحصول على الفواتير ==================
@@ -562,7 +755,7 @@ const salesModule = (function() {
         };
     }
     
-    // ================== تهيئة الوحدة ==================
+    // ================== تهيئة الوحدة (محدثة) ==================
     function init() {
         console.log('✅ salesModule v2 initialized - الرقم 23');
         console.log(`   عدد الفواتير: ${invoices.length}`);
@@ -578,6 +771,13 @@ const salesModule = (function() {
             if (searchBox && !searchBox.contains(e.target) && e.target !== searchInput) {
                 searchBox.classList.remove('show');
             }
+            
+            // إغلاق نتائج بحث العملاء
+            const customerResults = document.getElementById('customer-results');
+            const customerSearch = document.getElementById('customer-search');
+            if (customerResults && !customerResults.contains(e.target) && e.target !== customerSearch) {
+                customerResults.style.display = 'none';
+            }
         });
     }
     
@@ -592,6 +792,10 @@ const salesModule = (function() {
         finishSaleAndPrint,
         searchProducts,
         selectProduct,
+        searchCustomers,      // دالة بحث العملاء
+        selectCustomer,       // دالة تحديد العميل
+        clearSelectedCustomer, // دالة إلغاء التحديد
+        openAddCustomerModal, // دالة فتح إضافة عميل
         loadCustomers,
         getInvoices,
         renderInvoices,
@@ -611,6 +815,7 @@ window.clearCart = () => salesModule.clearCart();
 window.finishSale = () => salesModule.finishSale();
 window.finishSaleAndPrint = () => salesModule.finishSaleAndPrint();
 window.searchInvoices = () => salesModule.searchInvoices();
+window.searchCustomers = (q) => salesModule.searchCustomers(q); // دالة مختصرة للبحث عن العملاء
 
 // تهيئة تلقائية
 if (typeof document !== 'undefined') {
