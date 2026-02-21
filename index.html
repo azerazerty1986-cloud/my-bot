@@ -125,7 +125,7 @@
 
     <!-- ===== تحميل أقسام HTML ===== -->
     <script>
-        // ترتيب تحميل الأقسام (18 ملف HTML في includes/)
+        // ترتيب تحميل الأقسام (17 ملف HTML في includes/)
         const sections = [
             'login.html',               // الرقم 2
             'header.html',              // الرقم 3
@@ -292,8 +292,8 @@
                     }
                     break;
                 case 'ai':
-                    if (window.aiModule && document.getElementById('ai-overview')?.style.display !== 'none') {
-                        if (typeof loadAIOverview === 'function') loadAIOverview();
+                    if (window.aiModule && typeof loadAIOverview === 'function') {
+                        setTimeout(loadAIOverview, 100);
                     }
                     break;
                 case 'products':
@@ -434,17 +434,16 @@
                 const bsModal = new bootstrap.Modal(modal);
                 bsModal.show();
                 
-                // محاكاة مسح باركود بعد ثانيتين
                 setTimeout(() => {
                     const mockBarcode = '2' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
-                    document.getElementById('barcode-result').textContent = `تم المسح: ${mockBarcode}`;
+                    const resultEl = document.getElementById('barcode-result');
+                    if (resultEl) resultEl.textContent = `تم المسح: ${mockBarcode}`;
                     
                     if (inputId) {
                         const input = document.getElementById(inputId);
                         if (input) input.value = mockBarcode;
                     }
                     
-                    // إطلاق حدث
                     window.dispatchEvent(new CustomEvent('barcode-scanned', { 
                         detail: { barcode: mockBarcode }
                     }));
@@ -503,9 +502,72 @@
             document.getElementById('backup-file-input').click();
         }
 
+        document.getElementById('backup-file-input')?.addEventListener('change', function(e) {
+            if (e.target.files.length > 0 && window.backupModule) {
+                backupModule.importBackup(e.target.files[0]);
+            }
+        });
+
         // ================== دوال عامة ==================
         function uploadExcel() {
             Swal.fire('رفع Excel', 'قريباً', 'info');
+        }
+
+        // ================== دوال الذكاء الاصطناعي ==================
+        function loadAIOverview() {
+            if (window.aiModule && typeof window.aiModule.getFullAnalysis === 'function') {
+                const analysis = aiModule.getFullAnalysis();
+                
+                const totalSalesEl = document.getElementById('ai-total-sales');
+                const totalProfitEl = document.getElementById('ai-total-profit');
+                const totalCustomersEl = document.getElementById('ai-total-customers');
+                const activeProductsEl = document.getElementById('ai-active-products');
+                const lowStockEl = document.getElementById('ai-low-stock');
+                const lastUpdateEl = document.getElementById('ai-last-update');
+                
+                if (totalSalesEl) totalSalesEl.textContent = formatCurrency(analysis.sales.summary?.totalSales || 0);
+                if (totalProfitEl) totalProfitEl.textContent = formatCurrency(analysis.financial.summary?.grossProfit || 0);
+                if (totalCustomersEl) totalCustomersEl.textContent = analysis.customers.summary?.totalCustomers || 0;
+                if (activeProductsEl) activeProductsEl.textContent = analysis.products.summary?.productsWithSales || 0;
+                if (lowStockEl) lowStockEl.textContent = analysis.inventory.status?.lowStock || 0;
+                if (lastUpdateEl) lastUpdateEl.textContent = new Date().toLocaleString('ar-EG');
+                
+                const recommendationsEl = document.getElementById('ai-recommendations');
+                if (recommendationsEl && analysis.recommendations.list.length > 0) {
+                    let html = '';
+                    analysis.recommendations.list.slice(0, 5).forEach(rec => {
+                        let icon = 'lightbulb';
+                        let color = '#4361ee';
+                        
+                        if (rec.includes('⚠️') || rec.includes('منخفض') || rec.includes('ناقصة')) {
+                            icon = 'warning';
+                            color = '#ffb703';
+                        } else if (rec.includes('❌') || rec.includes('نفدت')) {
+                            icon = 'error';
+                            color = '#e63946';
+                        } else if (rec.includes('🌟') || rec.includes('ممتاز')) {
+                            icon = 'star';
+                            color = '#06d6a0';
+                        }
+                        
+                        html += `
+                            <div class="recommendation-item" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border-right: 3px solid ${color};">
+                                <i class="material-icons-round" style="color: ${color};">${icon}</i>
+                                <span>${rec}</span>
+                            </div>
+                        `;
+                    });
+                    recommendationsEl.innerHTML = html;
+                }
+            }
+        }
+
+        // ================== دالة تنسيق العملة ==================
+        function formatCurrency(amount) {
+            if (window.utilsModule) {
+                return utilsModule.formatCurrency(amount);
+            }
+            return Number(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') + ' دج';
         }
 
         // ================== التحقق من حالة تسجيل الدخول ==================
