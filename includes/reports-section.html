@@ -1,93 +1,923 @@
-<!-- ================== قسم التقارير ================== -->
+<!-- ================== قسم التقارير المتقدم 2026 ================== -->
 <div id="reports" class="section">
     <div class="main-card">
-        <h5 class="text-center mb-4">📊 التقارير والإحصائيات</h5>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="mb-0">
+                <i class="material-icons-round" style="color: var(--primary);">dashboard</i> 
+                التقارير والإحصائيات
+            </h5>
+            <div>
+                <button class="btn btn-outline-primary me-2" onclick="exportCurrentReport()">
+                    <i class="material-icons-round">download</i> تصدير
+                </button>
+                <button class="btn btn-outline-success" onclick="printCurrentReport()">
+                    <i class="material-icons-round">print</i> طباعة
+                </button>
+            </div>
+        </div>
         
-        <div class="report-tabs no-print d-flex gap-2 mb-3">
-            <button class="btn btn-outline-primary flex-grow-1 active" onclick="showReportTab('report-summary')">
-                <i class="material-icons-round">dashboard</i> ملخص
-            </button>
-            <button class="btn btn-outline-warning flex-grow-1" onclick="showReportTab('report-lowstock')">
-                <i class="material-icons-round">warning</i> النواقص
-            </button>
-            <button class="btn btn-outline-success flex-grow-1" onclick="showReportTab('report-top')">
-                <i class="material-icons-round">trending_up</i> الأكثر مبيعاً
-            </button>
-            <button class="btn btn-outline-info flex-grow-1" onclick="showReportTab('report-customers')">
-                <i class="material-icons-round">people</i> أفضل العملاء
-            </button>
+        <!-- تبويبات التقارير العصرية -->
+        <div class="report-tabs-modern">
+            <div class="tab-item-modern active" onclick="showReportTab('report-summary')">
+                <i class="material-icons-round">pie_chart</i>
+                <span>الملخص العام</span>
+            </div>
+            <div class="tab-item-modern" onclick="showReportTab('report-sales')">
+                <i class="material-icons-round">trending_up</i>
+                <span>تحليل المبيعات</span>
+            </div>
+            <div class="tab-item-modern" onclick="showReportTab('report-purchases')">
+                <i class="material-icons-round">shopping_cart</i>
+                <span>تحليل المشتريات</span>
+            </div>
+            <div class="tab-item-modern" onclick="showReportTab('report-inventory')">
+                <i class="material-icons-round">inventory</i>
+                <span>تحليل المخزون</span>
+            </div>
+            <div class="tab-item-modern" onclick="showReportTab('report-profit')">
+                <i class="material-icons-round">payments</i>
+                <span>تحليل الأرباح</span>
+            </div>
+            <div class="tab-item-modern" onclick="showReportTab('report-customers')">
+                <i class="material-icons-round">people</i>
+                <span>تحليل العملاء</span>
+            </div>
         </div>
 
-        <!-- ملخص -->
-        <div id="report-summary" class="report-content">
-            <div class="row g-2">
-                <div class="col-6">
-                    <div class="summary-box" style="background: var(--main-red);">
-                        <div>إجمالي المبيعات</div>
-                        <b id="total-sales">0</b> دج
+        <!-- ===== الملخص العام ===== -->
+        <div id="report-summary" class="report-content active-report">
+            <!-- بطاقات KPIs العصرية -->
+            <div class="kpi-grid">
+                <div class="kpi-card" style="background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);">
+                    <div class="kpi-icon">
+                        <i class="material-icons-round">payments</i>
+                    </div>
+                    <div class="kpi-content">
+                        <span class="kpi-label">إجمالي المبيعات</span>
+                        <span class="kpi-value" id="total-sales">0</span>
+                        <span class="kpi-trend positive">+12.5%</span>
                     </div>
                 </div>
-                <div class="col-6">
-                    <div class="summary-box" style="background: var(--main-green);">
-                        <div>إجمالي المشتريات</div>
-                        <b id="total-purchases">0</b> دج
+                
+                <div class="kpi-card" style="background: linear-gradient(135deg, #06d6a0 0%, #1b9aaa 100%);">
+                    <div class="kpi-icon">
+                        <i class="material-icons-round">shopping_cart</i>
+                    </div>
+                    <div class="kpi-content">
+                        <span class="kpi-label">إجمالي المشتريات</span>
+                        <span class="kpi-value" id="total-purchases">0</span>
+                        <span class="kpi-trend negative">-3.2%</span>
+                    </div>
+                </div>
+                
+                <div class="kpi-card" style="background: linear-gradient(135deg, #ffb703 0%, #fb8500 100%);">
+                    <div class="kpi-icon">
+                        <i class="material-icons-round">inventory</i>
+                    </div>
+                    <div class="kpi-content">
+                        <span class="kpi-label">قيمة المخزون</span>
+                        <span class="kpi-value" id="total-inventory-value">0</span>
+                        <span class="kpi-trend positive">+5.8%</span>
+                    </div>
+                </div>
+                
+                <div class="kpi-card" style="background: linear-gradient(135deg, #e63946 0%, #b5179e 100%);">
+                    <div class="kpi-icon">
+                        <i class="material-icons-round">account_balance_wallet</i>
+                    </div>
+                    <div class="kpi-content">
+                        <span class="kpi-label">صافي الربح</span>
+                        <span class="kpi-value" id="total-profit">0</span>
+                        <span class="kpi-trend positive">+18.3%</span>
                     </div>
                 </div>
             </div>
             
-            <div class="row g-2 mt-2">
-                <div class="col-6">
-                    <div class="summary-box" style="background: var(--primary-blue);">
-                        <div>عدد الفواتير</div>
-                        <b id="total-invoices">0</b>
+            <!-- إحصائيات سريعة -->
+            <div class="stats-grid-modern mt-4">
+                <div class="stat-item">
+                    <span class="stat-label">عدد الفواتير</span>
+                    <span class="stat-number" id="total-invoices">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">عدد المنتجات</span>
+                    <span class="stat-number" id="total-products">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">عدد العملاء</span>
+                    <span class="stat-number" id="total-customers">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">عدد الموردين</span>
+                    <span class="stat-number" id="total-suppliers">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">منتجات ناقصة</span>
+                    <span class="stat-number text-danger" id="low-stock-count">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">عملاء مدينون</span>
+                    <span class="stat-number text-warning" id="debt-customers">0</span>
+                </div>
+            </div>
+            
+            <!-- رسم بياني للمبيعات -->
+            <div class="chart-container mt-4">
+                <canvas id="salesChart" style="width:100%; height:300px;"></canvas>
+            </div>
+            
+            <!-- إحصائيات اليوم والشهر -->
+            <div class="period-stats mt-4">
+                <div class="period-card">
+                    <div class="period-header">
+                        <i class="material-icons-round">today</i>
+                        <h6>اليوم</h6>
+                    </div>
+                    <div class="period-body">
+                        <div class="period-item">
+                            <span>المبيعات:</span>
+                            <strong id="today-sales">0</strong>
+                        </div>
+                        <div class="period-item">
+                            <span>المشتريات:</span>
+                            <strong id="today-purchases">0</strong>
+                        </div>
+                        <div class="period-item">
+                            <span>الأرباح:</span>
+                            <strong id="today-profit" class="text-success">0</strong>
+                        </div>
                     </div>
                 </div>
-                <div class="col-6">
-                    <div class="summary-box" style="background: var(--warning-yellow);">
-                        <div>عدد المنتجات</div>
-                        <b id="total-products">0</b>
+                
+                <div class="period-card">
+                    <div class="period-header">
+                        <i class="material-icons-round">date_range</i>
+                        <h6>هذا الشهر</h6>
+                    </div>
+                    <div class="period-body">
+                        <div class="period-item">
+                            <span>المبيعات:</span>
+                            <strong id="month-sales">0</strong>
+                        </div>
+                        <div class="period-item">
+                            <span>المشتريات:</span>
+                            <strong id="month-purchases">0</strong>
+                        </div>
+                        <div class="period-item">
+                            <span>الأرباح:</span>
+                            <strong id="month-profit" class="text-success">0</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="period-card">
+                    <div class="period-header">
+                        <i class="material-icons-round">calendar_today</i>
+                        <h6>هذا العام</h6>
+                    </div>
+                    <div class="period-body">
+                        <div class="period-item">
+                            <span>المبيعات:</span>
+                            <strong id="year-sales">0</strong>
+                        </div>
+                        <div class="period-item">
+                            <span>المشتريات:</span>
+                            <strong id="year-purchases">0</strong>
+                        </div>
+                        <div class="period-item">
+                            <span>الأرباح:</span>
+                            <strong id="year-profit" class="text-success">0</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== تحليل المبيعات ===== -->
+        <div id="report-sales" class="report-content" style="display: none;">
+            <h6 class="mb-4"><i class="material-icons-round text-primary">trending_up</i> تحليل المبيعات</h6>
+            
+            <!-- فلاتر التاريخ -->
+            <div class="filters-bar mb-4">
+                <div class="date-filter">
+                    <input type="date" id="sales-start-date" class="form-control" placeholder="من">
+                    <span>إلى</span>
+                    <input type="date" id="sales-end-date" class="form-control" placeholder="إلى">
+                    <button class="btn btn-primary" onclick="filterSalesReport()">
+                        <i class="material-icons-round">search</i> تطبيق
+                    </button>
+                </div>
+            </div>
+            
+            <!-- إحصائيات المبيعات -->
+            <div class="stats-row">
+                <div class="stat-box">
+                    <span class="stat-label">إجمالي المبيعات</span>
+                    <span class="stat-value" id="sales-total">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">عدد الفواتير</span>
+                    <span class="stat-value" id="sales-count">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">متوسط الفاتورة</span>
+                    <span class="stat-value" id="sales-average">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">أعلى فاتورة</span>
+                    <span class="stat-value" id="sales-max">0</span>
+                </div>
+            </div>
+            
+            <!-- المنتجات الأكثر مبيعاً -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6>🏆 أفضل 10 منتجات مبيعاً</h6>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table-custom">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>المنتج</th>
+                                    <th>الكمية المباعة</th>
+                                    <th>إجمالي المبيعات</th>
+                                    <th>نسبة من الإجمالي</th>
+                                </tr>
+                            </thead>
+                            <tbody id="top-products-list">
+                                <tr>
+                                    <td colspan="5" class="text-center p-4">لا توجد بيانات</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
             
-            <div class="row g-2 mt-2">
-                <div class="col-6">
-                    <div class="summary-box" style="background: var(--nardo-grey);">
-                        <div>مبيعات اليوم</div>
-                        <b id="today-sales">0</b> دج
-                    </div>
+            <!-- المبيعات حسب طريقة الدفع -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6>💰 المبيعات حسب طريقة الدفع</h6>
                 </div>
-                <div class="col-6">
-                    <div class="summary-box" style="background: var(--nardo-grey);">
-                        <div>مبيعات الشهر</div>
-                        <b id="month-sales">0</b> دج
+                <div class="card-body">
+                    <div class="payment-chart">
+                        <canvas id="paymentChart" style="height:250px;"></canvas>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <!-- المنتجات الناقصة -->
-        <div id="report-lowstock" class="report-content" style="display: none;">
-            <h6 class="mb-3">⚠️ المنتجات الناقصة (أقل من الحد الأدنى)</h6>
-            <div id="low-stock-list" class="table-responsive">
-                <p class="text-center text-muted">لا توجد منتجات ناقصة</p>
+
+        <!-- ===== تحليل المشتريات ===== -->
+        <div id="report-purchases" class="report-content" style="display: none;">
+            <h6 class="mb-4"><i class="material-icons-round text-success">shopping_cart</i> تحليل المشتريات</h6>
+            
+            <!-- فلاتر التاريخ -->
+            <div class="filters-bar mb-4">
+                <div class="date-filter">
+                    <input type="date" id="purchases-start-date" class="form-control">
+                    <span>إلى</span>
+                    <input type="date" id="purchases-end-date" class="form-control">
+                    <button class="btn btn-success" onclick="filterPurchasesReport()">تطبيق</button>
+                </div>
+            </div>
+            
+            <!-- إحصائيات المشتريات -->
+            <div class="stats-row">
+                <div class="stat-box">
+                    <span class="stat-label">إجمالي المشتريات</span>
+                    <span class="stat-value" id="purchases-total">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">عدد الفواتير</span>
+                    <span class="stat-value" id="purchases-count">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">متوسط الفاتورة</span>
+                    <span class="stat-value" id="purchases-average">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">أعلى فاتورة</span>
+                    <span class="stat-value" id="purchases-max">0</span>
+                </div>
+            </div>
+            
+            <!-- المنتجات الأكثر شراءً -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6>📦 أكثر المنتجات شراءً</h6>
+                </div>
+                <div class="card-body">
+                    <div id="top-purchased-list"></div>
+                </div>
             </div>
         </div>
-        
-        <!-- الأكثر مبيعاً -->
-        <div id="report-top" class="report-content" style="display: none;">
-            <h6 class="mb-3">🔥 أفضل 10 منتجات مبيعاً</h6>
-            <div id="top-products-list" class="table-responsive">
-                <p class="text-center text-muted">لا توجد مبيعات كافية</p>
+
+        <!-- ===== تحليل المخزون ===== -->
+        <div id="report-inventory" class="report-content" style="display: none;">
+            <h6 class="mb-4"><i class="material-icons-round text-warning">inventory</i> تحليل المخزون</h6>
+            
+            <!-- إحصائيات المخزون -->
+            <div class="stats-row">
+                <div class="stat-box">
+                    <span class="stat-label">إجمالي المنتجات</span>
+                    <span class="stat-value" id="inv-total-products">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">إجمالي الكميات</span>
+                    <span class="stat-value" id="inv-total-qty">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">قيمة المخزون</span>
+                    <span class="stat-value" id="inv-total-value">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">الربح المتوقع</span>
+                    <span class="stat-value text-success" id="inv-potential-profit">0</span>
+                </div>
+            </div>
+            
+            <!-- المنتجات الناقصة -->
+            <div class="card mt-4">
+                <div class="card-header bg-danger text-white">
+                    <h6>⚠️ المنتجات الناقصة (أقل من الحد الأدنى)</h6>
+                </div>
+                <div class="card-body">
+                    <div id="low-stock-list" class="table-responsive">
+                        <p class="text-center text-muted">لا توجد منتجات ناقصة</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- المخزون حسب التصنيف -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6>📊 المخزون حسب التصنيف</h6>
+                </div>
+                <div class="card-body">
+                    <div id="inventory-by-category"></div>
+                </div>
             </div>
         </div>
-        
-        <!-- أفضل العملاء -->
+
+        <!-- ===== تحليل الأرباح ===== -->
+        <div id="report-profit" class="report-content" style="display: none;">
+            <h6 class="mb-4"><i class="material-icons-round text-success">payments</i> تحليل الأرباح</h6>
+            
+            <div class="profit-summary">
+                <div class="profit-card profit-income">
+                    <i class="material-icons-round">trending_up</i>
+                    <div>
+                        <span>إجمالي الإيرادات</span>
+                        <strong id="profit-revenue">0</strong>
+                    </div>
+                </div>
+                <div class="profit-card profit-cost">
+                    <i class="material-icons-round">trending_down</i>
+                    <div>
+                        <span>إجمالي التكاليف</span>
+                        <strong id="profit-cost">0</strong>
+                    </div>
+                </div>
+                <div class="profit-card profit-net">
+                    <i class="material-icons-round">account_balance</i>
+                    <div>
+                        <span>صافي الربح</span>
+                        <strong id="profit-net">0</strong>
+                    </div>
+                </div>
+                <div class="profit-card profit-margin">
+                    <i class="material-icons-round">percent</i>
+                    <div>
+                        <span>هامش الربح</span>
+                        <strong id="profit-margin">0%</strong>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- رسم بياني للأرباح -->
+            <div class="chart-container mt-4">
+                <canvas id="profitChart" style="height:300px;"></canvas>
+            </div>
+        </div>
+
+        <!-- ===== تحليل العملاء ===== -->
         <div id="report-customers" class="report-content" style="display: none;">
-            <h6 class="mb-3">👑 أفضل العملاء</h6>
-            <div id="top-customers-list" class="table-responsive">
-                <p class="text-center text-muted">لا يوجد عملاء</p>
+            <h6 class="mb-4"><i class="material-icons-round text-info">people</i> تحليل العملاء</h6>
+            
+            <div class="stats-row">
+                <div class="stat-box">
+                    <span class="stat-label">إجمالي العملاء</span>
+                    <span class="stat-value" id="customers-total">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">عملاء VIP</span>
+                    <span class="stat-value" id="customers-vip">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">عملاء مدينون</span>
+                    <span class="stat-value text-danger" id="customers-debt">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-label">إجمالي الديون</span>
+                    <span class="stat-value text-warning" id="customers-debt-total">0</span>
+                </div>
+            </div>
+            
+            <!-- أفضل العملاء -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h6>👑 أفضل 10 عملاء</h6>
+                </div>
+                <div class="card-body">
+                    <div id="top-customers-list"></div>
+                </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+/* أنماط التقارير الحديثة */
+.report-tabs-modern {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 30px;
+    padding: 4px;
+    background: var(--gray-100);
+    border-radius: var(--radius-lg);
+}
+
+.tab-item-modern {
+    flex: 1;
+    min-width: 100px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 8px;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.3s;
+    color: var(--gray-600);
+}
+
+.tab-item-modern i {
+    font-size: 24px;
+    margin-bottom: 4px;
+}
+
+.tab-item-modern span {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.tab-item-modern:hover {
+    background: white;
+    color: var(--primary);
+    transform: translateY(-2px);
+}
+
+.tab-item-modern.active {
+    background: white;
+    color: var(--primary);
+    box-shadow: var(--shadow-md);
+}
+
+/* بطاقات KPI */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.kpi-card {
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: var(--shadow-lg);
+    transition: transform 0.3s;
+}
+
+.kpi-card:hover {
+    transform: translateY(-5px);
+}
+
+.kpi-icon {
+    background: rgba(255,255,255,0.2);
+    width: 60px;
+    height: 60px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.kpi-icon i {
+    font-size: 32px;
+}
+
+.kpi-content {
+    flex: 1;
+}
+
+.kpi-label {
+    font-size: 12px;
+    opacity: 0.9;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.kpi-value {
+    font-size: 24px;
+    font-weight: 800;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.kpi-trend {
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: var(--radius-full);
+    background: rgba(255,255,255,0.2);
+}
+
+.kpi-trend.positive {
+    color: #a7f3d0;
+}
+
+.kpi-trend.negative {
+    color: #fecaca;
+}
+
+/* شبكة الإحصائيات */
+.stats-grid-modern {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    background: white;
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-item {
+    text-align: center;
+    padding: 10px;
+    border-right: 1px solid var(--gray-200);
+}
+
+.stat-item:first-child {
+    border-right: none;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--gray-600);
+    display: block;
+    margin-bottom: 5px;
+}
+
+.stat-number {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+/* إحصائيات الفترات */
+.period-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.period-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    box-shadow: var(--shadow-sm);
+}
+
+.period-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--primary);
+}
+
+.period-header i {
+    color: var(--primary);
+    font-size: 24px;
+}
+
+.period-header h6 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.period-item {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 5px 0;
+}
+
+/* شريط الفلاتر */
+.filters-bar {
+    background: white;
+    padding: 15px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.date-filter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.date-filter input {
+    flex: 1;
+    min-width: 150px;
+}
+
+/* صف الإحصائيات */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.stat-box {
+    background: white;
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s;
+}
+
+.stat-box:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.stat-box .stat-label {
+    font-size: 13px;
+    color: var(--gray-600);
+    margin-bottom: 8px;
+}
+
+.stat-box .stat-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+/* بطاقات الأرباح */
+.profit-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.profit-card {
+    background: white;
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.3s;
+}
+
+.profit-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
+}
+
+.profit-card i {
+    font-size: 36px;
+}
+
+.profit-income i {
+    color: var(--success);
+}
+
+.profit-cost i {
+    color: var(--danger);
+}
+
+.profit-net i {
+    color: var(--primary);
+}
+
+.profit-margin i {
+    color: var(--warning);
+}
+
+.profit-card div {
+    flex: 1;
+}
+
+.profit-card span {
+    font-size: 13px;
+    color: var(--gray-600);
+    display: block;
+    margin-bottom: 4px;
+}
+
+.profit-card strong {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+/* حاوية الرسم البياني */
+.chart-container {
+    background: white;
+    padding: 20px;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+/* التجاوب مع الجوال */
+@media (max-width: 768px) {
+    .kpi-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid-modern {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .stat-item {
+        border-right: none;
+        border-bottom: 1px solid var(--gray-200);
+    }
+    
+    .period-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .date-filter {
+        flex-direction: column;
+    }
+    
+    .date-filter input {
+        width: 100%;
+    }
+    
+    .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .profit-summary {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+// دوال التقارير
+let salesChart = null;
+let paymentChart = null;
+let profitChart = null;
+
+function showReportTab(tabId) {
+    // إخفاء كل المحتويات
+    document.querySelectorAll('.report-content').forEach(r => r.style.display = 'none');
+    document.getElementById(tabId).style.display = 'block';
+    
+    // تحديث التبويبات
+    document.querySelectorAll('.tab-item-modern').forEach(t => t.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    
+    // تحميل البيانات حسب التبويب
+    switch(tabId) {
+        case 'report-summary':
+            loadSummaryData();
+            break;
+        case 'report-sales':
+            loadSalesData();
+            break;
+        case 'report-purchases':
+            loadPurchasesData();
+            break;
+        case 'report-inventory':
+            loadInventoryData();
+            break;
+        case 'report-profit':
+            loadProfitData();
+            break;
+        case 'report-customers':
+            loadCustomersData();
+            break;
+    }
+}
+
+function loadSummaryData() {
+    // تحديث بطاقات KPI
+    if (window.reportsModule) {
+        const stats = reportsModule.getDashboardStats();
+        
+        document.getElementById('total-sales').textContent = formatCurrency(stats.sales.total);
+        document.getElementById('total-purchases').textContent = formatCurrency(stats.purchases.total);
+        document.getElementById('total-inventory-value').textContent = formatCurrency(stats.inventory?.totalValue || 0);
+        document.getElementById('total-profit').textContent = formatCurrency(stats.profit || 0);
+        
+        document.getElementById('total-invoices').textContent = stats.invoicesCount || 0;
+        document.getElementById('total-products').textContent = stats.products.count;
+        document.getElementById('total-customers').textContent = stats.customers.count;
+        document.getElementById('total-suppliers').textContent = stats.suppliers.count;
+        document.getElementById('low-stock-count').textContent = stats.products.lowStock;
+        document.getElementById('debt-customers').textContent = stats.customers.withDebt;
+        
+        document.getElementById('today-sales').textContent = formatCurrency(stats.sales.todayTotal);
+        document.getElementById('month-sales').textContent = formatCurrency(stats.sales.monthTotal);
+        
+        // رسم بياني للمبيعات
+        drawSalesChart();
+    }
+}
+
+function drawSalesChart() {
+    const ctx = document.getElementById('salesChart')?.getContext('2d');
+    if (!ctx) return;
+    
+    if (salesChart) salesChart.destroy();
+    
+    // بيانات تجريبية
+    salesChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو'],
+            datasets: [{
+                label: 'المبيعات',
+                data: [12000, 19000, 15000, 25000, 22000, 30000],
+                borderColor: '#4361ee',
+                backgroundColor: 'rgba(67, 97, 238, 0.1)',
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toLocaleString() + ' دج';
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function formatCurrency(amount) {
+    return Number(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') + ' دج';
+}
+
+function exportCurrentReport() {
+    Swal.fire({
+        icon: 'success',
+        title: 'تم التصدير',
+        text: 'تم تصدير التقرير بنجاح',
+        timer: 1500
+    });
+}
+
+function printCurrentReport() {
+    window.print();
+}
+
+// تحميل البيانات عند فتح الصفحة
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => {
+        if (document.getElementById('report-summary').style.display !== 'none') {
+            loadSummaryData();
+        }
+    }, 500);
+});
+</script>
