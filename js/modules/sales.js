@@ -409,6 +409,7 @@ const salesModule = (function() {
             return false;
         }
         
+        // إضافة المنتج مع القيم الافتراضية
         const newItem = {
             id: Date.now() + Math.random(),
             productId: product.id,
@@ -433,6 +434,7 @@ const salesModule = (function() {
         return true;
     }
     
+    // تحديث كمية المنتج
     function updateItemQuantity(itemId, newQty) {
         const item = currentCart.find(i => i.id === itemId);
         if (!item) return;
@@ -451,6 +453,7 @@ const salesModule = (function() {
         updateRemainingAmount();
     }
     
+    // تحديث سعر المنتج
     function updateItemPrice(itemId, newPrice) {
         const item = currentCart.find(i => i.id === itemId);
         if (!item) return;
@@ -466,6 +469,7 @@ const salesModule = (function() {
         updateRemainingAmount();
     }
     
+    // تحديث خصم المنتج
     function updateItemDiscount(itemId, newDiscount) {
         const item = currentCart.find(i => i.id === itemId);
         if (!item) return;
@@ -717,7 +721,7 @@ const salesModule = (function() {
         }
     }
     
-    // ================== إنهاء البيع مع دعم الديون ==================
+    // ================== إنهاء البيع ==================
     function finishSale() {
         if (currentCart.length === 0) {
             showNotification('تنبيه', 'السلة فارغة', 'warning');
@@ -787,6 +791,7 @@ const salesModule = (function() {
                 window.customerModule.addDebt(customerId, debt);
             }
             
+            // تحديث إحصائيات العميل
             if (window.customerModule?.updateCustomerStats) {
                 window.customerModule.updateCustomerStats(customerId, grandTotal);
             }
@@ -1168,6 +1173,7 @@ const salesModule = (function() {
 
 window.salesModule = salesModule;
 
+// دوال مختصرة
 window.addToCart = () => salesModule.addToCart();
 window.clearCart = () => salesModule.clearCart();
 window.finishSale = () => salesModule.finishSale();
