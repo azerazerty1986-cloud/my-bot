@@ -6,6 +6,8 @@ const salesModule = (function() {
     let cart = [];
     let invoices = JSON.parse(localStorage.getItem('sales_invoices')) || [];
     let currentInvoice = null;
+    let activeInvoices = JSON.parse(localStorage.getItem('active_invoices')) || []; // فواتير نشطة متعددة
+    let currentActiveInvoiceId = null;
     
     // ================== دوال مساعدة ==================
     function formatCurrency(amount) {
@@ -52,6 +54,71 @@ const salesModule = (function() {
     
     function saveInvoices() {
         localStorage.setItem('sales_invoices', JSON.stringify(invoices));
+    }
+    
+    function saveActiveInvoices() {
+        localStorage.setItem('active_invoices', JSON.stringify(activeInvoices));
+    }
+    
+    // ================== إدارة الفواتير النشطة ==================
+    function createNewActiveInvoice(customerId = null, customerName = 'زبون نقدي') {
+        const invoiceId = Date.now().toString();
+        const newInvoice = {
+            id: invoiceId,
+            number: generateInvoiceNumber(),
+            date: new Date().toISOString(),
+            customerId: customerId,
+            customer: customerName,
+            items: [],
+            createdBy: 'admin',
+            status: 'active'
+        };
+        
+        activeInvoices.push(newInvoice);
+        saveActiveInvoices();
+        return newInvoice;
+    }
+    
+    function switchActiveInvoice(invoiceId) {
+        const invoice = activeInvoices.find(inv => inv.id === invoiceId);
+        if (invoice) {
+            currentActiveInvoiceId = invoiceId;
+            cart = invoice.items || [];
+            
+            // تحديث واجهة العميل
+            if (invoice.customerId) {
+                selectCustomer(invoice.customerId, false);
+            } else {
+                clearSelectedCustomer();
+            }
+            
+            renderCart();
+            updateActiveInvoicesDropdown();
+            showNotification('تم التبديل', `الفاتورة: ${invoice.number}`);
+        }
+    }
+    
+    function loadCustomerInvoices(customerId) {
+        return activeInvoices.filter(inv => inv.customerId === customerId && inv.status === 'active');
+    }
+    
+    function updateActiveInvoicesDropdown() {
+        const dropdown = document.getElementById('active-invoices-list');
+        if (!dropdown) return;
+        
+        if (activeInvoices.length === 0) {
+            dropdown.innerHTML = '<option value="">لا توجد فواتير نشطة</option>';
+            return;
+        }
+        
+        let html = '';
+        activeInvoices.forEach(inv => {
+            const total = inv.items.reduce((sum, item) => sum + item.total, 0);
+            const selected = inv.id === currentActiveInvoiceId ? 'selected' : '';
+            html += `<option value="${inv.id}" ${selected}>${inv.customer} - ${formatCurrency(total)} دج</option>`;
+        });
+        
+        dropdown.innerHTML = html;
     }
     
     // ================== إضافة منتج إلى السلة مع دعم الوحدات ==================
@@ -104,14 +171,16 @@ const salesModule = (function() {
         const priceType = useWholesale && product.wholesalePrice ? 'جملة' : 'تجزئة';
         const unitPrice = price * unitMultiplier;
         
-        const existingItem = cart.find(item => item.productId === product.id && item.unit === selectedUnit);
-        if (existingItem) {
-            existingItem.qty += qty;
-            existingItem.actualQty = existingItem.qty * existingItem.unitMultiplier;
-            existingItem.priceType = priceType;
-            existingItem.unitPrice = unitPrice;
-            existingItem.total = (existingItem.unitPrice * existingItem.qty) * (1 - existingItem.discount / 100);
+        // البحث عن المنتج في السلة
+        const existingItemIndex = cart.findIndex(item => item.productId === product.id && item.unit === selectedUnit);
+        
+        if (existingItemIndex !== -1) {
+            // تحديث الكمية إذا كان المنتج موجوداً
+            cart[existingItemIndex].qty += qty;
+            cart[existingItemIndex].actualQty = cart[existingItemIndex].qty * cart[existingItemIndex].unitMultiplier;
+            cart[existingItemIndex].total = (cart[existingItemIndex].unitPrice * cart[existingItemIndex].qty) * (1 - cart[existingItemIndex].discount / 100);
         } else {
+            // إضافة منتج جديد
             cart.push({
                 id: Date.now() + Math.random(),
                 productId: product.id,
@@ -127,8 +196,19 @@ const salesModule = (function() {
                 discount: discount,
                 total: (unitPrice * qty) * (1 - discount / 100),
                 stock: product.quantity,
-                unitStock: unitStock
+                unitStock: unitStock,
+                sellPrice: product.sellPrice,
+                wholesalePrice: product.wholesalePrice
             });
+        }
+        
+        // تحديث الفاتورة النشطة
+        if (currentActiveInvoiceId) {
+            const activeInvoice = activeInvoices.find(inv => inv.id === currentActiveInvoiceId);
+            if (activeInvoice) {
+                activeInvoice.items = [...cart];
+                saveActiveInvoices();
+            }
         }
         
         renderCart();
@@ -136,7 +216,6 @@ const salesModule = (function() {
         if (searchInput) searchInput.value = '';
         document.getElementById('sale-qty').value = '1';
         document.getElementById('sale-discount').value = '0';
-        document.getElementById('paid-amount').value = '';
         
         showNotification('نجاح', `تم إضافة المنتج (${unitName}) - السعر: ${formatCurrency(unitPrice)} دج`);
         updateCartCount();
@@ -144,13 +223,13 @@ const salesModule = (function() {
         return true;
     }
     
-    // ================== عرض السلة مع الوحدات ==================
+    // ================== عرض السلة مع إمكانية التعديل المباشر ==================
     function renderCart() {
         const tbody = document.getElementById('cart-table');
         if (!tbody) return;
         
         if (cart.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
             updateTotals();
             updateCartCount();
             updateRemainingAmount();
@@ -160,12 +239,31 @@ const salesModule = (function() {
         tbody.innerHTML = cart.map((item, index) => `
             <tr>
                 <td>${item.name}</td>
-                <td>${item.qty} ${item.unitName}</td>
-                <td>${formatCurrency(item.unitPrice)}</td>
-                <td>${item.discount}%</td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" 
+                           value="${item.qty}" min="1" 
+                           onchange="salesModule.updateCartItem('${item.id}', 'qty', this.value)"
+                           style="width:80px">
+                    <small>${item.unitName}</small>
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" 
+                           value="${item.unitPrice}" min="0" step="0.01"
+                           onchange="salesModule.updateCartItem('${item.id}', 'price', this.value)">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" 
+                           value="${item.discount}" min="0" max="100"
+                           onchange="salesModule.updateCartItem('${item.id}', 'discount', this.value)">
+                </td>
                 <td>${formatCurrency(item.total)}</td>
                 <td><small class="badge bg-info">مخزون: ${item.unitStock} ${item.unitName}</small></td>
                 <td><small class="badge bg-secondary">${item.priceType}</small></td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="salesModule.duplicateItem('${item.id}')" title="تكرار">
+                        <i class="material-icons-round">content_copy</i>
+                    </button>
+                </td>
                 <td>
                     <button class="btn btn-sm btn-danger" onclick="salesModule.removeFromCart('${item.id}')">
                         <i class="material-icons-round">delete</i>
@@ -176,6 +274,68 @@ const salesModule = (function() {
         
         updateTotals();
         updateCartCount();
+    }
+    
+    // ================== تحديث عنصر في السلة ==================
+    function updateCartItem(itemId, field, value) {
+        const itemIndex = cart.findIndex(item => item.id === itemId);
+        if (itemIndex === -1) return;
+        
+        const item = cart[itemIndex];
+        
+        switch(field) {
+            case 'qty':
+                item.qty = parseInt(value) || 1;
+                item.actualQty = item.qty * item.unitMultiplier;
+                break;
+            case 'price':
+                item.unitPrice = parseFloat(value) || 0;
+                item.price = item.unitPrice / item.unitMultiplier;
+                break;
+            case 'discount':
+                item.discount = parseFloat(value) || 0;
+                break;
+        }
+        
+        item.total = (item.unitPrice * item.qty) * (1 - item.discount / 100);
+        
+        // تحديث الفاتورة النشطة
+        if (currentActiveInvoiceId) {
+            const activeInvoice = activeInvoices.find(inv => inv.id === currentActiveInvoiceId);
+            if (activeInvoice) {
+                activeInvoice.items = [...cart];
+                saveActiveInvoices();
+            }
+        }
+        
+        renderCart();
+        updateRemainingAmount();
+    }
+    
+    // ================== تكرار عنصر ==================
+    function duplicateItem(itemId) {
+        const item = cart.find(item => item.id === itemId);
+        if (!item) return;
+        
+        const newItem = {
+            ...item,
+            id: Date.now() + Math.random(),
+            qty: 1
+        };
+        newItem.total = (newItem.unitPrice * newItem.qty) * (1 - newItem.discount / 100);
+        
+        cart.push(newItem);
+        
+        if (currentActiveInvoiceId) {
+            const activeInvoice = activeInvoices.find(inv => inv.id === currentActiveInvoiceId);
+            if (activeInvoice) {
+                activeInvoice.items = [...cart];
+                saveActiveInvoices();
+            }
+        }
+        
+        renderCart();
+        showNotification('تم', 'تم تكرار العنصر');
     }
     
     // ================== تحديث المجاميع ==================
@@ -203,7 +363,7 @@ const salesModule = (function() {
         if (countEl) countEl.textContent = cart.length;
     }
     
-    // ================== حساب المبلغ المتبقي (تصحيح الخطأ) ==================
+    // ================== حساب المبلغ المتبقي مع إمكانية الدين ==================
     function updateRemainingAmount() {
         const paidAmount = parseFloat(document.getElementById('paid-amount')?.value) || 0;
         const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
@@ -212,21 +372,18 @@ const salesModule = (function() {
         const remainingEl = document.getElementById('remaining-amount');
         if (remainingEl) {
             remainingEl.textContent = formatCurrency(remaining) + ' دج';
-            remainingEl.style.color = remaining >= 0 ? 'green' : 'red';
+            remainingEl.style.color = remaining >= 0 ? 'green' : 'orange';
         }
         
-        // تمييز حقل المبلغ المسدد إذا كان أقل من الإجمالي
-        const paidInput = document.getElementById('paid-amount');
-        if (paidInput) {
+        // إظهار رسالة دين إذا كان المبلغ أقل
+        const debtMessage = document.getElementById('debt-message');
+        if (debtMessage) {
             if (paidAmount < grandTotal && paidAmount > 0) {
-                paidInput.style.borderColor = 'orange';
-                paidInput.style.borderWidth = '2px';
-            } else if (paidAmount >= grandTotal) {
-                paidInput.style.borderColor = 'green';
-                paidInput.style.borderWidth = '2px';
+                const debtAmount = grandTotal - paidAmount;
+                debtMessage.innerHTML = `<div class="alert alert-warning">سيتم تسجيل ${formatCurrency(debtAmount)} دج كدين على العميل</div>`;
+                debtMessage.style.display = 'block';
             } else {
-                paidInput.style.borderColor = '';
-                paidInput.style.borderWidth = '';
+                debtMessage.style.display = 'none';
             }
         }
     }
@@ -234,6 +391,15 @@ const salesModule = (function() {
     // ================== حذف من السلة ==================
     function removeFromCart(itemId) {
         cart = cart.filter(item => item.id !== itemId);
+        
+        if (currentActiveInvoiceId) {
+            const activeInvoice = activeInvoices.find(inv => inv.id === currentActiveInvoiceId);
+            if (activeInvoice) {
+                activeInvoice.items = [...cart];
+                saveActiveInvoices();
+            }
+        }
+        
         renderCart();
         showNotification('تم', 'تم حذف المنتج');
         updateRemainingAmount();
@@ -245,6 +411,15 @@ const salesModule = (function() {
         
         showConfirmation('تأكيد', 'هل تريد تفريغ السلة؟', () => {
             cart = [];
+            
+            if (currentActiveInvoiceId) {
+                const activeInvoice = activeInvoices.find(inv => inv.id === currentActiveInvoiceId);
+                if (activeInvoice) {
+                    activeInvoice.items = [];
+                    saveActiveInvoices();
+                }
+            }
+            
             renderCart();
             document.getElementById('paid-amount').value = '';
             showNotification('تم', 'تم تفريغ السلة');
@@ -267,7 +442,6 @@ const salesModule = (function() {
         
         let options = '<option value="piece">قطعة</option>';
         
-        // إضافة وحدات مختلفة حسب المنتج
         if (product.unit12 || product.quantity >= 12) {
             options += '<option value="unit12">علبة (12 قطعة)</option>';
         }
@@ -309,12 +483,16 @@ const salesModule = (function() {
         results.forEach(customer => {
             const customerName = customer.fullname || customer.name || 'بدون اسم';
             const customerPhone = customer.phone1 || customer.phone || '';
+            const customerInvoices = loadCustomerInvoices(customer.id);
+            const hasActiveInvoices = customerInvoices.length > 0;
+            
             html += `
                 <div class="search-item" onclick="salesModule.selectCustomer('${customer.id}')">
                     <i class="material-icons-round">person</i>
                     <div>
                         <strong>${customerName}</strong>
                         <small class="text-muted d-block">${customerPhone || 'لا يوجد رقم'}</small>
+                        ${hasActiveInvoices ? '<small class="badge bg-warning">فواتير نشطة</small>' : ''}
                     </div>
                 </div>
             `;
@@ -324,7 +502,7 @@ const salesModule = (function() {
         resultsDiv.style.display = 'block';
     }
     
-    function selectCustomer(customerId) {
+    function selectCustomer(customerId, createNewInvoice = true) {
         const customers = window.customerModule?.getAllCustomers?.() || [];
         const customer = customers.find(c => c.id === customerId);
         
@@ -332,6 +510,21 @@ const salesModule = (function() {
         
         const customerName = customer.fullname || customer.name || 'بدون اسم';
         
+        // التحقق من وجود فواتير نشطة للعميل
+        const customerInvoices = loadCustomerInvoices(customerId);
+        
+        if (customerInvoices.length > 0 && createNewInvoice) {
+            // عرض الفواتير النشطة للاختيار
+            showActiveInvoicesForCustomer(customerInvoices, customerName);
+        } else if (createNewInvoice) {
+            // إنشاء فاتورة جديدة
+            const newInvoice = createNewActiveInvoice(customerId, customerName);
+            currentActiveInvoiceId = newInvoice.id;
+            cart = newInvoice.items || [];
+            renderCart();
+        }
+        
+        // تحديث واجهة العميل
         const searchInput = document.getElementById('customer-search');
         if (searchInput) {
             searchInput.value = customerName;
@@ -348,8 +541,44 @@ const salesModule = (function() {
         }
         
         showSelectedCustomerBadge(customerName, customer.phone1 || customer.phone || '', customer.id);
+        updateActiveInvoicesDropdown();
         
         showNotification('تم التحديد', `العميل: ${customerName}`, 'success');
+    }
+    
+    function showActiveInvoicesForCustomer(invoices, customerName) {
+        let options = '';
+        invoices.forEach(inv => {
+            const total = inv.items.reduce((sum, item) => sum + item.total, 0);
+            options += `<option value="${inv.id}">فاتورة ${inv.number} - ${formatCurrency(total)} دج</option>`;
+        });
+        
+        Swal.fire({
+            title: `فواتير نشطة للعميل ${customerName}`,
+            html: `
+                <div style="text-align:right">
+                    <p>اختر فاتورة للمتابعة أو أنشئ فاتورة جديدة</p>
+                    <select id="select-active-invoice" class="form-control">${options}</select>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'متابعة الفاتورة',
+            cancelButtonText: 'فاتورة جديدة',
+            preConfirm: () => {
+                const selectedId = document.getElementById('select-active-invoice').value;
+                return selectedId;
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                switchActiveInvoice(result.value);
+            } else {
+                const newInvoice = createNewActiveInvoice(invoices[0].customerId, customerName);
+                currentActiveInvoiceId = newInvoice.id;
+                cart = newInvoice.items || [];
+                renderCart();
+                updateActiveInvoicesDropdown();
+            }
+        });
     }
     
     function selectCustomerFromDropdown(customerId) {
@@ -357,7 +586,7 @@ const salesModule = (function() {
             clearSelectedCustomer();
             return;
         }
-        selectCustomer(customerId);
+        selectCustomer(customerId, true);
     }
     
     function showSelectedCustomerBadge(name, phone, id) {
@@ -388,7 +617,14 @@ const salesModule = (function() {
             selectBox.value = '';
         }
         
-        showNotification('تم', 'تم إلغاء تحديد العميل');
+        // إنشاء فاتورة جديدة بدون عميل
+        const newInvoice = createNewActiveInvoice(null, 'زبون نقدي');
+        currentActiveInvoiceId = newInvoice.id;
+        cart = newInvoice.items || [];
+        renderCart();
+        updateActiveInvoicesDropdown();
+        
+        showNotification('تم', 'فاتورة جديدة');
     }
     
     function openAddCustomerModal() {
@@ -432,7 +668,7 @@ const salesModule = (function() {
                 }
                 
                 loadCustomersDropdown();
-                selectCustomer(newCustomer.id);
+                selectCustomer(newCustomer.id, true);
                 showNotification('نجاح', 'تم إضافة العميل');
             }
         });
@@ -457,7 +693,7 @@ const salesModule = (function() {
         }
     }
     
-    // ================== البحث عن المنتجات مع قائمة منسدلة ==================
+    // ================== البحث عن المنتجات مع إدخال مباشر ==================
     function searchProducts(term) {
         const resultsBox = document.getElementById('search-box');
         if (!resultsBox) return;
@@ -519,24 +755,11 @@ const salesModule = (function() {
         
         updateProductUnits(name);
         
-        Swal.fire({
-            icon: 'info',
-            title: name,
-            html: `
-                <div style="text-align:right">
-                    <p><strong>سعر التجزئة:</strong> ${formatCurrency(sellPrice)}/قطعة</p>
-                    ${wholesalePrice ? `<p><strong>سعر الجملة:</strong> ${formatCurrency(wholesalePrice)}/قطعة</p>` : ''}
-                    <p><strong>المخزون:</strong> ${quantity} قطعة</p>
-                    <p><strong>العلب (12):</strong> ${Math.floor(quantity/12)}</p>
-                    <p><strong>الكرتون (24):</strong> ${Math.floor(quantity/24)}</p>
-                </div>
-            `,
-            timer: 3000,
-            showConfirmButton: false
-        });
+        // إضافة المنتج مباشرة عند الضغط على Enter
+        addToCart();
     }
     
-    // ================== إنهاء البيع (مع تصحيح المبلغ المسدد) ==================
+    // ================== إنهاء البيع مع إمكانية الدين ==================
     function finishSale() {
         if (cart.length === 0) {
             showNotification('تنبيه', 'السلة فارغة', 'warning');
@@ -545,12 +768,6 @@ const salesModule = (function() {
         
         const paidAmount = parseFloat(document.getElementById('paid-amount')?.value) || 0;
         const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
-        
-        if (paidAmount < grandTotal) {
-            const remaining = grandTotal - paidAmount;
-            showNotification('تنبيه', `المبلغ المدفوع أقل من الإجمالي بــ ${formatCurrency(remaining)} دج`, 'warning');
-            return null;
-        }
         
         const customerSelect = document.getElementById('sale-customer');
         const customerId = customerSelect?.value;
@@ -572,7 +789,42 @@ const salesModule = (function() {
         }, 0);
         
         const remaining = paidAmount - grandTotal;
+        const debtAmount = remaining < 0 ? Math.abs(remaining) : 0;
         
+        // تأكيد إذا كان هناك دين
+        if (paidAmount < grandTotal) {
+            return new Promise((resolve) => {
+                Swal.fire({
+                    title: 'تأكيد الدين',
+                    html: `
+                        <div style="text-align:right">
+                            <p>المبلغ المتبقي: ${formatCurrency(grandTotal - paidAmount)} دج</p>
+                            <p>سيتم تسجيله كدين على العميل</p>
+                            <label>
+                                <input type="checkbox" id="confirm-debt" checked> 
+                                أوافق على تسجيل الدين
+                            </label>
+                        </div>
+                    `,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'نعم، أكمل',
+                    cancelButtonText: 'إلغاء'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const invoice = saveFinishedInvoice(customerId, customerName, paymentMethod, paymentText, grandTotal, totalDiscount, paidAmount, remaining, debtAmount);
+                        resolve(invoice);
+                    } else {
+                        resolve(null);
+                    }
+                });
+            });
+        } else {
+            return saveFinishedInvoice(customerId, customerName, paymentMethod, paymentText, grandTotal, totalDiscount, paidAmount, remaining, debtAmount);
+        }
+    }
+    
+    function saveFinishedInvoice(customerId, customerName, paymentMethod, paymentText, grandTotal, totalDiscount, paidAmount, remaining, debtAmount) {
         const invoice = {
             id: Date.now(),
             number: generateInvoiceNumber(),
@@ -585,11 +837,12 @@ const salesModule = (function() {
             grandTotal: grandTotal,
             paidAmount: paidAmount,
             remaining: remaining,
+            debtAmount: debtAmount,
             paymentMethod: paymentMethod,
             paymentText: paymentText,
-            status: 'completed',
+            status: debtAmount > 0 ? 'partial' : 'completed',
             createdBy: 'admin',
-            notes: ''
+            notes: debtAmount > 0 ? `باقي دين: ${formatCurrency(debtAmount)} دج` : ''
         };
         
         invoices.push(invoice);
@@ -600,13 +853,19 @@ const salesModule = (function() {
             window.inventoryModule?.removeStock(item.productId, item.actualQty, `فاتورة مبيعات رقم ${invoice.number}`);
         });
         
-        // تحديث إحصائيات العميل
-        if (customerId && paymentMethod === 'credit') {
-            window.customerModule?.addDebt?.(customerId, grandTotal);
+        // تحديث ديون العميل
+        if (customerId && debtAmount > 0) {
+            window.customerModule?.addDebt?.(customerId, debtAmount);
         }
         
         if (customerId) {
             window.customerModule?.updateCustomerStats?.(customerId, grandTotal);
+        }
+        
+        // إزالة الفاتورة من النشطة
+        if (currentActiveInvoiceId) {
+            activeInvoices = activeInvoices.filter(inv => inv.id !== currentActiveInvoiceId);
+            saveActiveInvoices();
         }
         
         cart = [];
@@ -614,8 +873,12 @@ const salesModule = (function() {
         
         clearSelectedCustomer();
         document.getElementById('paid-amount').value = '';
+        currentActiveInvoiceId = null;
+        updateActiveInvoicesDropdown();
         
-        if (remaining > 0) {
+        if (debtAmount > 0) {
+            showNotification('نجاح', `تم حفظ الفاتورة مع دين ${formatCurrency(debtAmount)} دج`);
+        } else if (remaining > 0) {
             showNotification('نجاح', `تمت العملية - الباقي: ${formatCurrency(remaining)} دج`);
         } else {
             showNotification('نجاح', 'تم حفظ الفاتورة');
@@ -625,10 +888,11 @@ const salesModule = (function() {
     }
     
     function finishSaleAndPrint() {
-        const invoice = finishSale();
-        if (invoice) {
-            preparePrint(invoice);
-        }
+        finishSale().then(invoice => {
+            if (invoice) {
+                preparePrint(invoice);
+            }
+        });
     }
     
     // ================== تجهيز الطباعة ==================
@@ -663,6 +927,7 @@ const salesModule = (function() {
                     td { padding: 8px; border: 1px solid #ddd; text-align: center; }
                     .total { font-size: 18px; font-weight: bold; text-align: left; margin-top: 20px; }
                     .footer { text-align: center; margin-top: 50px; color: #999; }
+                    .debt { color: orange; font-weight: bold; }
                 </style>
             </head>
             <body>
@@ -694,6 +959,7 @@ const salesModule = (function() {
                     <p>الإجمالي: ${formatCurrency(invoice.grandTotal)} دج</p>
                     <p>المدفوع: ${formatCurrency(invoice.paidAmount)} دج</p>
                     <p>الباقي: ${formatCurrency(invoice.remaining)} دج</p>
+                    ${invoice.debtAmount > 0 ? `<p class="debt">دين: ${formatCurrency(invoice.debtAmount)} دج</p>` : ''}
                 </div>
                 
                 <div class="footer">
@@ -720,7 +986,7 @@ const salesModule = (function() {
         const sortedInvoices = getInvoices();
         
         if (sortedInvoices.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">receipt</i><br>لا توجد فواتير</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">receipt</i><br>لا توجد فواتير</td></tr>';
             return;
         }
         
@@ -734,6 +1000,7 @@ const salesModule = (function() {
                 <td style="color: ${inv.remaining > 0 ? 'green' : 'black'}">${formatCurrency(inv.remaining)} دج</td>
                 <td>${inv.paymentText}</td>
                 <td>${inv.items.length}</td>
+                <td>${inv.debtAmount > 0 ? `<span class="badge bg-warning">دين ${formatCurrency(inv.debtAmount)}</span>` : '-'}</td>
                 <td>
                     <button class="btn btn-sm btn-info" onclick="salesModule.showInvoice('${inv.id}')">
                         <i class="material-icons-round">visibility</i>
@@ -793,6 +1060,7 @@ const salesModule = (function() {
                     <p><strong>الإجمالي:</strong> ${formatCurrency(invoice.grandTotal)} دج</p>
                     <p><strong>المدفوع:</strong> ${formatCurrency(invoice.paidAmount)} دج</p>
                     <p><strong>الباقي:</strong> ${formatCurrency(invoice.remaining)} دج</p>
+                    ${invoice.debtAmount > 0 ? `<p class="text-warning"><strong>دين:</strong> ${formatCurrency(invoice.debtAmount)} دج</p>` : ''}
                 </div>
             `,
             width: '900px'
@@ -829,7 +1097,7 @@ const salesModule = (function() {
         );
         
         if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4">لا توجد نتائج</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center p-4">لا توجد نتائج</td></tr>';
             return;
         }
         
@@ -843,6 +1111,7 @@ const salesModule = (function() {
                 <td>${formatCurrency(inv.remaining)} دج</td>
                 <td>${inv.paymentText}</td>
                 <td>${inv.items.length}</td>
+                <td>${inv.debtAmount > 0 ? 'دين' : '-'}</td>
                 <td>
                     <button class="btn btn-sm btn-info" onclick="salesModule.showInvoice('${inv.id}')">عرض</button>
                 </td>
@@ -871,33 +1140,62 @@ const salesModule = (function() {
             thisMonth: {
                 count: monthInvoices.length,
                 amount: monthInvoices.reduce((sum, inv) => sum + inv.grandTotal, 0)
-            }
+            },
+            totalDebts: invoices.reduce((sum, inv) => sum + (inv.debtAmount || 0), 0)
         };
     }
     
     // ================== تهيئة الوحدة ==================
     function init() {
-        console.log('✅ salesModule v2 initialized - الرقم 23');
+        console.log('✅ salesModule v3 initialized - الرقم 23');
         console.log(`   عدد الفواتير: ${invoices.length}`);
+        console.log(`   فواتير نشطة: ${activeInvoices.length}`);
         
         renderCart();
         loadCustomersDropdown();
         renderInvoices();
+        updateActiveInvoicesDropdown();
         
-        // إضافة حقل اختيار الوحدة إذا لم يكن موجوداً
-        if (!document.getElementById('product-unit')) {
-            const qtyRow = document.querySelector('.row.g-2.mb-2');
-            if (qtyRow) {
-                const unitDiv = document.createElement('div');
-                unitDiv.className = 'col-12 mt-2';
-                unitDiv.innerHTML = `
-                    <select id="product-unit" class="form-select">
-                        <option value="piece">قطعة</option>
-                        <option value="unit12">علبة (12 قطعة)</option>
-                        <option value="unit24">كرتونة (24 قطعة)</option>
-                    </select>
+        // إنشاء فاتورة جديدة افتراضية
+        if (activeInvoices.length === 0) {
+            const newInvoice = createNewActiveInvoice(null, 'زبون نقدي');
+            currentActiveInvoiceId = newInvoice.id;
+        } else {
+            currentActiveInvoiceId = activeInvoices[0].id;
+            cart = activeInvoices[0].items || [];
+            renderCart();
+        }
+        
+        // إضافة عنصر الفواتير النشطة في HTML إذا لم يكن موجوداً
+        if (!document.getElementById('active-invoices-list')) {
+            const customerRow = document.querySelector('.row.g-2.mb-2');
+            if (customerRow) {
+                const activeInvoicesDiv = document.createElement('div');
+                activeInvoicesDiv.className = 'col-12 mt-2';
+                activeInvoicesDiv.innerHTML = `
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="material-icons-round">receipt</i></span>
+                        <select id="active-invoices-list" class="form-select" onchange="salesModule.switchActiveInvoice(this.value)">
+                            <option value="">لا توجد فواتير نشطة</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="salesModule.clearSelectedCustomer()" title="فاتورة جديدة">
+                            <i class="material-icons-round">add</i> جديد
+                        </button>
+                    </div>
                 `;
-                qtyRow.parentNode.insertBefore(unitDiv, qtyRow.nextSibling);
+                customerRow.parentNode.insertBefore(activeInvoicesDiv, customerRow.nextSibling);
+            }
+        }
+        
+        // إضافة رسالة الدين
+        if (!document.getElementById('debt-message')) {
+            const remainingRow = document.querySelector('.row.g-2.mt-2');
+            if (remainingRow) {
+                const debtDiv = document.createElement('div');
+                debtDiv.id = 'debt-message';
+                debtDiv.className = 'col-12 mt-2';
+                debtDiv.style.display = 'none';
+                remainingRow.parentNode.insertBefore(debtDiv, remainingRow.nextSibling);
             }
         }
         
@@ -914,15 +1212,29 @@ const salesModule = (function() {
                 customerResults.style.display = 'none';
             }
         });
+        
+        // إضافة مستمع لحدث Enter في حقل البحث
+        const searchInput = document.getElementById('sale-search');
+        if (searchInput) {
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addToCart();
+                }
+            });
+        }
     }
     
     // ================== واجهة الوحدة ==================
     return {
         cart,
         invoices,
+        activeInvoices,
         addToCart,
         removeFromCart,
         clearCart,
+        updateCartItem,
+        duplicateItem,
         finishSale,
         finishSaleAndPrint,
         searchProducts,
@@ -941,6 +1253,7 @@ const salesModule = (function() {
         searchInvoices,
         getSalesStats,
         updateRemainingAmount,
+        switchActiveInvoice,
         init
     };
 })();
