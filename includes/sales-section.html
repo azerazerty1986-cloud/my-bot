@@ -45,11 +45,12 @@
                 <div id="search-box" class="search-results"></div>
             </div>
             
-            <!-- اختيار وحدة المنتج (12 - 24 - قطعة) -->
+            <!-- اختيار وحدة المنتج (6 - 12 - 24 - قطعة) -->
             <div class="row g-2 mb-2">
                 <div class="col-12">
                     <select id="product-unit" class="form-select">
                         <option value="piece">قطعة</option>
+                        <option value="unit6">علبة (6 قطع)</option>
                         <option value="unit12">علبة (12 قطعة)</option>
                         <option value="unit24">كرتونة (24 قطعة)</option>
                     </select>
@@ -99,7 +100,7 @@
                 </div>
             </div>
             
-            <!-- منطقة العملاء النشطين (محدثة) -->
+            <!-- منطقة العملاء النشطين -->
             <div id="active-customers-area" class="mt-3 p-2 border rounded" style="background: #f8f9fa; display: none;">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <small class="text-muted">
@@ -121,7 +122,7 @@
                     <div class="input-group">
                         <span class="input-group-text"><i class="material-icons-round">numbers</i></span>
                         <input type="number" id="sale-qty" class="form-control" 
-                               placeholder="الكمية" min="1" value="1">
+                               placeholder="الكمية" min="0.1" step="0.1" value="1">
                     </div>
                 </div>
                 <div class="col-4">
@@ -161,15 +162,15 @@
         <div class="main-card">
             <h6 class="text-center mb-3">
                 🛒 سلة المبيعات 
-                <span id="current-customer-cart-label" class="badge bg-info"></span>
+                <span id="current-customer-cart-label" class="badge bg-info"> - زبون نقدي</span>
             </h6>
             
-            <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
+            <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
                 <table class="table-custom">
                     <thead class="sticky-top bg-white">
                         <tr>
                             <th>المنتج</th>
-                            <th>الكمية</th>
+                            <th style="min-width: 300px;">الكمية (أدخل العدد يدوياً)</th>
                             <th>السعر</th>
                             <th>الخصم</th>
                             <th>الإجمالي</th>
@@ -205,7 +206,7 @@
                 </div>
             </div>
             
-            <!-- المبلغ المسدد والباقي (مع تصحيح الخطأ) -->
+            <!-- المبلغ المسدد والباقي -->
             <div class="row g-2 mt-2">
                 <div class="col-6">
                     <div class="p-2 bg-light rounded">
@@ -450,38 +451,8 @@
         document.getElementById('cart-count').textContent = cart.length;
     }
     
-    // تحديث عداد السلة للعميل النشط
-    function updateCustomerCartCount() {
-        const selectedCustomer = document.getElementById('selected-customer-name')?.textContent;
-        const cartCount = document.getElementById('cart-count')?.textContent;
-        const customerCartCount = document.getElementById('customer-cart-count');
-        const selectedCustomerCartCount = document.getElementById('selected-customer-cart-count');
-        const currentCustomerLabel = document.getElementById('current-customer-cart-label');
-        
-        if (selectedCustomer && selectedCustomer !== '') {
-            if (customerCartCount) {
-                customerCartCount.textContent = cartCount;
-                customerCartCount.style.display = 'inline-block';
-            }
-            if (selectedCustomerCartCount) {
-                selectedCustomerCartCount.textContent = cartCount;
-                selectedCustomerCartCount.style.display = 'inline-block';
-            }
-            if (currentCustomerLabel) {
-                currentCustomerLabel.textContent = ` - ${selectedCustomer}`;
-            }
-        } else {
-            if (customerCartCount) customerCartCount.style.display = 'none';
-            if (selectedCustomerCartCount) selectedCustomerCartCount.style.display = 'none';
-            if (currentCustomerLabel) currentCustomerLabel.textContent = ' - زبون نقدي';
-        }
-    }
-    
     // مراقبة تغييرات السلة
-    setInterval(() => {
-        updateCartCount();
-        updateCustomerCartCount();
-    }, 1000);
+    setInterval(updateCartCount, 1000);
 </script>
 
 <style>
@@ -660,5 +631,43 @@
     #current-customer-cart-label {
         font-size: 14px;
         padding: 3px 8px;
+    }
+    
+    /* تنسيق حقول إدخال الكميات */
+    .units-control .input-group {
+        margin-bottom: 5px;
+    }
+    
+    .units-control .input-group-text {
+        font-size: 12px;
+        padding: 0.25rem 0.5rem;
+    }
+    
+    .units-control input {
+        text-align: center;
+    }
+    
+    .stock-info {
+        font-size: 11px;
+        background: #f8f9fa;
+        padding: 3px;
+        border-radius: 3px;
+    }
+    
+    /* تنسيق الجدول */
+    .table-custom td {
+        vertical-align: middle;
+    }
+    
+    .table-custom input[type="number"] {
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        padding: 4px;
+    }
+    
+    .table-custom input[type="number"]:focus {
+        outline: none;
+        border-color: #80bdff;
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
     }
 </style>
