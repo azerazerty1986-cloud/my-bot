@@ -1,5 +1,5 @@
 // ================== sales.js - إدارة المبيعات المتقدمة ==================
-// الرقم 23 في ترتيب الملفات - نسخة مع إدخال العدد يدوياً
+// الرقم 23 في ترتيب الملفات - نسخة نهائية مع إدخال يدوي للكمية والوحدة والسعر
 
 const salesModule = (function() {
     // ================== البيانات ==================
@@ -301,18 +301,11 @@ const salesModule = (function() {
     function showSelectedCustomerBadge(customer) {
         const badge = document.getElementById('selected-customer-badge');
         const nameSpan = document.getElementById('selected-customer-name');
-        const cartCountSpan = document.getElementById('selected-customer-cart-count');
         const customerCartLabel = document.getElementById('current-customer-cart-label');
         
         if (badge && nameSpan && customer) {
             nameSpan.textContent = customer.name || customer.fullname || 'عميل';
             badge.style.display = 'block';
-            
-            const cartCount = (customerCarts[customer.id] || []).length;
-            if (cartCountSpan) {
-                cartCountSpan.textContent = cartCount;
-                cartCountSpan.style.display = cartCount > 0 ? 'inline-block' : 'none';
-            }
             
             if (customerCartLabel) {
                 customerCartLabel.textContent = ` - ${customer.name || customer.fullname || 'عميل'}`;
@@ -402,10 +395,6 @@ const salesModule = (function() {
     function addToCart() {
         const searchInput = document.getElementById('sale-search');
         const productName = searchInput?.value.trim();
-        let qty = parseFloat(document.getElementById('sale-qty')?.value) || 1;
-        const discount = parseFloat(document.getElementById('sale-discount')?.value) || 0;
-        const useWholesale = document.getElementById('use-wholesale')?.checked || false;
-        const selectedUnit = document.getElementById('product-unit')?.value || 'piece';
         
         if (!productName) {
             showNotification('تنبيه', 'الرجاء اختيار منتج', 'warning');
@@ -420,62 +409,18 @@ const salesModule = (function() {
             return false;
         }
         
-        // معالجة الوحدات المختلفة
-        let unitMultiplier = 1;
-        let unitName = 'قطعة';
-        let unitStock = product.quantity;
-        
-        if (selectedUnit === 'unit12') {
-            unitMultiplier = 12;
-            unitName = 'علبة (12)';
-            unitStock = Math.floor(product.quantity / 12);
-        } else if (selectedUnit === 'unit24') {
-            unitMultiplier = 24;
-            unitName = 'كرتونة (24)';
-            unitStock = Math.floor(product.quantity / 24);
-        } else if (selectedUnit === 'unit6') {
-            unitMultiplier = 6;
-            unitName = 'علبة (6)';
-            unitStock = Math.floor(product.quantity / 6);
-        }
-        
-        const actualQty = qty * unitMultiplier;
-        
-        // التحقق من المخزون
-        if (product.quantity < actualQty) {
-            showNotification('تنبيه', `الكمية غير متوفرة - المتوفر: ${product.quantity} قطعة`, 'warning');
-            return false;
-        }
-        
-        const price = useWholesale && product.wholesalePrice ? product.wholesalePrice : product.sellPrice;
-        const priceType = useWholesale && product.wholesalePrice ? 'جملة' : 'تجزئة';
-        const unitPrice = price * unitMultiplier;
-        
-        // إضافة المنتج مع دعم الوحدات المختلفة
+        // إضافة المنتج مع القيم الافتراضية
         const newItem = {
             id: Date.now() + Math.random(),
             productId: product.id,
             name: product.name,
-            unit: selectedUnit,
-            unitName: unitName,
-            unitMultiplier: unitMultiplier,
-            price: price,
-            unitPrice: unitPrice,
-            priceType: priceType,
-            qty: qty,
-            actualQty: actualQty,
-            discount: discount,
-            total: (unitPrice * qty) * (1 - discount / 100),
-            stock: product.quantity,
-            unitStock: unitStock,
-            pieces: 0,
-            box6: 0,
-            box12: 0,
-            box24: 0
+            qty: 1,
+            unit: 'قطعة',
+            price: product.sellPrice || 0,
+            discount: 0,
+            total: product.sellPrice || 0,
+            stock: product.quantity || 0
         };
-        
-        // توزيع الكمية على الوحدات
-        updateItemUnitsBreakdown(newItem);
         
         currentCart.push(newItem);
         
@@ -484,92 +429,56 @@ const salesModule = (function() {
         renderActiveCustomers();
         
         if (searchInput) searchInput.value = '';
-        document.getElementById('sale-qty').value = '1';
-        document.getElementById('sale-discount').value = '0';
         
-        showNotification('نجاح', `تم إضافة المنتج (${unitName})`);
+        showNotification('نجاح', `تم إضافة المنتج`);
         updateRemainingAmount();
         return true;
     }
     
-    // توزيع الكمية على الوحدات المختلفة
-    function updateItemUnitsBreakdown(item) {
-        let remainingPieces = item.actualQty;
-        
-        item.box24 = Math.floor(remainingPieces / 24);
-        remainingPieces -= item.box24 * 24;
-        
-        item.box12 = Math.floor(remainingPieces / 12);
-        remainingPieces -= item.box12 * 12;
-        
-        item.box6 = Math.floor(remainingPieces / 6);
-        remainingPieces -= item.box6 * 6;
-        
-        item.pieces = remainingPieces;
-    }
-    
-    // تحديث الكمية من حقل الإدخال
-    function updateItemQuantity(itemId, newQty, unit = 'piece') {
+    // تحديث كمية المنتج
+    function updateItemQuantity(itemId, newQty) {
         const item = currentCart.find(i => i.id === itemId);
         if (!item) return;
         
         newQty = parseFloat(newQty) || 0;
-        if (newQty < 0) newQty = 0;
-        
-        // تحديث حسب نوع الوحدة
-        switch(unit) {
-            case 'pieces':
-                item.pieces = newQty;
-                break;
-            case 'box6':
-                item.box6 = newQty;
-                break;
-            case 'box12':
-                item.box12 = newQty;
-                break;
-            case 'box24':
-                item.box24 = newQty;
-                break;
-            default:
-                item.qty = newQty;
+        if (newQty <= 0) {
+            removeFromCart(itemId);
+            return;
         }
         
-        // إعادة حساب الكمية الإجمالية
-        recalculateItemTotal(item);
+        item.qty = newQty;
+        item.total = item.qty * item.price * (1 - item.discount / 100);
         
         saveCurrentCart();
         renderCart();
         updateRemainingAmount();
     }
     
-    // إعادة حساب إجمالي المنتج
-    function recalculateItemTotal(item) {
-        // حساب إجمالي القطع من جميع الوحدات
-        const totalPieces = (item.pieces || 0) + 
-                           (item.box6 || 0) * 6 + 
-                           (item.box12 || 0) * 12 + 
-                           (item.box24 || 0) * 24;
+    // تحديث وحدة المنتج
+    function updateItemUnit(itemId, newUnit) {
+        const item = currentCart.find(i => i.id === itemId);
+        if (!item) return;
         
-        item.actualQty = totalPieces;
+        item.unit = newUnit;
         
-        // تحديث qty حسب الوحدة المختارة
-        if (item.unit === 'piece') {
-            item.qty = totalPieces;
-        } else if (item.unit === 'box6') {
-            item.qty = totalPieces / 6;
-        } else if (item.unit === 'box12') {
-            item.qty = totalPieces / 12;
-        } else if (item.unit === 'box24') {
-            item.qty = totalPieces / 24;
-        }
+        saveCurrentCart();
+        renderCart();
+    }
+    
+    // تحديث سعر المنتج
+    function updateItemPrice(itemId, newPrice) {
+        const item = currentCart.find(i => i.id === itemId);
+        if (!item) return;
         
-        // تحديث السعر الإجمالي
-        item.total = (item.unitPrice * item.qty) * (1 - item.discount / 100);
+        newPrice = parseFloat(newPrice) || 0;
+        if (newPrice < 0) newPrice = 0;
         
-        // التحقق من المخزون
-        if (item.stock < totalPieces) {
-            showNotification('تنبيه', 'الكمية المطلوبة أكبر من المخزون المتوفر', 'warning');
-        }
+        item.price = newPrice;
+        item.total = item.qty * item.price * (1 - item.discount / 100);
+        
+        saveCurrentCart();
+        renderCart();
+        updateRemainingAmount();
     }
     
     // تحديث خصم المنتج
@@ -577,11 +486,12 @@ const salesModule = (function() {
         const item = currentCart.find(i => i.id === itemId);
         if (!item) return;
         
-        item.discount = parseFloat(newDiscount) || 0;
-        if (item.discount > 100) item.discount = 100;
-        if (item.discount < 0) item.discount = 0;
+        newDiscount = parseFloat(newDiscount) || 0;
+        if (newDiscount > 100) newDiscount = 100;
+        if (newDiscount < 0) newDiscount = 0;
         
-        item.total = (item.unitPrice * item.qty) * (1 - item.discount / 100);
+        item.discount = newDiscount;
+        item.total = item.qty * item.price * (1 - item.discount / 100);
         
         saveCurrentCart();
         renderCart();
@@ -617,7 +527,7 @@ const salesModule = (function() {
         if (!tbody) return;
         
         if (currentCart.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
             updateTotals();
             updateRemainingAmount();
             return;
@@ -626,83 +536,32 @@ const salesModule = (function() {
         tbody.innerHTML = currentCart.map((item, index) => {
             return `
                 <tr>
+                    <td>${index + 1}</td>
                     <td>${item.name}</td>
                     <td>
-                        <div class="units-control">
-                            <!-- قطعة -->
-                            <div class="input-group input-group-sm mb-1">
-                                <span class="input-group-text bg-light" style="min-width: 70px;">
-                                    <i class="material-icons-round" style="font-size:16px;">circle</i> قطعة
-                                </span>
-                                <input type="number" id="pieces-${item.id}" class="form-control text-center" 
-                                       value="${item.pieces || 0}" min="0" step="1"
-                                       onchange="salesModule.updateItemQuantity('${item.id}', this.value, 'pieces')">
-                            </div>
-                            
-                            <!-- علبة 6 -->
-                            <div class="input-group input-group-sm mb-1">
-                                <span class="input-group-text bg-success text-white" style="min-width: 70px;">
-                                    <i class="material-icons-round" style="font-size:16px;">inventory</i> علبة6
-                                </span>
-                                <input type="number" id="box6-${item.id}" class="form-control text-center" 
-                                       value="${item.box6 || 0}" min="0" step="1"
-                                       onchange="salesModule.updateItemQuantity('${item.id}', this.value, 'box6')">
-                            </div>
-                            
-                            <!-- علبة 12 -->
-                            <div class="input-group input-group-sm mb-1">
-                                <span class="input-group-text bg-info text-white" style="min-width: 70px;">
-                                    <i class="material-icons-round" style="font-size:16px;">inventory_2</i> علبة12
-                                </span>
-                                <input type="number" id="box12-${item.id}" class="form-control text-center" 
-                                       value="${item.box12 || 0}" min="0" step="1"
-                                       onchange="salesModule.updateItemQuantity('${item.id}', this.value, 'box12')">
-                            </div>
-                            
-                            <!-- كرتونة 24 -->
-                            <div class="input-group input-group-sm mb-1">
-                                <span class="input-group-text bg-primary text-white" style="min-width: 70px;">
-                                    <i class="material-icons-round" style="font-size:16px;">inventory</i> كرتونة24
-                                </span>
-                                <input type="number" id="box24-${item.id}" class="form-control text-center" 
-                                       value="${item.box24 || 0}" min="0" step="1"
-                                       onchange="salesModule.updateItemQuantity('${item.id}', this.value, 'box24')">
-                            </div>
-                            
-                            <!-- إجمالي القطع -->
-                            <div class="alert alert-info p-1 mt-2 mb-0 text-center">
-                                <small>إجمالي القطع: <strong>${item.actualQty}</strong></small>
-                            </div>
-                            
-                            <!-- المخزون المتوفر -->
-                            <div class="stock-info mt-1">
-                                <small class="text-muted">
-                                    <i class="material-icons-round" style="font-size: 14px;">inventory</i>
-                                    متوفر: ${item.stock} قطعة | 
-                                    ${Math.floor(item.stock/6)} علبة6 | 
-                                    ${Math.floor(item.stock/12)} علبة12 | 
-                                    ${Math.floor(item.stock/24)} كرتونة
-                                </small>
-                            </div>
-                        </div>
+                        <input type="number" id="qty-${item.id}" class="form-control text-center" 
+                               value="${item.qty}" min="0.1" step="any"
+                               onchange="salesModule.updateItemQuantity('${item.id}', this.value)">
                     </td>
-                    <td>${formatCurrency(item.unitPrice)}</td>
                     <td>
-                        <div class="input-group input-group-sm">
-                            <input type="number" id="discount-${item.id}" class="form-control text-center" 
-                                   value="${item.discount}" min="0" max="100" step="1"
-                                   style="width: 60px;"
-                                   onchange="salesModule.updateItemDiscount('${item.id}', this.value)">
-                            <span class="input-group-text">%</span>
-                        </div>
+                        <input type="text" id="unit-${item.id}" class="form-control text-center" 
+                               value="${item.unit}" placeholder="وحدة"
+                               onchange="salesModule.updateItemUnit('${item.id}', this.value)">
                     </td>
-                    <td>${formatCurrency(item.total)}</td>
                     <td>
-                        <small class="badge bg-info">
-                            ${item.unitStock} ${item.unitName}
-                        </small>
+                        <input type="number" id="price-${item.id}" class="form-control text-center" 
+                               value="${item.price}" min="0" step="any"
+                               onchange="salesModule.updateItemPrice('${item.id}', this.value)">
                     </td>
-                    <td><small class="badge bg-secondary">${item.priceType}</small></td>
+                    <td>${formatCurrency(item.total)} دج</td>
+                    <td>
+                        <input type="number" id="discount-${item.id}" class="form-control text-center" 
+                               value="${item.discount}" min="0" max="100" step="1"
+                               onchange="salesModule.updateItemDiscount('${item.id}', this.value)">
+                    </td>
+                    <td>
+                        <span class="badge bg-info">${item.stock}</span>
+                    </td>
                     <td>
                         <button class="btn btn-sm btn-danger" onclick="salesModule.removeFromCart('${item.id}')">
                             <i class="material-icons-round">delete</i>
@@ -717,7 +576,7 @@ const salesModule = (function() {
     
     function updateTotals() {
         const totalDiscount = currentCart.reduce((sum, item) => {
-            return sum + (item.unitPrice * item.qty * item.discount / 100);
+            return sum + (item.qty * item.price * item.discount / 100);
         }, 0);
         
         const grandTotal = currentCart.reduce((sum, item) => sum + item.total, 0);
@@ -762,15 +621,6 @@ const salesModule = (function() {
     function updateCartCount() {
         const countEl = document.getElementById('cart-count');
         if (countEl) countEl.textContent = currentCart.length;
-        
-        // تحديث عداد العميل في الشارة
-        if (currentCustomerId) {
-            const customerCartCount = document.getElementById('customer-cart-count');
-            if (customerCartCount) {
-                customerCartCount.textContent = currentCart.length;
-                customerCartCount.style.display = currentCart.length > 0 ? 'inline-block' : 'none';
-            }
-        }
     }
     
     // ================== البحث عن المنتجات ==================
@@ -796,17 +646,15 @@ const salesModule = (function() {
         }
         
         resultsBox.innerHTML = results.map(p => {
-            const wholesaleInfo = p.wholesalePrice ? 
-                `<br><small class="text-success">الجملة: ${formatCurrency(p.wholesalePrice)}</small>` : '';
             const stockClass = p.quantity > 0 ? 'badge-success' : 'badge-danger';
             const stockText = p.quantity > 0 ? `${p.quantity} متوفر` : 'غير متوفر';
             
             return `
-                <div class="search-item" onclick="salesModule.selectProduct('${p.name}', ${p.sellPrice}, ${p.wholesalePrice || 0}, ${p.quantity})">
+                <div class="search-item" onclick="salesModule.selectProduct('${p.name}')">
                     <div style="display: flex; justify-content: space-between; align-items: center; width:100%;">
                         <div>
                             <strong>${p.name}</strong>
-                            ${wholesaleInfo}
+                            <br><small class="text-muted">السعر: ${formatCurrency(p.sellPrice)} دج</small>
                         </div>
                         <div>
                             <span class="badge ${stockClass}">${stockText}</span>
@@ -819,56 +667,10 @@ const salesModule = (function() {
         resultsBox.classList.add('show');
     }
     
-    function selectProduct(name, sellPrice, wholesalePrice, quantity) {
+    function selectProduct(name) {
         document.getElementById('sale-search').value = name;
         document.getElementById('search-box').classList.remove('show');
-        
-        // تحديث قائمة الوحدات المتاحة
-        updateProductUnits(name);
-        
-        Swal.fire({
-            icon: 'info',
-            title: name,
-            html: `
-                <div style="text-align:right">
-                    <p><strong>سعر التجزئة:</strong> ${formatCurrency(sellPrice)}/قطعة</p>
-                    ${wholesalePrice ? `<p><strong>سعر الجملة:</strong> ${formatCurrency(wholesalePrice)}/قطعة</p>` : ''}
-                    <p><strong>المخزون:</strong> ${quantity} قطعة</p>
-                    <p><strong>العلب (6):</strong> ${Math.floor(quantity/6)}</p>
-                    <p><strong>العلب (12):</strong> ${Math.floor(quantity/12)}</p>
-                    <p><strong>الكرتون (24):</strong> ${Math.floor(quantity/24)}</p>
-                </div>
-            `,
-            timer: 4000,
-            showConfirmButton: false
-        });
-    }
-    
-    function updateProductUnits(productName) {
-        const products = window.productModule?.getAllProducts?.() || [];
-        const product = products.find(p => p.name === productName);
-        
-        const unitSelect = document.getElementById('product-unit');
-        if (!unitSelect) return;
-        
-        if (!product) {
-            unitSelect.innerHTML = '<option value="piece">قطعة</option>';
-            return;
-        }
-        
-        let options = '<option value="piece">قطعة</option>';
-        
-        if (product.quantity >= 6) {
-            options += '<option value="unit6">علبة (6 قطع)</option>';
-        }
-        if (product.quantity >= 12) {
-            options += '<option value="unit12">علبة (12 قطعة)</option>';
-        }
-        if (product.quantity >= 24) {
-            options += '<option value="unit24">كرتونة (24 قطعة)</option>';
-        }
-        
-        unitSelect.innerHTML = options;
+        addToCart();
     }
     
     function openAddCustomerModal() {
@@ -970,7 +772,7 @@ const salesModule = (function() {
         if (paymentMethod === 'credit') paymentText = 'آجل';
         
         const totalDiscount = currentCart.reduce((sum, item) => {
-            return sum + (item.unitPrice * item.qty * item.discount / 100);
+            return sum + (item.qty * item.price * item.discount / 100);
         }, 0);
         
         const remaining = paidAmount - grandTotal;
@@ -1000,7 +802,7 @@ const salesModule = (function() {
         // تحديث المخزون
         currentCart.forEach(item => {
             if (window.inventoryModule?.removeStock) {
-                window.inventoryModule.removeStock(item.productId, item.actualQty, `فاتورة مبيعات رقم ${invoice.number}`);
+                window.inventoryModule.removeStock(item.productId, item.qty, `فاتورة مبيعات رقم ${invoice.number}`);
             }
         });
         
@@ -1046,8 +848,8 @@ const salesModule = (function() {
                 <tr>
                     <td>${i + 1}</td>
                     <td>${item.name}</td>
-                    <td>${item.actualQty} قطعة</td>
-                    <td>${formatCurrency(item.unitPrice)}</td>
+                    <td>${item.qty} ${item.unit}</td>
+                    <td>${formatCurrency(item.price)}</td>
                     <td>${item.discount}%</td>
                     <td>${formatCurrency(item.total)}</td>
                 </tr>
@@ -1160,8 +962,8 @@ const salesModule = (function() {
                 <tr>
                     <td style="padding:8px; border:1px solid #ddd;">${i + 1}</td>
                     <td style="padding:8px; border:1px solid #ddd;">${item.name}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${item.actualQty} قطعة</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${formatCurrency(item.unitPrice)}</td>
+                    <td style="padding:8px; border:1px solid #ddd;">${item.qty} ${item.unit}</td>
+                    <td style="padding:8px; border:1px solid #ddd;">${formatCurrency(item.price)}</td>
                     <td style="padding:8px; border:1px solid #ddd;">${item.discount}%</td>
                     <td style="padding:8px; border:1px solid #ddd;">${formatCurrency(item.total)}</td>
                 </tr>
@@ -1277,7 +1079,7 @@ const salesModule = (function() {
     
     // ================== تهيئة الوحدة ==================
     function init() {
-        console.log('✅ salesModule v4 initialized - إدخال العدد يدوياً');
+        console.log('✅ salesModule v5 initialized - إدخال يدوي للكمية والوحدة والسعر');
         console.log(`   عدد الفواتير: ${invoices.length}`);
         console.log(`   عدد العملاء النشطين: ${activeCustomers.length}`);
         
@@ -1337,10 +1139,11 @@ const salesModule = (function() {
         finishSaleAndPrint,
         searchProducts,
         selectProduct,
-        updateProductUnits,
         updateRemainingAmount,
         
         updateItemQuantity,
+        updateItemUnit,
+        updateItemPrice,
         updateItemDiscount,
         
         searchCustomers,
@@ -1368,6 +1171,7 @@ const salesModule = (function() {
 
 window.salesModule = salesModule;
 
+// دوال مختصرة
 window.addToCart = () => salesModule.addToCart();
 window.clearCart = () => salesModule.clearCart();
 window.finishSale = () => salesModule.finishSale();
