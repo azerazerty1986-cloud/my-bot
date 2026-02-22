@@ -23,6 +23,21 @@
                 <span class="badge bg-info" id="cart-count">0</span>
             </div>
             
+            <!-- الفواتير النشطة -->
+            <div class="row g-2 mb-2">
+                <div class="col-12">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="material-icons-round">receipt</i></span>
+                        <select id="active-invoices-list" class="form-select" onchange="salesModule.switchActiveInvoice(this.value)">
+                            <option value="">لا توجد فواتير نشطة</option>
+                        </select>
+                        <button class="btn btn-primary" onclick="salesModule.clearSelectedCustomer()" title="فاتورة جديدة">
+                            <i class="material-icons-round">add</i> جديد
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
             <!-- شريط البحث المتقدم مع قائمة منسدلة -->
             <div class="search-container mb-3">
                 <div class="input-group">
@@ -32,7 +47,7 @@
                     <input type="text" id="sale-search" class="form-control" 
                            placeholder="ابحث باسم المنتج أو امسح الباركود..." 
                            oninput="salesModule.searchProducts(this.value)" 
-                           onkeyup="if(event.key==='Enter') salesModule.addToCart()"
+                           onkeypress="if(event.key==='Enter') { event.preventDefault(); salesModule.addToCart(); }"
                            autocomplete="off">
                     <button class="mic-btn" id="mic-sale" type="button" onclick="startVoiceSearchForSales()" title="بحث صوتي">
                         <i class="material-icons-round">mic</i>
@@ -137,11 +152,11 @@
             </button>
         </div>
         
-        <!-- سلة المبيعات -->
+        <!-- سلة المبيعات مع إمكانية التعديل المباشر -->
         <div class="main-card">
             <h6 class="text-center mb-3">🛒 سلة المبيعات</h6>
             
-            <div class="table-responsive" style="max-height:300px; overflow-y:auto;">
+            <div class="table-responsive" style="max-height:350px; overflow-y:auto;">
                 <table class="table-custom">
                     <thead class="sticky-top bg-white">
                         <tr>
@@ -152,12 +167,13 @@
                             <th>الإجمالي</th>
                             <th>المخزون</th>
                             <th>النوع</th>
+                            <th>تكرار</th>
                             <th></th>
                         </tr>
                     </thead>
                     <tbody id="cart-table">
                         <tr>
-                            <td colspan="8" class="text-center p-4">
+                            <td colspan="9" class="text-center p-4">
                                 <i class="material-icons-round" style="font-size:48px;">shopping_cart</i>
                                 <br>السلة فارغة
                             </td>
@@ -182,7 +198,7 @@
                 </div>
             </div>
             
-            <!-- المبلغ المسدد والباقي (مع تصحيح الخطأ) -->
+            <!-- المبلغ المسدد والباقي مع رسالة الدين -->
             <div class="row g-2 mt-2">
                 <div class="col-6">
                     <div class="p-2 bg-light rounded">
@@ -198,6 +214,9 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- رسالة الدين -->
+            <div id="debt-message" class="col-12 mt-2" style="display: none;"></div>
             
             <!-- أزرار الإجراءات -->
             <div class="row g-2 mt-3">
@@ -250,12 +269,13 @@
                             <th>الباقي</th>
                             <th>طريقة الدفع</th>
                             <th>الأصناف</th>
+                            <th>الدين</th>
                             <th>عمليات</th>
                         </tr>
                     </thead>
                     <tbody id="sale-invoices-tbody">
                         <tr>
-                            <td colspan="9" class="text-center p-4">
+                            <td colspan="10" class="text-center p-4">
                                 <i class="material-icons-round" style="font-size:48px;">receipt</i>
                                 <br>لا توجد فواتير
                             </td>
@@ -298,12 +318,13 @@
                             <th>البريد</th>
                             <th>المشتريات</th>
                             <th>الديون</th>
+                            <th>فواتير نشطة</th>
                             <th>عمليات</th>
                         </tr>
                     </thead>
                     <tbody id="customers-tbody">
                         <tr>
-                            <td colspan="6" class="text-center p-4">
+                            <td colspan="7" class="text-center p-4">
                                 <i class="material-icons-round" style="font-size:48px;">people</i>
                                 <br>لا يوجد عملاء
                             </td>
@@ -394,7 +415,96 @@
             window.salesModule.loadCustomers();
         }
         
+        // تحديث قائمة العملاء إذا كانت مفتوحة
+        loadCustomersList();
+        
         Swal.fire('نجاح', 'تم إضافة العميل', 'success');
+    }
+    
+    // تحميل قائمة العملاء
+    function loadCustomersList() {
+        const tbody = document.getElementById('customers-tbody');
+        const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+        const activeInvoices = JSON.parse(localStorage.getItem('active_invoices') || '[]');
+        
+        if (customers.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="7" class="text-center p-4">
+                        <i class="material-icons-round" style="font-size:48px;">people</i>
+                        <br>لا يوجد عملاء
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+        
+        let html = '';
+        customers.forEach(customer => {
+            const customerActiveInvoices = activeInvoices.filter(inv => inv.customerId === customer.id).length;
+            const debtClass = customer.debts > 0 ? 'text-danger' : '';
+            
+            html += `
+                <tr>
+                    <td>${customer.fullname || customer.name}</td>
+                    <td>${customer.phone || '-'}</td>
+                    <td>${customer.email || '-'}</td>
+                    <td>${customer.purchases || 0}</td>
+                    <td class="${debtClass}">${customer.debts || 0} دج</td>
+                    <td>
+                        ${customerActiveInvoices > 0 ? 
+                            `<span class="badge bg-warning">${customerActiveInvoices} فاتورة</span>` : 
+                            '-'}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="selectCustomerFromList('${customer.id}')" title="تحديد">
+                            <i class="material-icons-round">check_circle</i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCustomer('${customer.id}')" title="حذف">
+                            <i class="material-icons-round">delete</i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    }
+    
+    // تحديد عميل من القائمة
+    function selectCustomerFromList(customerId) {
+        if (window.salesModule) {
+            window.salesModule.selectCustomer(customerId, true);
+            showSubSection('sale-operation');
+        }
+    }
+    
+    // حذف عميل
+    function deleteCustomer(customerId) {
+        Swal.fire({
+            title: 'تأكيد الحذف',
+            text: 'هل أنت متأكد من حذف هذا العميل؟',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'حذف',
+            cancelButtonText: 'إلغاء'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+                const updated = customers.filter(c => c.id !== customerId);
+                localStorage.setItem('customers', JSON.stringify(updated));
+                
+                loadCustomersList();
+                
+                if (window.salesModule) {
+                    window.salesModule.loadCustomers();
+                }
+                
+                Swal.fire('تم الحذف', 'تم حذف العميل بنجاح', 'success');
+            }
+        });
     }
     
     // تصدير الفواتير إلى Excel
@@ -406,9 +516,9 @@
                 return;
             }
             
-            let csv = 'رقم الفاتورة,التاريخ,العميل,المبلغ,المدفوع,الباقي,طريقة الدفع\n';
+            let csv = 'رقم الفاتورة,التاريخ,العميل,المبلغ,المدفوع,الباقي,الدين,طريقة الدفع\n';
             invoices.forEach(inv => {
-                csv += `${inv.number},${new Date(inv.date).toLocaleDateString()},${inv.customer},${inv.grandTotal},${inv.paidAmount || 0},${inv.remaining || 0},${inv.paymentText}\n`;
+                csv += `${inv.number},${new Date(inv.date).toLocaleDateString()},${inv.customer},${inv.grandTotal},${inv.paidAmount || 0},${inv.remaining || 0},${inv.debtAmount || 0},${inv.paymentText}\n`;
             });
             
             const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -429,6 +539,13 @@
     
     // مراقبة تغييرات السلة
     setInterval(updateCartCount, 1000);
+    
+    // تهيئة قسم العملاء عند الظهور
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('[onclick="showSubSection(\'customers\')"]')) {
+            setTimeout(loadCustomersList, 100);
+        }
+    });
 </script>
 
 <style>
@@ -513,6 +630,13 @@
         border-radius: 4px;
     }
     
+    .badge-warning {
+        background-color: #ffc107;
+        color: black;
+        padding: 3px 8px;
+        border-radius: 4px;
+    }
+    
     .selected-customer {
         animation: fadeIn 0.3s;
     }
@@ -538,5 +662,21 @@
     #remaining-amount {
         font-weight: bold;
         transition: color 0.3s;
+    }
+    
+    /* تنسيق جدول السلة */
+    .table-custom input[type="number"] {
+        padding: 2px 5px;
+        font-size: 12px;
+    }
+    
+    .table-custom td {
+        vertical-align: middle;
+    }
+    
+    /* تنسيق رسالة الدين */
+    #debt-message .alert {
+        margin-bottom: 0;
+        padding: 8px 12px;
     }
 </style>
