@@ -23,7 +23,7 @@
                 <span class="badge bg-info" id="cart-count">0</span>
             </div>
             
-            <!-- الفواتير النشطة مع زر الحذف -->
+            <!-- الفواتير النشطة -->
             <div class="row g-2 mb-2">
                 <div class="col-12">
                     <div class="input-group">
@@ -32,10 +32,7 @@
                             <option value="">لا توجد فواتير نشطة</option>
                         </select>
                         <button class="btn btn-primary" onclick="salesModule.clearSelectedCustomer()" title="فاتورة جديدة">
-                            <i class="material-icons-round">add</i>
-                        </button>
-                        <button class="btn btn-danger" onclick="if(salesModule.currentActiveInvoiceId) salesModule.deleteActiveInvoice(salesModule.currentActiveInvoiceId)" title="حذف الفاتورة النشطة">
-                            <i class="material-icons-round">delete</i>
+                            <i class="material-icons-round">add</i> جديد
                         </button>
                     </div>
                 </div>
@@ -56,6 +53,7 @@
                         <i class="material-icons-round">mic</i>
                     </button>
                 </div>
+                <!-- نتائج البحث مع المخزون وسعر الجملة والوحدات -->
                 <div id="search-box" class="search-results"></div>
             </div>
             
@@ -70,9 +68,10 @@
                 </div>
             </div>
             
-            <!-- خيارات إضافية مع بحث العملاء -->
+            <!-- خيارات إضافية مع بحث العملاء وقائمة منسدلة -->
             <div class="row g-2 mb-2">
                 <div class="col-md-6 col-12">
+                    <!-- بحث العملاء مع قائمة منسدلة -->
                     <div class="customer-search-container">
                         <div class="input-group">
                             <span class="input-group-text"><i class="material-icons-round">person</i></span>
@@ -84,10 +83,15 @@
                                 <i class="material-icons-round">person_add</i>
                             </button>
                         </div>
+                        <!-- نتائج بحث العملاء -->
                         <div id="customer-results" class="search-results"></div>
+                        
+                        <!-- القائمة المنسدلة للعملاء -->
                         <select id="sale-customer" class="form-select mt-2" onchange="salesModule.selectCustomerFromDropdown(this.value)">
                             <option value="">اختر العميل (اختياري)</option>
                         </select>
+                        
+                        <!-- شارة العميل المحدد -->
                         <div id="selected-customer-badge" class="selected-customer mt-2" style="display: none;">
                             <span class="badge bg-success p-2">
                                 <i class="material-icons-round" style="font-size: 16px;">check_circle</i>
@@ -111,13 +115,15 @@
                 <div class="col-4">
                     <div class="input-group">
                         <span class="input-group-text"><i class="material-icons-round">numbers</i></span>
-                        <input type="number" id="sale-qty" class="form-control" placeholder="الكمية" min="1" value="1">
+                        <input type="number" id="sale-qty" class="form-control" 
+                               placeholder="الكمية" min="1" value="1">
                     </div>
                 </div>
                 <div class="col-4">
                     <div class="input-group">
                         <span class="input-group-text"><i class="material-icons-round">percent</i></span>
-                        <input type="number" id="sale-discount" class="form-control" placeholder="الخصم %" min="0" max="100" value="0">
+                        <input type="number" id="sale-discount" class="form-control" 
+                               placeholder="الخصم %" min="0" max="100" value="0">
                     </div>
                 </div>
                 <div class="col-4">
@@ -146,7 +152,7 @@
             </button>
         </div>
         
-        <!-- سلة المبيعات -->
+        <!-- سلة المبيعات مع إمكانية التعديل المباشر -->
         <div class="main-card">
             <h6 class="text-center mb-3">🛒 سلة المبيعات</h6>
             
@@ -192,7 +198,7 @@
                 </div>
             </div>
             
-            <!-- المبلغ المسدد والباقي -->
+            <!-- المبلغ المسدد والباقي مع رسالة الدين -->
             <div class="row g-2 mt-2">
                 <div class="col-6">
                     <div class="p-2 bg-light rounded">
@@ -338,9 +344,6 @@
 </div>
 
 <script>
-    // متغير عام للفاتورة النشطة الحالية
-    let currentActiveInvoiceId = null;
-    
     // دوال مساعدة لقسم المبيعات
     
     // بحث صوتي للمبيعات
@@ -412,6 +415,7 @@
             window.salesModule.loadCustomers();
         }
         
+        // تحديث قائمة العملاء إذا كانت مفتوحة
         loadCustomersList();
         
         Swal.fire('نجاح', 'تم إضافة العميل', 'success');
@@ -542,15 +546,6 @@
             setTimeout(loadCustomersList, 100);
         }
     });
-    
-    // تحديث متغير currentActiveInvoiceId من الوحدة
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(() => {
-            if (window.salesModule) {
-                currentActiveInvoiceId = salesModule.currentActiveInvoiceId;
-            }
-        }, 500);
-    });
 </script>
 
 <style>
@@ -673,7 +668,6 @@
     .table-custom input[type="number"] {
         padding: 2px 5px;
         font-size: 12px;
-        width: 80px;
     }
     
     .table-custom td {
@@ -684,11 +678,5 @@
     #debt-message .alert {
         margin-bottom: 0;
         padding: 8px 12px;
-    }
-    
-    /* تنسيق أزرار الفواتير النشطة */
-    #delete-active-invoice {
-        border-top-left-radius: 0;
-        border-bottom-left-radius: 0;
     }
 </style>
