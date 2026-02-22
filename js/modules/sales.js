@@ -1,9 +1,11 @@
 // ================== sales.js - إدارة المبيعات المتقدمة ==================
-// الرقم 23 في ترتيب الملفات - نسخة محسنة مع دعم العملاء النشطين
+// الرقم 23 في ترتيب الملفات - نسخة محسنة مع سلة منفصلة لكل عميل
 
 const salesModule = (function() {
     // ================== البيانات ==================
-    let cart = [];
+    // تخزين السلات لكل عميل (مفتاح = customerId, القيمة = مصفوفة items)
+    let customerCarts = JSON.parse(localStorage.getItem('customer_carts')) || {};
+    let currentCart = []; // السلة الحالية المعروضة
     let invoices = JSON.parse(localStorage.getItem('sales_invoices')) || [];
     let activeCustomers = JSON.parse(localStorage.getItem('activeCustomers')) || [];
     let currentCustomerId = localStorage.getItem('currentCustomerId') || null;
@@ -55,6 +57,10 @@ const salesModule = (function() {
         localStorage.setItem('sales_invoices', JSON.stringify(invoices));
     }
     
+    function saveCustomerCarts() {
+        localStorage.setItem('customer_carts', JSON.stringify(customerCarts));
+    }
+    
     function saveActiveCustomers() {
         localStorage.setItem('activeCustomers', JSON.stringify(activeCustomers));
         if (currentCustomerId) {
@@ -64,46 +70,110 @@ const salesModule = (function() {
         }
     }
     
+    // ================== إدارة السلة حسب العميل ==================
+    
+    function loadCustomerCart(customerId) {
+        if (customerId) {
+            // تحميل سلة العميل المحدد
+            currentCart = customerCarts[customerId] || [];
+        } else {
+            // تحميل سلة الزبون النقدي (استخدام معرف خاص)
+            const cashCustomerId = 'cash_customer';
+            currentCart = customerCarts[cashCustomerId] || [];
+        }
+        renderCart();
+        updateCartCount();
+    }
+    
+    function saveCurrentCart() {
+        const cartKey = currentCustomerId || 'cash_customer';
+        customerCarts[cartKey] = [...currentCart];
+        saveCustomerCarts();
+    }
+    
+    function switchToCustomerCart(customerId) {
+        // حفظ السلة الحالية قبل التبديل
+        const oldKey = currentCustomerId || 'cash_customer';
+        customerCarts[oldKey] = [...currentCart];
+        
+        // تحديث المعرف الحالي
+        currentCustomerId = customerId;
+        
+        // تحميل السلة الجديدة
+        const newKey = customerId || 'cash_customer';
+        currentCart = customerCarts[newKey] || [];
+        
+        // تحديث واجهة المستخدم
+        renderCart();
+        updateTotals();
+        updateRemainingAmount();
+        updateCartCount();
+        
+        // حفظ الحالة
+        saveCustomerCarts();
+        saveActiveCustomers();
+        
+        // إظهار رسالة
+        const customerName = getCustomerNameById(customerId);
+        showNotification('تم التبديل', `سلة ${customerName || 'زبون نقدي'}`, 'success');
+    }
+    
+    function getCustomerNameById(customerId) {
+        if (!customerId) return 'زبون نقدي';
+        const allCustomers = getAllCustomers();
+        const customer = allCustomers.find(c => c.id === customerId);
+        return customer ? (customer.name || customer.fullname) : 'عميل';
+    }
+    
     // ================== إدارة العملاء النشطين ==================
     
     function addActiveCustomer(customer) {
         if (!customer || !customer.id) return;
         
-        // التحقق إذا كان العميل موجود مسبقاً
         const existingIndex = activeCustomers.findIndex(c => c.id === customer.id);
         
         if (existingIndex === -1) {
-            // إضافة عميل جديد
+            // إضافة عميل جديد مع نسخ سلة فارغة له إذا لم تكن موجودة
+            if (!customerCarts[customer.id]) {
+                customerCarts[customer.id] = [];
+            }
+            
             activeCustomers.push({
                 id: customer.id,
                 name: customer.name || customer.fullname || 'بدون اسم',
                 phone: customer.phone || customer.phone1 || '',
                 active: true
             });
+            
+            // إلغاء تنشيط الآخرين
+            activeCustomers.forEach(c => {
+                if (c.id !== customer.id) c.active = false;
+            });
         } else {
             // تحديث حالة العميل الموجود
-            activeCustomers.forEach(c => c.active = false);
-            activeCustomers[existingIndex].active = true;
+            activeCustomers.forEach(c => c.active = (c.id === customer.id));
         }
         
-        // تحديث العميل الحالي
-        currentCustomerId = customer.id;
+        // التبديل إلى سلة هذا العميل
+        switchToCustomerCart(customer.id);
         
         // تحديث واجهة المستخدم
         renderActiveCustomers();
         showSelectedCustomerBadge(customer);
         
-        // إظهار منطقة العملاء النشطين
         const area = document.getElementById('active-customers-area');
         if (area) area.style.display = 'block';
         
-        // حفظ في localStorage
         saveActiveCustomers();
         
-        // تحديث القائمة المنسدلة
         const customerSelect = document.getElementById('sale-customer');
         if (customerSelect) {
             customerSelect.value = customer.id;
+        }
+        
+        const searchInput = document.getElementById('customer-search');
+        if (searchInput) {
+            searchInput.value = customer.name || customer.fullname || '';
         }
     }
     
@@ -127,12 +197,17 @@ const salesModule = (function() {
                 '<i class="material-icons-round" style="font-size: 16px;">check_circle</i>' : 
                 '<i class="material-icons-round" style="font-size: 16px;">radio_button_unchecked</i>';
             
+            // عدد items في سلة هذا العميل
+            const cartCount = (customerCarts[customer.id] || []).length;
+            const cartBadge = cartCount > 0 ? `<span class="badge bg-warning text-dark ms-1">${cartCount}</span>` : '';
+            
             html += `
                 <div class="customer-chip p-2 rounded ${activeClass}" 
                      onclick="salesModule.switchActiveCustomer('${customer.id}')"
                      style="cursor: pointer; display: inline-flex; align-items: center; gap: 5px; border: 1px solid #dee2e6; margin: 2px;">
                     ${activeIcon}
                     <span>${customer.name}</span>
+                    ${cartBadge}
                     <small class="${customer.active ? 'text-white-50' : 'text-muted'}">${customer.phone}</small>
                     <i class="material-icons-round" style="font-size: 16px; cursor: pointer;" 
                        onclick="event.stopPropagation(); salesModule.removeActiveCustomer('${customer.id}')">close</i>
@@ -144,41 +219,37 @@ const salesModule = (function() {
     }
     
     function switchActiveCustomer(customerId) {
-        // إلغاء تنشيط جميع العملاء
-        activeCustomers.forEach(c => c.active = false);
+        // حفظ السلة الحالية
+        const oldKey = currentCustomerId || 'cash_customer';
+        customerCarts[oldKey] = [...currentCart];
         
-        // تنشيط العميل المحدد
-        const customer = activeCustomers.find(c => c.id === customerId);
+        // تحديث حالة العملاء
+        activeCustomers.forEach(c => c.active = (c.id === customerId));
+        
+        // التبديل إلى سلة العميل الجديد
+        switchToCustomerCart(customerId);
+        
+        // تحديث العرض
+        renderActiveCustomers();
+        
+        // تحديث شارة العميل
+        const allCustomers = getAllCustomers();
+        const customer = allCustomers.find(c => c.id === customerId) || 
+                        activeCustomers.find(c => c.id === customerId);
         if (customer) {
-            customer.active = true;
-            currentCustomerId = customerId;
-            
-            // الحصول على بيانات كاملة من العملاء
-            const allCustomers = getAllCustomers();
-            const fullCustomer = allCustomers.find(c => c.id === customerId) || customer;
-            
-            // تحديث شارة العميل المحدد
-            showSelectedCustomerBadge(fullCustomer);
-            
-            // تحديث القائمة المنسدلة
-            const customerSelect = document.getElementById('sale-customer');
-            if (customerSelect) {
-                customerSelect.value = customerId;
-            }
-            
-            // تحديث حقل البحث
-            const searchInput = document.getElementById('customer-search');
-            if (searchInput) {
-                searchInput.value = fullCustomer.name || customer.name;
-            }
-            
-            // تحديث العرض
-            renderActiveCustomers();
-            
-            // حفظ الحالة
-            saveActiveCustomers();
-            
-            showNotification('تم التبديل', `العميل الحالي: ${customer.name}`, 'success');
+            showSelectedCustomerBadge(customer);
+        }
+        
+        // تحديث القائمة المنسدلة
+        const customerSelect = document.getElementById('sale-customer');
+        if (customerSelect) {
+            customerSelect.value = customerId;
+        }
+        
+        // تحديث حقل البحث
+        const searchInput = document.getElementById('customer-search');
+        if (searchInput && customer) {
+            searchInput.value = customer.name || '';
         }
     }
     
@@ -186,22 +257,23 @@ const salesModule = (function() {
         const index = activeCustomers.findIndex(c => c.id === customerId);
         
         if (index !== -1) {
+            // حذف سلة العميل
+            delete customerCarts[customerId];
+            
             // إذا كان العميل الحالي هو المحذوف
             if (currentCustomerId === customerId) {
-                // اختر أول عميل في القائمة أو ألغِ التحديد
                 if (activeCustomers.length > 1) {
-                    const nextCustomer = activeCustomers.find((c, i) => i !== index) || activeCustomers[0];
-                    currentCustomerId = nextCustomer.id;
-                    nextCustomer.active = true;
-                    
-                    const allCustomers = getAllCustomers();
-                    const fullCustomer = allCustomers.find(c => c.id === nextCustomer.id) || nextCustomer;
-                    showSelectedCustomerBadge(fullCustomer);
-                    
-                    const customerSelect = document.getElementById('sale-customer');
-                    if (customerSelect) customerSelect.value = nextCustomer.id;
+                    // اختيار أول عميل آخر
+                    const nextCustomer = activeCustomers.find((c, i) => i !== index);
+                    if (nextCustomer) {
+                        switchToCustomerCart(nextCustomer.id);
+                        nextCustomer.active = true;
+                        showSelectedCustomerBadge(nextCustomer);
+                    }
                 } else {
+                    // التبديل إلى زبون نقدي
                     currentCustomerId = null;
+                    switchToCustomerCart(null);
                     clearSelectedCustomerUI();
                 }
             }
@@ -212,15 +284,24 @@ const salesModule = (function() {
             // تحديث العرض
             renderActiveCustomers();
             saveActiveCustomers();
+            saveCustomerCarts();
         }
     }
     
     function clearAllActiveCustomers() {
         if (activeCustomers.length === 0) return;
         
-        showConfirmation('تأكيد', 'هل تريد مسح جميع العملاء النشطين؟', () => {
+        showConfirmation('تأكيد', 'هل تريد مسح جميع العملاء النشطين وسلاتهم؟', () => {
+            // حذف سلات جميع العملاء
+            activeCustomers.forEach(c => {
+                delete customerCarts[c.id];
+            });
+            
             activeCustomers = [];
             currentCustomerId = null;
+            
+            // التبديل إلى زبون نقدي
+            switchToCustomerCart(null);
             
             const area = document.getElementById('active-customers-area');
             if (area) area.style.display = 'none';
@@ -228,6 +309,7 @@ const salesModule = (function() {
             clearSelectedCustomerUI();
             renderActiveCustomers();
             saveActiveCustomers();
+            saveCustomerCarts();
             
             showNotification('تم', 'تم مسح جميع العملاء النشطين');
         });
@@ -302,12 +384,14 @@ const salesModule = (function() {
             const activeIcon = isActive ? '🟢' : '⚪';
             const customerName = customer.name || customer.fullname || 'بدون اسم';
             const customerPhone = customer.phone || customer.phone1 || '';
+            const cartCount = (customerCarts[customer.id] || []).length;
+            const cartInfo = cartCount > 0 ? ` (${cartCount} منتج)` : '';
             
             html += `
                 <div class="search-item" onclick='salesModule.addActiveCustomer(${JSON.stringify(customer).replace(/'/g, "\\'")})'>
                     <i class="material-icons-round">person</i>
                     <div style="flex:1">
-                        <div>${customerName} ${activeIcon}</div>
+                        <div>${customerName} ${activeIcon} ${cartInfo}</div>
                         <small>${customerPhone || 'لا يوجد هاتف'}</small>
                     </div>
                     ${isActive ? '<span class="badge bg-success">نشط</span>' : ''}
@@ -330,7 +414,7 @@ const salesModule = (function() {
         }
     }
     
-    // ================== إضافة منتج إلى السلة مع دعم الوحدات ==================
+    // ================== إضافة منتج إلى السلة ==================
     function addToCart() {
         const searchInput = document.getElementById('sale-search');
         const productName = searchInput?.value.trim();
@@ -375,12 +459,11 @@ const salesModule = (function() {
             return false;
         }
         
-        // اختيار السعر المناسب
         const price = useWholesale && product.wholesalePrice ? product.wholesalePrice : product.sellPrice;
         const priceType = useWholesale && product.wholesalePrice ? 'جملة' : 'تجزئة';
         const unitPrice = price * unitMultiplier;
         
-        const existingItem = cart.find(item => item.productId === product.id && item.unit === selectedUnit);
+        const existingItem = currentCart.find(item => item.productId === product.id && item.unit === selectedUnit);
         if (existingItem) {
             existingItem.qty += qty;
             existingItem.actualQty = existingItem.qty * existingItem.unitMultiplier;
@@ -388,7 +471,7 @@ const salesModule = (function() {
             existingItem.unitPrice = unitPrice;
             existingItem.total = (existingItem.unitPrice * existingItem.qty) * (1 - existingItem.discount / 100);
         } else {
-            cart.push({
+            currentCart.push({
                 id: Date.now() + Math.random(),
                 productId: product.id,
                 name: product.name,
@@ -407,7 +490,10 @@ const salesModule = (function() {
             });
         }
         
+        // حفظ السلة بعد الإضافة
+        saveCurrentCart();
         renderCart();
+        renderActiveCustomers(); // تحديث لعرض عدد المنتجات
         
         if (searchInput) searchInput.value = '';
         document.getElementById('sale-qty').value = '1';
@@ -418,19 +504,42 @@ const salesModule = (function() {
         return true;
     }
     
+    function removeFromCart(itemId) {
+        currentCart = currentCart.filter(item => item.id !== itemId);
+        saveCurrentCart();
+        renderCart();
+        renderActiveCustomers(); // تحديث لعرض عدد المنتجات
+        showNotification('تم', 'تم حذف المنتج');
+        updateRemainingAmount();
+    }
+    
+    function clearCart() {
+        if (currentCart.length === 0) return;
+        
+        showConfirmation('تأكيد', 'هل تريد تفريغ السلة الحالية؟', () => {
+            currentCart = [];
+            saveCurrentCart();
+            renderCart();
+            renderActiveCustomers(); // تحديث لعرض عدد المنتجات
+            document.getElementById('paid-amount').value = '';
+            showNotification('تم', 'تم تفريغ السلة');
+            updateRemainingAmount();
+        });
+    }
+    
     // ================== عرض السلة ==================
     function renderCart() {
         const tbody = document.getElementById('cart-table');
         if (!tbody) return;
         
-        if (cart.length === 0) {
+        if (currentCart.length === 0) {
             tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
             updateTotals();
             updateRemainingAmount();
             return;
         }
         
-        tbody.innerHTML = cart.map((item, index) => `
+        tbody.innerHTML = currentCart.map((item, index) => `
             <tr>
                 <td>${item.name}</td>
                 <td>${item.qty} ${item.unitName}</td>
@@ -450,31 +559,12 @@ const salesModule = (function() {
         updateTotals();
     }
     
-    function removeFromCart(itemId) {
-        cart = cart.filter(item => item.id !== itemId);
-        renderCart();
-        showNotification('تم', 'تم حذف المنتج');
-        updateRemainingAmount();
-    }
-    
-    function clearCart() {
-        if (cart.length === 0) return;
-        
-        showConfirmation('تأكيد', 'هل تريد تفريغ السلة؟', () => {
-            cart = [];
-            renderCart();
-            document.getElementById('paid-amount').value = '';
-            showNotification('تم', 'تم تفريغ السلة');
-            updateRemainingAmount();
-        });
-    }
-    
     function updateTotals() {
-        const totalDiscount = cart.reduce((sum, item) => {
+        const totalDiscount = currentCart.reduce((sum, item) => {
             return sum + (item.unitPrice * item.qty * item.discount / 100);
         }, 0);
         
-        const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
+        const grandTotal = currentCart.reduce((sum, item) => sum + item.total, 0);
         
         const totalDiscountEl = document.getElementById('total-discount');
         const grandTotalEl = document.getElementById('grand-total');
@@ -489,7 +579,7 @@ const salesModule = (function() {
     
     function updateRemainingAmount() {
         const paidAmount = parseFloat(document.getElementById('paid-amount')?.value) || 0;
-        const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
+        const grandTotal = currentCart.reduce((sum, item) => sum + item.total, 0);
         const remaining = paidAmount - grandTotal;
         
         const remainingEl = document.getElementById('remaining-amount');
@@ -511,6 +601,11 @@ const salesModule = (function() {
                 paidInput.style.borderWidth = '';
             }
         }
+    }
+    
+    function updateCartCount() {
+        const countEl = document.getElementById('cart-count');
+        if (countEl) countEl.textContent = currentCart.length;
     }
     
     // ================== البحث عن المنتجات ==================
@@ -663,7 +758,6 @@ const salesModule = (function() {
                     return `<option value="${c.id}">${customerName} ${customerPhone ? '- ' + customerPhone : ''}</option>`;
                 }).join('');
             
-            // تحديد العميل الحالي إذا وجد
             if (currentCustomerId) {
                 select.value = currentCustomerId;
             }
@@ -672,13 +766,13 @@ const salesModule = (function() {
     
     // ================== إنهاء البيع ==================
     function finishSale() {
-        if (cart.length === 0) {
+        if (currentCart.length === 0) {
             showNotification('تنبيه', 'السلة فارغة', 'warning');
             return null;
         }
         
         const paidAmount = parseFloat(document.getElementById('paid-amount')?.value) || 0;
-        const grandTotal = cart.reduce((sum, item) => sum + item.total, 0);
+        const grandTotal = currentCart.reduce((sum, item) => sum + item.total, 0);
         
         if (paidAmount < grandTotal) {
             const remaining = grandTotal - paidAmount;
@@ -704,7 +798,7 @@ const salesModule = (function() {
         if (paymentMethod === 'card') paymentText = 'بطاقة';
         if (paymentMethod === 'credit') paymentText = 'آجل';
         
-        const totalDiscount = cart.reduce((sum, item) => {
+        const totalDiscount = currentCart.reduce((sum, item) => {
             return sum + (item.unitPrice * item.qty * item.discount / 100);
         }, 0);
         
@@ -716,7 +810,7 @@ const salesModule = (function() {
             date: new Date().toISOString(),
             customerId: customerId,
             customer: customerName,
-            items: [...cart],
+            items: [...currentCart],
             subtotal: grandTotal + totalDiscount,
             totalDiscount: totalDiscount,
             grandTotal: grandTotal,
@@ -733,7 +827,7 @@ const salesModule = (function() {
         saveInvoices();
         
         // تحديث المخزون
-        cart.forEach(item => {
+        currentCart.forEach(item => {
             if (window.inventoryModule?.removeStock) {
                 window.inventoryModule.removeStock(item.productId, item.actualQty, `فاتورة مبيعات رقم ${invoice.number}`);
             }
@@ -746,8 +840,14 @@ const salesModule = (function() {
             }
         }
         
-        cart = [];
+        // تفريغ سلة هذا العميل بعد إتمام البيع
+        const cartKey = currentCustomerId || 'cash_customer';
+        customerCarts[cartKey] = [];
+        currentCart = [];
+        saveCustomerCarts();
+        
         renderCart();
+        renderActiveCustomers(); // تحديث لعرض عدد المنتجات
         
         document.getElementById('paid-amount').value = '';
         
@@ -1008,9 +1108,16 @@ const salesModule = (function() {
     
     // ================== تهيئة الوحدة ==================
     function init() {
-        console.log('✅ salesModule v2 initialized - الرقم 23');
+        console.log('✅ salesModule v3 initialized - سلة منفصلة لكل عميل');
         console.log(`   عدد الفواتير: ${invoices.length}`);
         console.log(`   عدد العملاء النشطين: ${activeCustomers.length}`);
+        
+        // تحميل السلة الحالية
+        if (currentCustomerId) {
+            currentCart = customerCarts[currentCustomerId] || [];
+        } else {
+            currentCart = customerCarts['cash_customer'] || [];
+        }
         
         renderCart();
         loadCustomersDropdown();
@@ -1053,7 +1160,7 @@ const salesModule = (function() {
     
     // ================== واجهة الوحدة ==================
     return {
-        cart,
+        cart: currentCart,
         invoices,
         activeCustomers,
         currentCustomerId,
