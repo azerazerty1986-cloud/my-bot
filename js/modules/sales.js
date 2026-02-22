@@ -1,5 +1,5 @@
 // ================== sales.js - إدارة المبيعات المتقدمة ==================
-// الرقم 23 في ترتيب الملفات - نسخة نهائية مع إدخال يدوي للكمية والوحدة والسعر
+// الرقم 23 في ترتيب الملفات - نسخة مع دعم الديون (مبلغ أقل = دين)
 
 const salesModule = (function() {
     // ================== البيانات ==================
@@ -409,13 +409,11 @@ const salesModule = (function() {
             return false;
         }
         
-        // إضافة المنتج مع القيم الافتراضية
         const newItem = {
             id: Date.now() + Math.random(),
             productId: product.id,
             name: product.name,
             qty: 1,
-            unit: 'قطعة',
             price: product.sellPrice || 0,
             discount: 0,
             total: product.sellPrice || 0,
@@ -435,7 +433,6 @@ const salesModule = (function() {
         return true;
     }
     
-    // تحديث كمية المنتج
     function updateItemQuantity(itemId, newQty) {
         const item = currentCart.find(i => i.id === itemId);
         if (!item) return;
@@ -454,18 +451,6 @@ const salesModule = (function() {
         updateRemainingAmount();
     }
     
-    // تحديث وحدة المنتج
-    function updateItemUnit(itemId, newUnit) {
-        const item = currentCart.find(i => i.id === itemId);
-        if (!item) return;
-        
-        item.unit = newUnit;
-        
-        saveCurrentCart();
-        renderCart();
-    }
-    
-    // تحديث سعر المنتج
     function updateItemPrice(itemId, newPrice) {
         const item = currentCart.find(i => i.id === itemId);
         if (!item) return;
@@ -481,7 +466,6 @@ const salesModule = (function() {
         updateRemainingAmount();
     }
     
-    // تحديث خصم المنتج
     function updateItemDiscount(itemId, newDiscount) {
         const item = currentCart.find(i => i.id === itemId);
         if (!item) return;
@@ -527,7 +511,7 @@ const salesModule = (function() {
         if (!tbody) return;
         
         if (currentCart.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
             updateTotals();
             updateRemainingAmount();
             return;
@@ -542,11 +526,6 @@ const salesModule = (function() {
                         <input type="number" id="qty-${item.id}" class="form-control text-center" 
                                value="${item.qty}" min="0.1" step="any"
                                onchange="salesModule.updateItemQuantity('${item.id}', this.value)">
-                    </td>
-                    <td>
-                        <input type="text" id="unit-${item.id}" class="form-control text-center" 
-                               value="${item.unit}" placeholder="وحدة"
-                               onchange="salesModule.updateItemUnit('${item.id}', this.value)">
                     </td>
                     <td>
                         <input type="number" id="price-${item.id}" class="form-control text-center" 
@@ -599,7 +578,7 @@ const salesModule = (function() {
         
         const remainingEl = document.getElementById('remaining-amount');
         if (remainingEl) {
-            remainingEl.textContent = formatCurrency(remaining) + ' دج';
+            remainingEl.textContent = formatCurrency(Math.abs(remaining)) + ' دج';
             remainingEl.style.color = remaining >= 0 ? 'green' : 'red';
         }
         
@@ -738,7 +717,7 @@ const salesModule = (function() {
         }
     }
     
-    // ================== إنهاء البيع ==================
+    // ================== إنهاء البيع مع دعم الديون ==================
     function finishSale() {
         if (currentCart.length === 0) {
             showNotification('تنبيه', 'السلة فارغة', 'warning');
@@ -747,12 +726,6 @@ const salesModule = (function() {
         
         const paidAmount = parseFloat(document.getElementById('paid-amount')?.value) || 0;
         const grandTotal = currentCart.reduce((sum, item) => sum + item.total, 0);
-        
-        if (paidAmount < grandTotal) {
-            const remaining = grandTotal - paidAmount;
-            showNotification('تنبيه', `المبلغ المدفوع أقل من الإجمالي بــ ${formatCurrency(remaining)} دج`, 'warning');
-            return null;
-        }
         
         let customerName = 'زبون نقدي';
         let customerId = null;
@@ -776,6 +749,7 @@ const salesModule = (function() {
         }, 0);
         
         const remaining = paidAmount - grandTotal;
+        const debt = remaining < 0 ? Math.abs(remaining) : 0;
         
         const invoice = {
             id: Date.now(),
@@ -789,11 +763,12 @@ const salesModule = (function() {
             grandTotal: grandTotal,
             paidAmount: paidAmount,
             remaining: remaining,
+            debt: debt,
             paymentMethod: paymentMethod,
             paymentText: paymentText,
-            status: 'completed',
+            status: debt > 0 ? 'debt' : 'completed',
             createdBy: 'admin',
-            notes: ''
+            notes: debt > 0 ? `عليه دين قدره ${formatCurrency(debt)} دج` : ''
         };
         
         invoices.push(invoice);
@@ -806,7 +781,12 @@ const salesModule = (function() {
             }
         });
         
-        if (customerId) {
+        // تحديث ديون العميل
+        if (customerId && debt > 0) {
+            if (window.customerModule?.addDebt) {
+                window.customerModule.addDebt(customerId, debt);
+            }
+            
             if (window.customerModule?.updateCustomerStats) {
                 window.customerModule.updateCustomerStats(customerId, grandTotal);
             }
@@ -822,7 +802,9 @@ const salesModule = (function() {
         
         document.getElementById('paid-amount').value = '';
         
-        if (remaining > 0) {
+        if (debt > 0) {
+            showNotification('تنبيه', `تمت العملية مع دين: ${formatCurrency(debt)} دج`, 'warning');
+        } else if (remaining > 0) {
             showNotification('نجاح', `تمت العملية - الباقي: ${formatCurrency(remaining)} دج`);
         } else {
             showNotification('نجاح', 'تم حفظ الفاتورة');
@@ -848,13 +830,16 @@ const salesModule = (function() {
                 <tr>
                     <td>${i + 1}</td>
                     <td>${item.name}</td>
-                    <td>${item.qty} ${item.unit}</td>
+                    <td>${item.qty}</td>
                     <td>${formatCurrency(item.price)}</td>
                     <td>${item.discount}%</td>
                     <td>${formatCurrency(item.total)}</td>
                 </tr>
             `;
         });
+        
+        const debtInfo = invoice.debt > 0 ? 
+            `<p style="color: red; font-weight: bold;">دين: ${formatCurrency(invoice.debt)} دج</p>` : '';
         
         printWindow.document.write(`
             <!DOCTYPE html>
@@ -869,6 +854,7 @@ const salesModule = (function() {
                     th { background: #f5f5f5; padding: 10px; border: 1px solid #ddd; }
                     td { padding: 8px; border: 1px solid #ddd; text-align: center; }
                     .total { font-size: 18px; font-weight: bold; text-align: left; margin-top: 20px; }
+                    .debt { color: red; font-weight: bold; }
                     .footer { text-align: center; margin-top: 50px; color: #999; }
                 </style>
             </head>
@@ -900,7 +886,8 @@ const salesModule = (function() {
                 <div class="total">
                     <p>الإجمالي: ${formatCurrency(invoice.grandTotal)} دج</p>
                     <p>المدفوع: ${formatCurrency(invoice.paidAmount)} دج</p>
-                    <p>الباقي: ${formatCurrency(invoice.remaining)} دج</p>
+                    <p>الباقي: ${formatCurrency(Math.abs(invoice.remaining))} دج</p>
+                    ${debtInfo}
                 </div>
                 
                 <div class="footer">
@@ -930,26 +917,29 @@ const salesModule = (function() {
             return;
         }
         
-        tbody.innerHTML = sortedInvoices.map(inv => `
-            <tr>
-                <td>${inv.number}</td>
-                <td>${new Date(inv.date).toLocaleDateString('ar-EG')}</td>
-                <td>${inv.customer}</td>
-                <td>${formatCurrency(inv.grandTotal)} دج</td>
-                <td>${formatCurrency(inv.paidAmount)} دج</td>
-                <td style="color: ${inv.remaining > 0 ? 'green' : 'black'}">${formatCurrency(inv.remaining)} دج</td>
-                <td>${inv.paymentText}</td>
-                <td>${inv.items.length}</td>
-                <td>
-                    <button class="btn btn-sm btn-info" onclick="salesModule.showInvoice('${inv.id}')">
-                        <i class="material-icons-round">visibility</i>
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="salesModule.deleteInvoice('${inv.id}')">
-                        <i class="material-icons-round">delete</i>
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = sortedInvoices.map(inv => {
+            const debtClass = inv.debt > 0 ? 'text-danger fw-bold' : '';
+            return `
+                <tr>
+                    <td>${inv.number}</td>
+                    <td>${new Date(inv.date).toLocaleDateString('ar-EG')}</td>
+                    <td>${inv.customer}</td>
+                    <td>${formatCurrency(inv.grandTotal)} دج</td>
+                    <td>${formatCurrency(inv.paidAmount)} دج</td>
+                    <td class="${debtClass}">${inv.debt > 0 ? formatCurrency(inv.debt) + ' دج' : '0.00 دج'}</td>
+                    <td>${inv.paymentText}</td>
+                    <td>${inv.items.length}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="salesModule.showInvoice('${inv.id}')">
+                            <i class="material-icons-round">visibility</i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="salesModule.deleteInvoice('${inv.id}')">
+                            <i class="material-icons-round">delete</i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
     
     function showInvoice(id) {
@@ -962,7 +952,7 @@ const salesModule = (function() {
                 <tr>
                     <td style="padding:8px; border:1px solid #ddd;">${i + 1}</td>
                     <td style="padding:8px; border:1px solid #ddd;">${item.name}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${item.qty} ${item.unit}</td>
+                    <td style="padding:8px; border:1px solid #ddd;">${item.qty}</td>
                     <td style="padding:8px; border:1px solid #ddd;">${formatCurrency(item.price)}</td>
                     <td style="padding:8px; border:1px solid #ddd;">${item.discount}%</td>
                     <td style="padding:8px; border:1px solid #ddd;">${formatCurrency(item.total)}</td>
@@ -997,7 +987,7 @@ const salesModule = (function() {
                     <p><strong>إجمالي الخصم:</strong> ${formatCurrency(invoice.totalDiscount)} دج</p>
                     <p><strong>الإجمالي:</strong> ${formatCurrency(invoice.grandTotal)} دج</p>
                     <p><strong>المدفوع:</strong> ${formatCurrency(invoice.paidAmount)} دج</p>
-                    <p><strong>الباقي:</strong> ${formatCurrency(invoice.remaining)} دج</p>
+                    <p><strong>الدين:</strong> <span style="color: ${invoice.debt > 0 ? 'red' : 'green'};">${formatCurrency(invoice.debt || 0)} دج</span></p>
                 </div>
             `,
             width: '900px'
@@ -1036,21 +1026,24 @@ const salesModule = (function() {
             return;
         }
         
-        tbody.innerHTML = filtered.map(inv => `
-            <tr>
-                <td>${inv.number}</td>
-                <td>${new Date(inv.date).toLocaleDateString('ar-EG')}</td>
-                <td>${inv.customer}</td>
-                <td>${formatCurrency(inv.grandTotal)} دج</td>
-                <td>${formatCurrency(inv.paidAmount)} دج</td>
-                <td>${formatCurrency(inv.remaining)} دج</td>
-                <td>${inv.paymentText}</td>
-                <td>${inv.items.length}</td>
-                <td>
-                    <button class="btn btn-sm btn-info" onclick="salesModule.showInvoice('${inv.id}')">عرض</button>
-                </td>
-            </tr>
-        `).join('');
+        tbody.innerHTML = filtered.map(inv => {
+            const debtClass = inv.debt > 0 ? 'text-danger fw-bold' : '';
+            return `
+                <tr>
+                    <td>${inv.number}</td>
+                    <td>${new Date(inv.date).toLocaleDateString('ar-EG')}</td>
+                    <td>${inv.customer}</td>
+                    <td>${formatCurrency(inv.grandTotal)} دج</td>
+                    <td>${formatCurrency(inv.paidAmount)} دج</td>
+                    <td class="${debtClass}">${inv.debt > 0 ? formatCurrency(inv.debt) + ' دج' : '0.00 دج'}</td>
+                    <td>${inv.paymentText}</td>
+                    <td>${inv.items.length}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="salesModule.showInvoice('${inv.id}')">عرض</button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
     }
     
     function getSalesStats() {
@@ -1061,25 +1054,30 @@ const salesModule = (function() {
         const todayInvoices = invoices.filter(inv => new Date(inv.date) >= today);
         const monthInvoices = invoices.filter(inv => new Date(inv.date) >= thisMonth);
         
+        const totalDebt = invoices.reduce((sum, inv) => sum + (inv.debt || 0), 0);
+        
         return {
             total: {
                 count: invoices.length,
-                amount: invoices.reduce((sum, inv) => sum + inv.grandTotal, 0)
+                amount: invoices.reduce((sum, inv) => sum + inv.grandTotal, 0),
+                debt: totalDebt
             },
             today: {
                 count: todayInvoices.length,
-                amount: todayInvoices.reduce((sum, inv) => sum + inv.grandTotal, 0)
+                amount: todayInvoices.reduce((sum, inv) => sum + inv.grandTotal, 0),
+                debt: todayInvoices.reduce((sum, inv) => sum + (inv.debt || 0), 0)
             },
             thisMonth: {
                 count: monthInvoices.length,
-                amount: monthInvoices.reduce((sum, inv) => sum + inv.grandTotal, 0)
+                amount: monthInvoices.reduce((sum, inv) => sum + inv.grandTotal, 0),
+                debt: monthInvoices.reduce((sum, inv) => sum + (inv.debt || 0), 0)
             }
         };
     }
     
     // ================== تهيئة الوحدة ==================
     function init() {
-        console.log('✅ salesModule v5 initialized - إدخال يدوي للكمية والوحدة والسعر');
+        console.log('✅ salesModule v6 initialized - دعم الديون');
         console.log(`   عدد الفواتير: ${invoices.length}`);
         console.log(`   عدد العملاء النشطين: ${activeCustomers.length}`);
         
@@ -1142,7 +1140,6 @@ const salesModule = (function() {
         updateRemainingAmount,
         
         updateItemQuantity,
-        updateItemUnit,
         updateItemPrice,
         updateItemDiscount,
         
@@ -1171,7 +1168,6 @@ const salesModule = (function() {
 
 window.salesModule = salesModule;
 
-// دوال مختصرة
 window.addToCart = () => salesModule.addToCart();
 window.clearCart = () => salesModule.clearCart();
 window.finishSale = () => salesModule.finishSale();
