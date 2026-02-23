@@ -1,6 +1,6 @@
 <!-- ======================================================================= -->
 <!-- ملف: sales-section.html - قسم المبيعات في واجهة المستخدم -->
-<!-- الإصدار: 1.0 - متكامل مع salesModule لإدارة المبيعات والديون -->
+<!-- الإصدار: 3.0 - مع إمكانية التنقل داخل الجدول -->
 <!-- ======================================================================= -->
 
 <!-- ======================================================================= -->
@@ -105,26 +105,28 @@
             </button>
         </div>
         
-        <!-- سلة المبيعات -->
+        <!-- ======================================================================= -->
+        <!-- سلة المبيعات - مع ترتيب الأعمدة حسب الطلب وإمكانية التنقل -->
+        <!-- ======================================================================= -->
         <div class="main-card mt-3">
             <h6 class="text-center mb-3">
                 🛒 سلة المبيعات 
                 <span id="current-customer-cart-label" class="badge bg-info"> - زبون نقدي</span>
             </h6>
             
-            <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
-                <table class="table table-bordered table-hover" style="min-width: 1200px;">
+            <div class="table-responsive" style="max-height:400px; overflow-y:auto;" id="cart-table-container">
+                <table class="table table-bordered table-hover" style="min-width: 1200px;" id="cart-main-table">
                     <thead class="sticky-top bg-light">
                         <tr>
                             <th style="width: 50px;">#</th>
                             <th style="width: 200px;">المنتج</th>
-                            <th style="width: 150px;">الكمية</th>
-                            <th style="width: 120px;">الوحدة</th>
-                            <th style="width: 100px;">عدد القطع</th>
+                            <th style="width: 100px;">الكمية</th>
+                            <th style="width: 120px;">عدد القطع</th>
+                            <th style="width: 100px;">الوحدة</th>
                             <th style="width: 120px;">السعر</th>
                             <th style="width: 120px;">الإجمالي</th>
-                            <th style="width: 100px;">الخصم %</th>
                             <th style="width: 100px;">المخزون</th>
+                            <th style="width: 100px;">الخصم %</th>
                             <th style="width: 50px;">حذف</th>
                         </tr>
                     </thead>
@@ -369,19 +371,25 @@
         padding: 8px 5px;
     }
     
-    .table input {
+    .table input, .table select {
         width: 100%;
         padding: 6px;
         border: 1px solid #ced4da;
         border-radius: 4px;
         text-align: center;
         font-size: 14px;
+        transition: all 0.2s;
     }
     
-    .table input:focus {
+    .table input:focus, .table select:focus {
         outline: none;
-        border-color: #80bdff;
+        border-color: #007bff;
         box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        background-color: #fff;
+    }
+    
+    .table input:hover, .table select:hover {
+        border-color: #007bff;
     }
     
     .sticky-top {
@@ -390,7 +398,7 @@
         z-index: 10;
     }
     
-    /* تنسيق حاوية الكمية */
+    /* تنسيق حقول الإدخال في الجدول */
     .table td .d-flex {
         gap: 5px;
         justify-content: center;
@@ -413,6 +421,15 @@
         display: inline-flex;
         align-items: center;
         justify-content: center;
+        background: white;
+        border: 1px solid #007bff;
+        color: #007bff;
+        cursor: pointer;
+    }
+    
+    .table td .d-flex button:hover {
+        background: #007bff;
+        color: white;
     }
     
     /* تنسيق قائمة الوحدات */
@@ -438,6 +455,14 @@
         font-size: 10px;
         margin-top: 4px;
         color: #6c757d;
+    }
+    
+    /* تنسيق الإجمالي في الجدول */
+    .table td input[readonly] {
+        background-color: #f8f9fa;
+        color: #28a745;
+        font-weight: bold;
+        border-color: #28a745;
     }
     
     /* تنسيق إجمالي القطع */
@@ -493,6 +518,7 @@
     #remaining-amount {
         font-weight: bold;
         transition: color 0.3s;
+        font-size: 1.2rem;
     }
     
     /* تنسيق شارة العميل المحدد */
@@ -503,6 +529,26 @@
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* تنسيق شريط التمرير */
+    #cart-table-container::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    
+    #cart-table-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+    
+    #cart-table-container::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+    
+    #cart-table-container::-webkit-scrollbar-thumb:hover {
+        background: #555;
     }
     
     /* تنسيقات الطباعة */
@@ -584,20 +630,80 @@
     
     // دالة إظهار الأقسام الفرعية
     function showSubSection(sectionId) {
-        // إخفاء جميع الأقسام
         document.querySelectorAll('.sub-section').forEach(el => {
             el.style.display = 'none';
         });
         
-        // إظهار القسم المطلوب
         document.getElementById(sectionId).style.display = 'block';
         
-        // تحديث التبويبات
         document.querySelectorAll('.tab-item').forEach(el => {
             el.classList.remove('active-red');
         });
         event.currentTarget.classList.add('active-red');
     }
+    
+    // دالة التنقل بين حقول الإدخال في الجدول
+    function setupTableNavigation() {
+        const inputs = document.querySelectorAll('#cart-table input, #cart-table select');
+        
+        inputs.forEach((input, index) => {
+            input.addEventListener('keydown', function(e) {
+                // التنقل بالأسهم
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const nextInput = inputs[index + 1];
+                    if (nextInput) nextInput.focus();
+                }
+                else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    const prevInput = inputs[index - 1];
+                    if (prevInput) prevInput.focus();
+                }
+                else if (e.key === 'ArrowRight') {
+                    e.preventDefault();
+                    const rowInputs = Array.from(inputs).filter(inp => 
+                        inp.closest('tr') === input.closest('tr')
+                    );
+                    const currentRowIndex = rowInputs.indexOf(input);
+                    const nextInRow = rowInputs[currentRowIndex + 1];
+                    if (nextInRow) nextInRow.focus();
+                }
+                else if (e.key === 'ArrowLeft') {
+                    e.preventDefault();
+                    const rowInputs = Array.from(inputs).filter(inp => 
+                        inp.closest('tr') === input.closest('tr')
+                    );
+                    const currentRowIndex = rowInputs.indexOf(input);
+                    const prevInRow = rowInputs[currentRowIndex - 1];
+                    if (prevInRow) prevInRow.focus();
+                }
+                // التنقل بـ Tab
+                else if (e.key === 'Tab') {
+                    e.preventDefault();
+                    const nextIndex = e.shiftKey ? index - 1 : index + 1;
+                    if (nextIndex >= 0 && nextIndex < inputs.length) {
+                        inputs[nextIndex].focus();
+                    }
+                }
+                // Enter للانتقال للخلية التالية
+                else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextInput = inputs[index + 1];
+                    if (nextInput) nextInput.focus();
+                }
+            });
+        });
+    }
+    
+    // مراقبة التغييرات في الجدول لإعادة تفعيل التنقل
+    const observer = new MutationObserver(function() {
+        setupTableNavigation();
+    });
+    
+    observer.observe(document.getElementById('cart-table'), {
+        childList: true,
+        subtree: true
+    });
 </script>
 
 <!-- ======================================================================= -->
