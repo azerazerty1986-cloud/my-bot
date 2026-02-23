@@ -1,19 +1,32 @@
-// ================== sales.js - إدارة المبيعات المتقدمة ==================
-// الرقم 23 في ترتيب الملفات - نسخة مع دعم الديون (مبلغ أقل = دين)
+// =======================================================================
+// ملف: sales.js - نظام إدارة المبيعات المتقدم مع دعم الديون
+// الإصدار: 6.0 - يدعم العملاء المتعددين والديون
+// =======================================================================
 
+// =======================================================================
+// الجزء 1: تعريف الوحدة الرئيسية وهيكل البيانات الأساسي
+// =======================================================================
 const salesModule = (function() {
-    // ================== البيانات ==================
-    let customerCarts = JSON.parse(localStorage.getItem('customer_carts')) || {};
-    let currentCart = [];
-    let invoices = JSON.parse(localStorage.getItem('sales_invoices')) || [];
-    let activeCustomers = JSON.parse(localStorage.getItem('activeCustomers')) || [];
-    let currentCustomerId = localStorage.getItem('currentCustomerId') || null;
     
-    // ================== دوال مساعدة ==================
+    // =======================================================================
+    // الجزء 2: تهيئة البيانات واسترجاعها من التخزين المحلي
+    // =======================================================================
+    let customerCarts = JSON.parse(localStorage.getItem('customer_carts')) || {};  // سلات جميع العملاء
+    let currentCart = [];                           // السلة الحالية المعروضة
+    let invoices = JSON.parse(localStorage.getItem('sales_invoices')) || [];     // جميع فواتير المبيعات
+    let activeCustomers = JSON.parse(localStorage.getItem('activeCustomers')) || []; // العملاء النشطين حالياً
+    let currentCustomerId = localStorage.getItem('currentCustomerId') || null;    // معرف العميل الحالي
+
+    // =======================================================================
+    // الجزء 3: الدوال المساعدة الأساسية (تنسيق العملات، إنشاء الأرقام، الإشعارات)
+    // =======================================================================
+    
+    // دالة تنسيق العملة: تحويل الرقم إلى صيغة دينار جزائري مع فواصل الآلاف
     function formatCurrency(amount) {
         return Number(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
     }
     
+    // دالة إنشاء رقم فاتورة فريد: SALE-YYMMDD-RRR (مثال: SALE-240215-123)
     function generateInvoiceNumber() {
         const date = new Date();
         const year = date.getFullYear().toString().slice(-2);
@@ -23,6 +36,7 @@ const salesModule = (function() {
         return `SALE-${year}${month}${day}-${random}`;
     }
     
+    // دالة عرض الإشعارات باستخدام SweetAlert
     function showNotification(title, message, type = 'success') {
         if (typeof Swal !== 'undefined') {
             Swal.fire({
@@ -37,6 +51,7 @@ const salesModule = (function() {
         }
     }
     
+    // دالة عرض نافذة تأكيد قبل تنفيذ عملية مهمة
     function showConfirmation(title, text, confirmCallback) {
         Swal.fire({
             title: title,
@@ -52,6 +67,7 @@ const salesModule = (function() {
         });
     }
     
+    // دوال حفظ البيانات في التخزين المحلي
     function saveInvoices() {
         localStorage.setItem('sales_invoices', JSON.stringify(invoices));
     }
@@ -68,9 +84,12 @@ const salesModule = (function() {
             localStorage.removeItem('currentCustomerId');
         }
     }
+
+    // =======================================================================
+    // الجزء 4: إدارة سلة المشتريات حسب العميل
+    // =======================================================================
     
-    // ================== إدارة السلة حسب العميل ==================
-    
+    // تحميل سلة عميل معين
     function loadCustomerCart(customerId) {
         if (customerId) {
             currentCart = customerCarts[customerId] || [];
@@ -82,12 +101,14 @@ const salesModule = (function() {
         updateCartCount();
     }
     
+    // حفظ السلة الحالية
     function saveCurrentCart() {
         const cartKey = currentCustomerId || 'cash_customer';
         customerCarts[cartKey] = [...currentCart];
         saveCustomerCarts();
     }
     
+    // التبديل بين سلات العملاء
     function switchToCustomerCart(customerId) {
         const oldKey = currentCustomerId || 'cash_customer';
         customerCarts[oldKey] = [...currentCart];
@@ -106,15 +127,19 @@ const salesModule = (function() {
         saveActiveCustomers();
     }
     
+    // الحصول على اسم العميل بواسطة المعرف
     function getCustomerNameById(customerId) {
         if (!customerId) return 'زبون نقدي';
         const allCustomers = getAllCustomers();
         const customer = allCustomers.find(c => c.id === customerId);
         return customer ? (customer.name || customer.fullname) : 'عميل';
     }
+
+    // =======================================================================
+    // الجزء 5: إدارة العملاء النشطين (الذي يتم التعامل معهم حالياً)
+    // =======================================================================
     
-    // ================== إدارة العملاء النشطين ==================
-    
+    // إضافة عميل جديد إلى قائمة العملاء النشطين
     function addActiveCustomer(customer) {
         if (!customer || !customer.id) return;
         
@@ -160,6 +185,7 @@ const salesModule = (function() {
         }
     }
     
+    // عرض العملاء النشطين في الواجهة
     function renderActiveCustomers() {
         const container = document.getElementById('active-customers-list');
         const area = document.getElementById('active-customers-area');
@@ -202,6 +228,7 @@ const salesModule = (function() {
         container.innerHTML = html;
     }
     
+    // التبديل بين العملاء النشطين
     function switchActiveCustomer(customerId) {
         const oldKey = currentCustomerId || 'cash_customer';
         customerCarts[oldKey] = [...currentCart];
@@ -230,6 +257,7 @@ const salesModule = (function() {
         }
     }
     
+    // إزالة عميل من قائمة النشطين
     function removeActiveCustomer(customerId) {
         const index = activeCustomers.findIndex(c => c.id === customerId);
         
@@ -259,6 +287,7 @@ const salesModule = (function() {
         }
     }
     
+    // مسح جميع العملاء النشطين
     function clearAllActiveCustomers() {
         if (activeCustomers.length === 0) return;
         
@@ -284,6 +313,7 @@ const salesModule = (function() {
         });
     }
     
+    // إخفاء واجهة العميل المحدد
     function clearSelectedCustomerUI() {
         const badge = document.getElementById('selected-customer-badge');
         if (badge) badge.style.display = 'none';
@@ -298,6 +328,7 @@ const salesModule = (function() {
         if (customerCartLabel) customerCartLabel.textContent = ' - زبون نقدي';
     }
     
+    // عرض شارة العميل المحدد
     function showSelectedCustomerBadge(customer) {
         const badge = document.getElementById('selected-customer-badge');
         const nameSpan = document.getElementById('selected-customer-name');
@@ -313,6 +344,7 @@ const salesModule = (function() {
         }
     }
     
+    // إلغاء تحديد العميل الحالي
     function clearSelectedCustomer() {
         if (currentCustomerId) {
             removeActiveCustomer(currentCustomerId);
@@ -321,6 +353,7 @@ const salesModule = (function() {
         }
     }
     
+    // الحصول على جميع العملاء من الوحدة الرئيسية
     function getAllCustomers() {
         const customers = window.customerModule?.getAllCustomers?.() || [];
         if (customers.length === 0) {
@@ -329,8 +362,10 @@ const salesModule = (function() {
         }
         return customers;
     }
-    
-    // ================== البحث عن العملاء ==================
+
+    // =======================================================================
+    // الجزء 6: البحث عن العملاء
+    // =======================================================================
     function searchCustomers(query) {
         const resultsDiv = document.getElementById('customer-results');
         if (!resultsDiv) return;
@@ -380,6 +415,7 @@ const salesModule = (function() {
         resultsDiv.style.display = 'block';
     }
     
+    // اختيار عميل من القائمة المنسدلة
     function selectCustomerFromDropdown(customerId) {
         if (!customerId) return;
         
@@ -390,8 +426,12 @@ const salesModule = (function() {
             addActiveCustomer(customer);
         }
     }
+
+    // =======================================================================
+    // الجزء 7: إضافة منتج إلى السلة وإدارة عناصر السلة
+    // =======================================================================
     
-    // ================== إضافة منتج إلى السلة ==================
+    // إضافة منتج إلى السلة الحالية
     function addToCart() {
         const searchInput = document.getElementById('sale-search');
         const productName = searchInput?.value.trim();
@@ -486,6 +526,7 @@ const salesModule = (function() {
         updateRemainingAmount();
     }
     
+    // حذف منتج من السلة
     function removeFromCart(itemId) {
         currentCart = currentCart.filter(item => item.id !== itemId);
         saveCurrentCart();
@@ -495,6 +536,7 @@ const salesModule = (function() {
         updateRemainingAmount();
     }
     
+    // تفريغ السلة الحالية
     function clearCart() {
         if (currentCart.length === 0) return;
         
@@ -508,8 +550,12 @@ const salesModule = (function() {
             updateRemainingAmount();
         });
     }
+
+    // =======================================================================
+    // الجزء 8: عرض السلة وتحديث الإجماليات
+    // =======================================================================
     
-    // ================== عرض السلة ==================
+    // عرض محتويات السلة في الجدول
     function renderCart() {
         const tbody = document.getElementById('cart-table');
         if (!tbody) return;
@@ -557,6 +603,7 @@ const salesModule = (function() {
         updateTotals();
     }
     
+    // تحديث إجماليات السلة
     function updateTotals() {
         const totalDiscount = currentCart.reduce((sum, item) => {
             return sum + (item.qty * item.price * item.discount / 100);
@@ -575,6 +622,7 @@ const salesModule = (function() {
         updateRemainingAmount();
     }
     
+    // تحديث المبلغ المتبقي بعد الدفع
     function updateRemainingAmount() {
         const paidAmount = parseFloat(document.getElementById('paid-amount')?.value) || 0;
         const grandTotal = currentCart.reduce((sum, item) => sum + item.total, 0);
@@ -601,12 +649,15 @@ const salesModule = (function() {
         }
     }
     
+    // تحديث عداد السلة
     function updateCartCount() {
         const countEl = document.getElementById('cart-count');
         if (countEl) countEl.textContent = currentCart.length;
     }
-    
-    // ================== البحث عن المنتجات ==================
+
+    // =======================================================================
+    // الجزء 9: البحث عن المنتجات
+    // =======================================================================
     function searchProducts(term) {
         const resultsBox = document.getElementById('search-box');
         if (!resultsBox) return;
@@ -650,12 +701,14 @@ const salesModule = (function() {
         resultsBox.classList.add('show');
     }
     
+    // اختيار منتج من نتائج البحث
     function selectProduct(name) {
         document.getElementById('sale-search').value = name;
         document.getElementById('search-box').classList.remove('show');
         addToCart();
     }
     
+    // فتح نافذة إضافة عميل جديد
     function openAddCustomerModal() {
         Swal.fire({
             title: 'إضافة عميل جديد',
@@ -703,6 +756,7 @@ const salesModule = (function() {
         });
     }
     
+    // تحميل العملاء في القائمة المنسدلة
     function loadCustomersDropdown() {
         const customers = getAllCustomers();
         
@@ -720,8 +774,10 @@ const salesModule = (function() {
             }
         }
     }
-    
-    // ================== إنهاء البيع ==================
+
+    // =======================================================================
+    // الجزء 10: إنهاء البيع وإنشاء الفاتورة
+    // =======================================================================
     function finishSale() {
         if (currentCart.length === 0) {
             showNotification('تنبيه', 'السلة فارغة', 'warning');
@@ -755,6 +811,7 @@ const salesModule = (function() {
         const remaining = paidAmount - grandTotal;
         const debt = remaining < 0 ? Math.abs(remaining) : 0;
         
+        // إنشاء كائن الفاتورة
         const invoice = {
             id: Date.now(),
             number: generateInvoiceNumber(),
@@ -797,6 +854,7 @@ const salesModule = (function() {
             }
         }
         
+        // تفريغ السلة
         const cartKey = currentCustomerId || 'cash_customer';
         customerCarts[cartKey] = [];
         currentCart = [];
@@ -819,6 +877,7 @@ const salesModule = (function() {
         return invoice;
     }
     
+    // إنهاء البيع وطباعة الفاتورة
     function finishSaleAndPrint() {
         const invoice = finishSale();
         if (invoice) {
@@ -826,6 +885,7 @@ const salesModule = (function() {
         }
     }
     
+    // تجهيز الفاتورة للطباعة
     function preparePrint(invoice) {
         const printWindow = window.open('', '_blank');
         
@@ -905,12 +965,17 @@ const salesModule = (function() {
         printWindow.document.close();
         printWindow.print();
     }
+
+    // =======================================================================
+    // الجزء 11: إدارة الفواتير (عرض، بحث، حذف)
+    // =======================================================================
     
-    // ================== إدارة الفواتير ==================
+    // الحصول على جميع الفواتير مرتبة
     function getInvoices() {
         return [...invoices].sort((a, b) => new Date(b.date) - new Date(a.date));
     }
     
+    // عرض الفواتير في الجدول
     function renderInvoices() {
         const tbody = document.getElementById('sale-invoices-tbody');
         if (!tbody) return;
@@ -947,6 +1012,7 @@ const salesModule = (function() {
         }).join('');
     }
     
+    // عرض تفاصيل فاتورة محددة
     function showInvoice(id) {
         const invoice = invoices.find(inv => inv.id == id);
         if (!invoice) return;
@@ -999,6 +1065,7 @@ const salesModule = (function() {
         });
     }
     
+    // حذف فاتورة
     function deleteInvoice(id) {
         const invoice = invoices.find(inv => inv.id == id);
         if (!invoice) return;
@@ -1011,6 +1078,7 @@ const salesModule = (function() {
         });
     }
     
+    // البحث في الفواتير
     function searchInvoices() {
         const term = document.getElementById('invoice-search')?.value.toLowerCase() || '';
         const tbody = document.getElementById('sale-invoices-tbody');
@@ -1051,6 +1119,7 @@ const salesModule = (function() {
         }).join('');
     }
     
+    // الحصول على إحصائيات المبيعات
     function getSalesStats() {
         const now = new Date();
         const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -1079,8 +1148,10 @@ const salesModule = (function() {
             }
         };
     }
-    
-    // ================== تهيئة الوحدة ==================
+
+    // =======================================================================
+    // الجزء 12: تهيئة الوحدة وتفعيل الأحداث
+    // =======================================================================
     function init() {
         console.log('✅ salesModule v6 initialized - دعم الديون');
         console.log(`   عدد الفواتير: ${invoices.length}`);
@@ -1114,6 +1185,7 @@ const salesModule = (function() {
             renderActiveCustomers();
         }
         
+        // إغلاق صناديق البحث عند النقر خارجها
         document.addEventListener('click', (e) => {
             const searchBox = document.getElementById('search-box');
             const searchInput = document.getElementById('sale-search');
@@ -1128,7 +1200,10 @@ const salesModule = (function() {
             }
         });
     }
-    
+
+    // =======================================================================
+    // الجزء 13: الكشف عن الدوال العامة (Public API)
+    // =======================================================================
     return {
         cart: currentCart,
         invoices,
@@ -1171,9 +1246,12 @@ const salesModule = (function() {
     };
 })();
 
+// =======================================================================
+// الجزء 14: ربط الوحدة بالنافذة العامة (Window)
+// =======================================================================
 window.salesModule = salesModule;
 
-// دوال مختصرة
+// دوال مختصرة للاستخدام المباشر من HTML
 window.addToCart = () => salesModule.addToCart();
 window.clearCart = () => salesModule.clearCart();
 window.finishSale = () => salesModule.finishSale();
@@ -1182,6 +1260,9 @@ window.searchInvoices = () => salesModule.searchInvoices();
 window.searchCustomers = (q) => salesModule.searchCustomers(q);
 window.updateRemainingAmount = () => salesModule.updateRemainingAmount();
 
+// =======================================================================
+// الجزء 15: تفعيل التهيئة عند تحميل الصفحة
+// =======================================================================
 if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => salesModule.init());
     document.addEventListener('html-loaded', () => salesModule.init());
