@@ -1,21 +1,37 @@
-<!-- ================== قسم المبيعات المتقدم ================== -->
+<!-- ======================================================================= -->
+<!-- ملف: sales-section.html - قسم المبيعات في واجهة المستخدم -->
+<!-- الإصدار: 1.0 - متكامل مع salesModule لإدارة المبيعات والديون -->
+<!-- ======================================================================= -->
+
+<!-- ======================================================================= -->
+<!-- الجزء 1: رأس القسم وعلامات التبويب (Tabs) -->
+<!-- ======================================================================= -->
 <div id="sales" class="section active-section">
+    <!-- شريط التنقل بين أقسام المبيعات الفرعية -->
     <div class="nav-tabs-custom no-print">
+        <!-- تبويب عملية البيع (نشط افتراضياً) -->
         <div class="tab-item active-red" onclick="showSubSection('sale-operation')">
             <i class="material-icons-round">point_of_sale</i> عملية بيع
         </div>
+        <!-- تبويب فواتير المبيعات -->
         <div class="tab-item" onclick="showSubSection('sale-invoices')">
             <i class="material-icons-round">receipt</i> فواتير المبيعات
         </div>
+        <!-- تبويب إدارة العملاء -->
         <div class="tab-item" onclick="showSubSection('customers')">
             <i class="material-icons-round">people</i> العملاء
         </div>
     </div>
 
-    <!-- ===== عملية بيع ===== -->
+    <!-- ======================================================================= -->
+    <!-- الجزء 2: قسم عملية البيع (sale-operation) -->
+    <!-- ======================================================================= -->
     <div id="sale-operation" class="sub-section">
-        <!-- بطاقة تسجيل المبيعات -->
+        <!-- ======================================================================= -->
+        <!-- الجزء 2.1: بطاقة تسجيل المبيعات - البحث والتحكم الرئيسي -->
+        <!-- ======================================================================= -->
         <div class="main-card no-print">
+            <!-- رأس البطاقة مع عداد السلة -->
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="mb-0">
                     <i class="material-icons-round text-danger">payments</i> تسجيل مبيعات
@@ -25,7 +41,9 @@
                 </div>
             </div>
             
-            <!-- شريط البحث عن المنتجات -->
+            <!-- ======================================================================= -->
+            <!-- الجزء 2.2: البحث عن المنتجات مع نتائج مباشرة -->
+            <!-- ======================================================================= -->
             <div class="search-container mb-3">
                 <div class="input-group">
                     <input type="text" id="sale-search" class="form-control" 
@@ -34,12 +52,16 @@
                            onkeyup="if(event.key==='Enter') salesModule.addToCart()"
                            autocomplete="off">
                 </div>
+                <!-- صندوق نتائج البحث عن المنتجات -->
                 <div id="search-box" class="search-results"></div>
             </div>
             
-            <!-- خيارات البيع -->
+            <!-- ======================================================================= -->
+            <!-- الجزء 2.3: خيارات البيع - العميل وطريقة الدفع -->
+            <!-- ======================================================================= -->
             <div class="row g-2 mb-2">
                 <div class="col-md-6 col-12">
+                    <!-- حاوية البحث عن العملاء -->
                     <div class="customer-search-container">
                         <div class="input-group">
                             <span class="input-group-text"><i class="material-icons-round">person</i></span>
@@ -51,12 +73,15 @@
                                 <i class="material-icons-round">person_add</i>
                             </button>
                         </div>
+                        <!-- نتائج البحث عن العملاء -->
                         <div id="customer-results" class="search-results"></div>
                         
+                        <!-- قائمة العملاء المنسدلة -->
                         <select id="sale-customer" class="form-select mt-2" onchange="salesModule.selectCustomerFromDropdown(this.value)">
                             <option value="">اختر العميل (اختياري)</option>
                         </select>
                         
+                        <!-- شارة العميل المحدد -->
                         <div id="selected-customer-badge" class="selected-customer mt-2" style="display: none;">
                             <span class="badge bg-success p-2">
                                 <i class="material-icons-round" style="font-size: 16px;">check_circle</i>
@@ -66,6 +91,8 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- اختيار طريقة الدفع -->
                 <div class="col-md-6 col-12">
                     <select id="sale-payment-method" class="form-select">
                         <option value="cash">💰 نقدي</option>
@@ -75,7 +102,9 @@
                 </div>
             </div>
             
-            <!-- منطقة العملاء النشطين -->
+            <!-- ======================================================================= -->
+            <!-- الجزء 2.4: منطقة العملاء النشطين (Active Customers) -->
+            <!-- ======================================================================= -->
             <div id="active-customers-area" class="mt-3 p-2 border rounded" style="background: #f8f9fa; display: none;">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <small class="text-muted">
@@ -86,22 +115,28 @@
                         <i class="material-icons-round">close_all</i> مسح الكل
                     </button>
                 </div>
+                <!-- قائمة العملاء النشطين (تُعبأ ديناميكياً) -->
                 <div id="active-customers-list" class="d-flex flex-wrap gap-2"></div>
             </div>
             
-            <!-- زر مسح السلة -->
+            <!-- ======================================================================= -->
+            <!-- الجزء 2.5: زر مسح السلة -->
+            <!-- ======================================================================= -->
             <button class="btn btn-outline-secondary w-100 mt-2" onclick="salesModule.clearCart()">
                 <i class="material-icons-round">delete_sweep</i> مسح السلة
             </button>
         </div>
         
-        <!-- سلة المبيعات -->
+        <!-- ======================================================================= -->
+        <!-- الجزء 2.6: سلة المبيعات (Cart) - عرض المنتجات المضافة -->
+        <!-- ======================================================================= -->
         <div class="main-card mt-3">
             <h6 class="text-center mb-3">
                 🛒 سلة المبيعات 
                 <span id="current-customer-cart-label" class="badge bg-info"> - زبون نقدي</span>
             </h6>
             
+            <!-- جدول السلة مع تمرير رأسي -->
             <div class="table-responsive" style="max-height:400px; overflow-y:auto;">
                 <table class="table table-bordered table-hover" style="min-width: 1000px;">
                     <thead class="sticky-top bg-light">
@@ -116,6 +151,7 @@
                             <th style="width: 50px;">حذف</th>
                         </tr>
                     </thead>
+                    <!-- محتوى السلة (يتم تعبئته بواسطة JavaScript) -->
                     <tbody id="cart-table">
                         <tr>
                             <td colspan="8" class="text-center p-4">
@@ -127,20 +163,25 @@
                 </table>
             </div>
             
-            <!-- ملخص السلة -->
+            <!-- ======================================================================= -->
+            <!-- الجزء 2.7: ملخص السلة والإجماليات -->
+            <!-- ======================================================================= -->
             <div class="row g-2 mt-3">
+                <!-- إجمالي الخصم -->
                 <div class="col-4">
                     <div class="p-2 bg-light rounded">
                         <small>إجمالي الخصم</small>
                         <h6 class="mb-0 text-danger" id="total-discount">0.00 دج</h6>
                     </div>
                 </div>
+                <!-- المجموع قبل الخصم -->
                 <div class="col-4">
                     <div class="p-2 bg-light rounded">
                         <small>المجموع</small>
                         <h6 class="mb-0 text-primary" id="grand-total">0.00 دج</h6>
                     </div>
                 </div>
+                <!-- الإجمالي النهائي -->
                 <div class="col-4">
                     <div class="summary-box" style="background: var(--main-red);">
                         <span>النهائي:</span>
@@ -149,7 +190,9 @@
                 </div>
             </div>
             
-            <!-- المبلغ المسدد والباقي (دين) -->
+            <!-- ======================================================================= -->
+            <!-- الجزء 2.8: المبلغ المسدد والمبلغ المتبقي (الدين) -->
+            <!-- ======================================================================= -->
             <div class="row g-2 mt-2">
                 <div class="col-6">
                     <div class="p-2 bg-light rounded">
@@ -166,7 +209,9 @@
                 </div>
             </div>
             
-            <!-- أزرار الإجراءات -->
+            <!-- ======================================================================= -->
+            <!-- الجزء 2.9: أزرار إنهاء البيع -->
+            <!-- ======================================================================= -->
             <div class="row g-2 mt-3">
                 <div class="col-6">
                     <button class="btn btn-success w-100" onclick="salesModule.finishSale()">
@@ -182,13 +227,18 @@
         </div>
     </div>
 
-    <!-- ===== فواتير المبيعات ===== -->
+    <!-- ======================================================================= -->
+    <!-- الجزء 3: قسم فواتير المبيعات (sale-invoices) -->
+    <!-- ======================================================================= -->
     <div id="sale-invoices" class="sub-section" style="display: none;">
         <div class="main-card">
             <h5 class="text-center mb-4">
                 <i class="material-icons-round">receipt_long</i> سجل فواتير المبيعات
             </h5>
             
+            <!-- ======================================================================= -->
+            <!-- الجزء 3.1: شريط البحث وتصدير الفواتير -->
+            <!-- ======================================================================= -->
             <div class="input-group mb-3">
                 <span class="input-group-text"><i class="material-icons-round">search</i></span>
                 <input type="text" id="invoice-search" class="form-control" 
@@ -199,6 +249,9 @@
                 </button>
             </div>
             
+            <!-- ======================================================================= -->
+            <!-- الجزء 3.2: جدول عرض الفواتير -->
+            <!-- ======================================================================= -->
             <div class="table-responsive">
                 <table class="table table-bordered">
                     <thead>
@@ -214,6 +267,7 @@
                             <th>عمليات</th>
                         </tr>
                     </thead>
+                    <!-- محتوى الفواتير (يتم تعبئته بواسطة JavaScript) -->
                     <tbody id="sale-invoices-tbody">
                         <tr>
                             <td colspan="9" class="text-center p-4">
@@ -227,13 +281,18 @@
         </div>
     </div>
 
-    <!-- ===== العملاء ===== -->
+    <!-- ======================================================================= -->
+    <!-- الجزء 4: قسم إدارة العملاء (customers) -->
+    <!-- ======================================================================= -->
     <div id="customers" class="sub-section" style="display: none;">
         <div class="main-card">
             <h5 class="text-center mb-4">
                 <i class="material-icons-round">people_outline</i> إدارة العملاء
             </h5>
             
+            <!-- ======================================================================= -->
+            <!-- الجزء 4.1: نموذج إضافة عميل سريع -->
+            <!-- ======================================================================= -->
             <div class="row g-2 mb-3">
                 <div class="col-md-5 col-12">
                     <input type="text" id="new-customer" class="form-control" placeholder="اسم العميل">
@@ -248,6 +307,9 @@
                 </div>
             </div>
             
+            <!-- ======================================================================= -->
+            <!-- الجزء 4.2: جدول عرض العملاء -->
+            <!-- ======================================================================= -->
             <div class="table-responsive">
                 <table class="table table-bordered">
                     <thead>
@@ -260,6 +322,7 @@
                             <th>عمليات</th>
                         </tr>
                     </thead>
+                    <!-- محتوى العملاء (يتم تعبئته بواسطة JavaScript) -->
                     <tbody id="customers-tbody">
                         <tr>
                             <td colspan="6" class="text-center p-4">
@@ -274,8 +337,13 @@
     </div>
 </div>
 
+<!-- ======================================================================= -->
+<!-- الجزء 5: السكربتات المساعدة (JavaScript) -->
+<!-- ======================================================================= -->
 <script>
-    // دوال مساعدة
+    // =======================================================================
+    // الجزء 5.1: دالة إضافة عميل سريع
+    // =======================================================================
     function addQuickCustomer() {
         const name = document.getElementById('new-customer').value;
         const phone = document.getElementById('new-customer-phone').value;
@@ -306,6 +374,9 @@
         Swal.fire('نجاح', 'تم إضافة العميل', 'success');
     }
     
+    // =======================================================================
+    // الجزء 5.2: دالة تصدير الفواتير إلى Excel (CSV)
+    // =======================================================================
     function exportInvoicesToExcel() {
         if (window.salesModule && salesModule.invoices) {
             const invoices = salesModule.invoices;
@@ -330,8 +401,13 @@
     }
 </script>
 
+<!-- ======================================================================= -->
+<!-- الجزء 6: التنسيقات (CSS) الخاصة بقسم المبيعات -->
+<!-- ======================================================================= -->
 <style>
-    /* تنسيقات عامة */
+    /* ======================================================================= */
+    /* الجزء 6.1: تنسيقات صناديق البحث والنتائج */
+    /* ======================================================================= */
     .search-container, .customer-search-container {
         position: relative;
     }
@@ -366,7 +442,9 @@
         background-color: #f0f0f0;
     }
     
-    /* تنسيق شيب العملاء */
+    /* ======================================================================= */
+    /* الجزء 6.2: تنسيق شيب العملاء النشطين */
+    /* ======================================================================= */
     .customer-chip {
         transition: all 0.3s ease;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
@@ -390,7 +468,9 @@
         color: white !important;
     }
     
-    /* تنسيق الجدول */
+    /* ======================================================================= */
+    /* الجزء 6.3: تنسيق الجدول والعناصر الثابتة */
+    /* ======================================================================= */
     .table th {
         background-color: #f8f9fa;
         text-align: center;
@@ -426,6 +506,9 @@
         z-index: 10;
     }
     
+    /* ======================================================================= */
+    /* الجزء 6.4: تنسيق صندوق الملخص */
+    /* ======================================================================= */
     .summary-box {
         background: var(--main-red);
         color: white;
@@ -439,11 +522,17 @@
         font-size: 1.5rem;
     }
     
+    /* ======================================================================= */
+    /* الجزء 6.5: تنسيق المبلغ المتبقي */
+    /* ======================================================================= */
     #remaining-amount {
         font-weight: bold;
         transition: color 0.3s;
     }
     
+    /* ======================================================================= */
+    /* الجزء 6.6: تنسيق شارة العميل المحدد */
+    /* ======================================================================= */
     .selected-customer {
         animation: fadeIn 0.3s;
     }
