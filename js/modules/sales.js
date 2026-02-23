@@ -552,108 +552,258 @@ const salesModule = (function() {
     }
 
     // =======================================================================
-    // الجزء 8: عرض السلة وتحديث الإجماليات
     // =======================================================================
+// الجزء 8: عرض السلة وتحديث الإجماليات مع دعم الوحدات
+// =======================================================================
+
+// عرض محتويات السلة في الجدول مع معلومات الوحدة
+function renderCart() {
+    const tbody = document.getElementById('cart-table');
+    if (!tbody) return;
     
-    // عرض محتويات السلة في الجدول
-    function renderCart() {
-        const tbody = document.getElementById('cart-table');
-        if (!tbody) return;
+    if (currentCart.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
+        updateTotals();
+        updateRemainingAmount();
+        return;
+    }
+    
+    tbody.innerHTML = currentCart.map((item, index) => {
+        // تحديد وحدة المنتج (قطعة، كيلو، علبة، إلخ)
+        const unit = item.unit || 'قطعة';
+        // حساب عدد القطع (إذا كان المنتج يباع بالوحدة)
+        const piecesCount = item.piecesPerUnit ? item.qty * item.piecesPerUnit : item.qty;
         
-        if (currentCart.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
-            updateTotals();
-            updateRemainingAmount();
-            return;
-        }
-        
-        tbody.innerHTML = currentCart.map((item, index) => {
-            return `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td>${item.name}</td>
-                    <td>
+        return `
+            <tr>
+                <td>${index + 1}</td>
+                <td class="text-end">${item.name}</td>
+                <td>
+                    <div class="d-flex align-items-center gap-1">
                         <input type="number" id="qty-${item.id}" class="form-control text-center" 
                                value="${item.qty}" min="0.1" step="any"
-                               onchange="salesModule.updateItemQuantity('${item.id}', this.value)">
-                    </td>
-                    <td>
-                        <input type="number" id="price-${item.id}" class="form-control text-center" 
-                               value="${item.price}" min="0" step="any"
-                               onchange="salesModule.updateItemPrice('${item.id}', this.value)">
-                    </td>
-                    <td>${formatCurrency(item.total)} دج</td>
-                    <td>
-                        <input type="number" id="discount-${item.id}" class="form-control text-center" 
-                               value="${item.discount}" min="0" max="100" step="1"
-                               onchange="salesModule.updateItemDiscount('${item.id}', this.value)">
-                    </td>
-                    <td>
-                        <span class="badge bg-info">${item.stock}</span>
-                    </td>
-                    <td>
-                        <button class="btn btn-sm btn-danger" onclick="salesModule.removeFromCart('${item.id}')">
-                            <i class="material-icons-round">delete</i>
+                               onchange="salesModule.updateItemQuantity('${item.id}', this.value)"
+                               style="width: 80px;">
+                        <button class="btn btn-sm btn-outline-primary" onclick="salesModule.showUnitOptions('${item.id}')">
+                            <i class="material-icons-round" style="font-size: 16px;">expand_more</i>
                         </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-        
-        updateTotals();
+                    </div>
+                </td>
+                <td>
+                    <select id="unit-${item.id}" class="form-select form-select-sm" 
+                            onchange="salesModule.updateItemUnit('${item.id}', this.value)">
+                        <option value="piece" ${item.unit === 'piece' ? 'selected' : ''}>قطعة</option>
+                        <option value="kg" ${item.unit === 'kg' ? 'selected' : ''}>كيلو</option>
+                        <option value="box" ${item.unit === 'box' ? 'selected' : ''}>علبة</option>
+                        <option value="pack" ${item.unit === 'pack' ? 'selected' : ''}>كرتونة</option>
+                        <option value="liter" ${item.unit === 'liter' ? 'selected' : ''}>لتر</option>
+                    </select>
+                </td>
+                <td>
+                    <span class="badge bg-secondary" id="pieces-${item.id}">
+                        ${piecesCount} قطعة
+                    </span>
+                    <small class="d-block text-muted">
+                        ${item.piecesPerUnit ? item.piecesPerUnit + ' قطعة/وحدة' : ''}
+                    </small>
+                </td>
+                <td>
+                    <input type="number" id="price-${item.id}" class="form-control text-center" 
+                           value="${item.price}" min="0" step="any"
+                           onchange="salesModule.updateItemPrice('${item.id}', this.value)">
+                </td>
+                <td>${formatCurrency(item.total)} دج</td>
+                <td>
+                    <input type="number" id="discount-${item.id}" class="form-control text-center" 
+                           value="${item.discount}" min="0" max="100" step="1"
+                           onchange="salesModule.updateItemDiscount('${item.id}', this.value)">
+                </td>
+                <td>
+                    <div class="text-center">
+                        <span class="badge bg-info d-block">${item.stock}</span>
+                        <small class="text-muted">${unit}</small>
+                    </div>
+                </td>
+                <td>
+                    <button class="btn btn-sm btn-danger" onclick="salesModule.removeFromCart('${item.id}')">
+                        <i class="material-icons-round">delete</i>
+                    </button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+    
+    updateTotals();
+}
+
+// تحديث وحدة المنتج
+function updateItemUnit(itemId, newUnit) {
+    const item = currentCart.find(i => i.id === itemId);
+    if (!item) return;
+    
+    const oldUnit = item.unit;
+    item.unit = newUnit;
+    
+    // تحديث عدد القطع بناءً على الوحدة الجديدة
+    if (newUnit === 'piece') {
+        item.piecesPerUnit = 1;
+    } else if (newUnit === 'kg') {
+        item.piecesPerUnit = 1000; // 1 كيلو = 1000 جرام
+    } else if (newUnit === 'box') {
+        item.piecesPerUnit = 24; // علبة تحتوي على 24 قطعة
+    } else if (newUnit === 'pack') {
+        item.piecesPerUnit = 12; // كرتونة تحتوي على 12 قطعة
+    } else if (newUnit === 'liter') {
+        item.piecesPerUnit = 1000; // 1 لتر = 1000 مل
     }
     
-    // تحديث إجماليات السلة
-    function updateTotals() {
-        const totalDiscount = currentCart.reduce((sum, item) => {
-            return sum + (item.qty * item.price * item.discount / 100);
-        }, 0);
-        
-        const grandTotal = currentCart.reduce((sum, item) => sum + item.total, 0);
-        
-        const totalDiscountEl = document.getElementById('total-discount');
-        const grandTotalEl = document.getElementById('grand-total');
-        const finalGrandTotalEl = document.getElementById('final-grand-total');
-        
-        if (totalDiscountEl) totalDiscountEl.textContent = formatCurrency(totalDiscount) + ' دج';
-        if (grandTotalEl) grandTotalEl.textContent = formatCurrency(grandTotal) + ' دج';
-        if (finalGrandTotalEl) finalGrandTotalEl.textContent = formatCurrency(grandTotal) + ' دج';
-        
-        updateRemainingAmount();
+    // إعادة حساب السعر إذا تغيرت الوحدة
+    if (oldUnit !== newUnit && item.basePrice) {
+        item.price = item.basePrice * (item.piecesPerUnit || 1);
     }
     
-    // تحديث المبلغ المتبقي بعد الدفع
-    function updateRemainingAmount() {
-        const paidAmount = parseFloat(document.getElementById('paid-amount')?.value) || 0;
-        const grandTotal = currentCart.reduce((sum, item) => sum + item.total, 0);
-        const remaining = paidAmount - grandTotal;
-        
-        const remainingEl = document.getElementById('remaining-amount');
-        if (remainingEl) {
-            remainingEl.textContent = formatCurrency(Math.abs(remaining)) + ' دج';
-            remainingEl.style.color = remaining >= 0 ? 'green' : 'red';
+    item.total = item.qty * item.price * (1 - item.discount / 100);
+    
+    saveCurrentCart();
+    renderCart();
+    updateRemainingAmount();
+}
+
+// عرض خيارات الوحدة المتقدمة
+function showUnitOptions(itemId) {
+    const item = currentCart.find(i => i.id === itemId);
+    if (!item) return;
+    
+    Swal.fire({
+        title: 'تعديل الوحدة والقطع',
+        html: `
+            <div style="text-align:right">
+                <label class="form-label">الوحدة</label>
+                <select id="unit-type" class="form-select mb-2">
+                    <option value="piece" ${item.unit === 'piece' ? 'selected' : ''}>قطعة</option>
+                    <option value="kg" ${item.unit === 'kg' ? 'selected' : ''}>كيلو</option>
+                    <option value="box" ${item.unit === 'box' ? 'selected' : ''}>علبة</option>
+                    <option value="pack" ${item.unit === 'pack' ? 'selected' : ''}>كرتونة</option>
+                    <option value="liter" ${item.unit === 'liter' ? 'selected' : ''}>لتر</option>
+                </select>
+                
+                <label class="form-label">عدد القطع لكل وحدة</label>
+                <input type="number" id="pieces-per-unit" class="form-control mb-2" 
+                       value="${item.piecesPerUnit || 1}" min="1" step="1">
+                
+                <label class="form-label">الكمية (بالوحدة المختارة)</label>
+                <input type="number" id="unit-quantity" class="form-control mb-2" 
+                       value="${item.qty}" min="0.1" step="any">
+                
+                <label class="form-label">سعر الوحدة</label>
+                <input type="number" id="unit-price" class="form-control mb-2" 
+                       value="${item.price}" min="0" step="any">
+            </div>
+        `,
+        showCancelButton: true,
+        confirmButtonText: 'تحديث',
+        cancelButtonText: 'إلغاء',
+        preConfirm: () => {
+            const newUnit = document.getElementById('unit-type').value;
+            const piecesPerUnit = parseInt(document.getElementById('pieces-per-unit').value) || 1;
+            const newQty = parseFloat(document.getElementById('unit-quantity').value) || 1;
+            const newPrice = parseFloat(document.getElementById('unit-price').value) || 0;
+            
+            return { newUnit, piecesPerUnit, newQty, newPrice };
         }
-        
-        const paidInput = document.getElementById('paid-amount');
-        if (paidInput) {
-            if (paidAmount < grandTotal && paidAmount > 0) {
-                paidInput.style.borderColor = 'orange';
-                paidInput.style.borderWidth = '2px';
-            } else if (paidAmount >= grandTotal) {
-                paidInput.style.borderColor = 'green';
-                paidInput.style.borderWidth = '2px';
-            } else {
-                paidInput.style.borderColor = '';
-                paidInput.style.borderWidth = '';
-            }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const { newUnit, piecesPerUnit, newQty, newPrice } = result.value;
+            
+            item.unit = newUnit;
+            item.piecesPerUnit = piecesPerUnit;
+            item.qty = newQty;
+            item.price = newPrice;
+            item.total = item.qty * item.price * (1 - item.discount / 100);
+            
+            saveCurrentCart();
+            renderCart();
+            updateRemainingAmount();
+            
+            showNotification('نجاح', 'تم تحديث معلومات الوحدة');
         }
+    });
+}
+
+// تحديث إجماليات السلة مع حساب إجمالي القطع
+function updateTotals() {
+    const totalDiscount = currentCart.reduce((sum, item) => {
+        return sum + (item.qty * item.price * item.discount / 100);
+    }, 0);
+    
+    const grandTotal = currentCart.reduce((sum, item) => sum + item.total, 0);
+    
+    // حساب إجمالي عدد القطع
+    const totalPieces = currentCart.reduce((sum, item) => {
+        const piecesPerUnit = item.piecesPerUnit || 1;
+        return sum + (item.qty * piecesPerUnit);
+    }, 0);
+    
+    const totalDiscountEl = document.getElementById('total-discount');
+    const grandTotalEl = document.getElementById('grand-total');
+    const finalGrandTotalEl = document.getElementById('final-grand-total');
+    const totalPiecesEl = document.getElementById('total-pieces');
+    
+    if (totalDiscountEl) totalDiscountEl.textContent = formatCurrency(totalDiscount) + ' دج';
+    if (grandTotalEl) grandTotalEl.textContent = formatCurrency(grandTotal) + ' دج';
+    if (finalGrandTotalEl) finalGrandTotalEl.textContent = formatCurrency(grandTotal) + ' دج';
+    if (totalPiecesEl) totalPiecesEl.textContent = totalPieces.toLocaleString() + ' قطعة';
+    
+    updateRemainingAmount();
+}
+
+// تحديث دالة إضافة المنتج لتشمل معلومات الوحدة
+function addToCart() {
+    const searchInput = document.getElementById('sale-search');
+    const productName = searchInput?.value.trim();
+    
+    if (!productName) {
+        showNotification('تنبيه', 'الرجاء اختيار منتج', 'warning');
+        return false;
     }
     
-    // تحديث عداد السلة
-    function updateCartCount() {
-        const countEl = document.getElementById('cart-count');
-        if (countEl) countEl.textContent = currentCart.length;
+    const products = window.productModule?.getAllProducts?.() || [];
+    const product = products.find(p => p.name === productName || p.barcode === productName);
+    
+    if (!product) {
+        showNotification('تنبيه', 'المنتج غير موجود', 'warning');
+        return false;
     }
+    
+    // إضافة المنتج مع معلومات الوحدة
+    const newItem = {
+        id: Date.now() + Math.random(),
+        productId: product.id,
+        name: product.name,
+        qty: 1,
+        unit: product.unit || 'piece', // الوحدة الافتراضية
+        piecesPerUnit: product.piecesPerUnit || 1, // عدد القطع لكل وحدة
+        basePrice: product.sellPrice || 0, // السعر الأساسي للوحدة
+        price: product.sellPrice || 0,
+        discount: 0,
+        total: product.sellPrice || 0,
+        stock: product.quantity || 0,
+        unitOptions: product.unitOptions || [] // خيارات الوحدات المتاحة
+    };
+    
+    currentCart.push(newItem);
+    
+    saveCurrentCart();
+    renderCart();
+    renderActiveCustomers();
+    
+    if (searchInput) searchInput.value = '';
+    
+    showNotification('نجاح', `تم إضافة المنتج (${newItem.unit})`);
+    updateRemainingAmount();
+    return true;
+}
+    
 
     // =======================================================================
     // الجزء 9: البحث عن المنتجات
