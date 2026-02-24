@@ -1,6 +1,6 @@
 // =======================================================================
 // ملف: sales.js - نظام إدارة المبيعات المتقدم مع دعم الديون والوحدات
-// الإصدار: 7.0 - مع دعم التنقل داخل الجدول وحساب القطع
+// الإصدار: 7.2 - مع دعم البحث والإضافة داخل الجدول وحساب المجموع
 // =======================================================================
 
 // =======================================================================
@@ -16,6 +16,9 @@ const salesModule = (function() {
     let invoices = JSON.parse(localStorage.getItem('sales_invoices')) || [];
     let activeCustomers = JSON.parse(localStorage.getItem('activeCustomers')) || [];
     let currentCustomerId = localStorage.getItem('currentCustomerId') || null;
+    let searchTimeout = null;
+    let selectedProductIndex = -1;
+    let productsList = [];
 
     // =======================================================================
     // الجزء 3: الدوال المساعدة الأساسية
@@ -447,7 +450,284 @@ const salesModule = (function() {
     }
 
     // =======================================================================
-    // الجزء 7: إضافة منتج إلى السلة
+    // الجزء 7: البحث عن المنتجات وإضافتها داخل الجدول
+    // =======================================================================
+    
+    function loadProducts() {
+        if (window.productModule && typeof window.productModule.getAllProducts === 'function') {
+            productsList = window.productModule.getAllProducts() || [];
+        } else {
+            productsList = JSON.parse(localStorage.getItem('products') || '[]');
+        }
+        return productsList;
+    }
+    
+    function handleProductSearchKeydown(e) {
+        const resultsContainer = document.getElementById('product-search-results');
+        const searchInput = document.getElementById('product-search-input');
+        
+        if (!resultsContainer || resultsContainer.style.display !== 'block') return;
+        
+        const items = resultsContainer.querySelectorAll('.search-result-item');
+        if (items.length === 0) return;
+        
+        switch(e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                selectedProductIndex = Math.min(selectedProductIndex + 1, items.length - 1);
+                updateSelectedItem(items);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                selectedProductIndex = Math.max(selectedProductIndex - 1, -1);
+                updateSelectedItem(items);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedProductIndex >= 0 && items[selectedProductIndex]) {
+                    const productData = items[selectedProductIndex].getAttribute('data-product');
+                    if (productData) {
+                        const product = JSON.parse(productData);
+                        addProductFromSearch(product);
+                    }
+                } else if (items[0]) {
+                    const productData = items[0].getAttribute('data-product');
+                    if (productData) {
+                        const product = JSON.parse(productData);
+                        addProductFromSearch(product);
+                    }
+                }
+                break;
+            case 'Escape':
+                hideSearchResults();
+                break;
+        }
+    }
+    
+    function updateSelectedItem(items) {
+        items.forEach((item, index) => {
+            if (index === selectedProductIndex) {
+                item.classList.add('selected');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+    
+    function searchProductsInTable(term) {
+        const resultsContainer = document.getElementById('product-search-results');
+        const searchRow = document.getElementById('product-search-row');
+        
+        if (!resultsContainer || !searchRow) return;
+        
+        clearTimeout(searchTimeout);
+        
+        if (!term || term.length < 1) {
+            hideSearchResults();
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            const products = loadProducts();
+            
+            const filtered = products.filter(p => 
+                (p.name && p.name.toLowerCase().includes(term.toLowerCase())) ||
+                (p.barcode && p.barcode.includes(term))
+            ).slice(0, 5);
+            
+            showSearchResults(filtered, term);
+        }, 300);
+    }
+    
+    function showSearchResults(results, searchTerm) {
+        const resultsContainer = document.getElementById('product-search-results');
+        const searchRow = document.getElementById('product-search-row');
+        
+        if (!resultsContainer || !searchRow) return;
+        
+        selectedProductIndex = -1;
+        
+        if (results.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="search-result-item text-muted p-2 text-center">
+                    لا توجد نتائج - 
+                    <a href="#" onclick="salesModule.showAddProductModal('${searchTerm}'); return false;">إضافة منتج جديد</a>
+                </div>
+            `;
+        } else {
+            let html = '';
+            results.forEach(product => {
+                const stockClass = product.quantity > 0 ? 'text-success' : 'text-danger';
+                const productStr = JSON.stringify(product).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                
+                html += `
+                    <div class="search-result-item p-2" data-product='${productStr}' onclick="salesModule.addProductFromSearch(this)">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${product.name}</strong>
+                                <br>
+                                <small class="text-muted">${formatCurrency(product.sellPrice)} دج</small>
+                            </div>
+                            <div>
+                                <span class="${stockClass}">${product.quantity || 0}</span>
+                                <i class="material-icons-round" style="font-size: 18px;">add_shopping_cart</i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            resultsContainer.innerHTML = html;
+        }
+        
+        resultsContainer.style.display = 'block';
+        
+        // Adjust position
+        const searchInput = document.getElementById('product-search-input');
+        if (searchInput) {
+            const rect = searchInput.getBoundingClientRect();
+            resultsContainer.style.width = rect.width + 'px';
+            resultsContainer.style.top = (rect.bottom + window.scrollY) + 'px';
+            resultsContainer.style.left = rect.left + 'px';
+        }
+    }
+    
+    function hideSearchResults() {
+        const resultsContainer = document.getElementById('product-search-results');
+        if (resultsContainer) {
+            resultsContainer.style.display = 'none';
+        }
+        selectedProductIndex = -1;
+    }
+    
+    function addProductFromSearch(element) {
+        let product;
+        if (typeof element === 'string') {
+            product = JSON.parse(element);
+        } else if (element.tagName) {
+            const productStr = element.getAttribute('data-product');
+            if (productStr) {
+                product = JSON.parse(productStr);
+            }
+        }
+        
+        if (!product) return;
+        
+        addProductToCart(product);
+        hideSearchResults();
+        
+        // Clear search input
+        const searchInput = document.getElementById('product-search-input');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        
+        // Focus back on search input for next product
+        setTimeout(() => {
+            if (searchInput) searchInput.focus();
+        }, 100);
+    }
+    
+    function addProductToCart(product) {
+        if (!product) return false;
+        
+        if (product.quantity <= 0) {
+            showNotification('تنبيه', 'المنتج غير متوفر في المخزون', 'warning');
+            return false;
+        }
+        
+        const newItem = {
+            id: Date.now() + Math.random(),
+            productId: product.id,
+            name: product.name,
+            qty: 1,
+            unit: product.unit || 'piece',
+            piecesPerUnit: product.piecesPerUnit || 1,
+            basePrice: product.sellPrice || 0,
+            price: product.sellPrice || 0,
+            discount: 0,
+            total: product.sellPrice || 0,
+            stock: product.quantity || 0,
+            unitOptions: product.unitOptions || []
+        };
+        
+        currentCart.push(newItem);
+        
+        saveCurrentCart();
+        renderCart();
+        renderActiveCustomers();
+        
+        showNotification('نجاح', `تم إضافة ${product.name}`);
+        updateRemainingAmount();
+        
+        // تأخير بسيط لتفعيل التنقل بعد إضافة المنتج
+        setTimeout(setupTableNavigation, 100);
+        
+        return true;
+    }
+    
+    function showAddProductModal(productName) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'إضافة منتج جديد',
+                html: `
+                    <div style="text-align:right">
+                        <input type="text" id="new-product-name" class="swal2-input" placeholder="اسم المنتج" value="${productName}">
+                        <input type="number" id="new-product-price" class="swal2-input" placeholder="سعر البيع" step="0.01">
+                        <input type="number" id="new-product-cost" class="swal2-input" placeholder="سعر الشراء" step="0.01">
+                        <input type="number" id="new-product-quantity" class="swal2-input" placeholder="الكمية" value="1">
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'حفظ',
+                cancelButtonText: 'إلغاء',
+                preConfirm: () => {
+                    const name = document.getElementById('new-product-name').value;
+                    const price = parseFloat(document.getElementById('new-product-price').value);
+                    const cost = parseFloat(document.getElementById('new-product-cost').value);
+                    const quantity = parseFloat(document.getElementById('new-product-quantity').value);
+                    
+                    if (!name) {
+                        Swal.showValidationMessage('اسم المنتج مطلوب');
+                        return false;
+                    }
+                    if (!price || price <= 0) {
+                        Swal.showValidationMessage('سعر البيع مطلوب');
+                        return false;
+                    }
+                    
+                    return { name, price, cost, quantity };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const newProduct = {
+                        id: Date.now().toString(),
+                        name: result.value.name,
+                        sellPrice: result.value.price,
+                        buyPrice: result.value.cost || 0,
+                        quantity: result.value.quantity || 0,
+                        unit: 'piece',
+                        piecesPerUnit: 1,
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    const products = JSON.parse(localStorage.getItem('products') || '[]');
+                    products.push(newProduct);
+                    localStorage.setItem('products', JSON.stringify(products));
+                    
+                    if (window.productModule?.loadProducts) {
+                        window.productModule.loadProducts();
+                    }
+                    
+                    addProductToCart(newProduct);
+                    showNotification('نجاح', 'تم إضافة المنتج');
+                }
+            });
+        }
+    }
+
+    // =======================================================================
+    // الجزء 8: إضافة منتج إلى السلة (الطريقة التقليدية)
     // =======================================================================
     
     function addToCart() {
@@ -477,44 +757,7 @@ const salesModule = (function() {
             return false;
         }
         
-        if (product.quantity <= 0) {
-            showNotification('تنبيه', 'المنتج غير متوفر في المخزون', 'warning');
-            return false;
-        }
-        
-        const newItem = {
-            id: Date.now() + Math.random(),
-            productId: product.id,
-            name: product.name,
-            qty: 1,
-            unit: product.unit || 'piece',
-            piecesPerUnit: product.piecesPerUnit || 1,
-            basePrice: product.sellPrice || 0,
-            price: product.sellPrice || 0,
-            discount: 0,
-            total: product.sellPrice || 0,
-            stock: product.quantity || 0,
-            unitOptions: product.unitOptions || []
-        };
-        
-        currentCart.push(newItem);
-        
-        saveCurrentCart();
-        renderCart();
-        renderActiveCustomers();
-        
-        if (searchInput) searchInput.value = '';
-        
-        const searchBox = document.getElementById('search-box');
-        if (searchBox) searchBox.classList.remove('show');
-        
-        showNotification('نجاح', `تم إضافة المنتج`);
-        updateRemainingAmount();
-        
-        // تأخير بسيط لتفعيل التنقل بعد إضافة المنتج
-        setTimeout(setupTableNavigation, 100);
-        
-        return true;
+        return addProductToCart(product);
     }
     
     function updateItemQuantity(itemId, newQty) {
@@ -596,8 +839,14 @@ const salesModule = (function() {
         item.discount = newDiscount;
         item.total = item.qty * item.price * (1 - item.discount / 100);
         
+        // تحديث حقل المجموع في الجدول مباشرة
+        const totalField = document.getElementById(`total-${item.id}`);
+        if (totalField) {
+            totalField.value = formatCurrency(item.total);
+        }
+        
         saveCurrentCart();
-        renderCart();
+        updateTotals(); // تحديث المجاميع الكلية
         updateRemainingAmount();
     }
     
@@ -661,21 +910,50 @@ const salesModule = (function() {
     }
 
     // =======================================================================
-    // الجزء 8: عرض السلة وتحديث الإجماليات
+    // الجزء 9: عرض السلة مع صف البحث المدمج وتحديث الإجماليات
     // =======================================================================
 
     function renderCart() {
         const tbody = document.getElementById('cart-table');
         if (!tbody) return;
         
+        // إضافة صف البحث في البداية
+        let html = `
+            <tr id="product-search-row" class="table-primary">
+                <td colspan="10" style="padding: 8px;">
+                    <div style="position: relative;">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="material-icons-round">search</i>
+                            </span>
+                            <input type="text" 
+                                   id="product-search-input" 
+                                   class="form-control" 
+                                   placeholder="ابحث عن منتج بالاسم أو الباركود..."
+                                   autocomplete="off"
+                                   oninput="salesModule.searchProductsInTable(this.value)"
+                                   onkeydown="salesModule.handleProductSearchKeydown(event)"
+                                   onfocus="if(this.value) salesModule.searchProductsInTable(this.value)">
+                            <button class="btn btn-success" type="button" onclick="salesModule.addToCart()">
+                                <i class="material-icons-round">add</i> إضافة
+                            </button>
+                        </div>
+                        <div id="product-search-results" class="search-results" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #ddd; max-height: 300px; overflow-y: auto; width: 100%;"></div>
+                    </div>
+                </td>
+            </tr>
+        `;
+        
         if (currentCart.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
+            html += '<tr><td colspan="10" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
+            tbody.innerHTML = html;
             updateTotals();
             updateRemainingAmount();
             return;
         }
         
-        tbody.innerHTML = currentCart.map((item, index) => {
+        // إضافة صفوف المنتجات
+        currentCart.forEach((item, index) => {
             let unitText = 'قطعة';
             if (item.unit === 'kg') unitText = 'كيلو';
             else if (item.unit === 'box') unitText = 'علبة';
@@ -684,7 +962,7 @@ const salesModule = (function() {
             
             const piecesCount = item.piecesPerUnit ? item.qty * item.piecesPerUnit : item.qty;
             
-            return `
+            html += `
                 <tr data-item-id="${item.id}">
                     <td>${index + 1}</td>
                     <td class="text-end">${item.name}</td>
@@ -735,8 +1013,9 @@ const salesModule = (function() {
                     </td>
                 </tr>
             `;
-        }).join('');
+        });
         
+        tbody.innerHTML = html;
         updateTotals();
         setupTableNavigation();
     }
@@ -749,6 +1028,12 @@ const salesModule = (function() {
                 input.removeEventListener('keydown', handleTableKeyDown);
                 input.addEventListener('keydown', handleTableKeyDown);
             });
+            
+            // التركيز على حقل البحث تلقائياً
+            const searchInput = document.getElementById('product-search-input');
+            if (searchInput && !searchInput.hasFocus) {
+                setTimeout(() => searchInput.focus(), 200);
+            }
         }, 50);
     }
 
@@ -792,9 +1077,17 @@ const salesModule = (function() {
             },
             'Enter': (e) => {
                 e.preventDefault();
-                const nextInput = inputs[currentIndex + 1];
-                if (nextInput) {
-                    nextInput.focus();
+                // إذا كان في حقل البحث، نضيف المنتج
+                if (e.target.id === 'product-search-input') {
+                    const searchInput = document.getElementById('product-search-input');
+                    if (searchInput && searchInput.value.trim()) {
+                        addToCart();
+                    }
+                } else {
+                    const nextInput = inputs[currentIndex + 1];
+                    if (nextInput) {
+                        nextInput.focus();
+                    }
                 }
             }
         };
@@ -966,7 +1259,7 @@ const salesModule = (function() {
     }
 
     // =======================================================================
-    // الجزء 9: البحث عن المنتجات
+    // الجزء 10: البحث عن المنتجات (الطريقة القديمة للتوافق)
     // =======================================================================
     
     function searchProducts(term) {
@@ -1090,7 +1383,7 @@ const salesModule = (function() {
     }
 
     // =======================================================================
-    // الجزء 10: إنهاء البيع وإنشاء الفاتورة
+    // الجزء 11: إنهاء البيع وإنشاء الفاتورة
     // =======================================================================
     
     function finishSale() {
@@ -1275,7 +1568,7 @@ const salesModule = (function() {
     }
 
     // =======================================================================
-    // الجزء 11: إدارة الفواتير
+    // الجزء 12: إدارة الفواتير
     // =======================================================================
     
     function getInvoices() {
@@ -1452,11 +1745,11 @@ const salesModule = (function() {
     }
 
     // =======================================================================
-    // الجزء 12: تهيئة الوحدة
+    // الجزء 13: تهيئة الوحدة
     // =======================================================================
     
     function init() {
-        console.log('✅ salesModule v7.0 initialized - مع دعم التنقل وحساب القطع');
+        console.log('✅ salesModule v7.2 initialized - مع دعم البحث داخل الجدول');
         
         if (currentCustomerId) {
             currentCart = customerCarts[currentCustomerId] || [];
@@ -1498,13 +1791,20 @@ const salesModule = (function() {
             if (customerResults && !customerResults.contains(e.target) && e.target !== customerSearch) {
                 customerResults.style.display = 'none';
             }
+            
+            // إخفاء نتائج بحث المنتج عند النقر خارجها
+            const productResults = document.getElementById('product-search-results');
+            const productSearch = document.getElementById('product-search-input');
+            if (productResults && !productResults.contains(e.target) && e.target !== productSearch) {
+                productResults.style.display = 'none';
+            }
         });
         
         setupTableNavigation();
     }
 
     // =======================================================================
-    // الجزء 13: الكشف عن الدوال العامة
+    // الجزء 14: الكشف عن الدوال العامة
     // =======================================================================
     
     return {
@@ -1521,6 +1821,12 @@ const salesModule = (function() {
         searchProducts: searchProducts,
         selectProduct: selectProduct,
         updateRemainingAmount: updateRemainingAmount,
+        
+        // دوال البحث والإضافة داخل الجدول
+        searchProductsInTable: searchProductsInTable,
+        handleProductSearchKeydown: handleProductSearchKeydown,
+        addProductFromSearch: addProductFromSearch,
+        showAddProductModal: showAddProductModal,
         
         updateItemQuantity: updateItemQuantity,
         updateItemPieces: updateItemPieces,
@@ -1554,7 +1860,7 @@ const salesModule = (function() {
 })();
 
 // =======================================================================
-// الجزء 14: ربط الوحدة بالنافذة العامة
+// الجزء 15: ربط الوحدة بالنافذة العامة
 // =======================================================================
 window.salesModule = salesModule;
 
@@ -1566,9 +1872,67 @@ window.finishSaleAndPrint = () => salesModule.finishSaleAndPrint();
 window.searchInvoices = () => salesModule.searchInvoices();
 window.searchCustomers = (q) => salesModule.searchCustomers(q);
 window.updateRemainingAmount = () => salesModule.updateRemainingAmount();
+window.searchProductsInTable = (term) => salesModule.searchProductsInTable(term);
+window.handleProductSearchKeydown = (e) => salesModule.handleProductSearchKeydown(e);
+window.addProductFromSearch = (element) => salesModule.addProductFromSearch(element);
 
 // =======================================================================
-// الجزء 15: تفعيل التهيئة
+// الجزء 16: إضافة CSS للبحث
+// =======================================================================
+if (typeof document !== 'undefined') {
+    const style = document.createElement('style');
+    style.textContent = `
+        .search-results {
+            position: absolute;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+        }
+        
+        .search-result-item {
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            transition: background-color 0.2s;
+        }
+        
+        .search-result-item:hover,
+        .search-result-item.selected {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .search-result-item:hover .text-muted,
+        .search-result-item.selected .text-muted {
+            color: rgba(255,255,255,0.8) !important;
+        }
+        
+        .search-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        #product-search-row td {
+            padding: 8px;
+            background-color: #e3f2fd;
+        }
+        
+        #product-search-input {
+            border-left: none;
+        }
+        
+        #product-search-input:focus {
+            box-shadow: none;
+            border-color: #ced4da;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// =======================================================================
+// الجزء 17: تفعيل التهيئة
 // =======================================================================
 if (typeof document !== 'undefined') {
     document.addEventListener('DOMContentLoaded', () => salesModule.init());
