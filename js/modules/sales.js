@@ -1,6 +1,6 @@
 // =======================================================================
 // ملف: sales.js - نظام إدارة المبيعات المتقدم مع دعم الديون والوحدات
-// الإصدار: 7.3 - إصلاح مشكلة حساب المجموع وإدخال المنتجات
+// الإصدار: 7.4 - إصلاح شامل لمشكلة حساب المجموع
 // =======================================================================
 
 // =======================================================================
@@ -30,8 +30,10 @@ const salesModule = (function() {
     }
     
     function parseNumber(value) {
+        if (value === undefined || value === null) return 0;
         if (typeof value === 'string') {
-            value = value.replace(/,/g, '');
+            // إزالة الفواصل وتحويل الفاصلة العشرية العربية إلى نقطة
+            value = value.replace(/,/g, '').replace(/[^\d.-]/g, '');
         }
         const num = parseFloat(value);
         return isNaN(num) ? 0 : num;
@@ -351,7 +353,7 @@ const salesModule = (function() {
         if (customerCartLabel) customerCartLabel.textContent = ' - زبون نقدي';
         
         const paidAmount = document.getElementById('paid-amount');
-        if (paidAmount) paidAmount.value = '';
+        if (paidAmount) paidAmount.value = '0';
     }
     
     function showSelectedCustomerBadge(customer) {
@@ -472,7 +474,6 @@ const salesModule = (function() {
     
     function handleProductSearchKeydown(e) {
         const resultsContainer = document.getElementById('product-search-results');
-        const searchInput = document.getElementById('product-search-input');
         
         if (!resultsContainer || resultsContainer.style.display !== 'block') return;
         
@@ -495,14 +496,22 @@ const salesModule = (function() {
                 if (selectedProductIndex >= 0 && items[selectedProductIndex]) {
                     const productData = items[selectedProductIndex].getAttribute('data-product');
                     if (productData) {
-                        const product = JSON.parse(productData);
-                        addProductFromSearch(product);
+                        try {
+                            const product = JSON.parse(productData);
+                            addProductFromSearch(product);
+                        } catch (error) {
+                            console.error('خطأ في تحليل بيانات المنتج', error);
+                        }
                     }
                 } else if (items[0]) {
                     const productData = items[0].getAttribute('data-product');
                     if (productData) {
-                        const product = JSON.parse(productData);
-                        addProductFromSearch(product);
+                        try {
+                            const product = JSON.parse(productData);
+                            addProductFromSearch(product);
+                        } catch (error) {
+                            console.error('خطأ في تحليل بيانات المنتج', error);
+                        }
                     }
                 }
                 break;
@@ -624,6 +633,8 @@ const salesModule = (function() {
                     console.error('خطأ في تحليل بيانات المنتج', e);
                     return;
                 }
+            } else if (element.productData) {
+                product = element.productData;
             }
         }
         
@@ -650,7 +661,10 @@ const salesModule = (function() {
     function addProductToCart(product) {
         if (!product) return false;
         
-        if (product.quantity <= 0) {
+        const sellPrice = parseNumber(product.sellPrice || product.price || 0);
+        const stock = parseNumber(product.quantity || product.stock || 0);
+        
+        if (stock <= 0) {
             showNotification('تنبيه', 'المنتج غير متوفر في المخزون', 'warning');
             return false;
         }
@@ -672,11 +686,11 @@ const salesModule = (function() {
                 qty: 1,
                 unit: product.unit || 'piece',
                 piecesPerUnit: product.piecesPerUnit || 1,
-                basePrice: product.sellPrice || 0,
-                price: product.sellPrice || 0,
+                basePrice: sellPrice,
+                price: sellPrice,
                 discount: 0,
-                total: product.sellPrice || 0,
-                stock: product.quantity || 0,
+                total: sellPrice,
+                stock: stock,
                 unitOptions: product.unitOptions || []
             };
             
@@ -712,9 +726,9 @@ const salesModule = (function() {
                 cancelButtonText: 'إلغاء',
                 preConfirm: () => {
                     const name = document.getElementById('new-product-name').value;
-                    const price = parseFloat(document.getElementById('new-product-price').value);
-                    const cost = parseFloat(document.getElementById('new-product-cost').value);
-                    const quantity = parseFloat(document.getElementById('new-product-quantity').value);
+                    const price = parseNumber(document.getElementById('new-product-price').value);
+                    const cost = parseNumber(document.getElementById('new-product-cost').value);
+                    const quantity = parseNumber(document.getElementById('new-product-quantity').value);
                     
                     if (!name) {
                         Swal.showValidationMessage('اسم المنتج مطلوب');
@@ -1220,10 +1234,10 @@ const salesModule = (function() {
                 document.getElementById('unit-discount').addEventListener('input', updateEstimatedTotal);
                 
                 function updateEstimatedTotal() {
-                    const totalPieces = parseFloat(document.getElementById('total-pieces-input').value) || 0;
-                    const piecesPerUnit = parseFloat(document.getElementById('pieces-per-unit').value) || 1;
-                    const unitPrice = parseFloat(document.getElementById('unit-price').value) || 0;
-                    const discount = parseFloat(document.getElementById('unit-discount').value) || 0;
+                    const totalPieces = parseNumber(document.getElementById('total-pieces-input').value);
+                    const piecesPerUnit = parseNumber(document.getElementById('pieces-per-unit').value) || 1;
+                    const unitPrice = parseNumber(document.getElementById('unit-price').value);
+                    const discount = parseNumber(document.getElementById('unit-discount').value);
                     
                     const qty = totalPieces / piecesPerUnit;
                     const total = qty * unitPrice * (1 - discount / 100);
@@ -1233,10 +1247,10 @@ const salesModule = (function() {
             },
             preConfirm: () => {
                 const newUnit = document.getElementById('unit-type').value;
-                const totalPieces = parseFloat(document.getElementById('total-pieces-input').value) || 0;
+                const totalPieces = parseNumber(document.getElementById('total-pieces-input').value);
                 const piecesPerUnit = parseInt(document.getElementById('pieces-per-unit').value) || 1;
-                const unitPrice = parseFloat(document.getElementById('unit-price').value) || 0;
-                const discount = parseFloat(document.getElementById('unit-discount').value) || 0;
+                const unitPrice = parseNumber(document.getElementById('unit-price').value);
+                const discount = parseNumber(document.getElementById('unit-discount').value);
                 
                 if (totalPieces <= 0) {
                     Swal.showValidationMessage('عدد القطع يجب أن يكون أكبر من 0');
@@ -1268,17 +1282,21 @@ const salesModule = (function() {
     }
 
     function updateTotals() {
+        // حساب إجمالي الخصم
         const totalDiscount = currentCart.reduce((sum, item) => {
             return sum + (item.qty * item.price * item.discount / 100);
         }, 0);
         
+        // حساب المجموع الكلي
         const grandTotal = currentCart.reduce((sum, item) => sum + (item.total || 0), 0);
         
+        // حساب إجمالي القطع
         const totalPieces = currentCart.reduce((sum, item) => {
             const piecesPerUnit = item.piecesPerUnit || 1;
             return sum + (item.qty * piecesPerUnit);
         }, 0);
         
+        // تحديث العناصر في الواجهة
         const totalDiscountEl = document.getElementById('total-discount');
         const grandTotalEl = document.getElementById('grand-total');
         const finalGrandTotalEl = document.getElementById('final-grand-total');
@@ -1289,6 +1307,7 @@ const salesModule = (function() {
         if (finalGrandTotalEl) finalGrandTotalEl.textContent = formatCurrency(grandTotal) + ' دج';
         if (totalPiecesEl) totalPiecesEl.textContent = totalPieces.toLocaleString() + ' قطعة';
         
+        // تحديث المبلغ المتبقي
         updateRemainingAmount();
     }
 
@@ -1808,7 +1827,7 @@ const salesModule = (function() {
     // =======================================================================
     
     function init() {
-        console.log('✅ salesModule v7.3 initialized - مع إصلاح مشكلة المجموع');
+        console.log('✅ salesModule v7.4 initialized - مع إصلاح شامل لمشكلة المجموع');
         
         if (currentCustomerId) {
             currentCart = customerCarts[currentCustomerId] || [];
@@ -1919,6 +1938,7 @@ const salesModule = (function() {
         
         // دوال مساعدة
         formatCurrency: formatCurrency,
+        parseNumber: parseNumber,
         showNotification: showNotification
     };
 })();
