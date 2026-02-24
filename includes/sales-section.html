@@ -98,25 +98,6 @@
                 </div>
             </div>
             
-            <!-- صف البحث عن المنتجات (داخل الجدول) -->
-            <div class="row g-1 mb-2">
-                <div class="col-12">
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-light p-0 px-2">
-                            <i class="material-icons-round" style="font-size: 1rem;">inventory</i>
-                        </span>
-                        <input type="text" id="product-search-input" class="form-control form-control-sm" 
-                               placeholder="ابحث عن منتج بالاسم أو الباركود..." 
-                               oninput="salesModule.searchProducts(this.value)"
-                               autocomplete="off">
-                        <button class="btn btn-sm btn-outline-primary" onclick="salesModule.focusSearch()" title="اختصار: Ctrl+F">
-                            <i class="material-icons-round" style="font-size: 1rem;">keyboard</i>
-                        </button>
-                    </div>
-                    <div id="product-search-results" class="search-results" style="display: none;"></div>
-                </div>
-            </div>
-            
             <!-- الجدول مع البحث المدمج -->
             <div class="table-responsive" style="max-height: 280px; overflow-y: auto; border-radius: 6px;" id="cart-table-container">
                 <table class="table table-bordered table-hover table-sm mb-0" style="min-width: 1000px; font-size: 0.8rem;" id="cart-main-table">
@@ -353,7 +334,7 @@
         position: relative;
     }
     
-    #customer-results, #product-search-results {
+    #customer-results {
         position: absolute;
         top: 100%;
         left: 0;
@@ -653,7 +634,6 @@
         button, 
         .btn, 
         #customer-search, 
-        #product-search-input,
         #product-search-results,
         #active-customers-area,
         #sale-payment-method,
@@ -752,7 +732,7 @@
         // إعداد اختصارات لوحة المفاتيح
         setupKeyboardShortcuts: function() {
             document.addEventListener('keydown', (e) => {
-                // Ctrl+F للتركيز على البحث
+                // Ctrl+F للتركيز على البحث (الآن سيركز على بحث العملاء)
                 if (e.ctrlKey && e.key === 'f') {
                     e.preventDefault();
                     this.focusSearch();
@@ -766,40 +746,35 @@
                 
                 // ESC لإلغاء البحث
                 if (e.key === 'Escape') {
-                    document.getElementById('product-search-results').style.display = 'none';
                     document.getElementById('customer-results').style.display = 'none';
                 }
             });
         },
         
-        // التركيز على حقل البحث
+        // التركيز على حقل البحث عن العملاء
         focusSearch: function() {
-            document.getElementById('product-search-input').focus();
+            document.getElementById('customer-search').focus();
         },
         
-        // تحسين البحث عن المنتجات مع debounce
-        searchProducts: function(query) {
-            clearTimeout(this.searchTimeout);
-            
+        // البحث عن العملاء
+        searchCustomers: function(query) {
             if (query.length < 2) {
-                document.getElementById('product-search-results').style.display = 'none';
+                document.getElementById('customer-results').style.display = 'none';
                 return;
             }
             
-            this.searchTimeout = setTimeout(() => {
-                const products = JSON.parse(localStorage.getItem('products') || '[]');
-                const results = products.filter(p => 
-                    (p.name && p.name.toLowerCase().includes(query.toLowerCase())) ||
-                    (p.barcode && p.barcode.includes(query))
-                ).slice(0, 8); // عرض أول 8 نتائج فقط
-                
-                this.displayProductSearchResults(results);
-            }, 300);
+            const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+            const results = customers.filter(c => 
+                (c.name && c.name.toLowerCase().includes(query.toLowerCase())) ||
+                (c.phone && c.phone.includes(query))
+            ).slice(0, 5);
+            
+            this.displayCustomerResults(results);
         },
         
-        // عرض نتائج البحث عن المنتجات
-        displayProductSearchResults: function(results) {
-            const resultsDiv = document.getElementById('product-search-results');
+        // عرض نتائج البحث عن العملاء
+        displayCustomerResults: function(results) {
+            const resultsDiv = document.getElementById('customer-results');
             
             if (results.length === 0) {
                 resultsDiv.style.display = 'none';
@@ -807,17 +782,12 @@
             }
             
             let html = '';
-            results.forEach(product => {
-                const stockStatus = product.quantity <= 5 ? 'منخفض' : product.quantity <= 10 ? 'متوسط' : 'جيد';
-                const stockClass = product.quantity <= 5 ? 'text-danger' : product.quantity <= 10 ? 'text-warning' : 'text-success';
-                
+            results.forEach(customer => {
                 html += `
-                    <div class="search-item" onclick="salesModule.addToCart(${JSON.stringify(product).replace(/"/g, '&quot;')})">
-                        <i class="material-icons-round" style="font-size: 1rem;">inventory</i>
-                        <strong>${product.name}</strong>
-                        <small class="text-muted">${product.barcode ? '🔖 ' + product.barcode : ''}</small>
-                        <small class="ms-auto ${stockClass}">${product.quantity} قطع</small>
-                        <small class="text-primary">${product.price} دج</small>
+                    <div class="search-item" onclick="salesModule.selectCustomer(${JSON.stringify(customer).replace(/"/g, '&quot;')})">
+                        <i class="material-icons-round" style="font-size: 1rem;">person</i>
+                        <strong>${customer.name}</strong>
+                        <small class="text-muted">${customer.phone || ''}</small>
                     </div>
                 `;
             });
@@ -826,7 +796,97 @@
             resultsDiv.style.display = 'block';
         },
         
-        // إضافة منتج إلى السلة
+        // تحديد عميل
+        selectCustomer: function(customer) {
+            this.selectedCustomer = customer;
+            document.getElementById('selected-customer-name').textContent = customer.name;
+            document.getElementById('selected-customer-badge').style.display = 'block';
+            document.getElementById('customer-results').style.display = 'none';
+            document.getElementById('customer-search').value = '';
+            
+            // إضافة إلى العملاء النشطين
+            if (!this.activeCustomers.find(c => c.id === customer.id)) {
+                this.activeCustomers.push(customer);
+                this.renderActiveCustomers();
+            }
+            
+            this.showNotification(`تم تحديد العميل: ${customer.name}`, 'success');
+        },
+        
+        // إلغاء تحديد العميل
+        clearSelectedCustomer: function() {
+            this.selectedCustomer = null;
+            document.getElementById('selected-customer-badge').style.display = 'none';
+        },
+        
+        // عرض العملاء النشطين
+        renderActiveCustomers: function() {
+            const container = document.getElementById('active-customers-list');
+            const area = document.getElementById('active-customers-area');
+            
+            if (this.activeCustomers.length === 0) {
+                area.style.display = 'none';
+                return;
+            }
+            
+            area.style.display = 'block';
+            
+            let html = '';
+            this.activeCustomers.forEach(customer => {
+                const isSelected = this.selectedCustomer && this.selectedCustomer.id === customer.id;
+                html += `
+                    <span class="badge customer-chip ${isSelected ? 'bg-success' : 'bg-light'}" 
+                          onclick="salesModule.selectCustomer(${JSON.stringify(customer).replace(/"/g, '&quot;')})">
+                        <i class="material-icons-round" style="font-size: 0.8rem;">${isSelected ? 'check_circle' : 'person'}</i>
+                        ${customer.name}
+                        <i class="material-icons-round" style="font-size: 0.8rem; cursor: pointer;" 
+                           onclick="event.stopPropagation(); salesModule.removeActiveCustomer('${customer.id}')">close</i>
+                    </span>
+                `;
+            });
+            
+            container.innerHTML = html;
+            document.getElementById('active-customers-total').textContent = this.activeCustomers.length;
+        },
+        
+        // إزالة عميل من النشطين
+        removeActiveCustomer: function(customerId) {
+            this.activeCustomers = this.activeCustomers.filter(c => c.id !== customerId);
+            
+            if (this.selectedCustomer && this.selectedCustomer.id === customerId) {
+                this.clearSelectedCustomer();
+            }
+            
+            this.renderActiveCustomers();
+        },
+        
+        // مسح جميع العملاء النشطين مع تأكيد
+        clearAllActiveCustomersWithConfirm: function() {
+            if (this.activeCustomers.length === 0) return;
+            
+            Swal.fire({
+                title: 'تأكيد المسح',
+                text: 'هل أنت متأكد من مسح جميع العملاء النشطين؟',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'نعم',
+                cancelButtonText: 'لا'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    this.clearAllActiveCustomers();
+                }
+            });
+        },
+        
+        // مسح جميع العملاء النشطين
+        clearAllActiveCustomers: function() {
+            this.activeCustomers = [];
+            this.clearSelectedCustomer();
+            this.renderActiveCustomers();
+            this.showNotification('تم مسح جميع العملاء النشطين', 'info');
+        },
+        
+        // إضافة منتج إلى السلة (يتم استدعاؤها من مكان آخر)
         addToCart: function(product) {
             // التحقق من المخزون
             if (product.quantity <= 0) {
@@ -858,10 +918,6 @@
             this.renderCart();
             this.saveCartToStorage();
             this.showNotification('تمت إضافة المنتج إلى السلة', 'success');
-            
-            // إخفاء نتائج البحث
-            document.getElementById('product-search-results').style.display = 'none';
-            document.getElementById('product-search-input').value = '';
         },
         
         // عرض السلة
@@ -1042,136 +1098,6 @@
                 this.cart = JSON.parse(savedCart);
                 this.renderCart();
             }
-        },
-        
-        // البحث عن العملاء
-        searchCustomers: function(query) {
-            if (query.length < 2) {
-                document.getElementById('customer-results').style.display = 'none';
-                return;
-            }
-            
-            const customers = JSON.parse(localStorage.getItem('customers') || '[]');
-            const results = customers.filter(c => 
-                (c.name && c.name.toLowerCase().includes(query.toLowerCase())) ||
-                (c.phone && c.phone.includes(query))
-            ).slice(0, 5);
-            
-            this.displayCustomerResults(results);
-        },
-        
-        // عرض نتائج البحث عن العملاء
-        displayCustomerResults: function(results) {
-            const resultsDiv = document.getElementById('customer-results');
-            
-            if (results.length === 0) {
-                resultsDiv.style.display = 'none';
-                return;
-            }
-            
-            let html = '';
-            results.forEach(customer => {
-                html += `
-                    <div class="search-item" onclick="salesModule.selectCustomer(${JSON.stringify(customer).replace(/"/g, '&quot;')})">
-                        <i class="material-icons-round" style="font-size: 1rem;">person</i>
-                        <strong>${customer.name}</strong>
-                        <small class="text-muted">${customer.phone || ''}</small>
-                    </div>
-                `;
-            });
-            
-            resultsDiv.innerHTML = html;
-            resultsDiv.style.display = 'block';
-        },
-        
-        // تحديد عميل
-        selectCustomer: function(customer) {
-            this.selectedCustomer = customer;
-            document.getElementById('selected-customer-name').textContent = customer.name;
-            document.getElementById('selected-customer-badge').style.display = 'block';
-            document.getElementById('customer-results').style.display = 'none';
-            document.getElementById('customer-search').value = '';
-            
-            // إضافة إلى العملاء النشطين
-            if (!this.activeCustomers.find(c => c.id === customer.id)) {
-                this.activeCustomers.push(customer);
-                this.renderActiveCustomers();
-            }
-            
-            this.showNotification(`تم تحديد العميل: ${customer.name}`, 'success');
-        },
-        
-        // إلغاء تحديد العميل
-        clearSelectedCustomer: function() {
-            this.selectedCustomer = null;
-            document.getElementById('selected-customer-badge').style.display = 'none';
-        },
-        
-        // عرض العملاء النشطين
-        renderActiveCustomers: function() {
-            const container = document.getElementById('active-customers-list');
-            const area = document.getElementById('active-customers-area');
-            
-            if (this.activeCustomers.length === 0) {
-                area.style.display = 'none';
-                return;
-            }
-            
-            area.style.display = 'block';
-            
-            let html = '';
-            this.activeCustomers.forEach(customer => {
-                const isSelected = this.selectedCustomer && this.selectedCustomer.id === customer.id;
-                html += `
-                    <span class="badge customer-chip ${isSelected ? 'bg-success' : 'bg-light'}" 
-                          onclick="salesModule.selectCustomer(${JSON.stringify(customer).replace(/"/g, '&quot;')})">
-                        <i class="material-icons-round" style="font-size: 0.8rem;">${isSelected ? 'check_circle' : 'person'}</i>
-                        ${customer.name}
-                        <i class="material-icons-round" style="font-size: 0.8rem; cursor: pointer;" 
-                           onclick="event.stopPropagation(); salesModule.removeActiveCustomer('${customer.id}')">close</i>
-                    </span>
-                `;
-            });
-            
-            container.innerHTML = html;
-            document.getElementById('active-customers-total').textContent = this.activeCustomers.length;
-        },
-        
-        // إزالة عميل من النشطين
-        removeActiveCustomer: function(customerId) {
-            this.activeCustomers = this.activeCustomers.filter(c => c.id !== customerId);
-            
-            if (this.selectedCustomer && this.selectedCustomer.id === customerId) {
-                this.clearSelectedCustomer();
-            }
-            
-            this.renderActiveCustomers();
-        },
-        
-        // مسح جميع العملاء النشطين مع تأكيد
-        clearAllActiveCustomersWithConfirm: function() {
-            if (this.activeCustomers.length === 0) return;
-            
-            Swal.fire({
-                title: 'تأكيد المسح',
-                text: 'هل أنت متأكد من مسح جميع العملاء النشطين؟',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonText: 'نعم',
-                cancelButtonText: 'لا'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    this.clearAllActiveCustomers();
-                }
-            });
-        },
-        
-        // مسح جميع العملاء النشطين
-        clearAllActiveCustomers: function() {
-            this.activeCustomers = [];
-            this.clearSelectedCustomer();
-            this.renderActiveCustomers();
-            this.showNotification('تم مسح جميع العملاء النشطين', 'info');
         },
         
         // تحديث المبلغ المتبقي
