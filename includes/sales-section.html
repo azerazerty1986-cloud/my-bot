@@ -1,6 +1,6 @@
 <!-- ======================================================================= -->
 <!-- ملف: sales-section.html - قسم المبيعات في واجهة المستخدم -->
-<!-- الإصدار: 5.4 - متوافق تماماً مع salesModule v7.6 -->
+<!-- الإصدار: 6.0 - كامل ومتكامل مع حل مشكلة المجموع -->
 <!-- ======================================================================= -->
 
 <!-- ======================================================================= -->
@@ -33,7 +33,7 @@
                 </h6>
                 <div>
                     <span class="badge bg-primary" id="cart-count">0</span>
-                    <button class="btn btn-sm btn-outline-secondary ms-2 py-0" onclick="salesModule.clearCart()" title="تفريغ السلة">
+                    <button class="btn btn-sm btn-outline-secondary ms-2 py-0" onclick="if(window.salesModule) salesModule.clearCart()" title="تفريغ السلة">
                         <i class="material-icons-round" style="font-size: 1rem;">delete_sweep</i>
                     </button>
                 </div>
@@ -49,9 +49,9 @@
                             </span>
                             <input type="text" id="customer-search" class="form-control form-control-sm" 
                                    placeholder="ابحث عن عميل..." 
-                                   oninput="salesModule.searchCustomersInstant(this.value)"
+                                   oninput="if(window.salesModule) salesModule.searchCustomersInstant(this.value)"
                                    autocomplete="off">
-                            <button class="btn btn-sm btn-outline-success py-0" type="button" onclick="salesModule.openAddCustomerModal()">
+                            <button class="btn btn-sm btn-outline-success py-0" type="button" onclick="if(window.salesModule) salesModule.openAddCustomerModal()">
                                 <i class="material-icons-round" style="font-size: 1rem;">person_add</i>
                             </button>
                         </div>
@@ -72,7 +72,7 @@
                 <span class="badge bg-success p-1">
                     <i class="material-icons-round" style="font-size: 0.9rem;">check_circle</i>
                     <span id="selected-customer-name" class="small"></span>
-                    <i class="material-icons-round" style="font-size: 0.9rem; cursor: pointer;" onclick="salesModule.clearSelectedCustomer()">close</i>
+                    <i class="material-icons-round" style="font-size: 0.9rem; cursor: pointer;" onclick="if(window.salesModule) salesModule.clearSelectedCustomer()">close</i>
                 </span>
             </div>
         </div>
@@ -88,7 +88,7 @@
                     <span class="text-muted small">النشطين:</span>
                     <div id="active-customers-list" class="d-flex flex-wrap gap-1 mx-1"></div>
                     <span id="active-customers-total" class="badge bg-secondary ms-auto me-1">0</span>
-                    <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="salesModule.clearAllActiveCustomers()" title="مسح الكل">
+                    <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="if(window.salesModule) salesModule.clearAllActiveCustomers()" title="مسح الكل">
                         <i class="material-icons-round" style="font-size: 1rem;">close_all</i>
                     </button>
                 </div>
@@ -151,7 +151,7 @@
                     <div class="input-group input-group-sm">
                         <span class="input-group-text bg-light p-0 px-1">💰</span>
                         <input type="number" id="paid-amount" class="form-control form-control-sm text-center" 
-                               placeholder="المسدد" oninput="salesModule.updateRemainingAmount()" value="0" min="0">
+                               placeholder="المسدد" oninput="if(window.salesModule) salesModule.updateRemainingAmount()" value="0" min="0">
                     </div>
                 </div>
                 <div class="col-6">
@@ -165,12 +165,12 @@
             <!-- أزرار إنهاء البيع -->
             <div class="row g-1 mt-2">
                 <div class="col-6">
-                    <button class="btn btn-sm btn-success w-100 py-1" onclick="salesModule.finishSale()">
+                    <button class="btn btn-sm btn-success w-100 py-1" onclick="if(window.salesModule) salesModule.finishSale()">
                         <i class="material-icons-round me-1" style="font-size: 1rem;">save</i> حفظ
                     </button>
                 </div>
                 <div class="col-6">
-                    <button class="btn btn-sm btn-primary w-100 py-1" onclick="salesModule.finishSaleAndPrint()">
+                    <button class="btn btn-sm btn-primary w-100 py-1" onclick="if(window.salesModule) salesModule.finishSaleAndPrint()">
                         <i class="material-icons-round me-1" style="font-size: 1rem;">print</i> طباعة
                     </button>
                 </div>
@@ -191,7 +191,7 @@
                 <span class="input-group-text bg-light p-0 px-2"><i class="material-icons-round" style="font-size: 1rem;">search</i></span>
                 <input type="text" id="invoice-search" class="form-control form-control-sm" 
                        placeholder="بحث برقم الفاتورة أو العميل"
-                       oninput="salesModule.searchInvoices()">
+                       oninput="if(window.salesModule) salesModule.searchInvoices()">
                 <button class="btn btn-sm btn-outline-secondary" onclick="exportInvoicesToExcel()">
                     <i class="material-icons-round" style="font-size: 1rem;">download</i>
                 </button>
@@ -378,7 +378,7 @@
         border-color: #28a745;
     }
     
-    /* تنسيق صف البحث في الجدول - يتم إضافته بواسطة salesModule.renderCart() */
+    /* تنسيق صف البحث في الجدول */
     #product-search-row td {
         padding: 6px;
         background: linear-gradient(145deg, #f0f7ff, #e6f0fa);
@@ -432,6 +432,11 @@
     
     .search-result-item:hover i {
         opacity: 1;
+    }
+    
+    .search-result-item.selected {
+        background-color: #007bff;
+        color: white;
     }
     
     /* تنسيق علامات التبويب */
@@ -502,10 +507,16 @@
 </style>
 
 <!-- ======================================================================= -->
-<!-- سكريبت بسيط للدوال المساعدة فقط -->
+<!-- السكربتات الكاملة والمتكاملة -->
 <!-- ======================================================================= -->
 <script>
-    // دالة إظهار الأقسام الفرعية
+    // =======================================================================
+    // الجزء 1: السكربتات المساعدة (لا تعتمد على salesModule)
+    // =======================================================================
+    
+    /**
+     * دالة إظهار الأقسام الفرعية
+     */
     function showSubSection(sectionId) {
         document.querySelectorAll('.sub-section').forEach(el => {
             el.style.display = 'none';
@@ -527,7 +538,9 @@
         }
     }
     
-    // دالة إضافة العميل السريع من قسم العملاء
+    /**
+     * دالة إضافة العميل السريع من قسم العملاء
+     */
     function addQuickCustomer() {
         const name = document.getElementById('new-customer').value;
         const phone = document.getElementById('new-customer-phone').value;
@@ -574,7 +587,9 @@
         }
     }
     
-    // دالة تصدير الفواتير إلى Excel
+    /**
+     * دالة تصدير الفواتير إلى Excel
+     */
     function exportInvoicesToExcel() {
         // محاولة الوصول للفواتير من عدة مصادر
         let invoices = [];
@@ -620,15 +635,173 @@
             });
         }
     }
+
+    // =======================================================================
+    // الجزء 2: تهيئة الصفحة والتأكد من وجود salesModule
+    // =======================================================================
     
-    // تهيئة القسم عند تحميل الصفحة
+    /**
+     * التحقق من وجود salesModule وإعادة المحاولة إذا لم يكن موجوداً
+     */
+    function ensureSalesModule() {
+        if (!window.salesModule) {
+            console.warn('⚠️ salesModule غير موجود، إعادة المحاولة بعد 500ms...');
+            setTimeout(ensureSalesModule, 500);
+            return;
+        }
+        
+        console.log('✅ salesModule موجود، جاري تهيئة القسم...');
+        
+        // تهيئة القسم
+        if (typeof window.salesModule.init === 'function') {
+            window.salesModule.init();
+        }
+        
+        // تحديث واجهة المستخدم
+        updateUI();
+    }
+    
+    /**
+     * تحديث واجهة المستخدم
+     */
+    function updateUI() {
+        if (!window.salesModule) return;
+        
+        // تحديث عناصر واجهة المستخدم
+        const cartCount = document.getElementById('cart-count');
+        if (cartCount && window.salesModule.cart) {
+            cartCount.textContent = window.salesModule.cart.length;
+        }
+        
+        // تحديث المبلغ المتبقي
+        if (typeof window.salesModule.updateRemainingAmount === 'function') {
+            window.salesModule.updateRemainingAmount();
+        }
+    }
+    
+    /**
+     * إعادة تحميل السلة
+     */
+    function reloadCart() {
+        if (!window.salesModule) return;
+        
+        if (typeof window.salesModule.renderCart === 'function') {
+            window.salesModule.renderCart();
+        }
+    }
+
+    // =======================================================================
+    // الجزء 3: تعريف دالة البحث في المنتجات (كبديل احتياطي)
+    // =======================================================================
+    
+    /**
+     * دالة البحث عن المنتجات - تستخدم salesModule إذا كان موجوداً
+     */
+    window.searchProductsInTable = function(term) {
+        if (window.salesModule && typeof window.salesModule.searchProductsInTable === 'function') {
+            window.salesModule.searchProductsInTable(term);
+        } else {
+            console.warn('⚠️ salesModule.searchProductsInTable غير متاح');
+        }
+    };
+    
+    /**
+     * دالة معالجة أحداث لوحة المفاتيح في البحث
+     */
+    window.handleProductSearchKeydown = function(e) {
+        if (window.salesModule && typeof window.salesModule.handleProductSearchKeydown === 'function') {
+            window.salesModule.handleProductSearchKeydown(e);
+        }
+    };
+    
+    /**
+     * دالة إضافة منتج مباشرة
+     */
+    window.addProductDirect = function(productId) {
+        if (window.salesModule && typeof window.salesModule.addProductDirect === 'function') {
+            window.salesModule.addProductDirect(productId);
+        }
+    };
+    
+    /**
+     * دالة إضافة عميل مباشرة
+     */
+    window.addCustomerDirect = function(customerId) {
+        if (window.salesModule && typeof window.salesModule.addCustomerDirect === 'function') {
+            window.salesModule.addCustomerDirect(customerId);
+        }
+    };
+
+    // =======================================================================
+    // الجزء 4: تنفيذ التهيئة عند تحميل الصفحة
+    // =======================================================================
+    
+    // تنفيذ التهيئة عند تحميل DOM
     document.addEventListener('DOMContentLoaded', function() {
+        console.log('📄 تم تحميل sales-section.html، جاري التحقق من salesModule...');
+        
         // التأكد من أن القسم الرئيسي ظاهر
         const activeSection = document.querySelector('.sub-section');
         if (activeSection) {
             activeSection.style.display = 'block';
         }
+        
+        // التحقق من وجود salesModule
+        ensureSalesModule();
+        
+        // إضافة مستمع للأحداث لتحديث واجهة المستخدم
+        document.addEventListener('cart-updated', function() {
+            updateUI();
+        });
     });
+    
+    // إعادة المحاولة بعد 1 ثانية إذا لم يتم التهيئة
+    setTimeout(ensureSalesModule, 1000);
+</script>
+
+<!-- ======================================================================= -->
+<!-- دوال مختصرة للاستخدام المباشر من HTML (كبديل احتياطي) -->
+<!-- ======================================================================= -->
+<script>
+    // دوال مختصرة للاستخدام في onclick
+    window.addToCart = function() {
+        if (window.salesModule && window.salesModule.addToCart) {
+            return window.salesModule.addToCart();
+        }
+        console.warn('salesModule غير متاح');
+        return false;
+    };
+    
+    window.clearCart = function() {
+        if (window.salesModule && window.salesModule.clearCart) {
+            window.salesModule.clearCart();
+        }
+    };
+    
+    window.finishSale = function() {
+        if (window.salesModule && window.salesModule.finishSale) {
+            return window.salesModule.finishSale();
+        }
+        return null;
+    };
+    
+    window.finishSaleAndPrint = function() {
+        if (window.salesModule && window.salesModule.finishSaleAndPrint) {
+            window.salesModule.finishSaleAndPrint();
+        }
+    };
+    
+    window.searchInvoices = function() {
+        if (window.salesModule && window.salesModule.searchInvoices) {
+            window.salesModule.searchInvoices();
+        }
+    };
+    
+    window.updateRemainingAmount = function() {
+        if (window.salesModule && window.salesModule.updateRemainingAmount) {
+            window.salesModule.updateRemainingAmount();
+        }
+    };
 </script>
 
 <!-- ======================================================================= -->
