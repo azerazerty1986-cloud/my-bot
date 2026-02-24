@@ -1,6 +1,6 @@
 <!-- ======================================================================= -->
 <!-- ملف: sales-section.html - قسم المبيعات في واجهة المستخدم -->
-<!-- الإصدار: 6.0 - مع تحسينات متكاملة وتجربة مستخدم محسنة -->
+<!-- الإصدار: 7.5 - مع الجزء السابع المتقدم للبحث داخل الجدول -->
 <!-- ======================================================================= -->
 
 <!-- ======================================================================= -->
@@ -21,7 +21,7 @@
     </div>
 
     <!-- ======================================================================= -->
-    <!-- الجزء 2: قسم عملية البيع (sale-operation) المعدل -->
+    <!-- الجزء 2: قسم عملية البيع (sale-operation) -->
     <!-- ======================================================================= -->
     <div id="sale-operation" class="sub-section">
         <!-- بطاقة سلة المبيعات المصغرة -->
@@ -30,6 +30,7 @@
                 <h6 class="mb-0">
                     <i class="material-icons-round text-danger me-1" style="font-size: 1.2rem;">shopping_cart</i>
                     <span class="fw-bold">سلة المبيعات</span>
+                    <span id="current-customer-cart-label" class="text-muted small"></span>
                 </h6>
                 <div>
                     <span class="badge bg-primary" id="cart-count">0</span>
@@ -38,12 +39,33 @@
                     </button>
                 </div>
             </div>
-           
+            
+            <!-- صف سريع لطريقة الدفع -->
+            <div class="row g-1 mt-2">
+                <div class="col-12">
+                    <select id="sale-payment-method" class="form-select form-select-sm" onchange="salesModule.onPaymentMethodChange()">
+                        <option value="cash">💰 نقدي</option>
+                        <option value="card">💳 بطاقة</option>
+                        <option value="credit">📝 آجل</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- العميل المحدد -->
+            <div id="selected-customer-badge" class="mt-1" style="display: none;">
+                <span class="badge bg-success p-1">
+                    <i class="material-icons-round" style="font-size: 0.9rem;">check_circle</i>
+                    <span id="selected-customer-name" class="small"></span>
+                    <i class="material-icons-round" style="font-size: 0.9rem; cursor: pointer;" onclick="salesModule.clearSelectedCustomer()" title="إلغاء تحديد العميل">close</i>
+                </span>
+            </div>
+        </div>
+        
         <!-- ======================================================================= -->
-        <!-- العملاء النشطين مع الجدول المدمج -->
+        <!-- الجزء 3: العملاء النشطين والبحث عن العملاء -->
         <!-- ======================================================================= -->
         <div class="main-card mt-2 p-2">
-            <!-- العملاء النشطين (شريط صغير فوق الجدول) -->
+            <!-- العملاء النشطين -->
             <div id="active-customers-area" class="mb-2" style="display: none;">
                 <div class="d-flex align-items-center bg-light p-1 rounded" style="font-size: 0.8rem;">
                     <i class="material-icons-round text-muted me-1" style="font-size: 1rem;">group</i>
@@ -56,7 +78,7 @@
                 </div>
             </div>
             
-            <!-- صف البحث عن العملاء (فوق الجدول) -->
+            <!-- البحث عن العملاء -->
             <div class="row g-1 mb-2">
                 <div class="col-12">
                     <div class="customer-search-container">
@@ -77,9 +99,11 @@
                 </div>
             </div>
             
-            <!-- الجدول مع البحث المدمج -->
+            <!-- ======================================================================= -->
+            <!-- الجزء 4: الجدول مع البحث المدمج (المتقدم) -->
+            <!-- ======================================================================= -->
             <div class="table-responsive" style="max-height: 280px; overflow-y: auto; border-radius: 6px;" id="cart-table-container">
-                <table class="table table-bordered table-hover table-sm mb-0" style="min-width: 1000px; font-size: 0.8rem;" id="cart-main-table">
+                <table class="table table-bordered table-hover table-sm mb-0" style="min-width: 1200px; font-size: 0.8rem;" id="cart-main-table">
                     <thead class="sticky-top bg-light" style="top: 0; z-index: 5;">
                         <tr>
                             <th style="width: 30px;">#</th>
@@ -95,17 +119,14 @@
                         </tr>
                     </thead>
                     <tbody id="cart-table">
-                        <tr>
-                            <td colspan="10" class="text-center p-3">
-                                <i class="material-icons-round" style="font-size: 2rem; color: #ccc;">shopping_cart</i>
-                                <br><small class="text-muted">السلة فارغة - ابحث عن منتج</small>
-                            </td>
-                        </tr>
+                        <!-- سيتم تعبئتها عن طريق JavaScript مع صف البحث المدمج -->
                     </tbody>
                 </table>
             </div>
             
-            <!-- ملخص سريع -->
+            <!-- ======================================================================= -->
+            <!-- الجزء 5: ملخص السلة والإجماليات -->
+            <!-- ======================================================================= -->
             <div class="row g-1 mt-2">
                 <div class="col-3">
                     <div class="bg-light p-1 rounded text-center" title="إجمالي الخصم">
@@ -133,7 +154,9 @@
                 </div>
             </div>
             
-            <!-- المبلغ المسدد والمتبقي -->
+            <!-- ======================================================================= -->
+            <!-- الجزء 6: المبلغ المسدد والمتبقي وأزرار إنهاء البيع -->
+            <!-- ======================================================================= -->
             <div class="row g-1 mt-2">
                 <div class="col-6">
                     <div class="input-group input-group-sm">
@@ -151,7 +174,6 @@
                 </div>
             </div>
             
-            <!-- أزرار إنهاء البيع -->
             <div class="row g-1 mt-2">
                 <div class="col-6">
                     <button class="btn btn-sm btn-success w-100 py-1" onclick="salesModule.finishSale()" title="حفظ الفاتورة (Ctrl+Enter)">
@@ -168,7 +190,7 @@
     </div>
 
     <!-- ======================================================================= -->
-    <!-- الجزء 3: قسم فواتير المبيعات (مصغر) -->
+    <!-- الجزء 8: قسم فواتير المبيعات -->
     <!-- ======================================================================= -->
     <div id="sale-invoices" class="sub-section" style="display: none;">
         <div class="main-card compact-card">
@@ -233,7 +255,7 @@
     </div>
 
     <!-- ======================================================================= -->
-    <!-- الجزء 4: قسم إدارة العملاء (مصغر) -->
+    <!-- الجزء 9: قسم إدارة العملاء -->
     <!-- ======================================================================= -->
     <div id="customers" class="sub-section" style="display: none;">
         <div class="main-card compact-card">
@@ -287,7 +309,7 @@
 </div>
 
 <!-- ======================================================================= -->
-<!-- التنسيقات المدمجة والمصغرة مع التحسينات -->
+<!-- الجزء 10: التنسيقات CSS المحسنة -->
 <!-- ======================================================================= -->
 <style>
     /* تنسيقات عامة مصغرة */
@@ -313,7 +335,7 @@
         position: relative;
     }
     
-    #customer-results {
+    #customer-results, #product-search-results {
         position: absolute;
         top: 100%;
         left: 0;
@@ -329,19 +351,44 @@
         font-size: 0.8rem;
     }
     
-    .search-item {
-        padding: 6px 10px;
+    .search-item, .search-result-item {
+        padding: 8px 12px;
         cursor: pointer;
         border-bottom: 1px solid #f0f0f0;
         transition: all 0.2s;
         display: flex;
         align-items: center;
-        gap: 6px;
+        gap: 8px;
     }
     
-    .search-item:hover {
+    .search-item:hover, .search-result-item:hover,
+    .search-result-item.selected {
         background-color: #007bff;
         color: white;
+    }
+    
+    .search-result-item:hover .text-muted,
+    .search-result-item.selected .text-muted {
+        color: rgba(255,255,255,0.8) !important;
+    }
+    
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+    
+    /* تنسيق صف البحث في الجدول */
+    #product-search-row td {
+        padding: 8px;
+        background-color: #e3f2fd;
+    }
+    
+    #product-search-input {
+        border-left: none;
+    }
+    
+    #product-search-input:focus {
+        box-shadow: none;
+        border-color: #ced4da;
     }
     
     /* تنسيق العملاء النشطين المحسن */
@@ -560,7 +607,7 @@
         }
         
         #cart-main-table {
-            min-width: 800px;
+            min-width: 1000px;
             font-size: 0.7rem;
         }
         
@@ -613,6 +660,7 @@
         button, 
         .btn, 
         #customer-search, 
+        #product-search-input,
         #product-search-results,
         #active-customers-area,
         #sale-payment-method,
@@ -653,13 +701,608 @@
         align-items: center;
         gap: 5px;
     }
+    
+    /* تنسيق المجموع الكلي */
+    .total-field {
+        font-weight: bold;
+        background-color: #f8f9fa;
+        color: #28a745;
+    }
 </style>
 
 <!-- ======================================================================= -->
-<!-- السكربتات المساعدة والوظائف المحسنة -->
+<!-- الجزء 11: دوال مساعدة أساسية -->
 <!-- ======================================================================= -->
 <script>
-    // كائن المبيعات الرئيسي مع جميع التحسينات
+// دوال مساعدة للتهيئة والعرض
+function showSubSection(sectionId) {
+    document.querySelectorAll('.sub-section').forEach(el => {
+        el.style.display = 'none';
+    });
+    
+    document.getElementById(sectionId).style.display = 'block';
+    
+    document.querySelectorAll('.tab-item').forEach(el => {
+        el.classList.remove('active-red');
+    });
+    
+    const activeTab = event.currentTarget;
+    if (activeTab) {
+        activeTab.classList.add('active-red');
+    }
+    
+    // حفظ حالة السلة عند التنقل
+    if (sectionId !== 'sale-operation' && window.salesModule) {
+        window.salesModule.saveCartToStorage();
+    }
+    
+    // تحديث البيانات عند العودة
+    if (sectionId === 'sale-operation' && window.salesModule) {
+        window.salesModule.loadCartFromStorage();
+        setTimeout(() => {
+            const searchInput = document.getElementById('product-search-input');
+            if (searchInput) searchInput.focus();
+        }, 200);
+    } else if (sectionId === 'sale-invoices' && window.salesModule) {
+        window.salesModule.loadInvoices();
+    } else if (sectionId === 'customers' && window.salesModule) {
+        window.salesModule.loadCustomers();
+    }
+}
+
+// دوال مساعدة للتنسيق
+function formatCurrency(amount) {
+    if (amount === undefined || amount === null || isNaN(amount)) amount = 0;
+    return Number(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+}
+
+function parseNumber(value) {
+    if (value === undefined || value === null) return 0;
+    if (typeof value === 'string') {
+        value = value.replace(/,/g, '').replace(/[^\d.-]/g, '');
+    }
+    const num = parseFloat(value);
+    return isNaN(num) ? 0 : num;
+}
+
+// دالة إضافة عميل سريع
+function addQuickCustomer() {
+    const name = document.getElementById('new-customer').value;
+    const phone = document.getElementById('new-customer-phone').value;
+    
+    if (!name) {
+        Swal.fire('تنبيه', 'اسم العميل مطلوب', 'warning');
+        return;
+    }
+    
+    if (window.salesModule) {
+        window.salesModule.addCustomer({ name, phone });
+        document.getElementById('new-customer').value = '';
+        document.getElementById('new-customer-phone').value = '';
+    }
+}
+
+// دالة تصدير الفواتير إلى Excel
+function exportInvoicesToExcel() {
+    if (!window.salesModule || !salesModule.invoices || salesModule.invoices.length === 0) {
+        Swal.fire('معلومة', 'لا توجد فواتير للتصدير', 'info');
+        return;
+    }
+    
+    const invoices = salesModule.invoices;
+    
+    let csv = 'رقم الفاتورة,التاريخ,العميل,المبلغ الإجمالي,المدفوع,الدين,طريقة الدفع\n';
+    invoices.forEach(inv => {
+        const date = new Date(inv.date).toLocaleDateString('ar-EG');
+        csv += `"${inv.number}",${date},"${inv.customer}",${inv.grandTotal},${inv.paidAmount},${inv.debt},"${inv.paymentText}"\n`;
+    });
+    
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `sales_invoices_${new Date().toISOString().slice(0,10)}.csv`;
+    link.click();
+    
+    if (salesModule.showNotification) {
+        salesModule.showNotification('تم تصدير الفواتير بنجاح', 'success');
+    }
+}
+</script>
+
+<!-- ======================================================================= -->
+<!-- الجزء 12: السكربتات المساعدة والوظائف المحسنة (كامل) -->
+<!-- ======================================================================= -->
+<script>
+    // =======================================================================
+    // الجزء 7: نظام البحث المتقدم عن المنتجات داخل الجدول (الإصدار المتقدم)
+    // =======================================================================
+    
+    // متغيرات عامة للبحث
+    let productsList = [];
+    let selectedProductIndex = -1;
+    let searchTimeout = null;
+
+    /**
+     * تحميل قائمة المنتجات من مصادر مختلفة
+     */
+    function loadProducts() {
+        // محاولة التحميل من module المنتجات أولاً
+        if (window.productModule && typeof window.productModule.getAllProducts === 'function') {
+            productsList = window.productModule.getAllProducts() || [];
+        } else {
+            // التحميل من localStorage
+            try {
+                const stored = localStorage.getItem('products');
+                productsList = stored ? JSON.parse(stored) : [];
+            } catch (e) {
+                console.error('خطأ في تحميل المنتجات:', e);
+                productsList = [];
+            }
+        }
+        
+        // تحويل البيانات إلى تنسيق موحد
+        productsList = productsList.map(p => ({
+            id: p.id || p.productId || Date.now() + Math.random(),
+            name: p.name || p.productName || 'منتج',
+            barcode: p.barcode || '',
+            price: parseNumber(p.sellPrice || p.price || 0),
+            buyPrice: parseNumber(p.buyPrice || p.cost || 0),
+            quantity: parseNumber(p.quantity || p.stock || 0),
+            unit: p.unit || 'piece',
+            piecesPerUnit: p.piecesPerUnit || 1,
+            category: p.category || '',
+            image: p.image || ''
+        }));
+        
+        return productsList;
+    }
+
+    /**
+     * معالجة أحداث لوحة المفاتيح في نتائج البحث
+     */
+    function handleProductSearchKeydown(e) {
+        const resultsContainer = document.getElementById('product-search-results');
+        
+        if (!resultsContainer || resultsContainer.style.display !== 'block') return;
+        
+        const items = resultsContainer.querySelectorAll('.search-result-item');
+        if (items.length === 0) return;
+        
+        switch(e.key) {
+            case 'ArrowDown':
+                e.preventDefault();
+                selectedProductIndex = Math.min(selectedProductIndex + 1, items.length - 1);
+                updateSelectedItem(items);
+                break;
+            case 'ArrowUp':
+                e.preventDefault();
+                selectedProductIndex = Math.max(selectedProductIndex - 1, -1);
+                updateSelectedItem(items);
+                break;
+            case 'Enter':
+                e.preventDefault();
+                if (selectedProductIndex >= 0 && items[selectedProductIndex]) {
+                    const productData = items[selectedProductIndex].getAttribute('data-product');
+                    if (productData) {
+                        try {
+                            const product = JSON.parse(productData);
+                            addProductFromSearch(product);
+                        } catch (error) {
+                            console.error('خطأ في تحليل بيانات المنتج', error);
+                        }
+                    }
+                } else if (items[0]) {
+                    const productData = items[0].getAttribute('data-product');
+                    if (productData) {
+                        try {
+                            const product = JSON.parse(productData);
+                            addProductFromSearch(product);
+                        } catch (error) {
+                            console.error('خطأ في تحليل بيانات المنتج', error);
+                        }
+                    }
+                }
+                break;
+            case 'Escape':
+                hideSearchResults();
+                break;
+        }
+    }
+
+    /**
+     * تحديث العنصر المحدد في قائمة البحث
+     */
+    function updateSelectedItem(items) {
+        items.forEach((item, index) => {
+            if (index === selectedProductIndex) {
+                item.classList.add('selected');
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+    }
+
+    /**
+     * البحث عن المنتجات في الجدول
+     */
+    function searchProductsInTable(term) {
+        const resultsContainer = document.getElementById('product-search-results');
+        
+        if (!resultsContainer) return;
+        
+        clearTimeout(searchTimeout);
+        
+        if (!term || term.length < 1) {
+            hideSearchResults();
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            const products = loadProducts();
+            
+            const filtered = products.filter(p => 
+                (p.name && p.name.toLowerCase().includes(term.toLowerCase())) ||
+                (p.barcode && p.barcode.includes(term)) ||
+                (p.category && p.category.toLowerCase().includes(term.toLowerCase()))
+            ).slice(0, 8); // عرض أول 8 نتائج
+            
+            showSearchResults(filtered, term);
+        }, 300); // Debounce for better performance
+    }
+
+    /**
+     * عرض نتائج البحث
+     */
+    function showSearchResults(results, searchTerm) {
+        const resultsContainer = document.getElementById('product-search-results');
+        
+        if (!resultsContainer) return;
+        
+        selectedProductIndex = -1;
+        
+        if (results.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="search-result-item text-muted p-2 text-center" style="border-bottom: none;">
+                    <i class="material-icons-round" style="font-size: 1rem;">info</i>
+                    لا توجد نتائج - 
+                    <a href="#" onclick="salesModule.showAddProductModal('${searchTerm}'); return false;">إضافة منتج جديد</a>
+                </div>
+            `;
+        } else {
+            let html = '';
+            results.forEach(product => {
+                const stockClass = product.quantity > 0 ? 'text-success' : 'text-danger';
+                const stockText = product.quantity > 0 ? `${product.quantity} متوفر` : 'غير متوفر';
+                
+                // استخدام JSON.stringify بشكل آمن
+                const productStr = JSON.stringify(product).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                
+                html += `
+                    <div class="search-result-item p-2" data-product='${productStr}' onclick="salesModule.addProductFromSearch(this)">
+                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                            <div style="flex: 1;">
+                                <strong>${product.name}</strong>
+                                ${product.barcode ? `<br><small class="text-muted">🔖 ${product.barcode}</small>` : ''}
+                                <br>
+                                <small class="text-muted">💰 ${formatCurrency(product.price)} دج</small>
+                            </div>
+                            <div style="text-align: center; min-width: 80px;">
+                                <span class="badge ${stockClass} d-block mb-1">${stockText}</span>
+                                <i class="material-icons-round" style="font-size: 20px; color: #28a745;">add_shopping_cart</i>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            resultsContainer.innerHTML = html;
+        }
+        
+        resultsContainer.style.display = 'block';
+        
+        // Adjust position
+        const searchInput = document.getElementById('product-search-input');
+        if (searchInput) {
+            const rect = searchInput.getBoundingClientRect();
+            resultsContainer.style.width = rect.width + 'px';
+            resultsContainer.style.top = (rect.bottom + window.scrollY) + 'px';
+            resultsContainer.style.left = rect.left + 'px';
+        }
+    }
+
+    /**
+     * إخفاء نتائج البحث
+     */
+    function hideSearchResults() {
+        const resultsContainer = document.getElementById('product-search-results');
+        if (resultsContainer) {
+            resultsContainer.style.display = 'none';
+        }
+        selectedProductIndex = -1;
+    }
+
+    /**
+     * إضافة منتج من نتائج البحث
+     */
+    function addProductFromSearch(element) {
+        let product;
+        
+        // التعامل مع أنواع المدخلات المختلفة
+        if (typeof element === 'string') {
+            try {
+                product = JSON.parse(element);
+            } catch (e) {
+                console.error('خطأ في تحليل بيانات المنتج', e);
+                return;
+            }
+        } else if (element && element.tagName) {
+            const productStr = element.getAttribute('data-product');
+            if (productStr) {
+                try {
+                    product = JSON.parse(productStr);
+                } catch (e) {
+                    console.error('خطأ في تحليل بيانات المنتج', e);
+                    return;
+                }
+            } else if (element.productData) {
+                product = element.productData;
+            }
+        } else if (typeof element === 'object') {
+            product = element;
+        }
+        
+        if (!product) {
+            console.error('المنتج غير موجود');
+            return;
+        }
+        
+        if (window.salesModule) {
+            window.salesModule.addToCart(product);
+        }
+        
+        hideSearchResults();
+        
+        // Clear search input
+        const searchInput = document.getElementById('product-search-input');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        
+        // Focus back on search input for next product
+        setTimeout(() => {
+            if (searchInput) searchInput.focus();
+        }, 100);
+    }
+
+    /**
+     * إضافة منتج من حقل البحث المباشر
+     */
+    function addProductFromSearchInput() {
+        const searchInput = document.getElementById('product-search-input');
+        if (!searchInput) return;
+        
+        const searchTerm = searchInput.value.trim();
+        if (!searchTerm) {
+            if (window.salesModule) {
+                window.salesModule.showNotification('الرجاء إدخال اسم المنتج', 'warning');
+            }
+            return;
+        }
+        
+        const products = loadProducts();
+        const product = products.find(p => 
+            p.name === searchTerm || 
+            p.barcode === searchTerm ||
+            (p.name && p.name.toLowerCase() === searchTerm.toLowerCase())
+        );
+        
+        if (product) {
+            if (window.salesModule) {
+                window.salesModule.addToCart(product);
+            }
+            searchInput.value = '';
+            hideSearchResults();
+        } else {
+            showAddProductModal(searchTerm);
+        }
+    }
+
+    /**
+     * عرض نافذة إضافة منتج جديد
+     */
+    function showAddProductModal(productName) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'إضافة منتج جديد',
+                html: `
+                    <div style="text-align:right; direction: rtl;">
+                        <div class="mb-2">
+                            <label class="form-label">اسم المنتج</label>
+                            <input type="text" id="new-product-name" class="form-control" placeholder="اسم المنتج" value="${productName || ''}">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">سعر البيع</label>
+                            <input type="number" id="new-product-price" class="form-control" placeholder="سعر البيع" step="0.01">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">سعر الشراء</label>
+                            <input type="number" id="new-product-cost" class="form-control" placeholder="سعر الشراء" step="0.01">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">الكمية المتوفرة</label>
+                            <input type="number" id="new-product-quantity" class="form-control" placeholder="الكمية" value="1">
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">الباركود (اختياري)</label>
+                            <input type="text" id="new-product-barcode" class="form-control" placeholder="الباركود">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'حفظ',
+                cancelButtonText: 'إلغاء',
+                preConfirm: () => {
+                    const name = document.getElementById('new-product-name').value;
+                    const price = parseNumber(document.getElementById('new-product-price').value);
+                    const cost = parseNumber(document.getElementById('new-product-cost').value);
+                    const quantity = parseNumber(document.getElementById('new-product-quantity').value);
+                    const barcode = document.getElementById('new-product-barcode').value;
+                    
+                    if (!name) {
+                        Swal.showValidationMessage('اسم المنتج مطلوب');
+                        return false;
+                    }
+                    if (!price || price <= 0) {
+                        Swal.showValidationMessage('سعر البيع مطلوب');
+                        return false;
+                    }
+                    
+                    return { name, price, cost, quantity, barcode };
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const newProduct = {
+                        id: Date.now().toString(),
+                        name: result.value.name,
+                        sellPrice: result.value.price,
+                        price: result.value.price,
+                        buyPrice: result.value.cost || 0,
+                        quantity: result.value.quantity || 0,
+                        stock: result.value.quantity || 0,
+                        barcode: result.value.barcode || '',
+                        unit: 'piece',
+                        piecesPerUnit: 1,
+                        createdAt: new Date().toISOString()
+                    };
+                    
+                    try {
+                        const products = JSON.parse(localStorage.getItem('products') || '[]');
+                        products.push(newProduct);
+                        localStorage.setItem('products', JSON.stringify(products));
+                    } catch (e) {
+                        console.error('خطأ في حفظ المنتج', e);
+                    }
+                    
+                    if (window.productModule && typeof window.productModule.loadProducts === 'function') {
+                        window.productModule.loadProducts();
+                    }
+                    
+                    if (window.salesModule) {
+                        window.salesModule.addToCart(newProduct);
+                    }
+                    
+                    if (window.salesModule) {
+                        window.salesModule.showNotification('تم إضافة المنتج', 'success');
+                    }
+                }
+            });
+        }
+    }
+
+    /**
+     * إعداد التنقل في الجدول باستخدام لوحة المفاتيح
+     */
+    function setupTableNavigation() {
+        setTimeout(() => {
+            const inputs = document.querySelectorAll('#cart-table input:not([readonly]), #cart-table select');
+            
+            inputs.forEach((input, index) => {
+                input.removeEventListener('keydown', handleTableKeyDown);
+                input.addEventListener('keydown', handleTableKeyDown);
+            });
+            
+            // التركيز على حقل البحث تلقائياً
+            const searchInput = document.getElementById('product-search-input');
+            if (searchInput && document.activeElement !== searchInput) {
+                setTimeout(() => searchInput.focus(), 200);
+            }
+        }, 50);
+    }
+
+    /**
+     * معالجة أحداث لوحة المفاتيح في الجدول
+     */
+    function handleTableKeyDown(e) {
+        const inputs = Array.from(document.querySelectorAll('#cart-table input:not([readonly]), #cart-table select'));
+        const currentIndex = inputs.indexOf(e.target);
+        
+        if (currentIndex === -1) return;
+        
+        const keyActions = {
+            'ArrowDown': () => {
+                e.preventDefault();
+                const nextRow = findNextRowInput(e.target, 1);
+                if (nextRow) nextRow.focus();
+            },
+            'ArrowUp': () => {
+                e.preventDefault();
+                const prevRow = findNextRowInput(e.target, -1);
+                if (prevRow) prevRow.focus();
+            },
+            'ArrowRight': () => {
+                e.preventDefault();
+                const nextInput = inputs[currentIndex + 1];
+                if (nextInput && nextInput.closest('tr') === e.target.closest('tr')) {
+                    nextInput.focus();
+                }
+            },
+            'ArrowLeft': () => {
+                e.preventDefault();
+                const prevInput = inputs[currentIndex - 1];
+                if (prevInput && prevInput.closest('tr') === e.target.closest('tr')) {
+                    prevInput.focus();
+                }
+            },
+            'Tab': (e) => {
+                e.preventDefault();
+                const nextIndex = e.shiftKey ? currentIndex - 1 : currentIndex + 1;
+                if (nextIndex >= 0 && nextIndex < inputs.length) {
+                    inputs[nextIndex].focus();
+                }
+            },
+            'Enter': (e) => {
+                e.preventDefault();
+                // إذا كان في حقل البحث، نضيف المنتج
+                if (e.target.id === 'product-search-input') {
+                    addProductFromSearchInput();
+                } else {
+                    const nextInput = inputs[currentIndex + 1];
+                    if (nextInput) {
+                        nextInput.focus();
+                    }
+                }
+            }
+        };
+        
+        const action = keyActions[e.key];
+        if (action) action(e);
+    }
+
+    /**
+     * البحث عن الصف التالي في الجدول
+     */
+    function findNextRowInput(currentInput, direction) {
+        const currentRow = currentInput.closest('tr');
+        const allRows = Array.from(document.querySelectorAll('#cart-table tr'));
+        const currentRowIndex = allRows.indexOf(currentRow);
+        const nextRowIndex = currentRowIndex + direction;
+        
+        if (nextRowIndex >= 0 && nextRowIndex < allRows.length) {
+            const nextRow = allRows[nextRowIndex];
+            const inputsInRow = Array.from(nextRow.querySelectorAll('input:not([readonly]), select'));
+            
+            if (inputsInRow.length > 0) {
+                const currentColumnIndex = Array.from(currentRow.querySelectorAll('input:not([readonly]), select')).indexOf(currentInput);
+                const targetIndex = Math.min(currentColumnIndex, inputsInRow.length - 1);
+                return inputsInRow[targetIndex] || inputsInRow[0];
+            }
+        }
+        return null;
+    }
+
+    // =======================================================================
+    // كائن المبيعات الرئيسي مع جميع التحسينات (مدمج مع الجزء السابع)
+    // =======================================================================
     window.salesModule = {
         cart: [],
         customers: [],
@@ -675,6 +1318,16 @@
             this.loadCartFromStorage();
             this.setupKeyboardShortcuts();
             this.updateDailyStats();
+            
+            // ربط دوال البحث بالكائن
+            this.loadProducts = loadProducts;
+            this.searchProductsInTable = searchProductsInTable;
+            this.handleProductSearchKeydown = handleProductSearchKeydown;
+            this.addProductFromSearch = addProductFromSearch;
+            this.addProductFromSearchInput = addProductFromSearchInput;
+            this.showAddProductModal = showAddProductModal;
+            this.hideSearchResults = hideSearchResults;
+            this.setupTableNavigation = setupTableNavigation;
         },
         
         // دالة إشعارات محسنة
@@ -711,7 +1364,7 @@
         // إعداد اختصارات لوحة المفاتيح
         setupKeyboardShortcuts: function() {
             document.addEventListener('keydown', (e) => {
-                // Ctrl+F للتركيز على البحث (الآن سيركز على بحث العملاء)
+                // Ctrl+F للتركيز على البحث
                 if (e.ctrlKey && e.key === 'f') {
                     e.preventDefault();
                     this.focusSearch();
@@ -723,16 +1376,22 @@
                     this.finishSale();
                 }
                 
-                // ESC لإلغاء البحث
+                // ESC لإخفاء نتائج البحث
                 if (e.key === 'Escape') {
                     document.getElementById('customer-results').style.display = 'none';
+                    hideSearchResults();
                 }
             });
         },
         
-        // التركيز على حقل البحث عن العملاء
+        // التركيز على حقل البحث
         focusSearch: function() {
-            document.getElementById('customer-search').focus();
+            const searchInput = document.getElementById('product-search-input');
+            if (searchInput) {
+                searchInput.focus();
+            } else {
+                document.getElementById('customer-search').focus();
+            }
         },
         
         // البحث عن العملاء
@@ -804,11 +1463,11 @@
             const area = document.getElementById('active-customers-area');
             
             if (this.activeCustomers.length === 0) {
-                area.style.display = 'none';
+                if (area) area.style.display = 'none';
                 return;
             }
             
-            area.style.display = 'block';
+            if (area) area.style.display = 'block';
             
             let html = '';
             this.activeCustomers.forEach(customer => {
@@ -865,7 +1524,7 @@
             this.showNotification('تم مسح جميع العملاء النشطين', 'info');
         },
         
-        // إضافة منتج إلى السلة (يتم استدعاؤها من مكان آخر)
+        // إضافة منتج إلى السلة
         addToCart: function(product) {
             // التحقق من المخزون
             if (product.quantity <= 0) {
@@ -873,24 +1532,28 @@
                 return;
             }
             
-            const existingItem = this.cart.find(item => item.id === product.id);
+            const existingItem = this.cart.find(item => item.productId === product.id);
             
             if (existingItem) {
-                if (existingItem.quantity >= product.quantity) {
+                // التحقق من المخزون قبل الزيادة
+                if (existingItem.quantity + 1 > product.quantity) {
                     this.showNotification('الكمية المطلوبة غير متوفرة في المخزون', 'warning');
                     return;
                 }
                 existingItem.quantity += 1;
+                existingItem.total = existingItem.quantity * existingItem.price * (1 - (existingItem.discount / 100));
             } else {
                 this.cart.push({
-                    id: product.id,
+                    id: Date.now() + Math.random(),
+                    productId: product.id,
                     name: product.name,
                     price: product.price,
                     quantity: 1,
-                    pieces: product.pieces || 1,
+                    pieces: product.piecesPerUnit || 1,
                     unit: product.unit || 'قطعة',
                     stock: product.quantity,
-                    discount: 0
+                    discount: 0,
+                    total: product.price
                 });
             }
             
@@ -899,55 +1562,95 @@
             this.showNotification('تمت إضافة المنتج إلى السلة', 'success');
         },
         
-        // عرض السلة
+        // عرض السلة مع صف البحث المدمج
         renderCart: function() {
             const tbody = document.getElementById('cart-table');
             
+            if (!tbody) return;
+            
+            // إضافة صف البحث في البداية
+            let html = `
+                <tr id="product-search-row" class="table-primary">
+                    <td colspan="10" style="padding: 8px;">
+                        <div style="position: relative;">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text bg-white">
+                                    <i class="material-icons-round">search</i>
+                                </span>
+                                <input type="text" 
+                                       id="product-search-input" 
+                                       class="form-control form-control-sm" 
+                                       placeholder="ابحث عن منتج بالاسم أو الباركود..."
+                                       autocomplete="off"
+                                       oninput="salesModule.searchProductsInTable(this.value)"
+                                       onkeydown="salesModule.handleProductSearchKeydown(event)"
+                                       onfocus="if(this.value) salesModule.searchProductsInTable(this.value)">
+                                <button class="btn btn-sm btn-success" type="button" onclick="salesModule.addProductFromSearchInput()">
+                                    <i class="material-icons-round">add</i> إضافة
+                                </button>
+                            </div>
+                            <div id="product-search-results" class="search-results" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #ddd; border-radius: 4px; max-height: 300px; overflow-y: auto; width: 100%; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"></div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+            
             if (this.cart.length === 0) {
-                tbody.innerHTML = `
+                html += `
                     <tr>
-                        <td colspan="10" class="text-center p-3">
-                            <i class="material-icons-round" style="font-size: 2rem; color: #ccc;">shopping_cart</i>
-                            <br><small class="text-muted">السلة فارغة - ابحث عن منتج</small>
+                        <td colspan="10" class="text-center p-4">
+                            <i class="material-icons-round" style="font-size: 3rem; color: #ccc;">shopping_cart</i>
+                            <br><small class="text-muted">السلة فارغة - ابحث عن منتج وأضفه</small>
                         </td>
                     </tr>
                 `;
+                tbody.innerHTML = html;
                 document.getElementById('cart-count').textContent = '0';
                 this.calculateTotals();
                 return;
             }
             
-            let html = '';
+            // إضافة صفوف المنتجات
             this.cart.forEach((item, index) => {
                 // تحديد لون المخزون
                 const stockClass = item.stock <= 5 ? 'stock-critical-indicator' : 
                                   item.stock <= 10 ? 'stock-low-indicator' : 'stock-good-indicator';
                 
                 html += `
-                    <tr>
+                    <tr data-item-id="${item.id}">
                         <td>${index + 1}</td>
                         <td class="text-start">${item.name}</td>
                         <td>
-                            <input type="number" class="form-control form-control-sm" 
-                                   value="${item.quantity}" min="1" max="${item.stock}"
-                                   onchange="salesModule.updateQuantity(${index}, this.value)">
+                            <input type="number" class="form-control form-control-sm text-center" 
+                                   value="${item.quantity}" min="1" max="${item.stock}" step="any"
+                                   onchange="salesModule.updateQuantity('${item.id}', this.value)">
                         </td>
-                        <td>${item.pieces * item.quantity}</td>
-                        <td>${item.unit}</td>
+                        <td>${(item.pieces * item.quantity).toFixed(2)}</td>
                         <td>
-                            <input type="number" class="form-control form-control-sm" 
-                                   value="${item.price}" min="0"
-                                   onchange="salesModule.updatePrice(${index}, this.value)">
+                            <select class="form-select form-select-sm" onchange="salesModule.updateUnit('${item.id}', this.value)">
+                                <option value="piece" ${item.unit === 'piece' || item.unit === 'قطعة' ? 'selected' : ''}>قطعة</option>
+                                <option value="kg" ${item.unit === 'kg' ? 'selected' : ''}>كيلو</option>
+                                <option value="box" ${item.unit === 'box' ? 'selected' : ''}>علبة</option>
+                                <option value="pack" ${item.unit === 'pack' ? 'selected' : ''}>كرتونة</option>
+                            </select>
                         </td>
-                        <td>${(item.price * item.quantity).toFixed(2)}</td>
+                        <td>
+                            <input type="number" class="form-control form-control-sm text-center" 
+                                   value="${item.price}" min="0" step="any"
+                                   onchange="salesModule.updatePrice('${item.id}', this.value)">
+                        </td>
+                        <td>
+                            <input type="text" class="form-control form-control-sm text-center total-field" 
+                                   value="${(item.price * item.quantity * (1 - (item.discount / 100))).toFixed(2)}" readonly>
+                        </td>
                         <td class="${stockClass}">${item.stock}</td>
                         <td>
-                            <input type="number" class="form-control form-control-sm" 
-                                   value="${item.discount || 0}" min="0" max="${item.price * item.quantity}"
-                                   onchange="salesModule.updateDiscount(${index}, this.value)">
+                            <input type="number" class="form-control form-control-sm text-center" 
+                                   value="${item.discount || 0}" min="0" max="100" step="1"
+                                   onchange="salesModule.updateDiscount('${item.id}', this.value)">
                         </td>
                         <td>
-                            <button class="btn btn-sm btn-danger py-0 px-1" onclick="salesModule.removeFromCart(${index})">
+                            <button class="btn btn-sm btn-danger py-0 px-1" onclick="salesModule.removeFromCart('${item.id}')">
                                 <i class="material-icons-round" style="font-size: 1rem;">delete</i>
                             </button>
                         </td>
@@ -958,6 +1661,79 @@
             tbody.innerHTML = html;
             document.getElementById('cart-count').textContent = this.cart.length;
             this.calculateTotals();
+            
+            // إعداد التنقل في الجدول
+            setTimeout(setupTableNavigation, 100);
+        },
+        
+        // تحديث الكمية
+        updateQuantity: function(itemId, value) {
+            const item = this.cart.find(i => i.id == itemId);
+            if (!item) return;
+            
+            const quantity = parseFloat(value) || 1;
+            
+            if (quantity > item.stock) {
+                this.showNotification('الكمية المطلوبة أكبر من المخزون المتاح', 'warning');
+                item.quantity = item.stock;
+            } else {
+                item.quantity = quantity;
+            }
+            
+            this.renderCart();
+            this.saveCartToStorage();
+        },
+        
+        // تحديث السعر
+        updatePrice: function(itemId, value) {
+            const item = this.cart.find(i => i.id == itemId);
+            if (!item) return;
+            
+            item.price = parseFloat(value) || 0;
+            this.renderCart();
+            this.saveCartToStorage();
+        },
+        
+        // تحديث الخصم
+        updateDiscount: function(itemId, value) {
+            const item = this.cart.find(i => i.id == itemId);
+            if (!item) return;
+            
+            const discount = parseFloat(value) || 0;
+            item.discount = Math.min(100, Math.max(0, discount));
+            
+            this.renderCart();
+            this.saveCartToStorage();
+        },
+        
+        // تحديث الوحدة
+        updateUnit: function(itemId, unit) {
+            const item = this.cart.find(i => i.id == itemId);
+            if (!item) return;
+            
+            item.unit = unit;
+            
+            // تحديث عدد القطع حسب الوحدة
+            if (unit === 'kg' || unit === 'liter') {
+                item.pieces = 1000;
+            } else if (unit === 'box') {
+                item.pieces = 24;
+            } else if (unit === 'pack') {
+                item.pieces = 12;
+            } else {
+                item.pieces = 1;
+            }
+            
+            this.renderCart();
+            this.saveCartToStorage();
+        },
+        
+        // إزالة منتج من السلة
+        removeFromCart: function(itemId) {
+            this.cart = this.cart.filter(item => item.id != itemId);
+            this.renderCart();
+            this.saveCartToStorage();
+            this.showNotification('تمت إزالة المنتج من السلة', 'info');
         },
         
         // دالة محسنة لحساب الإجماليات
@@ -967,71 +1743,47 @@
             let totalDiscount = 0;
             
             this.cart.forEach(item => {
-                total += item.price * item.quantity;
+                const itemTotal = item.price * item.quantity;
+                total += itemTotal;
                 pieces += (item.pieces || 1) * item.quantity;
-                totalDiscount += item.discount || 0;
+                totalDiscount += itemTotal * (item.discount / 100);
             });
             
-            document.getElementById('grand-total').textContent = total.toFixed(2);
-            document.getElementById('total-pieces').textContent = pieces;
-            document.getElementById('total-discount').textContent = totalDiscount.toFixed(2);
-            
-            const paidAmount = parseFloat(document.getElementById('paid-amount').value) || 0;
             const finalTotal = total - totalDiscount;
+            
+            document.getElementById('grand-total').textContent = formatCurrency(total);
+            document.getElementById('total-pieces').textContent = pieces.toFixed(0);
+            document.getElementById('total-discount').textContent = formatCurrency(totalDiscount);
+            document.getElementById('final-grand-total').textContent = formatCurrency(finalTotal);
+            
+            return { total, finalTotal, totalDiscount };
+        },
+        
+        // تحديث المبلغ المتبقي
+        updateRemainingAmount: function() {
+            const paidAmount = parseFloat(document.getElementById('paid-amount').value) || 0;
+            const { finalTotal } = this.calculateTotals();
             const remaining = finalTotal - paidAmount;
             
-            document.getElementById('final-grand-total').textContent = finalTotal.toFixed(2);
-            document.getElementById('remaining-amount').textContent = remaining.toFixed(2) + ' دج';
-            
-            return { total, finalTotal, remaining };
+            document.getElementById('remaining-amount').textContent = formatCurrency(Math.abs(remaining)) + ' دج';
+            document.getElementById('remaining-amount').style.color = remaining < 0 ? '#28a745' : (remaining > 0 ? '#dc3545' : '#000');
         },
         
-        // تحديث الكمية
-        updateQuantity: function(index, value) {
-            const quantity = parseInt(value) || 1;
-            const item = this.cart[index];
-            
-            if (quantity > item.stock) {
-                this.showNotification('الكمية المطلوبة أكبر من المخزون المتاح', 'warning');
-                this.cart[index].quantity = item.stock;
-            } else {
-                this.cart[index].quantity = quantity;
+        // تعيين المبلغ المسدد
+        setPaidAmount: function(type) {
+            if (type === 'full') {
+                const finalTotal = parseFloat(document.getElementById('final-grand-total').textContent.replace(/[^\d.-]/g, '')) || 0;
+                document.getElementById('paid-amount').value = finalTotal;
+                this.updateRemainingAmount();
             }
-            
-            this.renderCart();
-            this.saveCartToStorage();
         },
         
-        // تحديث السعر
-        updatePrice: function(index, value) {
-            this.cart[index].price = parseFloat(value) || 0;
-            this.renderCart();
-            this.saveCartToStorage();
-        },
-        
-        // تحديث الخصم
-        updateDiscount: function(index, value) {
-            const discount = parseFloat(value) || 0;
-            const item = this.cart[index];
-            const maxDiscount = item.price * item.quantity;
-            
-            if (discount > maxDiscount) {
-                this.showNotification('الخصم لا يمكن أن يكون أكبر من الإجمالي', 'warning');
-                this.cart[index].discount = maxDiscount;
-            } else {
-                this.cart[index].discount = discount;
+        // عند تغيير طريقة الدفع
+        onPaymentMethodChange: function() {
+            const method = document.getElementById('sale-payment-method').value;
+            if (method === 'credit' && !this.selectedCustomer) {
+                this.showNotification('يرجى تحديد عميل للبيع الآجل', 'warning');
             }
-            
-            this.renderCart();
-            this.saveCartToStorage();
-        },
-        
-        // إزالة منتج من السلة
-        removeFromCart: function(index) {
-            this.cart.splice(index, 1);
-            this.renderCart();
-            this.saveCartToStorage();
-            this.showNotification('تمت إزالة المنتج من السلة', 'info');
         },
         
         // تفريغ السلة مع تأكيد
@@ -1079,28 +1831,6 @@
             }
         },
         
-        // تحديث المبلغ المتبقي
-        updateRemainingAmount: function() {
-            this.calculateTotals();
-        },
-        
-        // تعيين المبلغ المسدد
-        setPaidAmount: function(type) {
-            if (type === 'full') {
-                const finalTotal = parseFloat(document.getElementById('final-grand-total').textContent) || 0;
-                document.getElementById('paid-amount').value = finalTotal;
-                this.updateRemainingAmount();
-            }
-        },
-        
-        // عند تغيير طريقة الدفع
-        onPaymentMethodChange: function() {
-            const method = document.getElementById('sale-payment-method').value;
-            if (method === 'credit' && !this.selectedCustomer) {
-                this.showNotification('يرجى تحديد عميل للبيع الآجل', 'warning');
-            }
-        },
-        
         // إنهاء عملية البيع
         finishSale: function() {
             if (this.cart.length === 0) {
@@ -1141,7 +1871,7 @@
             const invoiceNumber = 'INV-' + Date.now();
             
             // حساب الإجماليات
-            const { total, finalTotal } = this.calculateTotals();
+            const { total, finalTotal, totalDiscount } = this.calculateTotals();
             const paidAmount = parseFloat(document.getElementById('paid-amount').value) || 0;
             
             // إنشاء الفاتورة
@@ -1152,10 +1882,11 @@
                 customer: this.selectedCustomer ? this.selectedCustomer.name : 'نقدي',
                 customerId: this.selectedCustomer ? this.selectedCustomer.id : null,
                 items: this.cart.map(item => ({...item})),
-                total: total,
+                subtotal: total,
+                totalDiscount: totalDiscount,
                 grandTotal: finalTotal,
                 paidAmount: paidAmount,
-                debt: finalTotal - paidAmount,
+                debt: Math.max(0, finalTotal - paidAmount),
                 paymentMethod: document.getElementById('sale-payment-method').value,
                 paymentText: document.getElementById('sale-payment-method').options[
                     document.getElementById('sale-payment-method').selectedIndex
@@ -1195,9 +1926,9 @@
             const products = JSON.parse(localStorage.getItem('products') || '[]');
             
             this.cart.forEach(cartItem => {
-                const product = products.find(p => p.id === cartItem.id);
+                const product = products.find(p => p.id === cartItem.productId);
                 if (product) {
-                    product.quantity -= cartItem.quantity;
+                    product.quantity = (product.quantity || 0) - cartItem.quantity;
                 }
             });
             
@@ -1235,8 +1966,8 @@
                     <tr>
                         <td>${customer.name}</td>
                         <td>${customer.phone || '-'}</td>
-                        <td>${purchases.toFixed(2)} دج</td>
-                        <td class="${debts > 0 ? 'text-danger' : 'text-success'}">${debts.toFixed(2)} دج</td>
+                        <td>${formatCurrency(purchases)} دج</td>
+                        <td class="${debts > 0 ? 'text-danger' : 'text-success'}">${formatCurrency(debts)} دج</td>
                         <td>
                             <button class="btn btn-sm btn-primary py-0 px-1" onclick="salesModule.selectCustomer(${JSON.stringify(customer).replace(/"/g, '&quot;')})">
                                 <i class="material-icons-round" style="font-size: 1rem;">shopping_cart</i>
@@ -1289,8 +2020,8 @@
                     <tr>
                         <td>${customer.name}</td>
                         <td>${customer.phone || '-'}</td>
-                        <td>${purchases.toFixed(2)} دج</td>
-                        <td class="${debts > 0 ? 'text-danger' : 'text-success'}">${debts.toFixed(2)} دج</td>
+                        <td>${formatCurrency(purchases)} دج</td>
+                        <td class="${debts > 0 ? 'text-danger' : 'text-success'}">${formatCurrency(debts)} دج</td>
                         <td>
                             <button class="btn btn-sm btn-primary py-0 px-1" onclick="salesModule.selectCustomer(${JSON.stringify(customer).replace(/"/g, '&quot;')})">
                                 <i class="material-icons-round" style="font-size: 1rem;">shopping_cart</i>
@@ -1335,9 +2066,9 @@
                         <td>${invoice.number}</td>
                         <td>${date}</td>
                         <td>${invoice.customer}</td>
-                        <td>${invoice.grandTotal.toFixed(2)}</td>
-                        <td>${invoice.paidAmount.toFixed(2)}</td>
-                        <td class="${debtClass}">${invoice.debt.toFixed(2)}</td>
+                        <td>${formatCurrency(invoice.grandTotal)} دج</td>
+                        <td>${formatCurrency(invoice.paidAmount)} دج</td>
+                        <td class="${debtClass}">${formatCurrency(invoice.debt)} دج</td>
                         <td>${invoice.paymentText}</td>
                         <td>
                             <button class="btn btn-sm btn-info py-0 px-1" onclick="salesModule.viewInvoice('${invoice.id}')">
@@ -1394,9 +2125,9 @@
                         <td>${invoice.number}</td>
                         <td>${date}</td>
                         <td>${invoice.customer}</td>
-                        <td>${invoice.grandTotal.toFixed(2)}</td>
-                        <td>${invoice.paidAmount.toFixed(2)}</td>
-                        <td class="${debtClass}">${invoice.debt.toFixed(2)}</td>
+                        <td>${formatCurrency(invoice.grandTotal)} دج</td>
+                        <td>${formatCurrency(invoice.paidAmount)} دج</td>
+                        <td class="${debtClass}">${formatCurrency(invoice.debt)} دج</td>
                         <td>${invoice.paymentText}</td>
                         <td>
                             <button class="btn btn-sm btn-info py-0 px-1" onclick="salesModule.viewInvoice('${invoice.id}')">
@@ -1418,20 +2149,19 @@
         
         // عرض الفاتورة
         viewInvoice: function(invoiceId) {
-            const invoice = this.invoices.find(inv => inv.id === invoiceId);
+            const invoice = this.invoices.find(inv => inv.id == invoiceId);
             if (!invoice) return;
             
-            // تنسيق محتويات الفاتورة للعرض
             let itemsHtml = '';
-            invoice.items.forEach(item => {
+            invoice.items.forEach((item, index) => {
                 itemsHtml += `
                     <tr>
-                        <td>${item.name}</td>
-                        <td>${item.quantity}</td>
-                        <td>${item.price}</td>
-                        <td>${(item.price * item.quantity).toFixed(2)}</td>
-                        <td>${item.discount || 0}</td>
-                        <td>${((item.price * item.quantity) - (item.discount || 0)).toFixed(2)}</td>
+                        <td style="padding:5px; border:1px solid #ddd;">${index + 1}</td>
+                        <td style="padding:5px; border:1px solid #ddd;">${item.name}</td>
+                        <td style="padding:5px; border:1px solid #ddd;">${item.quantity}</td>
+                        <td style="padding:5px; border:1px solid #ddd;">${formatCurrency(item.price)}</td>
+                        <td style="padding:5px; border:1px solid #ddd;">${item.discount || 0}%</td>
+                        <td style="padding:5px; border:1px solid #ddd;">${formatCurrency(item.price * item.quantity * (1 - (item.discount / 100)))}</td>
                     </tr>
                 `;
             });
@@ -1439,7 +2169,7 @@
             Swal.fire({
                 title: `فاتورة رقم: ${invoice.number}`,
                 html: `
-                    <div style="text-align: right; direction: rtl;">
+                    <div style="text-align: right; direction: rtl; max-height: 400px; overflow-y: auto;">
                         <p><strong>التاريخ:</strong> ${new Date(invoice.date).toLocaleString('ar-EG')}</p>
                         <p><strong>العميل:</strong> ${invoice.customer}</p>
                         <p><strong>طريقة الدفع:</strong> ${invoice.paymentText}</p>
@@ -1447,12 +2177,12 @@
                         <table style="width:100%; border-collapse: collapse;">
                             <thead>
                                 <tr style="background: #f5f5f5;">
-                                    <th>المنتج</th>
-                                    <th>الكمية</th>
-                                    <th>السعر</th>
-                                    <th>الإجمالي</th>
-                                    <th>الخصم</th>
-                                    <th>الصافي</th>
+                                    <th style="padding:5px; border:1px solid #ddd;">#</th>
+                                    <th style="padding:5px; border:1px solid #ddd;">المنتج</th>
+                                    <th style="padding:5px; border:1px solid #ddd;">الكمية</th>
+                                    <th style="padding:5px; border:1px solid #ddd;">السعر</th>
+                                    <th style="padding:5px; border:1px solid #ddd;">الخصم</th>
+                                    <th style="padding:5px; border:1px solid #ddd;">الإجمالي</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1460,11 +2190,9 @@
                             </tbody>
                         </table>
                         <hr>
-                        <p><strong>الإجمالي:</strong> ${invoice.total.toFixed(2)} دج</p>
-                        <p><strong>الخصم الكلي:</strong> ${(invoice.total - invoice.grandTotal).toFixed(2)} دج</p>
-                        <p><strong>الصافي:</strong> ${invoice.grandTotal.toFixed(2)} دج</p>
-                        <p><strong>المدفوع:</strong> ${invoice.paidAmount.toFixed(2)} دج</p>
-                        <p><strong>المتبقي:</strong> ${invoice.debt.toFixed(2)} دج</p>
+                        <p><strong>الإجمالي:</strong> ${formatCurrency(invoice.grandTotal)} دج</p>
+                        <p><strong>المدفوع:</strong> ${formatCurrency(invoice.paidAmount)} دج</p>
+                        <p><strong>الدين:</strong> <span style="color: ${invoice.debt > 0 ? 'red' : 'green'};">${formatCurrency(invoice.debt)} دج</span></p>
                     </div>
                 `,
                 width: '800px',
@@ -1489,8 +2217,8 @@
             });
             
             document.getElementById('today-invoices-count').textContent = todayCount;
-            document.getElementById('today-sales-total').textContent = todayTotal.toFixed(2);
-            document.getElementById('total-debts').textContent = totalDebts.toFixed(2);
+            document.getElementById('today-sales-total').textContent = formatCurrency(todayTotal);
+            document.getElementById('total-debts').textContent = formatCurrency(totalDebts);
         },
         
         // فتح نافذة إضافة عميل
@@ -1543,77 +2271,15 @@
         }
     };
     
-    // دالة إضافة عميل سريع (للاستخدام من الزر السريع)
-    function addQuickCustomer() {
-        const name = document.getElementById('new-customer').value;
-        const phone = document.getElementById('new-customer-phone').value;
-        
-        if (!name) {
-            Swal.fire('تنبيه', 'اسم العميل مطلوب', 'warning');
-            return;
-        }
-        
-        window.salesModule.addCustomer({ name, phone });
-        
-        document.getElementById('new-customer').value = '';
-        document.getElementById('new-customer-phone').value = '';
-    }
+    // ربط الدوال المساعدة بالكائن
+    window.salesModule.formatCurrency = formatCurrency;
+    window.salesModule.parseNumber = parseNumber;
     
-    // دالة تصدير الفواتير إلى Excel
-    function exportInvoicesToExcel() {
-        if (!window.salesModule || !salesModule.invoices || salesModule.invoices.length === 0) {
-            Swal.fire('معلومة', 'لا توجد فواتير للتصدير', 'info');
-            return;
-        }
-        
-        const invoices = salesModule.invoices;
-        
-        let csv = 'رقم الفاتورة,التاريخ,العميل,المبلغ الإجمالي,المدفوع,الدين,طريقة الدفع\n';
-        invoices.forEach(inv => {
-            const date = new Date(inv.date).toLocaleDateString('ar-EG');
-            csv += `"${inv.number}",${date},"${inv.customer}",${inv.grandTotal},${inv.paidAmount},${inv.debt},"${inv.paymentText}"\n`;
-        });
-        
-        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `sales_invoices_${new Date().toISOString().slice(0,10)}.csv`;
-        link.click();
-        
-        salesModule.showNotification('تم تصدير الفواتير بنجاح', 'success');
-    }
-    
-    // دالة إظهار الأقسام الفرعية
-    function showSubSection(sectionId) {
-        document.querySelectorAll('.sub-section').forEach(el => {
-            el.style.display = 'none';
-        });
-        
-        document.getElementById(sectionId).style.display = 'block';
-        
-        document.querySelectorAll('.tab-item').forEach(el => {
-            el.classList.remove('active-red');
-        });
-        
-        const activeTab = event.currentTarget;
-        if (activeTab) {
-            activeTab.classList.add('active-red');
-        }
-        
-        // حفظ حالة السلة عند التنقل
-        if (sectionId !== 'sale-operation' && window.salesModule) {
-            window.salesModule.saveCartToStorage();
-        }
-        
-        // تحديث البيانات عند العودة
-        if (sectionId === 'sale-operation' && window.salesModule) {
-            window.salesModule.loadCartFromStorage();
-        } else if (sectionId === 'sale-invoices' && window.salesModule) {
-            window.salesModule.loadInvoices();
-        } else if (sectionId === 'customers' && window.salesModule) {
-            window.salesModule.loadCustomers();
-        }
-    }
+    // دوال مختصرة للاستخدام المباشر
+    window.searchProductsInTable = (term) => salesModule.searchProductsInTable(term);
+    window.handleProductSearchKeydown = (e) => salesModule.handleProductSearchKeydown(e);
+    window.addProductFromSearch = (element) => salesModule.addProductFromSearch(element);
+    window.addProductFromSearchInput = () => salesModule.addProductFromSearchInput();
     
     // تهيئة الوحدة عند تحميل الصفحة
     document.addEventListener('DOMContentLoaded', function() {
@@ -1621,8 +2287,15 @@
             window.salesModule.init();
         }
     });
+    
+    // إعادة التهيئة عند تحميل HTML
+    document.addEventListener('html-loaded', function() {
+        if (window.salesModule) {
+            window.salesModule.init();
+        }
+    });
 </script>
 
 <!-- ======================================================================= -->
-<!-- نهاية الملف المحسن -->
+<!-- نهاية الملف المحسن مع الجزء السابع المتقدم -->
 <!-- ======================================================================= -->
