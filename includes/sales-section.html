@@ -1,6 +1,6 @@
 <!-- ======================================================================= -->
 <!-- ملف: sales-section.html - قسم المبيعات في واجهة المستخدم -->
-<!-- الإصدار: 5.0 - واجهة مرتبة مع إزالة البحث العلوي -->
+<!-- الإصدار: 5.1 - واجهة مصغرة مع دمج العملاء النشطين مع الجدول -->
 <!-- ======================================================================= -->
 
 <!-- ======================================================================= -->
@@ -24,49 +24,42 @@
     <!-- الجزء 2: قسم عملية البيع (sale-operation) -->
     <!-- ======================================================================= -->
     <div id="sale-operation" class="sub-section">
-        <!-- بطاقة تسجيل المبيعات المبسطة -->
-        <div class="main-card no-print">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0">
-                    <i class="material-icons-round text-danger me-2">shopping_cart</i> سلة المبيعات
-                </h5>
+        <!-- بطاقة سلة المبيعات المصغرة -->
+        <div class="main-card compact-card no-print">
+            <div class="d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">
+                    <i class="material-icons-round text-danger me-1" style="font-size: 1.2rem;">shopping_cart</i>
+                    <span class="fw-bold">سلة المبيعات</span>
+                </h6>
                 <div>
-                    <span class="badge bg-primary" id="cart-count" style="font-size: 1rem;">0</span>
+                    <span class="badge bg-primary" id="cart-count">0</span>
+                    <button class="btn btn-sm btn-outline-secondary ms-2 py-0" onclick="salesModule.clearCart()" title="تفريغ السلة">
+                        <i class="material-icons-round" style="font-size: 1rem;">delete_sweep</i>
+                    </button>
                 </div>
             </div>
             
-            <!-- خيارات البيع المبسطة -->
-            <div class="row g-2 mb-3">
-                <div class="col-md-8 col-12">
+            <!-- صف سريع للعميل وطريقة الدفع -->
+            <div class="row g-1 mt-2">
+                <div class="col-7">
                     <div class="customer-search-container">
-                        <div class="input-group">
-                            <span class="input-group-text bg-light"><i class="material-icons-round">person</i></span>
-                            <input type="text" id="customer-search" class="form-control" 
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light p-0 px-2">
+                                <i class="material-icons-round" style="font-size: 1rem;">person</i>
+                            </span>
+                            <input type="text" id="customer-search" class="form-control form-control-sm" 
                                    placeholder="ابحث عن عميل..." 
                                    oninput="salesModule.searchCustomers(this.value)"
                                    autocomplete="off">
-                            <button class="btn btn-outline-success" type="button" onclick="salesModule.openAddCustomerModal()">
-                                <i class="material-icons-round">person_add</i>
+                            <button class="btn btn-sm btn-outline-success py-0" type="button" onclick="salesModule.openAddCustomerModal()">
+                                <i class="material-icons-round" style="font-size: 1rem;">person_add</i>
                             </button>
                         </div>
                         <div id="customer-results" class="search-results"></div>
-                        
-                        <select id="sale-customer" class="form-select mt-2" onchange="salesModule.selectCustomerFromDropdown(this.value)">
-                            <option value="">اختر العميل (اختياري)</option>
-                        </select>
-                        
-                        <div id="selected-customer-badge" class="selected-customer mt-2" style="display: none;">
-                            <span class="badge bg-success p-2">
-                                <i class="material-icons-round" style="font-size: 16px;">check_circle</i>
-                                <span id="selected-customer-name"></span>
-                                <i class="material-icons-round" style="font-size: 16px; cursor: pointer;" onclick="salesModule.clearSelectedCustomer()">close</i>
-                            </span>
-                        </div>
                     </div>
                 </div>
-                
-                <div class="col-md-4 col-12">
-                    <select id="sale-payment-method" class="form-select h-100">
+                <div class="col-5">
+                    <select id="sale-payment-method" class="form-select form-select-sm">
                         <option value="cash">💰 نقدي</option>
                         <option value="card">💳 بطاقة</option>
                         <option value="credit">📝 آجل</option>
@@ -74,112 +67,116 @@
                 </div>
             </div>
             
-            <!-- العملاء النشطين -->
-            <div id="active-customers-area" class="mt-2 p-2 border rounded bg-light" style="display: none;">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <small class="text-muted">
-                        <i class="material-icons-round" style="font-size: 16px;">group</i> العملاء النشطين
-                        <span id="active-customers-total" class="badge bg-secondary ms-1">0</span>
-                    </small>
-                    <button class="btn btn-sm btn-outline-danger py-0" onclick="salesModule.clearAllActiveCustomers()">
-                        <i class="material-icons-round">close_all</i> مسح الكل
-                    </button>
-                </div>
-                <div id="active-customers-list" class="d-flex flex-wrap gap-1"></div>
+            <!-- العميل المحدد -->
+            <div id="selected-customer-badge" class="mt-1" style="display: none;">
+                <span class="badge bg-success p-1">
+                    <i class="material-icons-round" style="font-size: 0.9rem;">check_circle</i>
+                    <span id="selected-customer-name" class="small"></span>
+                    <i class="material-icons-round" style="font-size: 0.9rem; cursor: pointer;" onclick="salesModule.clearSelectedCustomer()">close</i>
+                </span>
             </div>
         </div>
         
         <!-- ======================================================================= -->
-        <!-- سلة المبيعات - مع البحث المدمج داخل الجدول -->
+        <!-- العملاء النشطين مع الجدول المدمج -->
         <!-- ======================================================================= -->
-        <div class="main-card mt-3">
-            <div class="table-responsive" style="max-height: 350px; overflow-y: auto; border-radius: 8px;" id="cart-table-container">
-                <table class="table table-bordered table-hover table-sm" style="min-width: 1200px;" id="cart-main-table">
+        <div class="main-card mt-2 p-2">
+            <!-- العملاء النشطين (شريط صغير فوق الجدول) -->
+            <div id="active-customers-area" class="mb-2" style="display: none;">
+                <div class="d-flex align-items-center bg-light p-1 rounded" style="font-size: 0.8rem;">
+                    <i class="material-icons-round text-muted me-1" style="font-size: 1rem;">group</i>
+                    <span class="text-muted small">النشطين:</span>
+                    <div id="active-customers-list" class="d-flex flex-wrap gap-1 mx-1"></div>
+                    <span id="active-customers-total" class="badge bg-secondary ms-auto me-1">0</span>
+                    <button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="salesModule.clearAllActiveCustomers()" title="مسح الكل">
+                        <i class="material-icons-round" style="font-size: 1rem;">close_all</i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- الجدول مع البحث المدمج -->
+            <div class="table-responsive" style="max-height: 280px; overflow-y: auto; border-radius: 6px;" id="cart-table-container">
+                <table class="table table-bordered table-hover table-sm mb-0" style="min-width: 1000px; font-size: 0.8rem;" id="cart-main-table">
                     <thead class="sticky-top bg-light" style="top: 0; z-index: 5;">
                         <tr>
-                            <th style="width: 40px;">#</th>
-                            <th style="width: 180px;">المنتج</th>
-                            <th style="width: 80px;">الكمية</th>
-                            <th style="width: 90px;">عدد القطع</th>
-                            <th style="width: 80px;">الوحدة</th>
-                            <th style="width: 90px;">السعر</th>
-                            <th style="width: 100px;">الإجمالي</th>
-                            <th style="width: 70px;">المخزون</th>
-                            <th style="width: 70px;">الخصم %</th>
-                            <th style="width: 40px;"></th>
+                            <th style="width: 30px;">#</th>
+                            <th style="width: 150px;">المنتج</th>
+                            <th style="width: 60px;">الكمية</th>
+                            <th style="width: 70px;">القطع</th>
+                            <th style="width: 60px;">الوحدة</th>
+                            <th style="width: 70px;">السعر</th>
+                            <th style="width: 80px;">الإجمالي</th>
+                            <th style="width: 50px;">المخزون</th>
+                            <th style="width: 50px;">الخصم</th>
+                            <th style="width: 30px;"></th>
                         </tr>
                     </thead>
                     <tbody id="cart-table">
                         <tr>
-                            <td colspan="10" class="text-center p-4">
-                                <i class="material-icons-round" style="font-size: 48px; color: #ccc;">shopping_cart</i>
-                                <br><span class="text-muted">السلة فارغة - ابحث عن منتج وأضفه</span>
+                            <td colspan="10" class="text-center p-3">
+                                <i class="material-icons-round" style="font-size: 2rem; color: #ccc;">shopping_cart</i>
+                                <br><small class="text-muted">السلة فارغة - ابحث عن منتج</small>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
             
-            <!-- ملخص السلة بشكل مرتب -->
-            <div class="row g-2 mt-3">
+            <!-- ملخص سريع -->
+            <div class="row g-1 mt-2">
                 <div class="col-3">
-                    <div class="p-2 bg-light rounded text-center">
-                        <small class="text-muted d-block">إجمالي الخصم</small>
-                        <span class="fw-bold text-danger" id="total-discount">0.00 دج</span>
+                    <div class="bg-light p-1 rounded text-center">
+                        <small class="text-muted d-block" style="font-size: 0.65rem;">الخصم</small>
+                        <span class="fw-bold text-danger small" id="total-discount">0.00</span>
                     </div>
                 </div>
                 <div class="col-3">
-                    <div class="p-2 bg-light rounded text-center">
-                        <small class="text-muted d-block">إجمالي القطع</small>
-                        <span class="fw-bold text-info" id="total-pieces">0 قطعة</span>
+                    <div class="bg-light p-1 rounded text-center">
+                        <small class="text-muted d-block" style="font-size: 0.65rem;">القطع</small>
+                        <span class="fw-bold text-info small" id="total-pieces">0</span>
                     </div>
                 </div>
                 <div class="col-3">
-                    <div class="p-2 bg-light rounded text-center">
-                        <small class="text-muted d-block">المجموع</small>
-                        <span class="fw-bold text-primary" id="grand-total">0.00 دج</span>
+                    <div class="bg-light p-1 rounded text-center">
+                        <small class="text-muted d-block" style="font-size: 0.65rem;">المجموع</small>
+                        <span class="fw-bold text-primary small" id="grand-total">0.00</span>
                     </div>
                 </div>
                 <div class="col-3">
-                    <div class="p-2 bg-danger rounded text-center text-white">
-                        <small class="text-white-50 d-block">النهائي</small>
-                        <span class="fw-bold" id="final-grand-total" style="font-size: 1.2rem;">0.00 دج</span>
+                    <div class="bg-danger p-1 rounded text-center text-white">
+                        <small class="text-white-50 d-block" style="font-size: 0.65rem;">النهائي</small>
+                        <span class="fw-bold small" id="final-grand-total">0.00</span>
                     </div>
                 </div>
             </div>
             
             <!-- المبلغ المسدد والمتبقي -->
-            <div class="row g-2 mt-2">
+            <div class="row g-1 mt-2">
                 <div class="col-6">
-                    <div class="input-group">
-                        <span class="input-group-text bg-light">💰 المبلغ المسدد</span>
-                        <input type="number" id="paid-amount" class="form-control text-center fw-bold" 
-                               placeholder="0.00" oninput="salesModule.updateRemainingAmount()" value="0" min="0">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light p-0 px-1">💰</span>
+                        <input type="number" id="paid-amount" class="form-control form-control-sm text-center" 
+                               placeholder="المسدد" oninput="salesModule.updateRemainingAmount()" value="0" min="0">
                     </div>
                 </div>
                 <div class="col-6">
-                    <div class="p-2 bg-light rounded d-flex justify-content-between align-items-center h-100">
-                        <span class="text-muted">الباقي / الدين:</span>
-                        <span class="fw-bold" id="remaining-amount" style="font-size: 1.2rem;">0.00 دج</span>
+                    <div class="bg-light p-1 rounded d-flex justify-content-between align-items-center h-100">
+                        <small class="text-muted">المتبقي:</small>
+                        <span class="fw-bold small" id="remaining-amount">0.00 دج</span>
                     </div>
                 </div>
             </div>
             
             <!-- أزرار إنهاء البيع -->
-            <div class="row g-2 mt-3">
+            <div class="row g-1 mt-2">
                 <div class="col-6">
-                    <button class="btn btn-success w-100 py-2" onclick="salesModule.finishSale()">
-                        <i class="material-icons-round me-1">save</i> حفظ الفاتورة
+                    <button class="btn btn-sm btn-success w-100 py-1" onclick="salesModule.finishSale()">
+                        <i class="material-icons-round me-1" style="font-size: 1rem;">save</i> حفظ
                     </button>
                 </div>
                 <div class="col-6">
-                    <button class="btn btn-primary w-100 py-2" onclick="salesModule.finishSaleAndPrint()">
-                        <i class="material-icons-round me-1">print</i> حفظ وطباعة
-                    </button>
-                </div>
-                <div class="col-12 mt-1">
-                    <button class="btn btn-outline-secondary w-100 py-1" onclick="salesModule.clearCart()">
-                        <i class="material-icons-round me-1">delete_sweep</i> تفريغ السلة
+                    <button class="btn btn-sm btn-primary w-100 py-1" onclick="salesModule.finishSaleAndPrint()">
+                        <i class="material-icons-round me-1" style="font-size: 1rem;">print</i> طباعة
                     </button>
                 </div>
             </div>
@@ -187,43 +184,43 @@
     </div>
 
     <!-- ======================================================================= -->
-    <!-- الجزء 3: قسم فواتير المبيعات -->
+    <!-- الجزء 3: قسم فواتير المبيعات (مصغر) -->
     <!-- ======================================================================= -->
     <div id="sale-invoices" class="sub-section" style="display: none;">
-        <div class="main-card">
-            <h5 class="text-center mb-4">
-                <i class="material-icons-round me-2">receipt_long</i> سجل فواتير المبيعات
-            </h5>
+        <div class="main-card compact-card">
+            <h6 class="text-center mb-2">
+                <i class="material-icons-round me-1">receipt_long</i> فواتير المبيعات
+            </h6>
             
-            <div class="input-group mb-3">
-                <span class="input-group-text bg-light"><i class="material-icons-round">search</i></span>
-                <input type="text" id="invoice-search" class="form-control" 
-                       placeholder="بحث برقم الفاتورة أو اسم العميل">
-                <button class="btn btn-outline-secondary" onclick="exportInvoicesToExcel()">
-                    <i class="material-icons-round">download</i> تصدير
+            <div class="input-group input-group-sm mb-2">
+                <span class="input-group-text bg-light p-0 px-2"><i class="material-icons-round" style="font-size: 1rem;">search</i></span>
+                <input type="text" id="invoice-search" class="form-control form-control-sm" 
+                       placeholder="بحث برقم الفاتورة أو العميل"
+                       oninput="salesModule.searchInvoices()">
+                <button class="btn btn-sm btn-outline-secondary" onclick="exportInvoicesToExcel()">
+                    <i class="material-icons-round" style="font-size: 1rem;">download</i>
                 </button>
             </div>
             
-            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                <table class="table table-bordered table-hover table-sm">
+            <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                <table class="table table-bordered table-hover table-sm" style="font-size: 0.75rem;">
                     <thead class="bg-light sticky-top" style="top: 0;">
                         <tr>
-                            <th>رقم الفاتورة</th>
+                            <th>رقم</th>
                             <th>التاريخ</th>
                             <th>العميل</th>
                             <th>المبلغ</th>
                             <th>المدفوع</th>
                             <th>الدين</th>
-                            <th>طريقة الدفع</th>
-                            <th>المنتجات</th>
-                            <th>عمليات</th>
+                            <th>طريقة</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="sale-invoices-tbody">
                         <tr>
-                            <td colspan="9" class="text-center p-4">
-                                <i class="material-icons-round" style="font-size: 48px; color: #ccc;">receipt</i>
-                                <br><span class="text-muted">لا توجد فواتير</span>
+                            <td colspan="8" class="text-center p-3">
+                                <i class="material-icons-round" style="font-size: 2rem; color: #ccc;">receipt</i>
+                                <br><small class="text-muted">لا توجد فواتير</small>
                             </td>
                         </tr>
                     </tbody>
@@ -233,44 +230,44 @@
     </div>
 
     <!-- ======================================================================= -->
-    <!-- الجزء 4: قسم إدارة العملاء -->
+    <!-- الجزء 4: قسم إدارة العملاء (مصغر) -->
     <!-- ======================================================================= -->
     <div id="customers" class="sub-section" style="display: none;">
-        <div class="main-card">
-            <h5 class="text-center mb-4">
-                <i class="material-icons-round me-2">people_outline</i> إدارة العملاء
-            </h5>
+        <div class="main-card compact-card">
+            <h6 class="text-center mb-2">
+                <i class="material-icons-round me-1">people_outline</i> العملاء
+            </h6>
             
-            <div class="row g-2 mb-3">
-                <div class="col-md-5 col-12">
-                    <input type="text" id="new-customer" class="form-control" placeholder="اسم العميل">
+            <div class="row g-1 mb-2">
+                <div class="col-5">
+                    <input type="text" id="new-customer" class="form-control form-control-sm" placeholder="الاسم">
                 </div>
-                <div class="col-md-4 col-12">
-                    <input type="text" id="new-customer-phone" class="form-control" placeholder="رقم الهاتف">
+                <div class="col-4">
+                    <input type="text" id="new-customer-phone" class="form-control form-control-sm" placeholder="الهاتف">
                 </div>
-                <div class="col-md-3 col-12">
-                    <button class="btn btn-dark w-100" onclick="addQuickCustomer()">
-                        <i class="material-icons-round me-1">person_add</i> إضافة
+                <div class="col-3">
+                    <button class="btn btn-sm btn-dark w-100 py-1" onclick="addQuickCustomer()">
+                        <i class="material-icons-round" style="font-size: 1rem;">person_add</i>
                     </button>
                 </div>
             </div>
             
-            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                <table class="table table-bordered table-hover table-sm">
+            <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                <table class="table table-bordered table-hover table-sm" style="font-size: 0.75rem;">
                     <thead class="bg-light sticky-top" style="top: 0;">
                         <tr>
                             <th>الاسم</th>
                             <th>الهاتف</th>
                             <th>المشتريات</th>
                             <th>الديون</th>
-                            <th>عمليات</th>
+                            <th></th>
                         </tr>
                     </thead>
                     <tbody id="customers-tbody">
                         <tr>
-                            <td colspan="5" class="text-center p-4">
-                                <i class="material-icons-round" style="font-size: 48px; color: #ccc;">people</i>
-                                <br><span class="text-muted">لا يوجد عملاء</span>
+                            <td colspan="5" class="text-center p-3">
+                                <i class="material-icons-round" style="font-size: 2rem; color: #ccc;">people</i>
+                                <br><small class="text-muted">لا يوجد عملاء</small>
                             </td>
                         </tr>
                     </tbody>
@@ -281,24 +278,23 @@
 </div>
 
 <!-- ======================================================================= -->
-<!-- التنسيقات (CSS) المحسنة -->
+<!-- التنسيقات المدمجة والمصغرة -->
 <!-- ======================================================================= -->
 <style>
-    /* تنسيقات عامة */
+    /* تنسيقات عامة مصغرة */
     .main-card {
         background: white;
-        border-radius: 12px;
-        padding: 1.25rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        border: 1px solid #e0e0e0;
-        transition: all 0.2s;
+        border-radius: 10px;
+        padding: 12px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        border: 1px solid #eaeaea;
     }
     
-    .main-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    .compact-card {
+        padding: 10px;
     }
     
-    /* تنسيق البحث */
+    /* تنسيق البحث عن العملاء */
     .customer-search-container {
         position: relative;
     }
@@ -309,27 +305,24 @@
         left: 0;
         right: 0;
         z-index: 1000;
-        max-height: 250px;
+        max-height: 200px;
         overflow-y: auto;
         background: white;
         border: 1px solid #ddd;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
         display: none;
-    }
-    
-    #customer-results[style*="display: block"] {
-        display: block !important;
+        font-size: 0.8rem;
     }
     
     .search-item {
-        padding: 10px 15px;
+        padding: 6px 10px;
         cursor: pointer;
-        border-bottom: 1px solid #eee;
+        border-bottom: 1px solid #f0f0f0;
         transition: all 0.2s;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 6px;
     }
     
     .search-item:hover {
@@ -337,28 +330,18 @@
         color: white;
     }
     
-    .search-item:hover .badge {
-        background-color: white !important;
-        color: #007bff !important;
-    }
-    
-    /* تنسيق شيب العملاء النشطين */
+    /* تنسيق العملاء النشطين */
     .customer-chip {
         transition: all 0.2s;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         border-radius: 30px;
-        padding: 4px 12px !important;
+        padding: 2px 8px !important;
         cursor: pointer;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 4px;
         border: 1px solid #dee2e6;
-        font-size: 0.9rem;
-    }
-    
-    .customer-chip:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+        font-size: 0.7rem;
+        background: white;
     }
     
     .customer-chip.bg-success {
@@ -367,10 +350,9 @@
         border-color: #28a745;
     }
     
-    /* تنسيق الجدول */
+    /* تنسيق الجدول المصغر */
     .table {
         margin-bottom: 0;
-        font-size: 0.9rem;
     }
     
     .table th {
@@ -378,36 +360,20 @@
         text-align: center;
         vertical-align: middle;
         font-weight: 600;
-        padding: 10px 5px;
-        border-bottom: 2px solid #dee2e6;
-        font-size: 0.85rem;
+        padding: 6px 2px;
+        font-size: 0.7rem;
     }
     
     .table td {
         text-align: center;
         vertical-align: middle;
-        padding: 6px 4px;
+        padding: 4px 2px;
     }
     
     .table input, .table select {
-        width: 100%;
-        padding: 4px 6px;
-        border: 1px solid #ced4da;
-        border-radius: 4px;
-        text-align: center;
-        font-size: 0.85rem;
-        transition: all 0.2s;
-    }
-    
-    .table input:focus, .table select:focus {
-        outline: none;
-        border-color: #007bff;
-        box-shadow: 0 0 0 2px rgba(0,123,255,.25);
-        background-color: #fff;
-    }
-    
-    .table input:hover, .table select:hover {
-        border-color: #007bff;
+        padding: 2px 4px;
+        font-size: 0.7rem;
+        height: 24px;
     }
     
     .table input[readonly] {
@@ -415,23 +381,22 @@
         color: #28a745;
         font-weight: bold;
         border-color: #28a745;
-        cursor: default;
     }
     
     /* تنسيق صف البحث في الجدول */
     #product-search-row td {
-        padding: 10px;
-        background: linear-gradient(145deg, #e8f0fe, #d9e6f7);
+        padding: 6px;
+        background-color: #f0f7ff;
     }
     
     #product-search-input {
-        border: 1px solid #80bdff;
-        background: white;
+        font-size: 0.8rem;
+        height: 28px;
     }
     
-    #product-search-input:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 0 3px rgba(0,123,255,.1);
+    .btn-sm, .btn-group-sm > .btn {
+        padding: 2px 8px;
+        font-size: 0.75rem;
     }
     
     /* تنسيق نتائج البحث داخل الجدول */
@@ -439,115 +404,53 @@
         position: absolute;
         background: white;
         border: 1px solid #ddd;
-        border-radius: 8px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        max-height: 280px;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        max-height: 250px;
         overflow-y: auto;
         z-index: 1000;
+        font-size: 0.75rem;
     }
     
     .search-result-item {
         cursor: pointer;
-        padding: 10px 15px;
+        padding: 6px 10px;
         border-bottom: 1px solid #f0f0f0;
-        transition: all 0.2s;
     }
     
-    .search-result-item:hover,
-    .search-result-item.selected {
+    .search-result-item:hover {
         background-color: #007bff;
         color: white;
-    }
-    
-    .search-result-item:hover .text-muted,
-    .search-result-item.selected .text-muted {
-        color: rgba(255,255,255,0.9) !important;
-    }
-    
-    /* تنسيق شريط التمرير */
-    #cart-table-container::-webkit-scrollbar,
-    .table-responsive::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    
-    #cart-table-container::-webkit-scrollbar-track,
-    .table-responsive::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 4px;
-    }
-    
-    #cart-table-container::-webkit-scrollbar-thumb,
-    .table-responsive::-webkit-scrollbar-thumb {
-        background: #c1c1c1;
-        border-radius: 4px;
-    }
-    
-    #cart-table-container::-webkit-scrollbar-thumb:hover,
-    .table-responsive::-webkit-scrollbar-thumb:hover {
-        background: #a1a1a1;
-    }
-    
-    /* تنسيق البادج */
-    .badge {
-        font-weight: 500;
-        padding: 4px 8px;
-    }
-    
-    /* تنسيق الأزرار */
-    .btn {
-        font-weight: 500;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
-    }
-    
-    .btn-sm {
-        padding: 4px 8px;
-        font-size: 0.85rem;
-    }
-    
-    /* تنسيق الشارة المحددة */
-    .selected-customer {
-        animation: slideDown 0.2s ease;
-    }
-    
-    @keyframes slideDown {
-        from {
-            opacity: 0;
-            transform: translateY(-10px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
     }
     
     /* تنسيق علامات التبويب */
     .nav-tabs-custom {
         display: flex;
-        gap: 5px;
+        gap: 3px;
         background: #f8f9fa;
-        padding: 10px;
-        border-radius: 50px;
-        margin-bottom: 20px;
-        border: 1px solid #e0e0e0;
+        padding: 6px;
+        border-radius: 40px;
+        margin-bottom: 15px;
+        border: 1px solid #eaeaea;
     }
     
     .tab-item {
         flex: 1;
         text-align: center;
-        padding: 10px 15px;
+        padding: 6px 8px;
         cursor: pointer;
-        border-radius: 40px;
+        border-radius: 30px;
         color: #6c757d;
         transition: all 0.2s;
-        font-weight: 500;
+        font-size: 0.85rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 5px;
+        gap: 4px;
+    }
+    
+    .tab-item i {
+        font-size: 1rem;
     }
     
     .tab-item:hover {
@@ -560,24 +463,29 @@
         color: white;
     }
     
+    /* شريط التمرير المصغر */
+    #cart-table-container::-webkit-scrollbar,
+    .table-responsive::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+    
+    #cart-table-container::-webkit-scrollbar-track,
+    .table-responsive::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    
+    #cart-table-container::-webkit-scrollbar-thumb,
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 10px;
+    }
+    
     /* تنسيقات الطباعة */
     @media print {
-        .no-print, .nav-tabs-custom, button, .btn, #customer-search, #sale-customer, #product-search-row {
+        .no-print, .nav-tabs-custom, button, .btn, #customer-search, 
+        #sale-customer, #product-search-row, #active-customers-area {
             display: none !important;
-        }
-        
-        .main-card {
-            box-shadow: none;
-            border: 1px solid #000;
-            padding: 10px;
-        }
-        
-        .table {
-            border-collapse: collapse;
-        }
-        
-        .table th, .table td {
-            border: 1px solid #000;
         }
     }
 </style>
@@ -586,7 +494,6 @@
 <!-- السكربتات المساعدة -->
 <!-- ======================================================================= -->
 <script>
-    // دالة إضافة عميل سريع
     function addQuickCustomer() {
         const name = document.getElementById('new-customer').value;
         const phone = document.getElementById('new-customer-phone').value;
@@ -618,7 +525,6 @@
         }
     }
     
-    // دالة تصدير الفواتير
     function exportInvoicesToExcel() {
         if (window.salesModule && salesModule.invoices) {
             const invoices = salesModule.invoices;
@@ -643,7 +549,6 @@
         }
     }
     
-    // دالة إظهار الأقسام الفرعية
     function showSubSection(sectionId) {
         document.querySelectorAll('.sub-section').forEach(el => {
             el.style.display = 'none';
@@ -659,23 +564,7 @@
         if (activeTab) {
             activeTab.classList.add('active-red');
         }
-        
-        // تحديث البيانات حسب القسم
-        if (sectionId === 'customers' && window.customerModule?.loadCustomers) {
-            window.customerModule.loadCustomers();
-        } else if (sectionId === 'sale-invoices' && window.salesModule?.renderInvoices) {
-            window.salesModule.renderInvoices();
-        }
     }
-    
-    // مراقبة التغييرات في الجدول
-    document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(() => {
-            if (window.salesModule) {
-                window.salesModule.setupTableNavigation();
-            }
-        }, 500);
-    });
 </script>
 
 <!-- ======================================================================= -->
