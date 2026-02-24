@@ -1,6 +1,6 @@
 <!-- ======================================================================= -->
 <!-- ملف: sales-section.html - قسم المبيعات في واجهة المستخدم -->
-<!-- الإصدار: 3.0 - مع إمكانية التنقل داخل الجدول -->
+<!-- الإصدار: 4.0 - مع دمج البحث داخل الجدول وإصلاح حساب المجموع -->
 <!-- ======================================================================= -->
 
 <!-- ======================================================================= -->
@@ -35,7 +35,7 @@
                 </div>
             </div>
             
-            <!-- البحث عن المنتجات -->
+            <!-- البحث عن المنتجات (الطريقة التقليدية) -->
             <div class="search-container mb-3">
                 <div class="input-group">
                     <input type="text" id="sale-search" class="form-control" 
@@ -43,6 +43,9 @@
                            oninput="salesModule.searchProducts(this.value)" 
                            onkeyup="if(event.key==='Enter') salesModule.addToCart()"
                            autocomplete="off">
+                    <button class="btn btn-outline-primary" onclick="salesModule.addToCart()">
+                        <i class="material-icons-round">add</i>
+                    </button>
                 </div>
                 <div id="search-box" class="search-results"></div>
             </div>
@@ -106,7 +109,7 @@
         </div>
         
         <!-- ======================================================================= -->
-        <!-- سلة المبيعات - مع ترتيب الأعمدة حسب الطلب وإمكانية التنقل -->
+        <!-- سلة المبيعات - مع البحث المدمج وإمكانية التنقل -->
         <!-- ======================================================================= -->
         <div class="main-card mt-3">
             <h6 class="text-center mb-3">
@@ -152,7 +155,7 @@
                 <div class="col-3">
                     <div class="p-2 bg-light rounded">
                         <small>إجمالي القطع</small>
-                        <h6 class="mb-0 text-info" id="total-pieces">0</h6>
+                        <h6 class="mb-0 text-info" id="total-pieces">0 قطعة</h6>
                     </div>
                 </div>
                 <div class="col-3">
@@ -212,10 +215,10 @@
             <div class="input-group mb-3">
                 <span class="input-group-text"><i class="material-icons-round">search</i></span>
                 <input type="text" id="invoice-search" class="form-control" 
-                       placeholder="بحث برقم الفاتورة، العميل، أو التاريخ" 
+                       placeholder="بحث برقم الفاتورة أو اسم العميل" 
                        oninput="salesModule.searchInvoices()">
                 <button class="btn btn-outline-secondary" onclick="exportInvoicesToExcel()">
-                    <i class="material-icons-round">download</i>
+                    <i class="material-icons-round">download</i> تصدير
                 </button>
             </div>
             
@@ -274,7 +277,6 @@
                         <tr>
                             <th>الاسم</th>
                             <th>الهاتف</th>
-                            <th>البريد</th>
                             <th>المشتريات</th>
                             <th>الديون</th>
                             <th>عمليات</th>
@@ -282,7 +284,7 @@
                     </thead>
                     <tbody id="customers-tbody">
                         <tr>
-                            <td colspan="6" class="text-center p-4">
+                            <td colspan="5" class="text-center p-4">
                                 <i class="material-icons-round" style="font-size:48px;">people</i>
                                 <br>لا يوجد عملاء
                             </td>
@@ -303,7 +305,7 @@
         position: relative;
     }
     
-    #search-box, #customer-results {
+    #search-box, #customer-results, #product-search-results {
         position: absolute;
         top: 100%;
         left: 0;
@@ -318,19 +320,34 @@
         display: none;
     }
     
-    #search-box.show, #customer-results[style*="display: block"] {
+    #search-box.show, #customer-results[style*="display: block"], #product-search-results[style*="block"] {
         display: block !important;
     }
     
-    .search-item {
+    .search-item, .search-result-item {
         padding: 10px 15px;
         cursor: pointer;
         border-bottom: 1px solid #eee;
-        transition: background 0.2s;
+        transition: all 0.2s;
     }
     
-    .search-item:hover {
-        background-color: #f0f0f0;
+    .search-item:hover, .search-result-item:hover {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .search-result-item.selected {
+        background-color: #007bff;
+        color: white;
+    }
+    
+    .search-result-item .text-muted {
+        transition: color 0.2s;
+    }
+    
+    .search-result-item:hover .text-muted,
+    .search-result-item.selected .text-muted {
+        color: rgba(255,255,255,0.8) !important;
     }
     
     /* تنسيق شيب العملاء النشطين */
@@ -357,12 +374,30 @@
         color: white !important;
     }
     
+    /* تنسيق صف البحث في الجدول */
+    #product-search-row td {
+        padding: 8px;
+        background-color: #e3f2fd;
+    }
+    
+    #product-search-input {
+        border-left: none;
+    }
+    
+    #product-search-input:focus {
+        box-shadow: none;
+        border-color: #ced4da;
+    }
+    
     /* تنسيق الجدول */
     .table th {
         background-color: #f8f9fa;
         text-align: center;
         vertical-align: middle;
         font-size: 14px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
     }
     
     .table td {
@@ -390,6 +425,13 @@
     
     .table input:hover, .table select:hover {
         border-color: #007bff;
+    }
+    
+    .table input[readonly] {
+        background-color: #f8f9fa;
+        color: #28a745;
+        font-weight: bold;
+        border-color: #28a745;
     }
     
     .sticky-top {
@@ -457,64 +499,13 @@
         color: #6c757d;
     }
     
-    /* تنسيق الإجمالي في الجدول */
-    .table td input[readonly] {
-        background-color: #f8f9fa;
-        color: #28a745;
-        font-weight: bold;
-        border-color: #28a745;
-    }
-    
-    /* تنسيق إجمالي القطع */
+    /* تنسيق الإجماليات */
     #total-pieces {
         font-weight: bold;
         color: #17a2b8;
         font-size: 1.1rem;
     }
     
-    /* تنسيق نافذة تعديل الوحدات */
-    .unit-options-container {
-        max-height: 300px;
-        overflow-y: auto;
-        padding: 10px;
-    }
-    
-    .unit-option {
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        padding: 10px;
-        margin-bottom: 10px;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-    
-    .unit-option:hover {
-        background-color: #f8f9fa;
-        border-color: #007bff;
-    }
-    
-    .unit-option.selected {
-        background-color: #e7f3ff;
-        border-color: #007bff;
-    }
-    
-    .unit-name {
-        font-weight: bold;
-        font-size: 16px;
-    }
-    
-    .unit-details {
-        font-size: 12px;
-        color: #6c757d;
-    }
-    
-    .unit-price {
-        font-weight: bold;
-        color: #28a745;
-        font-size: 14px;
-    }
-    
-    /* تنسيق المبلغ المتبقي */
     #remaining-amount {
         font-weight: bold;
         transition: color 0.3s;
@@ -599,9 +590,10 @@
         
         if (window.salesModule) {
             window.salesModule.loadCustomers();
+            window.salesModule.showNotification('نجاح', 'تم إضافة العميل', 'success');
+        } else {
+            Swal.fire('نجاح', 'تم إضافة العميل', 'success');
         }
-        
-        Swal.fire('نجاح', 'تم إضافة العميل', 'success');
     }
     
     // دالة تصدير الفواتير
@@ -615,7 +607,8 @@
             
             let csv = 'رقم الفاتورة,التاريخ,العميل,المبلغ,المدفوع,الدين,طريقة الدفع\n';
             invoices.forEach(inv => {
-                csv += `${inv.number},${new Date(inv.date).toLocaleDateString()},${inv.customer},${inv.grandTotal},${inv.paidAmount || 0},${inv.remaining || 0},${inv.paymentText}\n`;
+                const date = new Date(inv.date).toLocaleDateString('ar-EG');
+                csv += `${inv.number},${date},${inv.customer},${inv.grandTotal},${inv.paidAmount || 0},${inv.debt || 0},${inv.paymentText}\n`;
             });
             
             const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -639,71 +632,57 @@
         document.querySelectorAll('.tab-item').forEach(el => {
             el.classList.remove('active-red');
         });
-        event.currentTarget.classList.add('active-red');
+        
+        // تحديث الكلاس النشط للتبويب الحالي
+        const activeTab = event.currentTarget;
+        if (activeTab) {
+            activeTab.classList.add('active-red');
+        }
+        
+        // تحديث البيانات حسب القسم
+        if (sectionId === 'customers' && window.customerModule?.loadCustomers) {
+            window.customerModule.loadCustomers();
+        } else if (sectionId === 'sale-invoices' && window.salesModule?.renderInvoices) {
+            window.salesModule.renderInvoices();
+        }
     }
     
-    // دالة التنقل بين حقول الإدخال في الجدول
-    function setupTableNavigation() {
-        const inputs = document.querySelectorAll('#cart-table input, #cart-table select');
+    // إعادة تعيين المتغيرات عند تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', function() {
+        // التأكد من وجود sweet alert
+        if (typeof Swal === 'undefined') {
+            console.warn('SweetAlert2 غير موجود - سيتم استخدام alert العادي');
+        }
         
-        inputs.forEach((input, index) => {
-            input.addEventListener('keydown', function(e) {
-                // التنقل بالأسهم
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    const nextInput = inputs[index + 1];
-                    if (nextInput) nextInput.focus();
-                }
-                else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    const prevInput = inputs[index - 1];
-                    if (prevInput) prevInput.focus();
-                }
-                else if (e.key === 'ArrowRight') {
-                    e.preventDefault();
-                    const rowInputs = Array.from(inputs).filter(inp => 
-                        inp.closest('tr') === input.closest('tr')
-                    );
-                    const currentRowIndex = rowInputs.indexOf(input);
-                    const nextInRow = rowInputs[currentRowIndex + 1];
-                    if (nextInRow) nextInRow.focus();
-                }
-                else if (e.key === 'ArrowLeft') {
-                    e.preventDefault();
-                    const rowInputs = Array.from(inputs).filter(inp => 
-                        inp.closest('tr') === input.closest('tr')
-                    );
-                    const currentRowIndex = rowInputs.indexOf(input);
-                    const prevInRow = rowInputs[currentRowIndex - 1];
-                    if (prevInRow) prevInRow.focus();
-                }
-                // التنقل بـ Tab
-                else if (e.key === 'Tab') {
-                    e.preventDefault();
-                    const nextIndex = e.shiftKey ? index - 1 : index + 1;
-                    if (nextIndex >= 0 && nextIndex < inputs.length) {
-                        inputs[nextIndex].focus();
-                    }
-                }
-                // Enter للانتقال للخلية التالية
-                else if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const nextInput = inputs[index + 1];
-                    if (nextInput) nextInput.focus();
-                }
-            });
-        });
-    }
+        // تفعيل التنقل في الجدول
+        if (window.salesModule) {
+            setTimeout(() => {
+                window.salesModule.setupTableNavigation();
+            }, 500);
+        }
+    });
     
     // مراقبة التغييرات في الجدول لإعادة تفعيل التنقل
-    const observer = new MutationObserver(function() {
-        setupTableNavigation();
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList' && mutation.target.id === 'cart-table') {
+                if (window.salesModule) {
+                    window.salesModule.setupTableNavigation();
+                }
+            }
+        });
     });
     
-    observer.observe(document.getElementById('cart-table'), {
-        childList: true,
-        subtree: true
-    });
+    // بدء المراقبة عندما يكون الجدول موجوداً
+    setTimeout(function() {
+        const cartTable = document.getElementById('cart-table');
+        if (cartTable) {
+            observer.observe(cartTable, {
+                childList: true,
+                subtree: true
+            });
+        }
+    }, 1000);
 </script>
 
 <!-- ======================================================================= -->
