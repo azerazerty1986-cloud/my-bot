@@ -1,6 +1,6 @@
 // =======================================================================
 // ملف: sales.js - نظام إدارة المبيعات المتقدم مع دعم الديون والوحدات
-// الإصدار: 7.4 - إصلاح شامل لمشكلة حساب المجموع
+// الإصدار: 7.5 - بحث فوري بحرف واحد وإضافة مباشرة
 // =======================================================================
 
 // =======================================================================
@@ -54,7 +54,7 @@ const salesModule = (function() {
                 icon: type,
                 title: title,
                 text: message,
-                timer: 2000,
+                timer: 1500,
                 showConfirmButton: false,
                 toast: true,
                 position: 'top-end'
@@ -202,6 +202,8 @@ const salesModule = (function() {
             searchInput.value = customer.name || customer.fullname || '';
             hideCustomerResults();
         }
+        
+        showNotification('نجاح', `تم اختيار العميل ${customer.name}`);
     }
     
     function hideCustomerResults() {
@@ -228,21 +230,20 @@ const salesModule = (function() {
         activeCustomers.forEach(customer => {
             const activeClass = customer.active ? 'bg-success text-white' : 'bg-light';
             const activeIcon = customer.active ? 
-                '<i class="material-icons-round" style="font-size: 16px;">check_circle</i>' : 
-                '<i class="material-icons-round" style="font-size: 16px;">radio_button_unchecked</i>';
+                '<i class="material-icons-round" style="font-size: 14px;">check_circle</i>' : 
+                '<i class="material-icons-round" style="font-size: 14px;">radio_button_unchecked</i>';
             
             const cartCount = (customerCarts[customer.id] || []).length;
-            const cartBadge = cartCount > 0 ? `<span class="badge bg-warning text-dark ms-1">${cartCount}</span>` : '';
+            const cartBadge = cartCount > 0 ? `<span class="badge bg-warning text-dark ms-1" style="font-size: 0.6rem;">${cartCount}</span>` : '';
             
             html += `
-                <div class="customer-chip p-2 rounded ${activeClass}" 
+                <div class="customer-chip p-1 rounded ${activeClass}" 
                      onclick="salesModule.switchActiveCustomer('${customer.id}')"
-                     style="cursor: pointer; display: inline-flex; align-items: center; gap: 5px; border: 1px solid #dee2e6; margin: 2px;">
+                     style="cursor: pointer; display: inline-flex; align-items: center; gap: 3px; border: 1px solid #dee2e6; margin: 1px; font-size: 0.7rem;">
                     ${activeIcon}
                     <span>${customer.name}</span>
                     ${cartBadge}
-                    <small class="${customer.active ? 'text-white-50' : 'text-muted'}">${customer.phone}</small>
-                    <i class="material-icons-round" style="font-size: 16px; cursor: pointer;" 
+                    <i class="material-icons-round" style="font-size: 14px; cursor: pointer;" 
                        onclick="event.stopPropagation(); salesModule.removeActiveCustomer('${customer.id}')">close</i>
                 </div>
             `;
@@ -394,10 +395,10 @@ const salesModule = (function() {
     }
 
     // =======================================================================
-    // الجزء 6: البحث عن العملاء
+    // الجزء 6: البحث الفوري عن العملاء (بحرف واحد)
     // =======================================================================
     
-    function searchCustomers(query) {
+    function searchCustomersInstant(query) {
         const resultsDiv = document.getElementById('customer-results');
         if (!resultsDiv) return;
         
@@ -408,6 +409,7 @@ const salesModule = (function() {
         
         const customers = getAllCustomers();
         
+        // بحث فوري بحرف واحد
         const filtered = customers.filter(c => 
             (c.name && c.name.toLowerCase().includes(query.toLowerCase())) ||
             (c.fullname && c.fullname.toLowerCase().includes(query.toLowerCase())) ||
@@ -416,36 +418,47 @@ const salesModule = (function() {
         ).slice(0, 5);
         
         if (filtered.length === 0) {
-            resultsDiv.innerHTML = '<div class="search-item">لا توجد نتائج</div>';
+            resultsDiv.innerHTML = '<div class="search-item text-muted">لا توجد نتائج - <a href="#" onclick="salesModule.openAddCustomerModal()">إضافة عميل جديد</a></div>';
             resultsDiv.style.display = 'block';
             return;
         }
         
         let html = '';
         filtered.forEach(customer => {
-            const isActive = activeCustomers.some(ac => ac.id === customer.id);
-            const activeIcon = isActive ? '🟢' : '⚪';
             const customerName = customer.name || customer.fullname || 'بدون اسم';
             const customerPhone = customer.phone || customer.phone1 || '';
-            const cartCount = (customerCarts[customer.id] || []).length;
-            const cartInfo = cartCount > 0 ? ` (${cartCount} منتج)` : '';
-            
-            const customerStr = JSON.stringify(customer).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const isActive = activeCustomers.some(ac => ac.id === customer.id);
             
             html += `
-                <div class="search-item" onclick='salesModule.addActiveCustomer(${customerStr})'>
-                    <i class="material-icons-round">person</i>
-                    <div style="flex:1">
-                        <div>${customerName} ${activeIcon} ${cartInfo}</div>
-                        <small>${customerPhone || 'لا يوجد هاتف'}</small>
+                <div class="search-item" onclick="salesModule.addCustomerDirect('${customer.id}')">
+                    <div style="display: flex; align-items: center; gap: 8px; flex: 1;">
+                        <i class="material-icons-round" style="font-size: 1.2rem;">person</i>
+                        <div>
+                            <strong>${customerName}</strong>
+                            ${customerPhone ? `<br><small>${customerPhone}</small>` : ''}
+                        </div>
                     </div>
-                    ${isActive ? '<span class="badge bg-success">نشط</span>' : ''}
+                    ${isActive ? '<span class="badge bg-success">نشط</span>' : '<span class="badge bg-primary">إضافة</span>'}
                 </div>
             `;
         });
         
         resultsDiv.innerHTML = html;
         resultsDiv.style.display = 'block';
+    }
+    
+    // دالة إضافة العميل مباشرة من البحث
+    function addCustomerDirect(customerId) {
+        const customers = getAllCustomers();
+        const customer = customers.find(c => c.id === customerId);
+        if (customer) {
+            addActiveCustomer(customer);
+            hideCustomerResults();
+        }
+    }
+    
+    function searchCustomers(query) {
+        return searchCustomersInstant(query);
     }
     
     function selectCustomerFromDropdown(customerId) {
@@ -460,7 +473,7 @@ const salesModule = (function() {
     }
 
     // =======================================================================
-    // الجزء 7: البحث عن المنتجات وإضافتها داخل الجدول
+    // الجزء 7: البحث الفوري عن المنتجات (بحرف واحد)
     // =======================================================================
     
     function loadProducts() {
@@ -494,24 +507,14 @@ const salesModule = (function() {
             case 'Enter':
                 e.preventDefault();
                 if (selectedProductIndex >= 0 && items[selectedProductIndex]) {
-                    const productData = items[selectedProductIndex].getAttribute('data-product');
-                    if (productData) {
-                        try {
-                            const product = JSON.parse(productData);
-                            addProductFromSearch(product);
-                        } catch (error) {
-                            console.error('خطأ في تحليل بيانات المنتج', error);
-                        }
+                    const productId = items[selectedProductIndex].getAttribute('data-product-id');
+                    if (productId) {
+                        addProductDirect(productId);
                     }
                 } else if (items[0]) {
-                    const productData = items[0].getAttribute('data-product');
-                    if (productData) {
-                        try {
-                            const product = JSON.parse(productData);
-                            addProductFromSearch(product);
-                        } catch (error) {
-                            console.error('خطأ في تحليل بيانات المنتج', error);
-                        }
+                    const productId = items[0].getAttribute('data-product-id');
+                    if (productId) {
+                        addProductDirect(productId);
                     }
                 }
                 break;
@@ -544,16 +547,15 @@ const salesModule = (function() {
             return;
         }
         
-        searchTimeout = setTimeout(() => {
-            const products = loadProducts();
-            
-            const filtered = products.filter(p => 
-                (p.name && p.name.toLowerCase().includes(term.toLowerCase())) ||
-                (p.barcode && p.barcode.includes(term))
-            ).slice(0, 5);
-            
-            showSearchResults(filtered, term);
-        }, 300);
+        // بحث فوري بدون تأخير بحرف واحد
+        const products = loadProducts();
+        
+        const filtered = products.filter(p => 
+            (p.name && p.name.toLowerCase().includes(term.toLowerCase())) ||
+            (p.barcode && p.barcode.includes(term))
+        ).slice(0, 5);
+        
+        showSearchResults(filtered, term);
     }
     
     function showSearchResults(results, searchTerm) {
@@ -565,29 +567,26 @@ const salesModule = (function() {
         
         if (results.length === 0) {
             resultsContainer.innerHTML = `
-                <div class="search-result-item text-muted p-2 text-center">
-                    لا توجد نتائج - 
-                    <a href="#" onclick="salesModule.showAddProductModal('${searchTerm}'); return false;">إضافة منتج جديد</a>
+                <div class="search-result-item">
+                    <span class="text-muted">لا توجد نتائج</span>
+                    <span class="badge bg-warning" onclick="salesModule.showAddProductModal('${searchTerm}')">إضافة جديد</span>
                 </div>
             `;
         } else {
             let html = '';
             results.forEach(product => {
                 const stockClass = product.quantity > 0 ? 'text-success' : 'text-danger';
-                const productStr = JSON.stringify(product).replace(/'/g, "\\'").replace(/"/g, '&quot;');
                 
                 html += `
-                    <div class="search-result-item p-2" data-product='${productStr}' onclick="salesModule.addProductFromSearch(this)">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <strong>${product.name}</strong>
-                                <br>
-                                <small class="text-muted">${formatCurrency(product.sellPrice)} دج</small>
-                            </div>
-                            <div>
-                                <span class="${stockClass}">${product.quantity || 0}</span>
-                                <i class="material-icons-round" style="font-size: 18px;">add_shopping_cart</i>
-                            </div>
+                    <div class="search-result-item" data-product-id="${product.id}" onclick="salesModule.addProductDirect('${product.id}')">
+                        <div style="flex: 1;">
+                            <strong>${product.name}</strong>
+                            <br>
+                            <small class="text-muted">${formatCurrency(product.sellPrice || 0)} دج</small>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="${stockClass}">${product.quantity || 0}</span>
+                            <i class="material-icons-round" style="font-size: 1.2rem;">add_shopping_cart</i>
                         </div>
                     </div>
                 `;
@@ -615,6 +614,31 @@ const salesModule = (function() {
         selectedProductIndex = -1;
     }
     
+    // دالة إضافة المنتج مباشرة من البحث
+    function addProductDirect(productId) {
+        const products = loadProducts();
+        const product = products.find(p => p.id == productId);
+        
+        if (!product) {
+            console.error('المنتج غير موجود');
+            return;
+        }
+        
+        addProductToCart(product);
+        hideSearchResults();
+        
+        // Clear search input
+        const searchInput = document.getElementById('product-search-input');
+        if (searchInput) {
+            searchInput.value = '';
+        }
+        
+        // Focus back on search input for next product
+        setTimeout(() => {
+            if (searchInput) searchInput.focus();
+        }, 100);
+    }
+    
     function addProductFromSearch(element) {
         let product;
         if (typeof element === 'string') {
@@ -633,8 +657,6 @@ const salesModule = (function() {
                     console.error('خطأ في تحليل بيانات المنتج', e);
                     return;
                 }
-            } else if (element.productData) {
-                product = element.productData;
             }
         }
         
@@ -646,13 +668,8 @@ const salesModule = (function() {
         addProductToCart(product);
         hideSearchResults();
         
-        // Clear search input
         const searchInput = document.getElementById('product-search-input');
-        if (searchInput) {
-            searchInput.value = '';
-        }
-        
-        // Focus back on search input for next product
+        if (searchInput) searchInput.value = '';
         setTimeout(() => {
             if (searchInput) searchInput.focus();
         }, 100);
@@ -703,7 +720,6 @@ const salesModule = (function() {
         renderActiveCustomers();
         updateRemainingAmount();
         
-        // تأخير بسيط لتفعيل التنقل بعد إضافة المنتج
         setTimeout(setupTableNavigation, 100);
         
         return true;
@@ -782,12 +798,7 @@ const salesModule = (function() {
             return false;
         }
         
-        let products = [];
-        if (window.productModule && typeof window.productModule.getAllProducts === 'function') {
-            products = window.productModule.getAllProducts() || [];
-        } else {
-            products = JSON.parse(localStorage.getItem('products') || '[]');
-        }
+        let products = loadProducts();
         
         const product = products.find(p => 
             p.name === productName || 
@@ -954,7 +965,7 @@ const salesModule = (function() {
     }
 
     // =======================================================================
-    // الجزء 9: عرض السلة مع صف البحث المدمج وتحديث الإجماليات
+    // الجزء 9: عرض السلة مع صف البحث المدمج
     // =======================================================================
 
     function renderCart() {
@@ -964,32 +975,29 @@ const salesModule = (function() {
         // إضافة صف البحث في البداية
         let html = `
             <tr id="product-search-row" class="table-primary">
-                <td colspan="10" style="padding: 8px;">
+                <td colspan="10" style="padding: 6px;">
                     <div style="position: relative;">
-                        <div class="input-group">
-                            <span class="input-group-text">
-                                <i class="material-icons-round">search</i>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-light p-0 px-2">
+                                <i class="material-icons-round" style="font-size: 1rem;">search</i>
                             </span>
                             <input type="text" 
                                    id="product-search-input" 
-                                   class="form-control" 
-                                   placeholder="ابحث عن منتج بالاسم أو الباركود..."
+                                   class="form-control form-control-sm" 
+                                   placeholder="اكتب حرفاً للبحث عن منتج..."
                                    autocomplete="off"
                                    oninput="salesModule.searchProductsInTable(this.value)"
                                    onkeydown="salesModule.handleProductSearchKeydown(event)"
                                    onfocus="if(this.value) salesModule.searchProductsInTable(this.value)">
-                            <button class="btn btn-success" type="button" onclick="salesModule.addProductFromSearchInput()">
-                                <i class="material-icons-round">add</i> إضافة
-                            </button>
                         </div>
-                        <div id="product-search-results" class="search-results" style="display: none; position: absolute; z-index: 1000; background: white; border: 1px solid #ddd; max-height: 300px; overflow-y: auto; width: 100%;"></div>
+                        <div id="product-search-results" class="search-results" style="display: none;"></div>
                     </div>
                 </td>
             </tr>
         `;
         
         if (currentCart.length === 0) {
-            html += '<tr><td colspan="10" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">shopping_cart</i><br>السلة فارغة</td></tr>';
+            html += '<tr><td colspan="10" class="text-center p-3"><i class="material-icons-round" style="font-size: 2rem; color: #ccc;">shopping_cart</i><br><small class="text-muted">السلة فارغة - اكتب حرفاً للبحث عن منتج</small></td></tr>';
             tbody.innerHTML = html;
             updateTotals();
             updateRemainingAmount();
@@ -1014,17 +1022,18 @@ const salesModule = (function() {
                         <input type="number" id="qty-${item.id}" class="form-control text-center" 
                                value="${item.qty.toFixed(2)}" min="0.1" step="any"
                                onchange="salesModule.updateItemQuantity('${item.id}', this.value)"
-                               style="width: 80px;" tabindex="1">
+                               style="width: 60px; padding: 2px 4px; font-size: 0.7rem;">
                     </td>
                     <td>
                         <input type="number" id="pieces-${item.id}" class="form-control text-center" 
                                value="${piecesCount.toFixed(2)}" min="0.1" step="any"
                                onchange="salesModule.updateItemPieces('${item.id}', this.value)"
-                               style="width: 80px;" tabindex="2">
+                               style="width: 60px; padding: 2px 4px; font-size: 0.7rem;">
                     </td>
                     <td>
                         <select id="unit-${item.id}" class="form-select form-select-sm" 
-                                onchange="salesModule.updateItemUnit('${item.id}', this.value)" tabindex="3">
+                                onchange="salesModule.updateItemUnit('${item.id}', this.value)"
+                                style="width: 70px; padding: 2px 4px; font-size: 0.7rem;">
                             <option value="piece" ${item.unit === 'piece' ? 'selected' : ''}>قطعة</option>
                             <option value="kg" ${item.unit === 'kg' ? 'selected' : ''}>كيلو</option>
                             <option value="box" ${item.unit === 'box' ? 'selected' : ''}>علبة</option>
@@ -1035,24 +1044,26 @@ const salesModule = (function() {
                     <td>
                         <input type="number" id="price-${item.id}" class="form-control text-center" 
                                value="${item.price}" min="0" step="any"
-                               onchange="salesModule.updateItemPrice('${item.id}', this.value)" tabindex="4">
+                               onchange="salesModule.updateItemPrice('${item.id}', this.value)"
+                               style="width: 70px; padding: 2px 4px; font-size: 0.7rem;">
                     </td>
                     <td>
-                        <input type="text" id="total-${item.id}" class="form-control text-center fw-bold total-field" 
+                        <input type="text" id="total-${item.id}" class="form-control text-center fw-bold" 
                                value="${formatCurrency(item.total)}" readonly
-                               style="background-color: #f8f9fa; color: #28a745;">
+                               style="width: 80px; padding: 2px 4px; font-size: 0.7rem; background-color: #f8f9fa; color: #28a745;">
                     </td>
                     <td>
-                        <span class="badge bg-info d-block">${item.stock}</span>
+                        <span class="badge bg-info" style="font-size: 0.6rem;">${item.stock}</span>
                     </td>
                     <td>
                         <input type="number" id="discount-${item.id}" class="form-control text-center" 
                                value="${item.discount}" min="0" max="100" step="1"
-                               onchange="salesModule.updateItemDiscount('${item.id}', this.value)" tabindex="5">
+                               onchange="salesModule.updateItemDiscount('${item.id}', this.value)"
+                               style="width: 50px; padding: 2px 4px; font-size: 0.7rem;">
                     </td>
                     <td>
-                        <button class="btn btn-sm btn-danger" onclick="salesModule.removeFromCart('${item.id}')" tabindex="-1">
-                            <i class="material-icons-round">delete</i>
+                        <button class="btn btn-sm btn-danger p-0" onclick="salesModule.removeFromCart('${item.id}')" style="width: 24px; height: 24px;">
+                            <i class="material-icons-round" style="font-size: 1rem;">delete</i>
                         </button>
                     </td>
                 </tr>
@@ -1064,7 +1075,6 @@ const salesModule = (function() {
         setupTableNavigation();
     }
     
-    // دالة جديدة لإضافة المنتج من حقل البحث
     function addProductFromSearchInput() {
         const searchInput = document.getElementById('product-search-input');
         if (!searchInput) return;
@@ -1100,7 +1110,6 @@ const salesModule = (function() {
                 input.addEventListener('keydown', handleTableKeyDown);
             });
             
-            // التركيز على حقل البحث تلقائياً
             const searchInput = document.getElementById('product-search-input');
             if (searchInput && document.activeElement !== searchInput) {
                 setTimeout(() => searchInput.focus(), 200);
@@ -1148,7 +1157,6 @@ const salesModule = (function() {
             },
             'Enter': (e) => {
                 e.preventDefault();
-                // إذا كان في حقل البحث، نضيف المنتج
                 if (e.target.id === 'product-search-input') {
                     addProductFromSearchInput();
                 } else {
@@ -1282,32 +1290,27 @@ const salesModule = (function() {
     }
 
     function updateTotals() {
-        // حساب إجمالي الخصم
         const totalDiscount = currentCart.reduce((sum, item) => {
             return sum + (item.qty * item.price * item.discount / 100);
         }, 0);
         
-        // حساب المجموع الكلي
         const grandTotal = currentCart.reduce((sum, item) => sum + (item.total || 0), 0);
         
-        // حساب إجمالي القطع
         const totalPieces = currentCart.reduce((sum, item) => {
             const piecesPerUnit = item.piecesPerUnit || 1;
             return sum + (item.qty * piecesPerUnit);
         }, 0);
         
-        // تحديث العناصر في الواجهة
         const totalDiscountEl = document.getElementById('total-discount');
         const grandTotalEl = document.getElementById('grand-total');
         const finalGrandTotalEl = document.getElementById('final-grand-total');
         const totalPiecesEl = document.getElementById('total-pieces');
         
-        if (totalDiscountEl) totalDiscountEl.textContent = formatCurrency(totalDiscount) + ' دج';
-        if (grandTotalEl) grandTotalEl.textContent = formatCurrency(grandTotal) + ' دج';
-        if (finalGrandTotalEl) finalGrandTotalEl.textContent = formatCurrency(grandTotal) + ' دج';
-        if (totalPiecesEl) totalPiecesEl.textContent = totalPieces.toLocaleString() + ' قطعة';
+        if (totalDiscountEl) totalDiscountEl.textContent = formatCurrency(totalDiscount);
+        if (grandTotalEl) grandTotalEl.textContent = formatCurrency(grandTotal);
+        if (finalGrandTotalEl) finalGrandTotalEl.textContent = formatCurrency(grandTotal);
+        if (totalPiecesEl) totalPiecesEl.textContent = totalPieces;
         
-        // تحديث المبلغ المتبقي
         updateRemainingAmount();
     }
 
@@ -1323,122 +1326,75 @@ const salesModule = (function() {
         const remaining = paidAmount - grandTotal;
         
         if (remaining < 0) {
-            remainingEl.textContent = formatCurrency(Math.abs(remaining)) + ' دج (دين)';
+            remainingEl.textContent = formatCurrency(Math.abs(remaining)) + ' دين';
             remainingEl.style.color = 'red';
         } else {
-            remainingEl.textContent = formatCurrency(remaining) + ' دج (باقي)';
+            remainingEl.textContent = formatCurrency(remaining) + ' باقي';
             remainingEl.style.color = 'green';
         }
     }
 
     // =======================================================================
-    // الجزء 10: البحث عن المنتجات (الطريقة القديمة للتوافق)
+    // الجزء 10: البحث عن المنتجات (للتوافق)
     // =======================================================================
     
     function searchProducts(term) {
-        const resultsBox = document.getElementById('search-box');
-        if (!resultsBox) return;
-        
-        if (!term || term.length < 2) {
-            resultsBox.classList.remove('show');
-            return;
-        }
-        
-        let products = [];
-        if (window.productModule && typeof window.productModule.getAllProducts === 'function') {
-            products = window.productModule.getAllProducts() || [];
-        } else {
-            products = JSON.parse(localStorage.getItem('products') || '[]');
-        }
-        
-        const results = products.filter(p => 
-            (p.name && p.name.toLowerCase().includes(term.toLowerCase())) ||
-            (p.barcode && p.barcode.includes(term))
-        ).slice(0, 5);
-        
-        if (results.length === 0) {
-            resultsBox.innerHTML = '<div class="search-item text-muted">لا توجد نتائج</div>';
-            resultsBox.classList.add('show');
-            return;
-        }
-        
-        resultsBox.innerHTML = results.map(p => {
-            const stockClass = p.quantity > 0 ? 'bg-success' : 'bg-danger';
-            const stockText = p.quantity > 0 ? `${p.quantity} متوفر` : 'غير متوفر';
-            
-            return `
-                <div class="search-item" onclick="salesModule.selectProduct('${p.name}')">
-                    <div style="display: flex; justify-content: space-between; align-items: center; width:100%;">
-                        <div>
-                            <strong>${p.name}</strong>
-                            <br><small class="text-muted">السعر: ${formatCurrency(p.sellPrice)} دج</small>
-                        </div>
-                        <div>
-                            <span class="badge ${stockClass}">${stockText}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        
-        resultsBox.classList.add('show');
+        // تم إلغاء هذه الوظيفة - يتم البحث داخل الجدول فقط
+        return;
     }
     
     function selectProduct(name) {
-        const searchInput = document.getElementById('sale-search');
-        if (searchInput) searchInput.value = name;
-        
-        const searchBox = document.getElementById('search-box');
-        if (searchBox) searchBox.classList.remove('show');
-        
-        addToCart();
+        // تم إلغاء هذه الوظيفة
+        return;
     }
     
     function openAddCustomerModal() {
-        Swal.fire({
-            title: 'إضافة عميل جديد',
-            html: `
-                <div style="text-align:right">
-                    <input type="text" id="new-customer-name" class="swal2-input" placeholder="اسم العميل">
-                    <input type="text" id="new-customer-phone" class="swal2-input" placeholder="رقم الهاتف">
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'حفظ',
-            cancelButtonText: 'إلغاء',
-            preConfirm: () => {
-                const name = document.getElementById('new-customer-name').value;
-                const phone = document.getElementById('new-customer-phone').value;
-                
-                if (!name) {
-                    Swal.showValidationMessage('اسم العميل مطلوب');
-                    return false;
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: 'إضافة عميل جديد',
+                html: `
+                    <div style="text-align:right">
+                        <input type="text" id="new-customer-name" class="swal2-input" placeholder="اسم العميل">
+                        <input type="text" id="new-customer-phone" class="swal2-input" placeholder="رقم الهاتف">
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'حفظ',
+                cancelButtonText: 'إلغاء',
+                preConfirm: () => {
+                    const name = document.getElementById('new-customer-name').value;
+                    const phone = document.getElementById('new-customer-phone').value;
+                    
+                    if (!name) {
+                        Swal.showValidationMessage('اسم العميل مطلوب');
+                        return false;
+                    }
+                    
+                    return { name, phone };
                 }
-                
-                return { name, phone };
-            }
-        }).then((result) => {
-            if (result.isConfirmed) {
-                const newCustomer = {
-                    id: Date.now().toString(),
-                    name: result.value.name,
-                    phone: result.value.phone,
-                    fullname: result.value.name
-                };
-                
-                const customers = JSON.parse(localStorage.getItem('customers') || '[]');
-                customers.push(newCustomer);
-                localStorage.setItem('customers', JSON.stringify(customers));
-                
-                if (window.customerModule?.loadCustomers) {
-                    window.customerModule.loadCustomers();
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const newCustomer = {
+                        id: Date.now().toString(),
+                        name: result.value.name,
+                        phone: result.value.phone,
+                        fullname: result.value.name
+                    };
+                    
+                    const customers = JSON.parse(localStorage.getItem('customers') || '[]');
+                    customers.push(newCustomer);
+                    localStorage.setItem('customers', JSON.stringify(customers));
+                    
+                    if (window.customerModule?.loadCustomers) {
+                        window.customerModule.loadCustomers();
+                    }
+                    
+                    loadCustomersDropdown();
+                    addActiveCustomer(newCustomer);
+                    showNotification('نجاح', 'تم إضافة العميل');
                 }
-                
-                loadCustomersDropdown();
-                addActiveCustomer(newCustomer);
-                showNotification('نجاح', 'تم إضافة العميل');
-            }
-        });
+            });
+        }
     }
     
     function loadCustomersDropdown() {
@@ -1591,15 +1547,15 @@ const salesModule = (function() {
             <head>
                 <title>فاتورة ${invoice.number}</title>
                 <style>
-                    body { font-family: Arial; padding: 20px; }
-                    .header { text-align: center; margin-bottom: 30px; }
-                    h1 { color: #333; }
-                    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                    th { background: #f5f5f5; padding: 10px; border: 1px solid #ddd; }
-                    td { padding: 8px; border: 1px solid #ddd; text-align: center; }
-                    .total { font-size: 18px; font-weight: bold; text-align: left; margin-top: 20px; }
+                    body { font-family: Arial; padding: 15px; }
+                    .header { text-align: center; margin-bottom: 20px; }
+                    h1 { color: #333; font-size: 1.5rem; }
+                    table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+                    th { background: #f5f5f5; padding: 6px; border: 1px solid #ddd; }
+                    td { padding: 4px; border: 1px solid #ddd; text-align: center; }
+                    .total { font-size: 1rem; font-weight: bold; text-align: left; }
                     .debt { color: red; font-weight: bold; }
-                    .footer { text-align: center; margin-top: 50px; color: #999; }
+                    .footer { text-align: center; margin-top: 30px; color: #999; font-size: 0.8rem; }
                 </style>
             </head>
             <body>
@@ -1660,28 +1616,29 @@ const salesModule = (function() {
         const sortedInvoices = getInvoices();
         
         if (sortedInvoices.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4"><i class="material-icons-round" style="font-size:48px;">receipt</i><br>لا توجد فواتير</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-3"><i class="material-icons-round" style="font-size: 2rem; color: #ccc;">receipt</i><br><small class="text-muted">لا توجد فواتير</small></td></tr>';
             return;
         }
         
         tbody.innerHTML = sortedInvoices.map(inv => {
             const debtClass = inv.debt > 0 ? 'text-danger fw-bold' : '';
+            const date = new Date(inv.date).toLocaleDateString('ar-EG');
+            
             return `
                 <tr>
                     <td>${inv.number}</td>
-                    <td>${new Date(inv.date).toLocaleDateString('ar-EG')}</td>
+                    <td>${date}</td>
                     <td>${inv.customer}</td>
-                    <td>${formatCurrency(inv.grandTotal)} دج</td>
-                    <td>${formatCurrency(inv.paidAmount)} دج</td>
-                    <td class="${debtClass}">${inv.debt > 0 ? formatCurrency(inv.debt) + ' دج' : '0.00 دج'}</td>
+                    <td>${formatCurrency(inv.grandTotal)}</td>
+                    <td>${formatCurrency(inv.paidAmount)}</td>
+                    <td class="${debtClass}">${inv.debt > 0 ? formatCurrency(inv.debt) : '0.00'}</td>
                     <td>${inv.paymentText}</td>
-                    <td>${inv.items.length}</td>
                     <td>
-                        <button class="btn btn-sm btn-info" onclick="salesModule.showInvoice('${inv.id}')">
-                            <i class="material-icons-round">visibility</i>
+                        <button class="btn btn-sm btn-info p-0" onclick="salesModule.showInvoice('${inv.id}')" style="width: 24px; height: 24px;">
+                            <i class="material-icons-round" style="font-size: 1rem;">visibility</i>
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="salesModule.deleteInvoice('${inv.id}')">
-                            <i class="material-icons-round">delete</i>
+                        <button class="btn btn-sm btn-danger p-0" onclick="salesModule.deleteInvoice('${inv.id}')" style="width: 24px; height: 24px;">
+                            <i class="material-icons-round" style="font-size: 1rem;">delete</i>
                         </button>
                     </td>
                 </tr>
@@ -1697,12 +1654,12 @@ const salesModule = (function() {
         invoice.items.forEach((item, i) => {
             itemsHtml += `
                 <tr>
-                    <td style="padding:8px; border:1px solid #ddd;">${i + 1}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${item.name}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${item.qty.toFixed(2)}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${formatCurrency(item.price)}</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${item.discount}%</td>
-                    <td style="padding:8px; border:1px solid #ddd;">${formatCurrency(item.total)}</td>
+                    <td style="padding:4px; border:1px solid #ddd;">${i + 1}</td>
+                    <td style="padding:4px; border:1px solid #ddd;">${item.name}</td>
+                    <td style="padding:4px; border:1px solid #ddd;">${item.qty.toFixed(2)}</td>
+                    <td style="padding:4px; border:1px solid #ddd;">${formatCurrency(item.price)}</td>
+                    <td style="padding:4px; border:1px solid #ddd;">${item.discount}%</td>
+                    <td style="padding:4px; border:1px solid #ddd;">${formatCurrency(item.total)}</td>
                 </tr>
             `;
         });
@@ -1710,12 +1667,12 @@ const salesModule = (function() {
         Swal.fire({
             title: `فاتورة ${invoice.number}`,
             html: `
-                <div style="text-align:right; max-height:400px; overflow-y:auto;">
+                <div style="text-align:right; max-height:350px; overflow-y:auto; font-size:0.9rem;">
                     <p><strong>التاريخ:</strong> ${new Date(invoice.date).toLocaleString('ar-EG')}</p>
                     <p><strong>العميل:</strong> ${invoice.customer}</p>
                     <p><strong>طريقة الدفع:</strong> ${invoice.paymentText}</p>
                     <hr>
-                    <table style="width:100%; border-collapse:collapse;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
                         <thead>
                             <tr>
                                 <th>#</th>
@@ -1737,7 +1694,7 @@ const salesModule = (function() {
                     <p><strong>الدين:</strong> <span style="color: ${invoice.debt > 0 ? 'red' : 'green'};">${formatCurrency(invoice.debt || 0)} دج</span></p>
                 </div>
             `,
-            width: '900px'
+            width: '800px'
         });
     }
     
@@ -1769,24 +1726,27 @@ const salesModule = (function() {
         );
         
         if (filtered.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="9" class="text-center p-4">لا توجد نتائج</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="8" class="text-center p-3">لا توجد نتائج</td></tr>';
             return;
         }
         
         tbody.innerHTML = filtered.map(inv => {
             const debtClass = inv.debt > 0 ? 'text-danger fw-bold' : '';
+            const date = new Date(inv.date).toLocaleDateString('ar-EG');
+            
             return `
                 <tr>
                     <td>${inv.number}</td>
-                    <td>${new Date(inv.date).toLocaleDateString('ar-EG')}</td>
+                    <td>${date}</td>
                     <td>${inv.customer}</td>
-                    <td>${formatCurrency(inv.grandTotal)} دج</td>
-                    <td>${formatCurrency(inv.paidAmount)} دج</td>
-                    <td class="${debtClass}">${inv.debt > 0 ? formatCurrency(inv.debt) + ' دج' : '0.00 دج'}</td>
+                    <td>${formatCurrency(inv.grandTotal)}</td>
+                    <td>${formatCurrency(inv.paidAmount)}</td>
+                    <td class="${debtClass}">${inv.debt > 0 ? formatCurrency(inv.debt) : '0.00'}</td>
                     <td>${inv.paymentText}</td>
-                    <td>${inv.items.length}</td>
                     <td>
-                        <button class="btn btn-sm btn-info" onclick="salesModule.showInvoice('${inv.id}')">عرض</button>
+                        <button class="btn btn-sm btn-info p-0" onclick="salesModule.showInvoice('${inv.id}')" style="width: 24px; height: 24px;">
+                            <i class="material-icons-round" style="font-size: 1rem;">visibility</i>
+                        </button>
                     </td>
                 </tr>
             `;
@@ -1827,7 +1787,7 @@ const salesModule = (function() {
     // =======================================================================
     
     function init() {
-        console.log('✅ salesModule v7.4 initialized - مع إصلاح شامل لمشكلة المجموع');
+        console.log('✅ salesModule v7.5 initialized - بحث فوري بحرف واحد');
         
         if (currentCustomerId) {
             currentCart = customerCarts[currentCustomerId] || [];
@@ -1858,19 +1818,12 @@ const salesModule = (function() {
         }
         
         document.addEventListener('click', (e) => {
-            const searchBox = document.getElementById('search-box');
-            const searchInput = document.getElementById('sale-search');
-            if (searchBox && !searchBox.contains(e.target) && e.target !== searchInput) {
-                searchBox.classList.remove('show');
-            }
-            
             const customerResults = document.getElementById('customer-results');
             const customerSearch = document.getElementById('customer-search');
             if (customerResults && !customerResults.contains(e.target) && e.target !== customerSearch) {
                 customerResults.style.display = 'none';
             }
             
-            // إخفاء نتائج بحث المنتج عند النقر خارجها
             const productResults = document.getElementById('product-search-results');
             const productSearch = document.getElementById('product-search-input');
             if (productResults && !productResults.contains(e.target) && e.target !== productSearch) {
@@ -1900,11 +1853,16 @@ const salesModule = (function() {
         selectProduct: selectProduct,
         updateRemainingAmount: updateRemainingAmount,
         
-        // دوال البحث والإضافة داخل الجدول
+        // دوال البحث الفوري
+        searchCustomersInstant: searchCustomersInstant,
+        searchCustomers: searchCustomersInstant,
+        addCustomerDirect: addCustomerDirect,
+        
         searchProductsInTable: searchProductsInTable,
         handleProductSearchKeydown: handleProductSearchKeydown,
         addProductFromSearch: addProductFromSearch,
         addProductFromSearchInput: addProductFromSearchInput,
+        addProductDirect: addProductDirect,
         showAddProductModal: showAddProductModal,
         
         updateItemQuantity: updateItemQuantity,
@@ -1914,7 +1872,6 @@ const salesModule = (function() {
         updateItemUnit: updateItemUnit,
         showUnitOptions: showUnitOptions,
         
-        searchCustomers: searchCustomers,
         selectCustomerFromDropdown: selectCustomerFromDropdown,
         clearSelectedCustomer: clearSelectedCustomer,
         openAddCustomerModal: openAddCustomerModal,
@@ -1939,7 +1896,8 @@ const salesModule = (function() {
         // دوال مساعدة
         formatCurrency: formatCurrency,
         parseNumber: parseNumber,
-        showNotification: showNotification
+        showNotification: showNotification,
+        addProductToCart: addProductToCart
     };
 })();
 
@@ -1954,18 +1912,19 @@ window.clearCart = () => salesModule.clearCart();
 window.finishSale = () => salesModule.finishSale();
 window.finishSaleAndPrint = () => salesModule.finishSaleAndPrint();
 window.searchInvoices = () => salesModule.searchInvoices();
-window.searchCustomers = (q) => salesModule.searchCustomers(q);
+window.searchCustomers = (q) => salesModule.searchCustomersInstant(q);
 window.updateRemainingAmount = () => salesModule.updateRemainingAmount();
 window.searchProductsInTable = (term) => salesModule.searchProductsInTable(term);
 window.handleProductSearchKeydown = (e) => salesModule.handleProductSearchKeydown(e);
 window.addProductFromSearch = (element) => salesModule.addProductFromSearch(element);
 window.addProductFromSearchInput = () => salesModule.addProductFromSearchInput();
+window.addCustomerDirect = (id) => salesModule.addCustomerDirect(id);
+window.addProductDirect = (id) => salesModule.addProductDirect(id);
 
 // =======================================================================
-// الجزء 16: إضافة CSS للبحث
+// الجزء 16: إضافة CSS للبحث الفوري
 // =======================================================================
 if (typeof document !== 'undefined') {
-    // التأكد من عدم إضافة الـ style أكثر من مرة
     if (!document.getElementById('sales-module-styles')) {
         const style = document.createElement('style');
         style.id = 'sales-module-styles';
@@ -1974,52 +1933,55 @@ if (typeof document !== 'undefined') {
                 position: absolute;
                 background: white;
                 border: 1px solid #ddd;
-                border-radius: 4px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                max-height: 300px;
+                border-radius: 6px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                max-height: 250px;
                 overflow-y: auto;
                 z-index: 1000;
+                font-size: 0.8rem;
             }
             
-            .search-result-item {
+            .search-item, .search-result-item {
                 cursor: pointer;
-                border-bottom: 1px solid #eee;
-                transition: background-color 0.2s;
+                padding: 8px 12px;
+                border-bottom: 1px solid #f0f0f0;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                transition: all 0.2s;
             }
             
-            .search-result-item:hover,
-            .search-result-item.selected {
+            .search-item:hover, .search-result-item:hover {
                 background-color: #007bff;
                 color: white;
             }
             
-            .search-result-item:hover .text-muted,
-            .search-result-item.selected .text-muted {
-                color: rgba(255,255,255,0.8) !important;
+            .search-item:hover .badge, .search-result-item:hover .badge {
+                background-color: white !important;
+                color: #007bff !important;
             }
             
-            .search-result-item:last-child {
+            .search-item:last-child, .search-result-item:last-child {
                 border-bottom: none;
             }
             
             #product-search-row td {
-                padding: 8px;
-                background-color: #e3f2fd;
-            }
-            
-            #product-search-input {
-                border-left: none;
+                padding: 6px;
+                background: linear-gradient(145deg, #f0f7ff, #e6f0fa);
             }
             
             #product-search-input:focus {
-                box-shadow: none;
-                border-color: #ced4da;
+                border-color: #007bff;
+                box-shadow: 0 0 0 2px rgba(0,123,255,.1);
             }
             
-            .total-field {
-                font-weight: bold;
-                background-color: #f8f9fa;
-                color: #28a745;
+            .customer-chip {
+                transition: all 0.2s;
+            }
+            
+            .customer-chip:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             }
         `;
         document.head.appendChild(style);
