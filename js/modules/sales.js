@@ -1,6 +1,6 @@
 // =======================================================================
 // ملف: sales.js - نظام إدارة المبيعات المتقدم مع دعم الديون والوحدات
-// الإصدار: 7.2 - مع دعم البحث والإضافة داخل الجدول وحساب المجموع
+// الإصدار: 7.3 - إصلاح مشكلة حساب المجموع وإدخال المنتجات
 // =======================================================================
 
 // =======================================================================
@@ -27,6 +27,14 @@ const salesModule = (function() {
     function formatCurrency(amount) {
         if (amount === undefined || amount === null || isNaN(amount)) amount = 0;
         return Number(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+    
+    function parseNumber(value) {
+        if (typeof value === 'string') {
+            value = value.replace(/,/g, '');
+        }
+        const num = parseFloat(value);
+        return isNaN(num) ? 0 : num;
     }
     
     function generateInvoiceNumber() {
@@ -517,9 +525,8 @@ const salesModule = (function() {
     
     function searchProductsInTable(term) {
         const resultsContainer = document.getElementById('product-search-results');
-        const searchRow = document.getElementById('product-search-row');
         
-        if (!resultsContainer || !searchRow) return;
+        if (!resultsContainer) return;
         
         clearTimeout(searchTimeout);
         
@@ -542,9 +549,8 @@ const salesModule = (function() {
     
     function showSearchResults(results, searchTerm) {
         const resultsContainer = document.getElementById('product-search-results');
-        const searchRow = document.getElementById('product-search-row');
         
-        if (!resultsContainer || !searchRow) return;
+        if (!resultsContainer) return;
         
         selectedProductIndex = -1;
         
@@ -603,15 +609,28 @@ const salesModule = (function() {
     function addProductFromSearch(element) {
         let product;
         if (typeof element === 'string') {
-            product = JSON.parse(element);
-        } else if (element.tagName) {
+            try {
+                product = JSON.parse(element);
+            } catch (e) {
+                console.error('خطأ في تحليل بيانات المنتج', e);
+                return;
+            }
+        } else if (element && element.tagName) {
             const productStr = element.getAttribute('data-product');
             if (productStr) {
-                product = JSON.parse(productStr);
+                try {
+                    product = JSON.parse(productStr);
+                } catch (e) {
+                    console.error('خطأ في تحليل بيانات المنتج', e);
+                    return;
+                }
             }
         }
         
-        if (!product) return;
+        if (!product) {
+            console.error('المنتج غير موجود');
+            return;
+        }
         
         addProductToCart(product);
         hideSearchResults();
@@ -636,28 +655,38 @@ const salesModule = (function() {
             return false;
         }
         
-        const newItem = {
-            id: Date.now() + Math.random(),
-            productId: product.id,
-            name: product.name,
-            qty: 1,
-            unit: product.unit || 'piece',
-            piecesPerUnit: product.piecesPerUnit || 1,
-            basePrice: product.sellPrice || 0,
-            price: product.sellPrice || 0,
-            discount: 0,
-            total: product.sellPrice || 0,
-            stock: product.quantity || 0,
-            unitOptions: product.unitOptions || []
-        };
+        // التحقق من وجود المنتج في السلة
+        const existingItem = currentCart.find(item => item.productId === product.id);
         
-        currentCart.push(newItem);
+        if (existingItem) {
+            // زيادة الكمية إذا كان المنتج موجوداً
+            existingItem.qty += 1;
+            existingItem.total = existingItem.qty * existingItem.price * (1 - existingItem.discount / 100);
+            showNotification('نجاح', `تم زيادة كمية ${product.name}`);
+        } else {
+            // إضافة منتج جديد
+            const newItem = {
+                id: Date.now() + Math.random(),
+                productId: product.id,
+                name: product.name,
+                qty: 1,
+                unit: product.unit || 'piece',
+                piecesPerUnit: product.piecesPerUnit || 1,
+                basePrice: product.sellPrice || 0,
+                price: product.sellPrice || 0,
+                discount: 0,
+                total: product.sellPrice || 0,
+                stock: product.quantity || 0,
+                unitOptions: product.unitOptions || []
+            };
+            
+            currentCart.push(newItem);
+            showNotification('نجاح', `تم إضافة ${product.name}`);
+        }
         
         saveCurrentCart();
         renderCart();
         renderActiveCustomers();
-        
-        showNotification('نجاح', `تم إضافة ${product.name}`);
         updateRemainingAmount();
         
         // تأخير بسيط لتفعيل التنقل بعد إضافة المنتج
@@ -764,7 +793,7 @@ const salesModule = (function() {
         const item = currentCart.find(i => i.id === itemId);
         if (!item) return;
         
-        newQty = parseFloat(newQty) || 0;
+        newQty = parseNumber(newQty);
         if (newQty <= 0) {
             removeFromCart(itemId);
             return;
@@ -787,7 +816,7 @@ const salesModule = (function() {
         const item = currentCart.find(i => i.id === itemId);
         if (!item) return;
         
-        newPieces = parseFloat(newPieces) || 0;
+        newPieces = parseNumber(newPieces);
         if (newPieces <= 0) {
             removeFromCart(itemId);
             return;
@@ -817,7 +846,7 @@ const salesModule = (function() {
         const item = currentCart.find(i => i.id === itemId);
         if (!item) return;
         
-        newPrice = parseFloat(newPrice) || 0;
+        newPrice = parseNumber(newPrice);
         if (newPrice < 0) newPrice = 0;
         
         item.price = newPrice;
@@ -832,7 +861,7 @@ const salesModule = (function() {
         const item = currentCart.find(i => i.id === itemId);
         if (!item) return;
         
-        newDiscount = parseFloat(newDiscount) || 0;
+        newDiscount = parseNumber(newDiscount);
         if (newDiscount > 100) newDiscount = 100;
         if (newDiscount < 0) newDiscount = 0;
         
@@ -846,7 +875,7 @@ const salesModule = (function() {
         }
         
         saveCurrentCart();
-        updateTotals(); // تحديث المجاميع الكلية
+        updateTotals();
         updateRemainingAmount();
     }
     
@@ -903,7 +932,8 @@ const salesModule = (function() {
             saveCurrentCart();
             renderCart();
             renderActiveCustomers();
-            document.getElementById('paid-amount').value = '';
+            const paidAmount = document.getElementById('paid-amount');
+            if (paidAmount) paidAmount.value = '0';
             showNotification('تم', 'تم تفريغ السلة');
             updateRemainingAmount();
         });
@@ -934,7 +964,7 @@ const salesModule = (function() {
                                    oninput="salesModule.searchProductsInTable(this.value)"
                                    onkeydown="salesModule.handleProductSearchKeydown(event)"
                                    onfocus="if(this.value) salesModule.searchProductsInTable(this.value)">
-                            <button class="btn btn-success" type="button" onclick="salesModule.addToCart()">
+                            <button class="btn btn-success" type="button" onclick="salesModule.addProductFromSearchInput()">
                                 <i class="material-icons-round">add</i> إضافة
                             </button>
                         </div>
@@ -994,7 +1024,7 @@ const salesModule = (function() {
                                onchange="salesModule.updateItemPrice('${item.id}', this.value)" tabindex="4">
                     </td>
                     <td>
-                        <input type="text" id="total-${item.id}" class="form-control text-center fw-bold" 
+                        <input type="text" id="total-${item.id}" class="form-control text-center fw-bold total-field" 
                                value="${formatCurrency(item.total)}" readonly
                                style="background-color: #f8f9fa; color: #28a745;">
                     </td>
@@ -1019,6 +1049,33 @@ const salesModule = (function() {
         updateTotals();
         setupTableNavigation();
     }
+    
+    // دالة جديدة لإضافة المنتج من حقل البحث
+    function addProductFromSearchInput() {
+        const searchInput = document.getElementById('product-search-input');
+        if (!searchInput) return;
+        
+        const searchTerm = searchInput.value.trim();
+        if (!searchTerm) {
+            showNotification('تنبيه', 'الرجاء إدخال اسم المنتج', 'warning');
+            return;
+        }
+        
+        const products = loadProducts();
+        const product = products.find(p => 
+            p.name === searchTerm || 
+            p.barcode === searchTerm ||
+            (p.name && p.name.toLowerCase() === searchTerm.toLowerCase())
+        );
+        
+        if (product) {
+            addProductToCart(product);
+            searchInput.value = '';
+            hideSearchResults();
+        } else {
+            showAddProductModal(searchTerm);
+        }
+    }
 
     function setupTableNavigation() {
         setTimeout(() => {
@@ -1031,7 +1088,7 @@ const salesModule = (function() {
             
             // التركيز على حقل البحث تلقائياً
             const searchInput = document.getElementById('product-search-input');
-            if (searchInput && !searchInput.hasFocus) {
+            if (searchInput && document.activeElement !== searchInput) {
                 setTimeout(() => searchInput.focus(), 200);
             }
         }, 50);
@@ -1079,10 +1136,7 @@ const salesModule = (function() {
                 e.preventDefault();
                 // إذا كان في حقل البحث، نضيف المنتج
                 if (e.target.id === 'product-search-input') {
-                    const searchInput = document.getElementById('product-search-input');
-                    if (searchInput && searchInput.value.trim()) {
-                        addToCart();
-                    }
+                    addProductFromSearchInput();
                 } else {
                     const nextInput = inputs[currentIndex + 1];
                     if (nextInput) {
@@ -1244,7 +1298,7 @@ const salesModule = (function() {
         
         if (!paidAmountEl || !remainingEl) return;
         
-        const paidAmount = parseFloat(paidAmountEl.value) || 0;
+        const paidAmount = parseNumber(paidAmountEl.value);
         const grandTotal = currentCart.reduce((sum, item) => sum + (item.total || 0), 0);
         
         const remaining = paidAmount - grandTotal;
@@ -1312,8 +1366,12 @@ const salesModule = (function() {
     }
     
     function selectProduct(name) {
-        document.getElementById('sale-search').value = name;
-        document.getElementById('search-box').classList.remove('show');
+        const searchInput = document.getElementById('sale-search');
+        if (searchInput) searchInput.value = name;
+        
+        const searchBox = document.getElementById('search-box');
+        if (searchBox) searchBox.classList.remove('show');
+        
         addToCart();
     }
     
@@ -1392,7 +1450,7 @@ const salesModule = (function() {
             return null;
         }
         
-        const paidAmount = parseFloat(document.getElementById('paid-amount')?.value) || 0;
+        const paidAmount = parseNumber(document.getElementById('paid-amount')?.value);
         const grandTotal = currentCart.reduce((sum, item) => sum + item.total, 0);
         
         let customerName = 'زبون نقدي';
@@ -1466,7 +1524,8 @@ const salesModule = (function() {
         renderCart();
         renderActiveCustomers();
         
-        document.getElementById('paid-amount').value = '';
+        const paidAmountInput = document.getElementById('paid-amount');
+        if (paidAmountInput) paidAmountInput.value = '0';
         
         if (debt > 0) {
             showNotification('تنبيه', `تمت العملية مع دين: ${formatCurrency(debt)} دج`, 'warning');
@@ -1749,7 +1808,7 @@ const salesModule = (function() {
     // =======================================================================
     
     function init() {
-        console.log('✅ salesModule v7.2 initialized - مع دعم البحث داخل الجدول');
+        console.log('✅ salesModule v7.3 initialized - مع إصلاح مشكلة المجموع');
         
         if (currentCustomerId) {
             currentCart = customerCarts[currentCustomerId] || [];
@@ -1826,6 +1885,7 @@ const salesModule = (function() {
         searchProductsInTable: searchProductsInTable,
         handleProductSearchKeydown: handleProductSearchKeydown,
         addProductFromSearch: addProductFromSearch,
+        addProductFromSearchInput: addProductFromSearchInput,
         showAddProductModal: showAddProductModal,
         
         updateItemQuantity: updateItemQuantity,
@@ -1855,7 +1915,11 @@ const salesModule = (function() {
         getSalesStats: getSalesStats,
         
         init: init,
-        setupTableNavigation: setupTableNavigation
+        setupTableNavigation: setupTableNavigation,
+        
+        // دوال مساعدة
+        formatCurrency: formatCurrency,
+        showNotification: showNotification
     };
 })();
 
@@ -1875,60 +1939,71 @@ window.updateRemainingAmount = () => salesModule.updateRemainingAmount();
 window.searchProductsInTable = (term) => salesModule.searchProductsInTable(term);
 window.handleProductSearchKeydown = (e) => salesModule.handleProductSearchKeydown(e);
 window.addProductFromSearch = (element) => salesModule.addProductFromSearch(element);
+window.addProductFromSearchInput = () => salesModule.addProductFromSearchInput();
 
 // =======================================================================
 // الجزء 16: إضافة CSS للبحث
 // =======================================================================
 if (typeof document !== 'undefined') {
-    const style = document.createElement('style');
-    style.textContent = `
-        .search-results {
-            position: absolute;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            max-height: 300px;
-            overflow-y: auto;
-            z-index: 1000;
-        }
-        
-        .search-result-item {
-            cursor: pointer;
-            border-bottom: 1px solid #eee;
-            transition: background-color 0.2s;
-        }
-        
-        .search-result-item:hover,
-        .search-result-item.selected {
-            background-color: #007bff;
-            color: white;
-        }
-        
-        .search-result-item:hover .text-muted,
-        .search-result-item.selected .text-muted {
-            color: rgba(255,255,255,0.8) !important;
-        }
-        
-        .search-result-item:last-child {
-            border-bottom: none;
-        }
-        
-        #product-search-row td {
-            padding: 8px;
-            background-color: #e3f2fd;
-        }
-        
-        #product-search-input {
-            border-left: none;
-        }
-        
-        #product-search-input:focus {
-            box-shadow: none;
-            border-color: #ced4da;
-        }
-    `;
-    document.head.appendChild(style);
+    // التأكد من عدم إضافة الـ style أكثر من مرة
+    if (!document.getElementById('sales-module-styles')) {
+        const style = document.createElement('style');
+        style.id = 'sales-module-styles';
+        style.textContent = `
+            .search-results {
+                position: absolute;
+                background: white;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                max-height: 300px;
+                overflow-y: auto;
+                z-index: 1000;
+            }
+            
+            .search-result-item {
+                cursor: pointer;
+                border-bottom: 1px solid #eee;
+                transition: background-color 0.2s;
+            }
+            
+            .search-result-item:hover,
+            .search-result-item.selected {
+                background-color: #007bff;
+                color: white;
+            }
+            
+            .search-result-item:hover .text-muted,
+            .search-result-item.selected .text-muted {
+                color: rgba(255,255,255,0.8) !important;
+            }
+            
+            .search-result-item:last-child {
+                border-bottom: none;
+            }
+            
+            #product-search-row td {
+                padding: 8px;
+                background-color: #e3f2fd;
+            }
+            
+            #product-search-input {
+                border-left: none;
+            }
+            
+            #product-search-input:focus {
+                box-shadow: none;
+                border-color: #ced4da;
+            }
+            
+            .total-field {
+                font-weight: bold;
+                background-color: #f8f9fa;
+                color: #28a745;
+            }
+        `;
+        document.head.appendChild(style);
+    }
 }
 
 // =======================================================================
