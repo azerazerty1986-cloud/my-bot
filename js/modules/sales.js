@@ -1,6 +1,6 @@
 // =======================================================================
 // ملف: sales.js - نظام إدارة المبيعات المتقدم مع دعم الديون والوحدات
-// الإصدار: 7.5 - بحث فوري بحرف واحد وإضافة مباشرة
+// الإصدار: 7.6 - إصلاح مشكلة تحديث المجموع في الجدول
 // =======================================================================
 
 // =======================================================================
@@ -832,8 +832,11 @@ const salesModule = (function() {
         item.qty = newQty;
         item.total = item.qty * item.price * (1 - item.discount / 100);
         
+        // تحديث حقل المجموع في الجدول مباشرة
+        updateItemTotalField(item);
+        
         saveCurrentCart();
-        renderCart();
+        updateTotals();
         updateRemainingAmount();
     }
     
@@ -862,8 +865,12 @@ const salesModule = (function() {
         
         item.total = item.qty * item.price * (1 - item.discount / 100);
         
+        // تحديث حقل الكمية والمجموع في الجدول
+        updateItemQuantityField(item);
+        updateItemTotalField(item);
+        
         saveCurrentCart();
-        renderCart();
+        updateTotals();
         updateRemainingAmount();
     }
     
@@ -877,8 +884,11 @@ const salesModule = (function() {
         item.price = newPrice;
         item.total = item.qty * item.price * (1 - item.discount / 100);
         
+        // تحديث حقل المجموع في الجدول
+        updateItemTotalField(item);
+        
         saveCurrentCart();
-        renderCart();
+        updateTotals();
         updateRemainingAmount();
     }
     
@@ -894,14 +904,27 @@ const salesModule = (function() {
         item.total = item.qty * item.price * (1 - item.discount / 100);
         
         // تحديث حقل المجموع في الجدول مباشرة
-        const totalField = document.getElementById(`total-${item.id}`);
-        if (totalField) {
-            totalField.value = formatCurrency(item.total);
-        }
+        updateItemTotalField(item);
         
         saveCurrentCart();
         updateTotals();
         updateRemainingAmount();
+    }
+    
+    // دالة مساعدة لتحديث حقل المجموع في الجدول
+    function updateItemTotalField(item) {
+        const totalField = document.getElementById(`total-${item.id}`);
+        if (totalField) {
+            totalField.value = formatCurrency(item.total);
+        }
+    }
+    
+    // دالة مساعدة لتحديث حقل الكمية في الجدول
+    function updateItemQuantityField(item) {
+        const qtyField = document.getElementById(`qty-${item.id}`);
+        if (qtyField) {
+            qtyField.value = item.qty.toFixed(2);
+        }
     }
     
     function updateItemUnit(itemId, newUnit) {
@@ -1787,7 +1810,7 @@ const salesModule = (function() {
     // =======================================================================
     
     function init() {
-        console.log('✅ salesModule v7.5 initialized - بحث فوري بحرف واحد');
+        console.log('✅ salesModule v7.6 initialized - تم إصلاح مشكلة المجموع');
         
         if (currentCustomerId) {
             currentCart = customerCarts[currentCustomerId] || [];
