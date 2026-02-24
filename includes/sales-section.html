@@ -1,6 +1,6 @@
 <!-- ======================================================================= -->
 <!-- ملف: sales-section.html - قسم المبيعات في واجهة المستخدم -->
-<!-- الإصدار: 5.1 - واجهة مصغرة مع دمج العملاء النشطين مع الجدول -->
+<!-- الإصدار: 5.2 - بحث فوري بحرف واحد وإضافة مباشرة -->
 <!-- ======================================================================= -->
 
 <!-- ======================================================================= -->
@@ -49,7 +49,7 @@
                             </span>
                             <input type="text" id="customer-search" class="form-control form-control-sm" 
                                    placeholder="ابحث عن عميل..." 
-                                   oninput="salesModule.searchCustomers(this.value)"
+                                   oninput="searchCustomersInstant(this.value)"
                                    autocomplete="off">
                             <button class="btn btn-sm btn-outline-success py-0" type="button" onclick="salesModule.openAddCustomerModal()">
                                 <i class="material-icons-round" style="font-size: 1rem;">person_add</i>
@@ -115,7 +115,7 @@
                         <tr>
                             <td colspan="10" class="text-center p-3">
                                 <i class="material-icons-round" style="font-size: 2rem; color: #ccc;">shopping_cart</i>
-                                <br><small class="text-muted">السلة فارغة - ابحث عن منتج</small>
+                                <br><small class="text-muted">السلة فارغة - اكتب حرفاً للبحث عن منتج</small>
                             </td>
                         </tr>
                     </tbody>
@@ -184,7 +184,7 @@
     </div>
 
     <!-- ======================================================================= -->
-    <!-- الجزء 3: قسم فواتير المبيعات (مصغر) -->
+    <!-- الجزء 3: قسم فواتير المبيعات -->
     <!-- ======================================================================= -->
     <div id="sale-invoices" class="sub-section" style="display: none;">
         <div class="main-card compact-card">
@@ -230,7 +230,7 @@
     </div>
 
     <!-- ======================================================================= -->
-    <!-- الجزء 4: قسم إدارة العملاء (مصغر) -->
+    <!-- الجزء 4: قسم إدارة العملاء -->
     <!-- ======================================================================= -->
     <div id="customers" class="sub-section" style="display: none;">
         <div class="main-card compact-card">
@@ -278,10 +278,10 @@
 </div>
 
 <!-- ======================================================================= -->
-<!-- التنسيقات المدمجة والمصغرة -->
+<!-- التنسيقات المحسنة -->
 <!-- ======================================================================= -->
 <style>
-    /* تنسيقات عامة مصغرة */
+    /* تنسيقات عامة */
     .main-card {
         background: white;
         border-radius: 10px;
@@ -316,18 +316,28 @@
     }
     
     .search-item {
-        padding: 6px 10px;
+        padding: 8px 12px;
         cursor: pointer;
         border-bottom: 1px solid #f0f0f0;
         transition: all 0.2s;
         display: flex;
         align-items: center;
-        gap: 6px;
+        justify-content: space-between;
     }
     
     .search-item:hover {
         background-color: #007bff;
         color: white;
+    }
+    
+    .search-item:hover .badge {
+        background-color: white !important;
+        color: #007bff !important;
+    }
+    
+    .search-item i {
+        font-size: 1rem;
+        margin-left: 8px;
     }
     
     /* تنسيق العملاء النشطين */
@@ -350,7 +360,7 @@
         border-color: #28a745;
     }
     
-    /* تنسيق الجدول المصغر */
+    /* تنسيق الجدول */
     .table {
         margin-bottom: 0;
     }
@@ -386,7 +396,7 @@
     /* تنسيق صف البحث في الجدول */
     #product-search-row td {
         padding: 6px;
-        background-color: #f0f7ff;
+        background: linear-gradient(145deg, #f0f7ff, #e6f0fa);
     }
     
     #product-search-input {
@@ -414,13 +424,29 @@
     
     .search-result-item {
         cursor: pointer;
-        padding: 6px 10px;
+        padding: 8px 12px;
         border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     
     .search-result-item:hover {
         background-color: #007bff;
         color: white;
+    }
+    
+    .search-result-item:hover .text-muted {
+        color: rgba(255,255,255,0.9) !important;
+    }
+    
+    .search-result-item i {
+        font-size: 1rem;
+        opacity: 0.7;
+    }
+    
+    .search-result-item:hover i {
+        opacity: 1;
     }
     
     /* تنسيق علامات التبويب */
@@ -463,7 +489,7 @@
         color: white;
     }
     
-    /* شريط التمرير المصغر */
+    /* شريط التمرير */
     #cart-table-container::-webkit-scrollbar,
     .table-responsive::-webkit-scrollbar {
         width: 5px;
@@ -481,6 +507,19 @@
         border-radius: 10px;
     }
     
+    /* مؤشر الإضافة السريعة */
+    .search-item::after {
+        content: "add";
+        font-family: 'Material Icons Round';
+        font-size: 1rem;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+    
+    .search-item:hover::after {
+        opacity: 1;
+    }
+    
     /* تنسيقات الطباعة */
     @media print {
         .no-print, .nav-tabs-custom, button, .btn, #customer-search, 
@@ -491,9 +530,153 @@
 </style>
 
 <!-- ======================================================================= -->
-<!-- السكربتات المساعدة -->
+<!-- السكربتات المحسنة للبحث الفوري -->
 <!-- ======================================================================= -->
 <script>
+    // دالة البحث الفوري عن العملاء
+    function searchCustomersInstant(query) {
+        const resultsDiv = document.getElementById('customer-results');
+        
+        if (!query || query.length < 1) {
+            resultsDiv.style.display = 'none';
+            return;
+        }
+        
+        // جلب العملاء من localStorage
+        let customers = [];
+        if (window.customerModule && typeof window.customerModule.getAllCustomers === 'function') {
+            customers = window.customerModule.getAllCustomers() || [];
+        } else {
+            customers = JSON.parse(localStorage.getItem('customers') || '[]');
+        }
+        
+        // بحث فوري بحرف واحد
+        const filtered = customers.filter(c => 
+            (c.name && c.name.toLowerCase().includes(query.toLowerCase())) ||
+            (c.fullname && c.fullname.toLowerCase().includes(query.toLowerCase())) ||
+            (c.phone && c.phone.includes(query)) ||
+            (c.phone1 && c.phone1.includes(query))
+        ).slice(0, 5);
+        
+        if (filtered.length === 0) {
+            resultsDiv.innerHTML = '<div class="search-item text-muted">لا توجد نتائج</div>';
+            resultsDiv.style.display = 'block';
+            return;
+        }
+        
+        let html = '';
+        filtered.forEach(customer => {
+            const customerName = customer.name || customer.fullname || 'بدون اسم';
+            const customerPhone = customer.phone || customer.phone1 || '';
+            
+            html += `
+                <div class="search-item" onclick="addCustomerDirect('${customer.id}')">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="material-icons-round">person</i>
+                        <div>
+                            <strong>${customerName}</strong>
+                            <br><small>${customerPhone}</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-success">إضافة</span>
+                </div>
+            `;
+        });
+        
+        resultsDiv.innerHTML = html;
+        resultsDiv.style.display = 'block';
+    }
+    
+    // دالة إضافة العميل مباشرة
+    function addCustomerDirect(customerId) {
+        let customers = [];
+        if (window.customerModule && typeof window.customerModule.getAllCustomers === 'function') {
+            customers = window.customerModule.getAllCustomers() || [];
+        } else {
+            customers = JSON.parse(localStorage.getItem('customers') || '[]');
+        }
+        
+        const customer = customers.find(c => c.id === customerId);
+        if (customer && window.salesModule) {
+            window.salesModule.addActiveCustomer(customer);
+            document.getElementById('customer-search').value = customer.name || '';
+            document.getElementById('customer-results').style.display = 'none';
+        }
+    }
+    
+    // دالة البحث الفوري عن المنتجات داخل الجدول
+    window.instantProductSearch = function(term) {
+        const resultsContainer = document.getElementById('product-search-results');
+        
+        if (!resultsContainer) return;
+        
+        if (!term || term.length < 1) {
+            resultsContainer.style.display = 'none';
+            return;
+        }
+        
+        // جلب المنتجات
+        let products = [];
+        if (window.productModule && typeof window.productModule.getAllProducts === 'function') {
+            products = window.productModule.getAllProducts() || [];
+        } else {
+            products = JSON.parse(localStorage.getItem('products') || '[]');
+        }
+        
+        // بحث فوري بحرف واحد
+        const filtered = products.filter(p => 
+            (p.name && p.name.toLowerCase().includes(term.toLowerCase())) ||
+            (p.barcode && p.barcode.includes(term))
+        ).slice(0, 5);
+        
+        if (filtered.length === 0) {
+            resultsContainer.innerHTML = `
+                <div class="search-result-item">
+                    <span class="text-muted">لا توجد نتائج</span>
+                    <span class="badge bg-warning" onclick="salesModule.showAddProductModal('${term}')">إضافة جديد</span>
+                </div>
+            `;
+        } else {
+            let html = '';
+            filtered.forEach(product => {
+                html += `
+                    <div class="search-result-item" onclick="addProductDirect('${product.id}')">
+                        <div>
+                            <strong>${product.name}</strong>
+                            <br>
+                            <small class="text-muted">${product.sellPrice || 0} دج</small>
+                        </div>
+                        <div>
+                            <span class="badge bg-primary">${product.quantity || 0}</span>
+                            <i class="material-icons-round">add_shopping_cart</i>
+                        </div>
+                    </div>
+                `;
+            });
+            resultsContainer.innerHTML = html;
+        }
+        
+        resultsContainer.style.display = 'block';
+    }
+    
+    // دالة إضافة المنتج مباشرة
+    function addProductDirect(productId) {
+        let products = [];
+        if (window.productModule && typeof window.productModule.getAllProducts === 'function') {
+            products = window.productModule.getAllProducts() || [];
+        } else {
+            products = JSON.parse(localStorage.getItem('products') || '[]');
+        }
+        
+        const product = products.find(p => p.id === productId);
+        if (product && window.salesModule) {
+            window.salesModule.addProductToCart(product);
+            document.getElementById('product-search-input').value = '';
+            document.getElementById('product-search-results').style.display = 'none';
+        }
+    }
+    
+    // تعديل دالة إضافة العميل السريع
     function addQuickCustomer() {
         const name = document.getElementById('new-customer').value;
         const phone = document.getElementById('new-customer-phone').value;
@@ -525,6 +708,7 @@
         }
     }
     
+    // دالة تصدير الفواتير
     function exportInvoicesToExcel() {
         if (window.salesModule && salesModule.invoices) {
             const invoices = salesModule.invoices;
@@ -549,6 +733,7 @@
         }
     }
     
+    // دالة إظهار الأقسام الفرعية
     function showSubSection(sectionId) {
         document.querySelectorAll('.sub-section').forEach(el => {
             el.style.display = 'none';
@@ -564,6 +749,14 @@
         if (activeTab) {
             activeTab.classList.add('active-red');
         }
+    }
+    
+    // تعديل دالة البحث في الجدول الأصلية
+    if (window.salesModule) {
+        const originalSearch = window.salesModule.searchProductsInTable;
+        window.salesModule.searchProductsInTable = function(term) {
+            instantProductSearch(term);
+        };
     }
 </script>
 
