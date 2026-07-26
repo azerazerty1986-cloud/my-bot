@@ -3,17 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ناردو 3D — جلب الشخصيات من التلغرام</title>
+<title>ناردو 3D — دعم GLTF</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.7.1/dist/jszip.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--warning:#fbbf24;--info:#60a5fa;--purple:#8b5cf6;--legendary:#ff6b35;--gif-glow:#ff0080;--accent:#00f2ff;--xp:#a855f7;--video:#8b5cf6;--dark:#0a0a1a;--card-bg:rgba(255,255,255,0.03)}
+:root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--warning:#fbbf24;--info:#60a5fa;--purple:#8b5cf6;--legendary:#ff6b35;--gif-glow:#ff0080;--accent:#00f2ff;--xp:#a855f7;--video:#8b5cf6;--gltf:#ff6b6b}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{font-family:'Cairo','Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#0a0a1a,#15152a);color:#fff;min-height:100vh;overflow-x:hidden}
 .container{max-width:1200px;margin:0 auto;padding:10px}
 
 /* Start Screen */
-#start-screen{position:fixed;inset:0;z-index:1000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:25px;animation:fadeIn .5s}
+#start-screen{position:fixed;inset:0;z-index:1000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:25px}
 .start-logo{font-size:48px;font-weight:900;color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,0.3);display:flex;align-items:center;gap:15px;animation:float 3s ease-in-out infinite}
 .start-subtitle{font-size:16px;color:#666;text-align:center;max-width:400px;line-height:1.6}
 .start-btn{border:2px solid var(--accent);color:var(--accent);padding:18px 60px;background:rgba(0,242,255,0.08);border-radius:60px;font-size:22px;cursor:pointer;transition:all .3s;font-weight:700;font-family:inherit;backdrop-filter:blur(10px)}
@@ -28,7 +31,9 @@ body{font-family:'Cairo','Segoe UI',system-ui,sans-serif;background:linear-gradi
 .btn-blue{background:var(--info);color:#fff}.btn-red{background:var(--error);color:#fff}
 .btn-green{background:var(--success);color:#111}.btn-legendary{background:var(--legendary);color:#fff}
 .btn-gif{background:var(--gif-glow);color:#fff}.btn-accent{background:var(--accent);color:#111}
-.btn-video{background:var(--video);color:#fff}.btn-sm{padding:6px 12px;font-size:11px}
+.btn-video{background:var(--video);color:#fff}.btn-gltf{background:var(--gltf);color:#fff;box-shadow:0 0 20px rgba(255,107,107,0.3)}
+.btn-gltf:hover{transform:scale(1.05);box-shadow:0 0 30px rgba(255,107,107,0.5)}
+.btn-sm{padding:6px 12px;font-size:11px}
 .btn:disabled{opacity:.4;cursor:not-allowed}
 input,select,textarea{padding:10px 14px;border-radius:10px;border:1px solid rgba(255,215,0,0.2);background:#0a0a1a;color:#fff;font-family:inherit;font-size:13px;width:100%}
 input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)}
@@ -42,9 +47,6 @@ textarea{min-height:80px;resize:vertical}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-@keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
-@keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
 
 /* Settings Panel */
 .settings-panel{background:linear-gradient(135deg,rgba(255,215,0,0.05),rgba(0,242,255,0.05));border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:20px;margin-bottom:15px}
@@ -93,6 +95,16 @@ textarea{min-height:80px;resize:vertical}
 .char-card .delete-btn{position:absolute;top:6px;left:6px;width:24px;height:24px;border-radius:50%;background:rgba(248,113,113,0.8);border:none;color:#fff;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:12px;z-index:2}
 .char-card:hover .delete-btn{display:flex}
 
+/* GLTF Viewer Modal */
+.gltf-modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.92);display:none;justify-content:center;align-items:center;backdrop-filter:blur(10px)}
+.gltf-modal.show{display:flex;animation:fadeIn .3s}
+.gltf-modal .close-btn{position:absolute;top:20px;right:30px;background:none;border:none;color:#fff;font-size:32px;cursor:pointer;z-index:10}
+.gltf-modal .close-btn:hover{color:var(--gold);transform:rotate(90deg)}
+.gltf-modal .viewer-container{width:90%;height:80vh;max-width:800px;background:#0a0a1a;border-radius:16px;overflow:hidden;position:relative;border:1px solid rgba(255,215,0,0.2)}
+.gltf-modal .viewer-container canvas{width:100% !important;height:100% !important}
+.gltf-modal .viewer-info{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);padding:10px 20px;border-radius:30px;font-size:13px;color:#fff;backdrop-filter:blur(4px);border:1px solid rgba(255,215,0,0.1)}
+.gltf-modal .viewer-info span{color:var(--gold)}
+
 /* Game Area */
 .game-area{display:flex;gap:12px;flex-wrap:wrap}
 .canvas-wrap{flex:2;min-width:300px;position:relative;border-radius:14px;overflow:hidden;border:1px solid rgba(255,215,0,0.15);background:#050510}
@@ -106,7 +118,7 @@ textarea{min-height:80px;resize:vertical}
 .panel-box h3{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:10px}
 
 /* Stats */
-.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center}
 .stats-grid .stat-item .num{font-size:22px;font-weight:900}
 .stats-grid .stat-item .lbl{font-size:11px;color:#888}
 
@@ -132,9 +144,12 @@ textarea{min-height:80px;resize:vertical}
 #minimap-container{display:none;margin-top:10px;border:1px solid rgba(255,215,0,0.12);border-radius:10px;padding:10px;background:rgba(255,255,255,0.02)}
 #minimap{display:block;margin:0 auto;border-radius:6px}
 
-/* Responsive */
-@media(max-width:768px){.game-area{flex-direction:column}#game-canvas{height:300px}.preview-grid{grid-template-columns:1fr}.char-grid{grid-template-columns:repeat(2,1fr)}.fetch-controls .btn{min-width:100%}.settings-grid{grid-template-columns:1fr}}
-@media(max-width:480px){#game-canvas{height:240px}.char-grid{grid-template-columns:1fr}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+@media(max-width:768px){.game-area{flex-direction:column}#game-canvas{height:300px}.preview-grid{grid-template-columns:1fr}.char-grid{grid-template-columns:repeat(2,1fr)}.fetch-controls .btn{min-width:100%}.settings-grid{grid-template-columns:1fr}.gltf-modal .viewer-container{width:95%;height:60vh}}
+@media(max-width:480px){#game-canvas{height:240px}.char-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
@@ -142,10 +157,10 @@ textarea{min-height:80px;resize:vertical}
 <!-- ==================== START SCREEN ==================== -->
 <div id="start-screen">
   <div class="start-logo">🎮 ناردو 3D</div>
-  <div class="start-subtitle">نظام جلب الشخصيات من Telegram<br>📸 صور • 🎬 GIF • 🎥 فيديو</div>
+  <div class="start-subtitle">نظام جلب الشخصيات من Telegram<br>📸 صور • 🎬 GIF • 🎥 فيديو • 🎨 GLTF</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول التطبيق</button>
-  <div class="version-tag">v3.0 | نظام جلب الشخصيات</div>
+  <div class="version-tag">v3.0 | دعم GLTF + Three.js</div>
 </div>
 
 <!-- ==================== MAIN CONTENT ==================== -->
@@ -173,17 +188,17 @@ textarea{min-height:80px;resize:vertical}
     <div class="settings-grid">
       <div>
         <label style="font-size:12px;color:#888;display:block;margin-bottom:5px;">🤖 Bot Token</label>
-        <input type="text" id="bot-token" placeholder="8576673096:AAEFKd-YSJcW_0d_wAHZBt-5nPg_VOjDX_0">
+        <input type="text" id="bot-token" placeholder="123456:ABC-DEF...">
       </div>
       <div>
         <label style="font-size:12px;color:#888;display:block;margin-bottom:5px;">💬 Chat/Channel ID</label>
-        <input type="text" id="chat-id" placeholder="-1003822964890">
+        <input type="text" id="chat-id" placeholder="-1001234567890">
       </div>
     </div>
     <div class="settings-actions">
       <button class="btn btn-accent" onclick="testConnection()" id="btn-connect">🔗 اختبار الاتصال</button>
-      <button class="btn btn-green" onclick="saveSettings()" id="btn-save-settings">💾 حفظ الإعدادات</button>
-      <button class="btn btn-red btn-sm" onclick="clearSettings()">🗑️ مسح</button>
+      <button class="btn btn-green" onclick="saveTelegramConfig()" id="btn-save-settings">💾 حفظ الإعدادات</button>
+      <button class="btn btn-red btn-sm" onclick="clearTelegramConfig()">🗑️ مسح</button>
     </div>
     <div class="settings-status" id="conn-status">
       <span id="conn-icon">⭕</span>
@@ -197,6 +212,7 @@ textarea{min-height:80px;resize:vertical}
     <button class="btn btn-blue" onclick="fetchFromChannel('photo')" id="btn-fetch-photo" disabled>🖼️ صور</button>
     <button class="btn btn-gif" onclick="fetchFromChannel('animation')" id="btn-fetch-gif" disabled>🎬 GIF</button>
     <button class="btn btn-video" onclick="fetchFromChannel('video')" id="btn-fetch-video" disabled>🎥 فيديو</button>
+    <button class="btn btn-gltf" onclick="fetchGLTFFromChannel()" id="btn-fetch-gltf" disabled>🎨 GLTF</button>
   </div>
 
   <!-- ==================== PREVIEW ==================== -->
@@ -228,13 +244,15 @@ textarea{min-height:80px;resize:vertical}
       <div class="overlay-ui">
         <div>FPS: <span id="fps">60</span></div>
         <div>👤 <span id="ingame-count">0</span> شخصية</div>
+        <div style="color:var(--gltf);">🎨 GLTF: <span id="gltf-count">0</span></div>
         <div>📍 <span id="location-display">الساحة المركزية</span></div>
       </div>
       <div class="controls-hint">
         <span>WASD للتحرك</span><span style="color:#444;">|</span>
         <span>M للخريطة</span><span style="color:#444;">|</span>
         <span>E للتفاعل</span><span style="color:#444;">|</span>
-        <span>Space للقفز</span>
+        <span>Space للقفز</span><span style="color:#444;">|</span>
+        <span>انقر على شخصية GLTF لعرضها</span>
       </div>
     </div>
     <div class="side-panel">
@@ -243,8 +261,7 @@ textarea{min-height:80px;resize:vertical}
         <div class="stats-grid">
           <div class="stat-item"><div class="num" style="color:var(--gold);" id="stat-total">0</div><div class="lbl">الكل</div></div>
           <div class="stat-item"><div class="num" style="color:var(--info);" id="stat-photo">0</div><div class="lbl">صور</div></div>
-          <div class="stat-item"><div class="num" style="color:var(--gif-glow);" id="stat-gif">0</div><div class="lbl">GIF</div></div>
-          <div class="stat-item"><div class="num" style="color:var(--video);" id="stat-video">0</div><div class="lbl">فيديو</div></div>
+          <div class="stat-item"><div class="num" style="color:var(--gltf);" id="stat-gltf">0</div><div class="lbl">GLTF</div></div>
         </div>
       </div>
       <div class="panel-box">
@@ -252,20 +269,19 @@ textarea{min-height:80px;resize:vertical}
         <div style="font-size:12px;color:#aaa;line-height:2;">
           <div>1️⃣ أدخل <b>Bot Token</b> و <b>Chat ID</b></div>
           <div>2️⃣ اضغط <b>"اختبار الاتصال"</b></div>
-          <div>3️⃣ اضغط <b>"جلب الكل"</b> لجلب الشخصيات</div>
+          <div>3️⃣ اضغط <b>"جلب الكل"</b> أو <b>"GLTF"</b></div>
           <div>4️⃣ راجع المعاينة ثم <b>"إضافة للعبة"</b></div>
           <div>5️⃣ اضغط <b>E</b> للتفاعل مع الشخصيات</div>
         </div>
       </div>
       <div class="panel-box">
-        <h3>📝 تنسيق التعليق</h3>
+        <h3>📝 تنسيق GLTF</h3>
         <div style="font-size:11px;color:#888;line-height:1.8;background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-family:monospace;direction:ltr;text-align:left;">
 Name: شخصية<br>
-Desc: وصف الشخصية<br>
+Desc: نموذج ثلاثي الأبعاد<br>
+Model: link.gltf / model.glb<br>
 Atk: 85<br>
-Def: 70<br>
-Energy: 90<br>
-Speed: 80
+Def: 70
         </div>
       </div>
     </div>
@@ -274,6 +290,19 @@ Speed: 80
   <!-- Minimap -->
   <div id="minimap-container">
     <canvas id="minimap" width="200" height="200"></canvas>
+  </div>
+</div>
+
+<!-- ==================== GLTF VIEWER MODAL ==================== -->
+<div class="gltf-modal" id="gltf-modal" onclick="closeGLTFModal(event)">
+  <button class="close-btn" onclick="closeGLTFModal()">×</button>
+  <div class="viewer-container" id="gltf-viewer" onclick="event.stopPropagation()">
+    <div id="gltf-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);color:#fff;font-size:18px;z-index:5;">
+      <span>🔄 جاري تحميل النموذج...</span>
+    </div>
+  </div>
+  <div class="viewer-info" id="gltf-info">
+    🎨 <span id="gltf-viewer-name">نموذج GLTF</span>
   </div>
 </div>
 
@@ -339,7 +368,7 @@ Speed: 80
 
 <script>
 // ============================================================
-//  ناردو 3D — نظام جلب الشخصيات مع إعدادات التلغرام
+//  ناردو 3D — نظام جلب الشخصيات مع دعم GLTF
 // ============================================================
 
 // ============================================================
@@ -384,9 +413,19 @@ let lastUpdateId = 0;
 let characters = [];
 let previewChars = [];
 let loadedImages = {};
+let loadedGLTFModels = {};
 let particles = [];
 let map = [];
 const MAP_SIZE = 20;
+
+// Three.js state
+let gltfViewer = null;
+let gltfScene = null;
+let gltfCamera = null;
+let gltfRenderer = null;
+let gltfMixer = null;
+let gltfClock = new THREE.Clock();
+let gltfCurrentModel = null;
 
 let player = { x: 1.5, y: 1.5, angle: 0, speed: 0.04, rotSpeed: 0.035, jumping: false, jumpHeight: 0, jumpVelocity: 0 };
 let keys = {};
@@ -407,10 +446,10 @@ const locations = {
 };
 
 // ============================================================
-//  SETTINGS MANAGEMENT
+//  SETTINGS
 // ============================================================
 
-function loadSettings() {
+function loadTelegramConfig() {
   const savedToken = localStorage.getItem('nardo_bot_token');
   const savedChat = localStorage.getItem('nardo_chat_id');
   if (savedToken) document.getElementById('bot-token').value = savedToken;
@@ -418,21 +457,33 @@ function loadSettings() {
 
   const savedChars = localStorage.getItem('nardo_characters');
   if (savedChars) {
-    characters = JSON.parse(savedChars);
-    renderCharList();
-    updateStats();
+    try {
+      const loaded = JSON.parse(savedChars);
+      for (let i = 0; i < loaded.length; i++) {
+        const char = loaded[i];
+        if (char.imageUrl) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = function() { loadedImages[char.id] = img; };
+          img.src = char.imageUrl;
+        }
+        characters.push(char);
+      }
+      renderCharList();
+      updateStats();
+    } catch(e) {}
   }
 }
 
-function saveSettings() {
+function saveTelegramConfig() {
   botToken = document.getElementById('bot-token').value.trim();
   channelId = document.getElementById('chat-id').value.trim();
-  if (botToken) localStorage.setItem('nardo_bot_token', botToken);
-  if (channelId) localStorage.setItem('nardo_chat_id', channelId);
+  localStorage.setItem('nardo_bot_token', botToken);
+  localStorage.setItem('nardo_chat_id', channelId);
   showToast('💾 تم حفظ الإعدادات', 'success');
 }
 
-function clearSettings() {
+function clearTelegramConfig() {
   localStorage.removeItem('nardo_bot_token');
   localStorage.removeItem('nardo_chat_id');
   document.getElementById('bot-token').value = '';
@@ -471,7 +522,7 @@ async function testConnection() {
       enableFetchButtons(false);
     }
   } catch(e) {
-    setConnStatus('error', '❌ فشل الاتصال: ' + e.message);
+    setConnStatus('error', '❌ فشل الاتصال');
     enableFetchButtons(false);
   }
 }
@@ -480,16 +531,92 @@ function setConnStatus(type, msg) {
   const el = document.getElementById('conn-status');
   const icon = document.getElementById('conn-icon');
   const txt = document.getElementById('conn-msg');
-
   el.className = 'settings-status ' + (type === 'success' ? 'connected' : type === 'error' ? 'error' : '');
   icon.textContent = type === 'success' ? '✅' : type === 'error' ? '❌' : '🔄';
   txt.textContent = msg;
 }
 
 function enableFetchButtons(enable) {
-  ['btn-fetch-all','btn-fetch-photo','btn-fetch-gif','btn-fetch-video'].forEach(function(id) {
+  ['btn-fetch-all','btn-fetch-photo','btn-fetch-gif','btn-fetch-video','btn-fetch-gltf'].forEach(function(id) {
     document.getElementById(id).disabled = !enable;
   });
+}
+
+// ============================================================
+//  CAPTION PARSER
+// ============================================================
+
+function parseCaption(caption) {
+  const result = {};
+  if (!caption) return result;
+
+  const lines = caption.split(/\r?\n/);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+
+    const match = line.match(/^([\w\u0600-\u06FF\s]+)[\s]*[:\-\=][\s]*(.+)$/);
+    if (!match) continue;
+
+    const field = match[1].trim().toLowerCase();
+    const value = match[2].trim();
+
+    if (/^(name|اسم|الاسم|nama|nombre|nom|nome|isim|ad)$/.test(field)) {
+      result.name = value;
+    }
+    else if (/^(desc|وصف|الوصف|description|bio|about|نبذة|تعريف|info)$/.test(field)) {
+      result.desc = value;
+    }
+    else if (/^(atk|هجوم|attack|att|power|قوة|ضرر|damage|offense|off)$/.test(field)) {
+      const num = parseInt(value);
+      if (!isNaN(num)) result.atk = Math.min(100, Math.max(0, num));
+    }
+    else if (/^(def|دفاع|defense|defence|shield|درع|protection|armor|resistance|res)$/.test(field)) {
+      const num = parseInt(value);
+      if (!isNaN(num)) result.def = Math.min(100, Math.max(0, num));
+    }
+    else if (/^(energy|طاقة|mp|mana|stamina|تحمل|power|qi|chi|ki|chakra)$/.test(field)) {
+      const num = parseInt(value);
+      if (!isNaN(num)) result.energy = Math.min(100, Math.max(0, num));
+    }
+    else if (/^(speed|سرعة|spd|velocity|agility|agi|quickness|fast|حركة|mobility)$/.test(field)) {
+      const num = parseInt(value);
+      if (!isNaN(num)) result.speed = Math.min(100, Math.max(0, num));
+    }
+    else if (/^(class|فئة|class|نوع|type|role|rank|tier|درجة|مستوى|job|profession|specialization|spec)$/.test(field)) {
+      result.class = value;
+    }
+    else if (/^(model|نموذج|gltf|glb|file|ملف|link|رابط|url|download|تحميل)$/.test(field)) {
+      // استخراج رابط النموذج
+      const urlMatch = value.match(/(https?:\/\/[^\s]+\.(gltf|glb|zip))/i);
+      if (urlMatch) result.modelUrl = urlMatch[1];
+    }
+  }
+
+  // البحث عن رابط في النص كامل
+  if (!result.modelUrl) {
+    const urlMatch = caption.match(/(https?:\/\/[^\s]+\.(gltf|glb|zip))/i);
+    if (urlMatch) result.modelUrl = urlMatch[1];
+  }
+
+  return result;
+}
+
+function generateName(mediaType) {
+  const prefixes = { photo: 'بطل', animation: 'محارب', video: 'أسطورة', gltf: 'نموذج' };
+  const prefix = prefixes[mediaType] || 'شخصية';
+  return prefix + ' #' + (characters.length + previewChars.length + 1);
+}
+
+function getDefaultDesc(mediaType) {
+  const descs = { photo: 'شخصية أنمي قوية', animation: 'شخصية متحركة GIF', video: 'شخصية فيديو أسطورية', gltf: 'نموذج ثلاثي الأبعاد' };
+  return descs[mediaType] || 'شخصية غامضة';
+}
+
+function getDefaultClass(mediaType) {
+  const classes = { photo: 'Anime Hero', animation: 'GIF Warrior', video: 'Video Legend', gltf: '3D Model' };
+  return classes[mediaType] || 'Unknown';
 }
 
 // ============================================================
@@ -506,10 +633,7 @@ async function fetchFromChannel(filterType) {
     const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=100&offset=' + (lastUpdateId + 1));
     const data = await res.json();
 
-    if (!data.ok) {
-      showToast('❌ خطأ: ' + data.description, 'error');
-      return;
-    }
+    if (!data.ok) { showToast('❌ خطأ: ' + data.description, 'error'); return; }
 
     let foundCount = 0;
     const updates = data.result || [];
@@ -544,61 +668,80 @@ async function fetchFromChannel(filterType) {
         if (msg.video.thumbnail) thumbFileId = msg.video.thumbnail.file_id;
       } else if (msg.document) {
         const mime = msg.document.mime_type || '';
-        if (mime === 'image/gif') {
+        const fileName = msg.document.file_name || '';
+        if (mime === 'image/gif' || fileName.endsWith('.gif')) {
           mediaType = 'animation';
           fileId = msg.document.file_id;
           fileUniqueId = msg.document.file_unique_id;
-        } else if (mime.startsWith('video/')) {
+        } else if (mime.startsWith('video/') || fileName.match(/\.(mp4|webm|mov|avi)$/i)) {
           mediaType = 'video';
           fileId = msg.document.file_id;
           fileUniqueId = msg.document.file_unique_id;
-        } else if (mime.startsWith('image/')) {
+        } else if (mime.startsWith('image/') || fileName.match(/\.(png|jpg|jpeg|webp|bmp)$/i)) {
           mediaType = 'photo';
+          fileId = msg.document.file_id;
+          fileUniqueId = msg.document.file_unique_id;
+        } else if (fileName.match(/\.(gltf|glb|zip)$/i)) {
+          mediaType = 'gltf';
           fileId = msg.document.file_id;
           fileUniqueId = msg.document.file_unique_id;
         }
       }
 
-      if (!mediaType || !fileId) continue;
+      // Check if it's GLTF from text (link)
+      if (!mediaType && msg.text) {
+        const caption = msg.text;
+        const parsed = parseCaption(caption);
+        if (parsed.modelUrl) {
+          mediaType = 'gltf';
+          // No fileId, we'll use the URL directly
+        }
+      }
+
+      if (!mediaType) continue;
       if (filterType !== 'all' && mediaType !== filterType) continue;
 
       // Skip duplicates
       const existing = characters.find(function(c) { return c.fileUniqueId === fileUniqueId; }) ||
                        previewChars.find(function(c) { return c.fileUniqueId === fileUniqueId; });
-      if (existing) continue;
+      if (existing && fileUniqueId) continue;
 
-      // Parse caption
-      const caption = msg.caption || '';
+      const caption = msg.caption || msg.text || '';
       const parsed = parseCaption(caption);
 
-      // Get file URL
       let imageUrl = '';
       let videoUrl = '';
+      let modelUrl = parsed.modelUrl || '';
 
-      try {
-        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
-        const fileData = await fileRes.json();
-        if (fileData.ok && fileData.result.file_path) {
-          const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
-          if (mediaType === 'video' || mediaType === 'animation') {
-            videoUrl = url;
-            if (thumbFileId) {
-              const thumbRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + thumbFileId);
-              const thumbData = await thumbRes.json();
-              if (thumbData.ok && thumbData.result.file_path) {
-                imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + thumbData.result.file_path;
+      // If it's a file, get the URL from Telegram
+      if (fileId) {
+        try {
+          const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+          const fileData = await fileRes.json();
+          if (fileData.ok && fileData.result.file_path) {
+            const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+            if (mediaType === 'video' || mediaType === 'animation') {
+              videoUrl = url;
+              if (thumbFileId) {
+                const thumbRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + thumbFileId);
+                const thumbData = await thumbRes.json();
+                if (thumbData.ok && thumbData.result.file_path) {
+                  imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + thumbData.result.file_path;
+                }
               }
+            } else if (mediaType === 'gltf') {
+              modelUrl = url;
+            } else {
+              imageUrl = url;
             }
-          } else {
-            imageUrl = url;
           }
-        }
-      } catch(e) {}
+        } catch(e) {}
+      }
 
       const char = {
         id: 'char_' + Date.now() + '_' + Math.floor(Math.random()*10000),
-        fileId: fileId,
-        fileUniqueId: fileUniqueId,
+        fileId: fileId || 'link_' + Date.now(),
+        fileUniqueId: fileUniqueId || 'link_' + Date.now(),
         name: parsed.name || generateName(mediaType),
         desc: parsed.desc || getDefaultDesc(mediaType),
         attack: parsed.atk || Math.floor(Math.random() * 40) + 60,
@@ -609,9 +752,13 @@ async function fetchFromChannel(filterType) {
         mediaType: mediaType,
         imageUrl: imageUrl,
         videoUrl: videoUrl,
+        modelUrl: modelUrl,
         date: new Date(msg.date * 1000).toISOString(),
         messageId: msg.message_id,
-        caption: caption
+        caption: caption,
+        isGif: mediaType === 'animation',
+        isLegendary: false,
+        isGLTF: mediaType === 'gltf'
       };
 
       previewChars.push(char);
@@ -631,49 +778,15 @@ async function fetchFromChannel(filterType) {
 }
 
 // ============================================================
-//  CAPTION PARSER
+//  FETCH GLTF SPECIFICALLY
 // ============================================================
 
-function parseCaption(caption) {
-  const result = {};
-  if (!caption) return result;
-
-  const patterns = {
-    name: /(?:Name|اسم|الاسم|nama|title|عنوان)[\s:]*([^\n]+)/i,
-    desc: /(?:Desc|وصف|الوصف|description|bio|ملاحظات)[\s:]*([^\n]+)/i,
-    atk: /(?:Atk|هجوم|attack|atk|قوة)[\s:]*(\d+)/i,
-    def: /(?:Def|دفاع|defense|def|درع)[\s:]*(\d+)/i,
-    energy: /(?:Energy|طاقة|energy|mp|مانا)[\s:]*(\d+)/i,
-    speed: /(?:Speed|سرعة|speed|spd|سرعة)[\s:]*(\d+)/i,
-    class: /(?:Class|فئة|class|نوع|type|صنف)[\s:]*([^\n]+)/i
-  };
-
-  for (let key in patterns) {
-    const match = caption.match(patterns[key]);
-    if (match) result[key] = match[1].trim();
-  }
-
-  return result;
-}
-
-function generateName(mediaType) {
-  const prefixes = { photo: 'بطل', animation: 'محارب', video: 'أسطورة' };
-  const prefix = prefixes[mediaType] || 'شخصية';
-  return prefix + ' #' + (characters.length + previewChars.length + 1);
-}
-
-function getDefaultDesc(mediaType) {
-  const descs = { photo: 'شخصية أنمي قوية', animation: 'شخصية متحركة GIF', video: 'شخصية فيديو أسطورية' };
-  return descs[mediaType] || 'شخصية غامضة';
-}
-
-function getDefaultClass(mediaType) {
-  const classes = { photo: 'Anime Hero', animation: 'GIF Warrior', video: 'Video Legend' };
-  return classes[mediaType] || 'Unknown';
+async function fetchGLTFFromChannel() {
+  await fetchFromChannel('gltf');
 }
 
 // ============================================================
-//  PREVIEW
+//  PREVIEW SYSTEM
 // ============================================================
 
 function showPreview() {
@@ -692,28 +805,36 @@ function showPreview() {
     card.className = 'preview-card';
 
     let mediaHtml = '';
+    let typeLabel = '';
+    let typeColor = '';
+
     if (char.mediaType === 'photo') {
       mediaHtml = '<img src="' + (char.imageUrl || '') + '" alt="" onerror="this.parentElement.innerHTML=\'<div style=font-size:40px>🖼️</div>\'">';
+      typeLabel = '🖼️ صورة';
+      typeColor = 'var(--info)';
     } else if (char.mediaType === 'animation') {
-      if (char.imageUrl) {
-        mediaHtml = '<img src="' + char.imageUrl + '" alt="" onerror="this.parentElement.innerHTML=\'<div style=font-size:40px>🎬</div>\'">';
-      } else {
-        mediaHtml = '<div style="font-size:40px">🎬</div>';
-      }
+      mediaHtml = char.imageUrl ? 
+        '<img src="' + char.imageUrl + '" alt="" onerror="this.parentElement.innerHTML=\'<div style=font-size:40px>🎬</div>\'">' :
+        '<div style="font-size:40px">🎬</div>';
+      typeLabel = '🎬 GIF';
+      typeColor = 'var(--gif-glow)';
     } else if (char.mediaType === 'video') {
-      if (char.videoUrl) {
-        mediaHtml = '<video src="' + char.videoUrl + '" muted loop autoplay playsinline onerror="this.parentElement.innerHTML=\'<div style=font-size:40px>🎥</div>\'"></video>';
-      } else {
-        mediaHtml = '<div style="font-size:40px">🎥</div>';
-      }
+      mediaHtml = char.videoUrl ?
+        '<video src="' + char.videoUrl + '" muted loop autoplay playsinline onerror="this.parentElement.innerHTML=\'<div style=font-size:40px>🎥</div>\'"></video>' :
+        '<div style="font-size:40px">🎥</div>';
+      typeLabel = '🎥 فيديو';
+      typeColor = 'var(--video)';
+    } else if (char.mediaType === 'gltf') {
+      mediaHtml = char.imageUrl ?
+        '<img src="' + char.imageUrl + '" alt="" onerror="this.parentElement.innerHTML=\'<div style=font-size:40px>🎨</div>\'">' :
+        '<div style="font-size:40px;display:flex;align-items:center;justify-content:center;height:100%;">🎨</div>';
+      typeLabel = '🎨 GLTF';
+      typeColor = 'var(--gltf)';
     }
-
-    const typeLabels = { photo: '🖼️ صورة', animation: '🎬 GIF', video: '🎥 فيديو' };
-    const typeColors = { photo: 'var(--info)', animation: 'var(--gif-glow)', video: 'var(--video)' };
 
     card.innerHTML = 
       '<div class="media-wrap">' + mediaHtml + 
-      '<span class="type-badge" style="color:' + typeColors[char.mediaType] + '">' + typeLabels[char.mediaType] + '</span></div>' +
+      '<span class="type-badge" style="color:' + typeColor + '">' + typeLabel + '</span></div>' +
       '<div class="char-name">' + char.name + '</div>' +
       '<div class="char-desc">' + char.desc + '</div>' +
       '<div class="char-stats">' +
@@ -723,6 +844,7 @@ function showPreview() {
       '<span style="color:var(--success)">💨 ' + char.speed + '</span>' +
       '</div>' +
       '<div class="char-actions">' +
+      (char.isGLTF ? '<button class="btn btn-gltf btn-sm" onclick="previewGLTF(' + i + ')">👁️ معاينة</button>' : '') +
       '<button class="btn btn-green btn-sm" onclick="addToGame(' + i + ')">➕ إضافة</button>' +
       '<button class="btn btn-blue btn-sm" onclick="editPreviewChar(' + i + ')">✏️ تعديل</button>' +
       '<button class="btn btn-red btn-sm" onclick="removeFromPreview(' + i + ')">🗑️</button>' +
@@ -732,6 +854,15 @@ function showPreview() {
   }
 
   panel.classList.add('show');
+}
+
+function previewGLTF(index) {
+  const char = previewChars[index];
+  if (!char || !char.modelUrl) {
+    showToast('❌ لا يوجد رابط للنموذج', 'error');
+    return;
+  }
+  openGLTFViewer(char.modelUrl, char.name);
 }
 
 function addToGame(index) {
@@ -758,23 +889,25 @@ function addToGame(index) {
     img.src = char.imageUrl;
   }
 
-  createParticles(ax + 0.5, ay + 0.5, 30, char.mediaType === 'photo' ? '#60a5fa' : char.mediaType === 'animation' ? '#ff0080' : '#8b5cf6');
+  createParticles(ax + 0.5, ay + 0.5, 30, char.isGLTF ? '#ff6b6b' : char.mediaType === 'photo' ? '#60a5fa' : char.mediaType === 'animation' ? '#ff0080' : '#8b5cf6');
 
   previewChars.splice(index, 1);
   showPreview();
   renderCharList();
   updateStats();
-  saveCharacters();
+  saveCharactersToStorage();
 
   showToast('✅ تم إضافة ' + char.name + ' للعبة!', 'success');
 }
 
 function addAllToGame() {
   if (previewChars.length === 0) return;
+  let added = 0;
   for (let i = previewChars.length - 1; i >= 0; i--) {
     addToGame(i);
+    added++;
   }
-  showToast('✅ تم إضافة الكل للعبة!', 'success');
+  showToast('✅ تم إضافة ' + added + ' شخصية للعبة!', 'success');
   document.getElementById('preview-panel').classList.remove('show');
 }
 
@@ -796,7 +929,6 @@ function clearPreview() {
 function editPreviewChar(index) {
   const char = previewChars[index];
   if (!char) return;
-
   document.getElementById('edit-index').value = 'preview:' + index;
   document.getElementById('edit-name').value = char.name;
   document.getElementById('edit-desc').value = char.desc;
@@ -804,9 +936,362 @@ function editPreviewChar(index) {
   document.getElementById('edit-def').value = char.defense;
   document.getElementById('edit-energy').value = char.energy;
   document.getElementById('edit-speed').value = char.speed;
-  document.getElementById('edit-class').value = char.class || '';
-
+  document.getElementById('edit-class').value = char.class;
   document.getElementById('edit-modal').classList.add('show');
+}
+
+// ============================================================
+//  GLTF VIEWER
+// ============================================================
+
+function initGLTFViewer() {
+  const container = document.getElementById('gltf-viewer');
+  
+  // Create renderer
+  gltfRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  gltfRenderer.setPixelRatio(window.devicePixelRatio);
+  gltfRenderer.setSize(container.clientWidth, container.clientHeight);
+  gltfRenderer.shadowMap.enabled = true;
+  gltfRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  container.appendChild(gltfRenderer.domElement);
+
+  // Create scene
+  gltfScene = new THREE.Scene();
+  
+  // Background gradient
+  const bgCanvas = document.createElement('canvas');
+  bgCanvas.width = 2;
+  bgCanvas.height = 512;
+  const bgCtx = bgCanvas.getContext('2d');
+  const grad = bgCtx.createLinearGradient(0, 0, 0, 512);
+  grad.addColorStop(0, '#0a0a2a');
+  grad.addColorStop(0.5, '#15152a');
+  grad.addColorStop(1, '#0a0a1a');
+  bgCtx.fillStyle = grad;
+  bgCtx.fillRect(0, 0, 2, 512);
+  const bgTexture = new THREE.CanvasTexture(bgCanvas);
+  gltfScene.background = bgTexture;
+
+  // Camera
+  gltfCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+  gltfCamera.position.set(3, 2, 5);
+  gltfCamera.lookAt(0, 0, 0);
+
+  // Lights
+  const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+  gltfScene.add(ambientLight);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  dirLight.position.set(5, 10, 7);
+  dirLight.castShadow = true;
+  gltfScene.add(dirLight);
+
+  const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
+  fillLight.position.set(-5, 0, 5);
+  gltfScene.add(fillLight);
+
+  const backLight = new THREE.DirectionalLight(0x444466, 0.3);
+  backLight.position.set(0, 2, -10);
+  gltfScene.add(backLight);
+
+  // Grid helper
+  const gridHelper = new THREE.GridHelper(8, 20, 0x444466, 0x222244);
+  gridHelper.position.y = -0.8;
+  gltfScene.add(gridHelper);
+
+  // Auto-rotate flag
+  gltfScene.userData = { autoRotate: true };
+
+  // Handle resize
+  window.addEventListener('resize', function() {
+    if (gltfRenderer && gltfCamera) {
+      const container = document.getElementById('gltf-viewer');
+      gltfRenderer.setSize(container.clientWidth, container.clientHeight);
+      gltfCamera.aspect = container.clientWidth / container.clientHeight;
+      gltfCamera.updateProjectionMatrix();
+    }
+  });
+
+  // Animation loop
+  function animateGLTF() {
+    if (!gltfRenderer || !gltfScene) return;
+    requestAnimationFrame(animateGLTF);
+
+    const delta = gltfClock.getDelta();
+
+    if (gltfMixer) {
+      gltfMixer.update(delta);
+    }
+
+    if (gltfScene.userData.autoRotate && gltfCurrentModel) {
+      gltfCurrentModel.rotation.y += delta * 0.5;
+    }
+
+    gltfRenderer.render(gltfScene, gltfCamera);
+  }
+
+  animateGLTF();
+
+  // Mouse controls
+  let isDragging = false;
+  let previousMousePosition = { x: 0, y: 0 };
+
+  container.addEventListener('mousedown', function(e) {
+    isDragging = true;
+    previousMousePosition = { x: e.clientX, y: e.clientY };
+    gltfScene.userData.autoRotate = false;
+  });
+
+  window.addEventListener('mousemove', function(e) {
+    if (!isDragging || !gltfCurrentModel) return;
+    const deltaX = e.clientX - previousMousePosition.x;
+    const deltaY = e.clientY - previousMousePosition.y;
+    gltfCurrentModel.rotation.y += deltaX * 0.01;
+    gltfCurrentModel.rotation.x += deltaY * 0.01;
+    previousMousePosition = { x: e.clientX, y: e.clientY };
+  });
+
+  window.addEventListener('mouseup', function() {
+    isDragging = false;
+  });
+
+  // Touch controls
+  let touchStart = { x: 0, y: 0 };
+  container.addEventListener('touchstart', function(e) {
+    const touch = e.touches[0];
+    touchStart = { x: touch.clientX, y: touch.clientY };
+    gltfScene.userData.autoRotate = false;
+  }, { passive: true });
+
+  container.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    if (!gltfCurrentModel || !e.touches.length) return;
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - touchStart.x;
+    const deltaY = touch.clientY - touchStart.y;
+    gltfCurrentModel.rotation.y += deltaX * 0.01;
+    gltfCurrentModel.rotation.x += deltaY * 0.01;
+    touchStart = { x: touch.clientX, y: touch.clientY };
+  }, { passive: false });
+
+  container.addEventListener('touchend', function() {
+    // Resume auto-rotate after a delay
+    setTimeout(function() {
+      gltfScene.userData.autoRotate = true;
+    }, 3000);
+  }, { passive: true });
+
+  // Zoom with scroll
+  container.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    if (!gltfCamera) return;
+    const zoom = e.deltaY > 0 ? 1.1 : 0.9;
+    const distance = gltfCamera.position.length();
+    if (distance * zoom > 1.5 && distance * zoom < 15) {
+      gltfCamera.position.multiplyScalar(zoom);
+      gltfCamera.lookAt(0, 0, 0);
+    }
+  }, { passive: false });
+
+  // Remove loading text
+  document.getElementById('gltf-loading').style.display = 'none';
+}
+
+function openGLTFViewer(modelUrl, name) {
+  const modal = document.getElementById('gltf-modal');
+  modal.classList.add('show');
+  document.getElementById('gltf-viewer-name').textContent = name || 'نموذج GLTF';
+
+  // Clear previous model
+  if (gltfCurrentModel) {
+    gltfScene.remove(gltfCurrentModel);
+    gltfCurrentModel = null;
+  }
+  if (gltfMixer) {
+    gltfMixer = null;
+  }
+
+  // Show loading
+  const loading = document.getElementById('gltf-loading');
+  loading.style.display = 'flex';
+  loading.innerHTML = '🔄 جاري تحميل النموذج...';
+
+  // Load model
+  loadGLTFModel(modelUrl);
+}
+
+function loadGLTFModel(url) {
+  // Check if it's a ZIP file
+  if (url.endsWith('.zip')) {
+    loadGLTFFromZip(url);
+    return;
+  }
+
+  const loader = new THREE.GLTFLoader();
+  loader.load(url, function(gltf) {
+    const model = gltf.scene;
+    
+    // Scale model appropriately
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (maxDim > 3) {
+      const scale = 2.5 / maxDim;
+      model.scale.set(scale, scale, scale);
+    }
+
+    // Center model
+    const center = box.getCenter(new THREE.Vector3());
+    model.position.sub(center);
+    model.position.y += 0.5;
+
+    // Add to scene
+    gltfScene.add(model);
+    gltfCurrentModel = model;
+
+    // Animations
+    if (gltf.animations && gltf.animations.length > 0) {
+      gltfMixer = new THREE.AnimationMixer(model);
+      for (let i = 0; i < gltf.animations.length; i++) {
+        const action = gltfMixer.clipAction(gltf.animations[i]);
+        action.play();
+      }
+      showToast('🎬 تم تحميل النموذج مع ' + gltf.animations.length + ' حركات', 'success');
+    } else {
+      showToast('✅ تم تحميل النموذج بنجاح', 'success');
+    }
+
+    // Hide loading
+    document.getElementById('gltf-loading').style.display = 'none';
+
+    // Reset camera
+    gltfCamera.position.set(3, 2, 5);
+    gltfCamera.lookAt(0, 0, 0);
+    gltfScene.userData.autoRotate = true;
+
+  }, function(xhr) {
+    // Progress
+    const progress = Math.round((xhr.loaded / xhr.total) * 100);
+    const loading = document.getElementById('gltf-loading');
+    if (loading) {
+      loading.innerHTML = '🔄 جاري التحميل... ' + progress + '%';
+    }
+  }, function(error) {
+    console.error('GLTF Load Error:', error);
+    document.getElementById('gltf-loading').style.display = 'none';
+    showToast('❌ فشل تحميل النموذج', 'error');
+  });
+}
+
+async function loadGLTFFromZip(zipUrl) {
+  try {
+    const response = await fetch(zipUrl);
+    const blob = await response.blob();
+    const zip = await JSZip.loadAsync(blob);
+
+    // Find GLTF/GLB file
+    let gltfFile = null;
+    let gltfFileName = '';
+
+    for (const [name, file] of Object.entries(zip.files)) {
+      if (name.match(/\.(gltf|glb)$/i) && !file.dir) {
+        gltfFile = file;
+        gltfFileName = name;
+        break;
+      }
+    }
+
+    if (!gltfFile) {
+      showToast('❌ لا يوجد ملف GLTF في الحزمة', 'error');
+      document.getElementById('gltf-loading').style.display = 'none';
+      return;
+    }
+
+    // Extract GLTF data
+    const gltfData = await gltfFile.async('arraybuffer');
+    
+    // Check if it's GLB or GLTF
+    const isGLB = gltfFileName.endsWith('.glb');
+    
+    const loader = new THREE.GLTFLoader();
+    
+    if (isGLB) {
+      // GLB is binary, parse directly
+      const gltf = loader.parse(gltfData, '');
+      addGLTFModelToScene(gltf);
+    } else {
+      // GLTF is JSON with external resources - need to handle
+      // For simplicity, we'll try to parse as GLB first
+      try {
+        const gltf = loader.parse(gltfData, '');
+        addGLTFModelToScene(gltf);
+      } catch(e) {
+        // If fails, it might be JSON GLTF
+        const text = await gltfFile.async('string');
+        const json = JSON.parse(text);
+        
+        // Try to load with base URL        const url = URL.createObjectURL(new Blob([text], {type: 'application/json'}));
+        loader.load(url, function(gltf) {
+          addGLTFModelToScene(gltf);
+        }, undefined, function(err) {
+          showToast('❌ فشل تحميل GLTF من ZIP', 'error');
+          document.getElementById('gltf-loading').style.display = 'none';
+        });
+      }
+    }
+
+  } catch(e) {
+    console.error('ZIP Load Error:', e);
+    showToast('❌ فشل فك الضغط', 'error');
+    document.getElementById('gltf-loading').style.display = 'none';
+  }
+}
+
+function addGLTFModelToScene(gltf) {
+  const model = gltf.scene;
+  
+  // Scale
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  if (maxDim > 3) {
+    const scale = 2.5 / maxDim;
+    model.scale.set(scale, scale, scale);
+  }
+
+  // Center
+  const center = box.getCenter(new THREE.Vector3());
+  model.position.sub(center);
+  model.position.y += 0.5;
+
+  gltfScene.add(model);
+  gltfCurrentModel = model;
+
+  if (gltf.animations && gltf.animations.length > 0) {
+    gltfMixer = new THREE.AnimationMixer(model);
+    for (let i = 0; i < gltf.animations.length; i++) {
+      const action = gltfMixer.clipAction(gltf.animations[i]);
+      action.play();
+    }
+    showToast('🎬 تم تحميل النموذج مع ' + gltf.animations.length + ' حركات', 'success');
+  } else {
+    showToast('✅ تم تحميل النموذج بنجاح', 'success');
+  }
+
+  document.getElementById('gltf-loading').style.display = 'none';
+  gltfCamera.position.set(3, 2, 5);
+  gltfCamera.lookAt(0, 0, 0);
+  gltfScene.userData.autoRotate = true;
+}
+
+function closeGLTFModal(e) {
+  if (e && e.target !== e.currentTarget) return;
+  document.getElementById('gltf-modal').classList.remove('show');
+  
+  // Reset auto-rotate
+  if (gltfScene) {
+    gltfScene.userData.autoRotate = true;
+  }
 }
 
 // ============================================================
@@ -833,21 +1318,23 @@ function renderCharList() {
     if (char.mediaType === 'photo') {
       mediaHtml = '<img src="' + (char.imageUrl || '') + '" alt="" onerror="this.style.display=\'none\';this.parentElement.innerHTML+=\'<div style=font-size:30px>🖼️</div>\'">';
     } else if (char.mediaType === 'animation') {
-      if (char.imageUrl) {
-        mediaHtml = '<img src="' + char.imageUrl + '" alt="" onerror="this.style.display=\'none\';this.parentElement.innerHTML+=\'<div style=font-size:30px>🎬</div>\'">';
-      } else {
-        mediaHtml = '<div style="font-size:30px;display:flex;align-items:center;justify-content:center;height:100%;">🎬</div>';
-      }
+      mediaHtml = char.imageUrl ?
+        '<img src="' + char.imageUrl + '" alt="" onerror="this.style.display=\'none\';this.parentElement.innerHTML+=\'<div style=font-size:30px>🎬</div>\'">' :
+        '<div style="font-size:30px;display:flex;align-items:center;justify-content:center;height:100%;">🎬</div>';
     } else if (char.mediaType === 'video') {
-      if (char.videoUrl) {
-        mediaHtml = '<video src="' + char.videoUrl + '" muted loop autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video>';
-      } else {
-        mediaHtml = '<div style="font-size:30px;display:flex;align-items:center;justify-content:center;height:100%;">🎥</div>';
-      }
+      mediaHtml = char.videoUrl ?
+        '<video src="' + char.videoUrl + '" muted loop autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video><div class="play-icon">▶️</div>' :
+        '<div style="font-size:30px;display:flex;align-items:center;justify-content:center;height:100%;">🎥</div>';
+    } else if (char.mediaType === 'gltf') {
+      mediaHtml = char.imageUrl ?
+        '<img src="' + char.imageUrl + '" alt="" onerror="this.style.display=\'none\';this.parentElement.innerHTML+=\'<div style=font-size:30px>🎨</div>\'">' :
+        '<div style="font-size:30px;display:flex;align-items:center;justify-content:center;height:100%;">🎨</div>';
     }
 
-    const typeColors = { photo: 'background:rgba(96,165,250,0.15);color:var(--info)', animation: 'background:rgba(255,0,128,0.15);color:var(--gif-glow)', video: 'background:rgba(139,92,246,0.15);color:var(--video)' };
-    const typeLabels = { photo: '🖼️ صورة', animation: '🎬 GIF', video: '🎥 فيديو' };
+    const typeColors = { photo: 'background:rgba(96,165,250,0.15);color:var(--info)', animation: 'background:rgba(255,0,128,0.15);color:var(--gif-glow)', video: 'background:rgba(139,92,246,0.15);color:var(--video)', gltf: 'background:rgba(255,107,107,0.15);color:var(--gltf)' };
+    const typeLabels = { photo: '🖼️ صورة', animation: '🎬 GIF', video: '🎥 فيديو', gltf: '🎨 GLTF' };
+
+    const isGLTF = char.mediaType === 'gltf';
 
     card.innerHTML = 
       '<button class="delete-btn" onclick="deleteChar(' + i + ',event)">×</button>' +
@@ -860,7 +1347,15 @@ function renderCharList() {
       '<span>⚡' + char.energy + '</span>' +
       '</div>';
 
-    card.onclick = function(e) { if (e.target.classList.contains('delete-btn')) return; showCharPopup(char); };
+    if (isGLTF && char.modelUrl) {
+      card.innerHTML += '<div style="margin-top:6px;"><button class="btn btn-gltf btn-sm" onclick="openGLTFViewer(\'' + char.modelUrl + '\', \'' + char.name + '\')">👁️ عرض 3D</button></div>';
+    }
+
+    card.onclick = function(e) { 
+      if (e.target.classList.contains('delete-btn')) return;
+      if (e.target.classList.contains('btn-gltf')) return;
+      showCharPopup(char); 
+    };
     grid.appendChild(card);
   }
 
@@ -870,28 +1365,31 @@ function renderCharList() {
 function deleteChar(index, e) {
   if (e) e.stopPropagation();
   if (!confirm('هل أنت متأكد من حذف ' + characters[index].name + '؟')) return;
-
   characters.splice(index, 1);
   renderCharList();
   updateStats();
-  saveCharacters();
+  saveCharactersToStorage();
   showToast('🗑️ تم الحذف', 'info');
 }
 
-function editGameChar(index) {
-  const char = characters[index];
-  if (!char) return;
+function updateStats() {
+  const total = characters.length;
+  const photos = characters.filter(function(c) { return c.mediaType === 'photo'; }).length;
+  const gifs = characters.filter(function(c) { return c.mediaType === 'animation'; }).length;
+  const videos = characters.filter(function(c) { return c.mediaType === 'video'; }).length;
+  const gltfs = characters.filter(function(c) { return c.mediaType === 'gltf'; }).length;
 
-  document.getElementById('edit-index').value = 'game:' + index;
-  document.getElementById('edit-name').value = char.name;
-  document.getElementById('edit-desc').value = char.desc;
-  document.getElementById('edit-atk').value = char.attack;
-  document.getElementById('edit-def').value = char.defense;
-  document.getElementById('edit-energy').value = char.energy;
-  document.getElementById('edit-speed').value = char.speed;
-  document.getElementById('edit-class').value = char.class || '';
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-photo').textContent = photos;
+  document.getElementById('stat-gif').textContent = gifs;
+  document.getElementById('stat-video').textContent = videos;
+  document.getElementById('stat-gltf').textContent = gltfs;
+  document.getElementById('ingame-count').textContent = total;
+  document.getElementById('gltf-count').textContent = gltfs;
+}
 
-  document.getElementById('edit-modal').classList.add('show');
+function saveCharactersToStorage() {
+  localStorage.setItem('nardo_characters', JSON.stringify(characters));
 }
 
 // ============================================================
@@ -925,7 +1423,7 @@ function saveEdit() {
   } else if (type === 'game' && characters[index]) {
     for (let key in data) characters[index][key] = data[key];
     renderCharList();
-    saveCharacters();
+    saveCharactersToStorage();
   }
 
   closeModal(null, 'edit-modal');
@@ -933,7 +1431,7 @@ function saveEdit() {
 }
 
 // ============================================================
-//  POPUP
+//  CHARACTER POPUP
 // ============================================================
 
 function showCharPopup(char) {
@@ -959,13 +1457,18 @@ function showCharPopup(char) {
     video.autoplay = true;
     video.playsInline = true;
     mediaDiv.appendChild(video);
+  } else if (char.mediaType === 'gltf') {
+    const div = document.createElement('div');
+    div.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:60px;';
+    div.textContent = '🎨';
+    mediaDiv.appendChild(div);
   }
 
-  const typeColors = { photo: 'var(--info)', animation: 'var(--gif-glow)', video: 'var(--video)' };
-  const typeLabels = { photo: '🖼️ صورة', animation: '🎬 GIF', video: '🎥 فيديو' };
+  const typeColors = { photo: 'var(--info)', animation: 'var(--gif-glow)', video: 'var(--video)', gltf: 'var(--gltf)' };
+  const typeLabels = { photo: '🖼️ صورة', animation: '🎬 GIF', video: '🎥 فيديو', gltf: '🎨 GLTF' };
 
   document.getElementById('popup-title').textContent = char.name;
-  document.getElementById('popup-type').innerHTML = '<span style="padding:4px 12px;border-radius:20px;background:' + typeColors[char.mediaType] + '20;color:' + typeColors[char.mediaType] + ';font-size:12px;">' + typeLabels[char.mediaType] + ' • ' + (char.class || 'Unknown') + '</span>';
+  document.getElementById('popup-type').innerHTML = '<span style="padding:4px 12px;border-radius:20px;background:' + typeColors[char.mediaType] + '20;color:' + typeColors[char.mediaType] + ';font-size:12px;">' + typeLabels[char.mediaType] + ' • ' + char.class + '</span>';
   document.getElementById('popup-stats').innerHTML = 
     '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;"><span style="color:#888">⚔️ الهجوم</span><span style="color:var(--gold);font-weight:700">' + char.attack + '/100</span></div>' +
     '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;"><span style="color:#888">🛡️ الدفاع</span><span style="color:var(--gold);font-weight:700">' + char.defense + '/100</span></div>' +
@@ -977,29 +1480,13 @@ function showCharPopup(char) {
 }
 
 // ============================================================
-//  STATS
+//  GAME ENGINE (Canvas 2D)
 // ============================================================
 
-function updateStats() {
-  const total = characters.length;
-  const photos = characters.filter(function(c) { return c.mediaType === 'photo'; }).length;
-  const gifs = characters.filter(function(c) { return c.mediaType === 'animation'; }).length;
-  const videos = characters.filter(function(c) { return c.mediaType === 'video'; }).length;
-
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-photo').textContent = photos;
-  document.getElementById('stat-gif').textContent = gifs;
-  document.getElementById('stat-video').textContent = videos;
-  document.getElementById('ingame-count').textContent = total;
-}
-
-function saveCharacters() {
-  localStorage.setItem('nardo_characters', JSON.stringify(characters));
-}
-
-// ============================================================
-//  GAME ENGINE
-// ============================================================
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const minimapCanvas = document.getElementById('minimap');
+const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
 
 function generateMap() {
   map = [];
@@ -1133,7 +1620,13 @@ function draw() {
       const fog = Math.min(1, dist * 0.06);
       ctx.save();
       ctx.globalAlpha = 1 - fog;
-      drawCharacter(screenX, h/2, size, char);
+      
+      if (char.isGLTF) {
+        drawGLTFCharacter(screenX, h/2, size, char);
+      } else {
+        draw2DCharacter(screenX, h/2, size, char);
+      }
+      
       ctx.restore();
     }
   }
@@ -1142,12 +1635,16 @@ function draw() {
 
   // Hint
   if (nearCharacter) {
-    const typeEmoji = nearCharacter.mediaType === 'photo' ? '🖼️' : nearCharacter.mediaType === 'animation' ? '🎬' : '🎥';
+    const typeEmoji = nearCharacter.isGLTF ? '🎨' : 
+                      nearCharacter.mediaType === 'photo' ? '🖼️' : 
+                      nearCharacter.mediaType === 'animation' ? '🎬' : '🎥';
     ctx.fillStyle = 'rgba(0,0,0,0.7)';
     const text = typeEmoji + ' اضغط E لفتح ' + nearCharacter.name;
     const tw = ctx.measureText(text).width + 40;
     ctx.fillRect(w/2 - tw/2, h - 50, tw, 30);
-    ctx.fillStyle = nearCharacter.mediaType === 'photo' ? '#60a5fa' : nearCharacter.mediaType === 'animation' ? '#ff0080' : '#8b5cf6';
+    ctx.fillStyle = nearCharacter.isGLTF ? '#ff6b6b' : 
+                    nearCharacter.mediaType === 'photo' ? '#60a5fa' : 
+                    nearCharacter.mediaType === 'animation' ? '#ff0080' : '#8b5cf6';
     ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -1168,7 +1665,7 @@ function draw() {
   }
 }
 
-function drawCharacter(screenX, charY, size, char) {
+function draw2DCharacter(screenX, charY, size, char) {
   const floatOffset = Math.sin(time * 1.2 + char.x * 2.5) * 6;
   const yPos = charY + floatOffset;
 
@@ -1209,12 +1706,13 @@ function drawCharacter(screenX, charY, size, char) {
   ctx.fill();
   ctx.shadowBlur = 0;
 
-  // Head / Image
+  // Head
   ctx.fillStyle = '#c8d8e8';
   ctx.beginPath();
   ctx.arc(0, -size * 0.25, size * 0.25, 0, Math.PI * 2);
   ctx.fill();
 
+  // Image
   const img = loadedImages[char.id];
   if (img && img.complete) {
     ctx.save();
@@ -1271,7 +1769,7 @@ function drawCharacter(screenX, charY, size, char) {
 
   ctx.restore();
 
-  // Particles for animation/video
+  // Particles
   if ((char.mediaType === 'animation' || char.mediaType === 'video') && Math.random() < 0.1) {
     const angle = Math.random() * Math.PI * 2;
     const dist = size * 0.6 + Math.random() * size * 0.3;
@@ -1279,6 +1777,124 @@ function drawCharacter(screenX, charY, size, char) {
     const pc = pcolors[char.mediaType] || pcolors.animation;
     createParticles((screenX + Math.cos(angle) * dist) / 20, (yPos + Math.sin(angle) * dist) / 20, 1, pc[Math.floor(Math.random() * pc.length)]);
   }
+}
+
+function drawGLTFCharacter(screenX, charY, size, char) {
+  const floatOffset = Math.sin(time * 1.2 + char.x * 2.5) * 6;
+  const yPos = charY + floatOffset;
+
+  ctx.save();
+  ctx.translate(screenX, yPos);
+
+  // Shadow
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.beginPath();
+  ctx.ellipse(0, size * 0.5, size * 0.35, size * 0.08, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Glow - GLTF special color
+  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.5);
+  glow.addColorStop(0, 'rgba(255,107,107,0.3)');
+  glow.addColorStop(0.5, 'rgba(255,107,107,0.1)');
+  glow.addColorStop(1, 'rgba(255,107,107,0)');
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 3D Box icon
+  const boxSize = size * 0.35;
+  const offsetY = -size * 0.1;
+  
+  // Draw 3D box
+  ctx.shadowColor = 'rgba(255,107,107,0.4)';
+  ctx.shadowBlur = 30;
+  
+  // Top face
+  ctx.fillStyle = '#ff6b6b';
+  ctx.beginPath();
+  ctx.moveTo(0, offsetY - boxSize * 0.7);
+  ctx.lineTo(boxSize * 0.5, offsetY - boxSize * 0.4);
+  ctx.lineTo(0, offsetY - boxSize * 0.1);
+  ctx.lineTo(-boxSize * 0.5, offsetY - boxSize * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Front face
+  ctx.fillStyle = '#e05555';
+  ctx.beginPath();
+  ctx.moveTo(0, offsetY - boxSize * 0.1);
+  ctx.lineTo(boxSize * 0.5, offsetY - boxSize * 0.4);
+  ctx.lineTo(boxSize * 0.5, offsetY + boxSize * 0.1);
+  ctx.lineTo(0, offsetY + boxSize * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  
+  // Side face
+  ctx.fillStyle = '#cc4444';
+  ctx.beginPath();
+  ctx.moveTo(0, offsetY - boxSize * 0.1);
+  ctx.lineTo(0, offsetY + boxSize * 0.4);
+  ctx.lineTo(-boxSize * 0.5, offsetY + boxSize * 0.1);
+  ctx.lineTo(-boxSize * 0.5, offsetY - boxSize * 0.4);
+  ctx.closePath();
+  ctx.fill();
+  
+  ctx.shadowBlur = 0;
+
+  // GLTF badge
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold ' + Math.floor(size * 0.06) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.shadowColor = 'rgba(0,0,0,0.8)';
+  ctx.shadowBlur = 6;
+  ctx.fillText('🎨 3D', 0, size * 0.7);
+  ctx.shadowBlur = 0;
+
+  // Name
+  ctx.shadowColor = 'rgba(0,0,0,0.8)';
+  ctx.shadowBlur = 8;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(-size * 0.35, -size * 0.58 - size * 0.08, size * 0.7, size * 0.16);
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = '#ff6b6b';
+  ctx.font = 'bold ' + Math.floor(size * 0.1) + 'px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(char.name.substring(0, 12), 0, -size * 0.58 + 2);
+
+  // HP bar
+  const barY = size * 0.45;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(-size * 0.3, barY, size * 0.6, size * 0.05);
+  const hpGrad = ctx.createLinearGradient(-size * 0.3, 0, size * 0.3, 0);
+  hpGrad.addColorStop(0, '#ff6b6b');
+  hpGrad.addColorStop(1, '#ff4444');
+  ctx.fillStyle = hpGrad;
+  ctx.fillRect(-size * 0.3, barY, size * 0.6 * (char.attack / 100), size * 0.05);
+
+  // View button
+  if (char.modelUrl) {
+    ctx.fillStyle = 'rgba(255,107,107,0.2)';
+    const btnWidth = size * 0.5;
+    const btnHeight = size * 0.1;
+    const btnX = -btnWidth / 2;
+    const btnY = size * 0.85;
+    ctx.fillRect(btnX, btnY, btnWidth, btnHeight);
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(btnX, btnY, btnWidth, btnHeight);
+    
+    ctx.fillStyle = '#ff6b6b';
+    ctx.font = 'bold ' + Math.floor(size * 0.05) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('👁️ عرض 3D', 0, btnY + btnHeight / 2);
+  }
+
+  ctx.restore();
 }
 
 function createParticles(x, y, count, color) {
@@ -1340,7 +1956,7 @@ function drawMinimap() {
   for (let i = 0; i < characters.length; i++) {
     const char = characters[i];
     if (char.x && char.y) {
-      const colors = { photo: '#60a5fa', animation: '#ff0080', video: '#8b5cf6' };
+      const colors = { photo: '#60a5fa', animation: '#ff0080', video: '#8b5cf6', gltf: '#ff6b6b' };
       minimapCtx.fillStyle = colors[char.mediaType] || '#4ade80';
       minimapCtx.beginPath();
       minimapCtx.arc(char.x * s, char.y * s, 4, 0, Math.PI * 2);
@@ -1453,6 +2069,11 @@ function enterApp() {
     loop();
   }, 500);
 
+  // Init GLTF viewer
+  setTimeout(function() {
+    initGLTFViewer();
+  }, 1000);
+
   // Auto-connect if config exists
   setTimeout(function() {
     if (document.getElementById('bot-token').value && document.getElementById('chat-id').value) {
@@ -1467,17 +2088,12 @@ function enterApp() {
 //  INIT
 // ============================================================
 
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
-const minimapCanvas = document.getElementById('minimap');
-const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
-
 initTelegram();
 generateMap();
 resize();
 window.addEventListener('resize', resize);
 setupInputs();
-loadSettings();
+loadTelegramConfig();
 
 // Show start button
 setTimeout(function() {
@@ -1485,8 +2101,7 @@ setTimeout(function() {
   document.getElementById('userInfoDisplay').innerHTML = document.getElementById('userInfoDisplay').innerHTML.replace('🔄 جاري التحميل...', '✅ جاهز!');
 }, 500);
 
-console.log('🎮 ناردو 3D — نظام جلب الشخصيات مع إعدادات التلغرام جاهز!');
+console.log('🎮 ناردو 3D — دعم GLTF جاهز!');
 </script>
 </body>
 </html>
-
