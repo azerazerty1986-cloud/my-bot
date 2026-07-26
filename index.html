@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ناردو 3D — شخصيات الأنمي 🎴</title>
+<title>ناردو 3D — شخصيات الأنمي المتحركة 🎮</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 :root {
@@ -180,8 +180,8 @@ input:focus { outline:none; border-color:var(--gold); }
   to   { opacity:1; transform:translate(-50%,-50%); }
 }
 @keyframes float {
-  0%, 100% { transform:translateY(0px) rotate(0deg); }
-  50% { transform:translateY(-10px) rotate(2deg); }
+  0%, 100% { transform:translateY(0px); }
+  50% { transform:translateY(-10px); }
 }
 @keyframes legendaryGlow {
   0%, 100% { box-shadow: 0 0 20px rgba(255,107,53,0.2); }
@@ -205,7 +205,7 @@ input:focus { outline:none; border-color:var(--gold); }
   <div class="top-bar">
     <div class="logo">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--gold);"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-      <h1>ناردو 3D — شخصيات الأنمي 🎴</h1>
+      <h1>ناردو 3D — شخصيات الأنمي 🎮</h1>
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
       <span style="font-size:12px; color:#888;">
@@ -263,8 +263,9 @@ input:focus { outline:none; border-color:var(--gold); }
         <span style="color:#444;">|</span>
         <span>M للخريطة</span>
         <span style="color:#444;">|</span>
-        <span>E للتفاعل مع الشخصية</span>
-        <span style="color:var(--legendary);">⭐ شخصيات أسطورية</span>
+        <span>E للتفاعل</span>
+        <span style="color:#444;">|</span>
+        <span>Space للقفز</span>
       </div>
       <!-- Anime preview popup -->
       <div id="anime-popup" class="anime-preview">
@@ -323,7 +324,7 @@ input:focus { outline:none; border-color:var(--gold); }
       <div class="panel-box">
         <h3>🌍 البيئة الحالية</h3>
         <div id="env-name" style="font-size:16px; font-weight:600; color:var(--teal); margin-bottom:4px;">عالم شخصيات الأنمي</div>
-        <div id="env-desc" style="font-size:12px; color:#888;">استكشف شخصيات الأنمي الأسطورية</div>
+        <div id="env-desc" style="font-size:12px; color:#888;">شخصيات ثلاثية الأبعاد متحركة</div>
         <div style="margin-top:8px;">
           <span class="env-tag" style="background:rgba(255,215,0,0.12); color:var(--gold);">أنمي</span>
           <span class="env-tag" style="background:rgba(139,92,246,0.12); color:var(--purple);">3D</span>
@@ -351,9 +352,10 @@ input:focus { outline:none; border-color:var(--gold); }
   let botToken = '8309126051:AAH3EvvDAo6KkYJNNBaI28pgPexVdjqW2uM';
   let chatId = '-1003822964890';
   let connected = false;
-  let characters = []; // تم تغيير الاسم من animeData إلى characters
+  let characters = [];
   let loadedImages = {};
   let lastUpdateId = 0;
+  let particles = [];
 
   // ========== CARDS DATA ==========
   let cardsData = [];
@@ -409,7 +411,17 @@ input:focus { outline:none; border-color:var(--gold); }
   generateMap();
 
   // ========== PLAYER ==========
-  let player = { x: 1.5, y: 1.5, angle: 0, speed: 0.04, rotSpeed: 0.035 };
+  let player = { 
+    x: 1.5, 
+    y: 1.5, 
+    angle: 0, 
+    speed: 0.04, 
+    rotSpeed: 0.035,
+    jumping: false,
+    jumpHeight: 0,
+    jumpVelocity: 0,
+    eyeHeight: 0.5
+  };
   let score = 0;
   let showMap = false;
   let nearCharacter = null;
@@ -418,7 +430,7 @@ input:focus { outline:none; border-color:var(--gold); }
   // ========== ENV ==========
   let env = {
     name: 'عالم شخصيات الأنمي',
-    desc: 'استكشف شخصيات الأنمي الأسطورية',
+    desc: 'شخصيات ثلاثية الأبعاد متحركة',
     wallColor1: '#2a2a3a', wallColor2: '#1a1a2a',
     floorColor: '#0a0a1a', ceilingColor: '#050510',
     fogDensity: 0.06
@@ -439,32 +451,119 @@ input:focus { outline:none; border-color:var(--gold); }
         showCharacterPopup(nearCharacter);
       }
     }
+    if (e.key === ' ' || e.key === 'Space') {
+      e.preventDefault();
+      if (!player.jumping) {
+        player.jumping = true;
+        player.jumpVelocity = 0.08;
+      }
+    }
   });
   window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
 
-  // Touch
+  // Touch controls
   let touchStartX = 0, touchStartY = 0;
+  let touchControls = { left: false, right: false, up: false, down: false };
+  
   canvas.addEventListener('touchstart', e => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const x = (touch.clientX - rect.left) / rect.width;
+    const y = (touch.clientY - rect.top) / rect.height;
+    
+    // Virtual joystick area (left half)
+    if (x < 0.5) {
+      const dx = x - 0.25;
+      const dy = y - 0.5;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist > 0.1) {
+        const angle = Math.atan2(dy, dx);
+        touchControls.up = Math.sin(angle) < -0.3;
+        touchControls.down = Math.sin(angle) > 0.3;
+        touchControls.left = Math.cos(angle) < -0.3;
+        touchControls.right = Math.cos(angle) > 0.3;
+      }
+    } else {
+      // Tap right side = jump
+      if (!player.jumping) {
+        player.jumping = true;
+        player.jumpVelocity = 0.08;
+      }
+    }
   });
+  
   canvas.addEventListener('touchmove', e => {
     e.preventDefault();
-    const dx = e.touches[0].clientX - touchStartX;
-    const dy = e.touches[0].clientY - touchStartY;
-    player.angle += dx * 0.003;
-    const nx = player.x + Math.cos(player.angle) * dy * 0.002;
-    const ny = player.y + Math.sin(player.angle) * dy * 0.002;
-    if (map[Math.floor(ny)] && map[Math.floor(ny)][Math.floor(nx)] !== 1) {
-      player.x = nx; player.y = ny;
+    const touch = e.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const x = (touch.clientX - rect.left) / rect.width;
+    const y = (touch.clientY - rect.top) / rect.height;
+    
+    if (x < 0.5) {
+      const dx = x - 0.25;
+      const dy = y - 0.5;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if (dist > 0.1) {
+        const angle = Math.atan2(dy, dx);
+        touchControls.up = Math.sin(angle) < -0.3;
+        touchControls.down = Math.sin(angle) > 0.3;
+        touchControls.left = Math.cos(angle) < -0.3;
+        touchControls.right = Math.cos(angle) > 0.3;
+      }
     }
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
   });
+  
   canvas.addEventListener('touchend', e => {
+    touchControls = { left: false, right: false, up: false, down: false };
     if (nearCard) showCardPopup(nearCard);
     else if (nearCharacter) showCharacterPopup(nearCharacter);
   });
+
+  // ========== PARTICLES SYSTEM ==========
+  function createParticles(x, y, count, color) {
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 0.03 + 0.01;
+      particles.push({
+        x: x,
+        y: y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed - 0.01,
+        life: 1,
+        decay: 0.005 + Math.random() * 0.01,
+        size: 2 + Math.random() * 4,
+        color: color || '#ffd700'
+      });
+    }
+  }
+
+  function updateParticles() {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vy += 0.0005;
+      p.life -= p.decay;
+      if (p.life <= 0) {
+        particles.splice(i, 1);
+      }
+    }
+  }
+
+  function drawParticles() {
+    for (const p of particles) {
+      ctx.globalAlpha = p.life;
+      ctx.fillStyle = p.color;
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+  }
 
   // ========== RAYCASTING ==========
   function castRay(rayAngle) {
@@ -499,11 +598,171 @@ input:focus { outline:none; border-color:var(--gold); }
     return { dist: Math.abs(dist), side, mapX, mapY };
   }
 
+  // ========== DRAW 3D CHARACTERS ==========
+  let time = 0;
+
+  function draw3DCharacter(screenX, charY, size, charData, isLegendary) {
+    const floatOffset = Math.sin(time * 1.5 + charData.x * 2) * 5;
+    const yPos = charY + floatOffset;
+    const bounceOffset = Math.sin(time * 2 + charData.x * 3) * 2;
+    
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(screenX, yPos + size * 0.45, size * 0.3, size * 0.08, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Glow effect for legendary
+    if (isLegendary) {
+      const glow = ctx.createRadialGradient(
+        screenX, yPos, 0,
+        screenX, yPos, size * 1.2
+      );
+      glow.addColorStop(0, 'rgba(255,107,53,0.3)');
+      glow.addColorStop(0.5, 'rgba(255,215,0,0.15)');
+      glow.addColorStop(1, 'rgba(255,107,53,0)');
+      ctx.fillStyle = glow;
+      ctx.beginPath();
+      ctx.arc(screenX, yPos, size * 1.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Body (3D sphere effect)
+    const grad = ctx.createRadialGradient(
+      screenX - size * 0.2, yPos - size * 0.2, size * 0.1,
+      screenX, yPos, size * 0.5
+    );
+    if (isLegendary) {
+      grad.addColorStop(0, '#ff8a5c');
+      grad.addColorStop(0.3, '#ff6b35');
+      grad.addColorStop(0.7, '#e0552a');
+      grad.addColorStop(1, '#cc4a1a');
+    } else {
+      grad.addColorStop(0, '#4a6a8a');
+      grad.addColorStop(0.3, '#3a5a7a');
+      grad.addColorStop(0.7, '#2a4a6a');
+      grad.addColorStop(1, '#1a3a5a');
+    }
+    ctx.fillStyle = grad;
+    ctx.shadowColor = isLegendary ? 'rgba(255,107,53,0.3)' : 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = isLegendary ? 30 : 15;
+    ctx.beginPath();
+    ctx.arc(screenX, yPos + bounceOffset, size * 0.45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Border ring with animation
+    ctx.strokeStyle = isLegendary ? '#ffd700' : '#4a8a6a';
+    ctx.lineWidth = isLegendary ? 4 : 2;
+    const ringPhase = Math.sin(time * 2 + charData.x) * 0.1 + 0.9;
+    ctx.globalAlpha = ringPhase;
+    ctx.beginPath();
+    ctx.arc(screenX, yPos + bounceOffset, size * 0.47, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Second ring for legendary
+    if (isLegendary) {
+      ctx.strokeStyle = 'rgba(255,215,0,0.3)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.arc(screenX, yPos + bounceOffset, size * 0.55, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    // Character face/image
+    const img = loadedImages[charData.fileId] || loadedCardImages[charData.id];
+    if (img && img.complete) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(screenX, yPos + bounceOffset, size * 0.33, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(img, screenX - size * 0.33, yPos + bounceOffset - size * 0.33, size * 0.66, size * 0.66);
+      ctx.restore();
+    } else {
+      // Placeholder face
+      ctx.fillStyle = '#555';
+      ctx.beginPath();
+      ctx.arc(screenX, yPos + bounceOffset, size * 0.33, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#888';
+      ctx.font = Math.floor(size * 0.2) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('👤', screenX, yPos + bounceOffset + 2);
+    }
+
+    // Name tag with background
+    const nameY = yPos - size * 0.6 + bounceOffset * 0.5;
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 8;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.roundRect ? ctx.roundRect(screenX - size * 0.3, nameY - size * 0.08, size * 0.6, size * 0.16, 4) : 0;
+    ctx.fillRect(screenX - size * 0.3, nameY - size * 0.08, size * 0.6, size * 0.16);
+    ctx.shadowBlur = 0;
+    
+    ctx.fillStyle = isLegendary ? '#ffd700' : '#fff';
+    ctx.font = 'bold ' + Math.floor(size * 0.1) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(charData.name || charData.title, screenX, nameY + 2);
+
+    // Level/HP bar
+    const barY = yPos + size * 0.5 + bounceOffset * 0.5;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.fillRect(screenX - size * 0.25, barY, size * 0.5, size * 0.05);
+    
+    const hpPercent = (charData.attack || 80) / 100;
+    const hpGrad = ctx.createLinearGradient(screenX - size * 0.25, 0, screenX + size * 0.25, 0);
+    if (isLegendary) {
+      hpGrad.addColorStop(0, '#ff6b35');
+      hpGrad.addColorStop(0.5, '#ffd700');
+      hpGrad.addColorStop(1, '#ff6b35');
+    } else {
+      hpGrad.addColorStop(0, '#4ade80');
+      hpGrad.addColorStop(1, '#22c55e');
+    }
+    ctx.fillStyle = hpGrad;
+    ctx.fillRect(screenX - size * 0.25, barY, size * 0.5 * hpPercent, size * 0.05);
+    
+    // HP text
+    ctx.fillStyle = '#fff';
+    ctx.font = Math.floor(size * 0.04) + 'px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(Math.floor(hpPercent * 100) + '%', screenX, barY + size * 0.025);
+
+    // Rarity badge for legendary
+    if (isLegendary) {
+      ctx.fillStyle = '#ff6b35';
+      ctx.font = 'bold ' + Math.floor(size * 0.06) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 6;
+      ctx.fillText('⭐ LEGENDARY', screenX, yPos + size * 0.65 + bounceOffset * 0.5);
+      ctx.shadowBlur = 0;
+    }
+
+    // Floating particles for legendary characters
+    if (isLegendary && Math.random() < 0.1) {
+      const angle = Math.random() * Math.PI * 2;
+      const dist = size * 0.6 + Math.random() * size * 0.3;
+      createParticles(
+        screenX + Math.cos(angle) * dist,
+        yPos + Math.sin(angle) * dist,
+        1,
+        ['#ff6b35', '#ffd700', '#ff8a5c'][Math.floor(Math.random() * 3)]
+      );
+    }
+  }
+
   // ========== DRAW ==========
   let lastTime = performance.now();
   let frameCount = 0;
   let fps = 60;
-  let time = 0;
 
   function draw() {
     time += 0.016;
@@ -512,15 +771,25 @@ input:focus { outline:none; border-color:var(--gold); }
     const imgData = ctx.createImageData(w, h);
     const buf = imgData.data;
 
-    // Floor & ceiling
+    // Floor & ceiling with gradient
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         const idx = (y * w + x) * 4;
         if (y < h / 2) {
-          buf[idx] = 5; buf[idx+1] = 5; buf[idx+2] = 16; buf[idx+3] = 255;
+          // Sky gradient
+          const t = y / (h / 2);
+          buf[idx] = Math.floor(5 + t * 20);
+          buf[idx+1] = Math.floor(5 + t * 15);
+          buf[idx+2] = Math.floor(16 + t * 30);
+          buf[idx+3] = 255;
         } else {
-          const shade = Math.floor(10 + (y - h / 2) / (h / 2) * 20);
-          buf[idx] = shade; buf[idx+1] = shade; buf[idx+2] = shade + 5; buf[idx+3] = 255;
+          // Floor gradient
+          const t = (y - h / 2) / (h / 2);
+          const shade = Math.floor(10 + t * 30);
+          buf[idx] = shade;
+          buf[idx+1] = shade;
+          buf[idx+2] = shade + 5;
+          buf[idx+3] = 255;
         }
       }
     }
@@ -539,6 +808,13 @@ input:focus { outline:none; border-color:var(--gold); }
       let r = hit.side === 0 ? 42 : 26;
       let g = hit.side === 0 ? 42 : 26;
       let b = hit.side === 0 ? 58 : 42;
+      
+      // Wall texture variation
+      if (hit.side === 0) {
+        r = Math.floor(r * (0.8 + 0.2 * Math.sin(x * 0.1)));
+        g = Math.floor(g * (0.8 + 0.2 * Math.cos(x * 0.1)));
+      }
+      
       r = Math.floor(r * (1 - fog) + 10 * fog);
       g = Math.floor(g * (1 - fog) + 10 * fog);
       b = Math.floor(b * (1 - fog) + 16 * fog);
@@ -551,7 +827,7 @@ input:focus { outline:none; border-color:var(--gold); }
 
     ctx.putImageData(imgData, 0, 0);
 
-    // Draw cards (legendary characters)
+    // Draw legendary cards first (behind other characters)
     nearCard = null;
     let nearestCardDist = Infinity;
 
@@ -573,103 +849,12 @@ input:focus { outline:none; border-color:var(--gold); }
       while (a < -Math.PI) a += Math.PI * 2;
       if (Math.abs(a) < fov / 2) {
         const screenX = w / 2 + a / (fov / 2) * (w / 2);
-        const baseSize = Math.min(200, h / dist * 0.9);
-        const size = baseSize;
+        const size = Math.min(200, h / dist * 0.9);
         const fog = Math.min(1, dist * env.fogDensity);
-        const floatOffset = Math.sin(time * 1.5 + card.x) * 5;
-
+        
         ctx.save();
         ctx.globalAlpha = 1 - fog;
-
-        // Legendary glow
-        if (card.isLegendary) {
-          const glow = ctx.createRadialGradient(
-            screenX, h / 2 + floatOffset, 0,
-            screenX, h / 2 + floatOffset, size * 1.2
-          );
-          glow.addColorStop(0, 'rgba(255,107,53,0.4)');
-          glow.addColorStop(0.5, 'rgba(255,215,0,0.2)');
-          glow.addColorStop(1, 'rgba(255,107,53,0)');
-          ctx.fillStyle = glow;
-          ctx.fillRect(screenX - size * 1.2, h / 2 - size * 1.2 + floatOffset, size * 2.4, size * 2.4);
-        }
-
-        const charY = h / 2 + floatOffset;
-
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.beginPath();
-        ctx.ellipse(screenX, charY + size * 0.5, size * 0.3, size * 0.1, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Character body (circle with gradient)
-        const grad = ctx.createRadialGradient(
-          screenX - size * 0.1, charY - size * 0.1, 0,
-          screenX, charY, size * 0.5
-        );
-        if (card.isLegendary) {
-          grad.addColorStop(0, '#ff8a5c');
-          grad.addColorStop(0.5, '#ff6b35');
-          grad.addColorStop(1, '#cc4a1a');
-        } else {
-          grad.addColorStop(0, '#4a4a6a');
-          grad.addColorStop(1, '#2a2a4a');
-        }
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(screenX, charY, size * 0.45, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Border ring
-        ctx.strokeStyle = card.isLegendary ? '#ffd700' : '#555';
-        ctx.lineWidth = card.isLegendary ? 3 : 2;
-        ctx.beginPath();
-        ctx.arc(screenX, charY, size * 0.45, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Character image (face)
-        const img = loadedImages[card.fileId] || loadedCardImages[card.id];
-        if (img && img.complete) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(screenX, charY, size * 0.35, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.drawImage(img, screenX - size * 0.35, charY - size * 0.35, size * 0.7, size * 0.7);
-          ctx.restore();
-        } else {
-          // Placeholder face
-          ctx.fillStyle = '#555';
-          ctx.beginPath();
-          ctx.arc(screenX, charY, size * 0.35, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#888';
-          ctx.font = Math.floor(size * 0.2) + 'px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('👤', screenX, charY + size * 0.1);
-        }
-
-        // Name tag
-        ctx.fillStyle = card.isLegendary ? '#ffd700' : '#fff';
-        ctx.font = 'bold ' + Math.floor(size * 0.12) + 'px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 8;
-        ctx.fillText(card.name, screenX, charY - size * 0.6);
-        ctx.shadowBlur = 0;
-
-        // Rarity badge
-        if (card.isLegendary) {
-          ctx.fillStyle = '#ff6b35';
-          ctx.font = 'bold ' + Math.floor(size * 0.07) + 'px sans-serif';
-          ctx.fillText('⭐ LEGENDARY', screenX, charY + size * 0.7);
-        }
-
-        // HP/Level bar
-        ctx.fillStyle = 'rgba(0,0,0,0.5)';
-        ctx.fillRect(screenX - size * 0.3, charY + size * 0.55, size * 0.6, size * 0.06);
-        ctx.fillStyle = card.isLegendary ? '#ff6b35' : '#4ade80';
-        ctx.fillRect(screenX - size * 0.3, charY + size * 0.55, size * 0.6 * (card.attack / 100), size * 0.06);
-
+        draw3DCharacter(screenX, h / 2, size, card, true);
         ctx.restore();
       }
     }
@@ -696,81 +881,18 @@ input:focus { outline:none; border-color:var(--gold); }
       while (a < -Math.PI) a += Math.PI * 2;
       if (Math.abs(a) < fov / 2) {
         const screenX = w / 2 + a / (fov / 2) * (w / 2);
-        const baseSize = Math.min(160, h / dist * 0.8);
-        const size = baseSize;
+        const size = Math.min(180, h / dist * 0.85);
         const fog = Math.min(1, dist * env.fogDensity);
-        const floatOffset = Math.sin(time * 1.2 + char.x * 2) * 4;
-
+        
         ctx.save();
         ctx.globalAlpha = 1 - fog;
-
-        const charY = h / 2 + floatOffset;
-
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.beginPath();
-        ctx.ellipse(screenX, charY + size * 0.45, size * 0.25, size * 0.08, 0, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Character body
-        const grad = ctx.createRadialGradient(
-          screenX - size * 0.1, charY - size * 0.1, 0,
-          screenX, charY, size * 0.4
-        );
-        grad.addColorStop(0, '#3a3a5a');
-        grad.addColorStop(0.5, '#2a2a4a');
-        grad.addColorStop(1, '#1a1a2a');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(screenX, charY, size * 0.4, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Border
-        ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(screenX, charY, size * 0.4, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // Character image
-        const img = loadedImages[char.fileId];
-        if (img && img.complete) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(screenX, charY, size * 0.3, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.drawImage(img, screenX - size * 0.3, charY - size * 0.3, size * 0.6, size * 0.6);
-          ctx.restore();
-        } else {
-          ctx.fillStyle = '#444';
-          ctx.beginPath();
-          ctx.arc(screenX, charY, size * 0.3, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#666';
-          ctx.font = Math.floor(size * 0.15) + 'px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText('🎌', screenX, charY + size * 0.05);
-        }
-
-        // Name
-        ctx.fillStyle = '#ffd700';
-        ctx.font = 'bold ' + Math.floor(size * 0.1) + 'px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.shadowColor = 'rgba(0,0,0,0.8)';
-        ctx.shadowBlur = 6;
-        ctx.fillText(char.title.substring(0, 15), screenX, charY - size * 0.55);
-        ctx.shadowBlur = 0;
-
-        // Rating
-        if (char.rating) {
-          ctx.fillStyle = '#ffd700';
-          ctx.font = Math.floor(size * 0.06) + 'px sans-serif';
-          ctx.fillText('⭐ ' + char.rating + '/10', screenX, charY + size * 0.6);
-        }
-
+        draw3DCharacter(screenX, h / 2, size, char, false);
         ctx.restore();
       }
     }
+
+    // Draw particles
+    drawParticles();
 
     // Interaction hint
     if (nearCard) {
@@ -779,14 +901,16 @@ input:focus { outline:none; border-color:var(--gold); }
       ctx.fillStyle = '#ff6b35';
       ctx.font = 'bold 13px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('⭐ اضغط E لفتح شخصية ' + nearCard.name, w / 2, h - 30);
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⭐ اضغط E لفتح ' + nearCard.name, w / 2, h - 35);
     } else if (nearCharacter) {
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
       ctx.fillRect(w / 2 - 120, h - 50, 240, 30);
       ctx.fillStyle = '#ffd700';
       ctx.font = 'bold 13px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('👤 اضغط E لفتح ' + nearCharacter.title.substring(0, 15), w / 2, h - 30);
+      ctx.textBaseline = 'middle';
+      ctx.fillText('👤 اضغط E لفتح ' + (nearCharacter.title || '').substring(0, 15), w / 2, h - 35);
     }
 
     // HUD
@@ -795,7 +919,8 @@ input:focus { outline:none; border-color:var(--gold); }
     ctx.fillStyle = '#ffd700';
     ctx.font = 'bold 14px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('⭐ ' + score + ' pts', 20, 30);
+    ctx.textBaseline = 'middle';
+    ctx.fillText('⭐ ' + score + ' pts', 20, 25);
 
     frameCount++;
     const now = performance.now();
@@ -860,17 +985,35 @@ input:focus { outline:none; border-color:var(--gold); }
 
   // ========== UPDATE ==========
   function update() {
+    // Jump physics
+    if (player.jumping) {
+      player.jumpHeight += player.jumpVelocity;
+      player.jumpVelocity -= 0.002;
+      if (player.jumpHeight <= 0) {
+        player.jumpHeight = 0;
+        player.jumping = false;
+        player.jumpVelocity = 0;
+      }
+    }
+
+    // Movement
     let moveX = 0, moveY = 0;
-    if (keys['w'] || keys['arrowup']) {
-      moveX += Math.cos(player.angle) * player.speed;
-      moveY += Math.sin(player.angle) * player.speed;
+    const speed = player.speed * (1 + player.jumpHeight * 0.1);
+    
+    if (keys['w'] || keys['arrowup'] || touchControls.up) {
+      moveX += Math.cos(player.angle) * speed;
+      moveY += Math.sin(player.angle) * speed;
     }
-    if (keys['s'] || keys['arrowdown']) {
-      moveX -= Math.cos(player.angle) * player.speed;
-      moveY -= Math.sin(player.angle) * player.speed;
+    if (keys['s'] || keys['arrowdown'] || touchControls.down) {
+      moveX -= Math.cos(player.angle) * speed;
+      moveY -= Math.sin(player.angle) * speed;
     }
-    if (keys['a'] || keys['arrowleft']) player.angle -= player.rotSpeed;
-    if (keys['d'] || keys['arrowright']) player.angle += player.rotSpeed;
+    if (keys['a'] || keys['arrowleft'] || touchControls.left) {
+      player.angle -= player.rotSpeed;
+    }
+    if (keys['d'] || keys['arrowright'] || touchControls.right) {
+      player.angle += player.rotSpeed;
+    }
 
     const newX = player.x + moveX;
     const newY = player.y + moveY;
@@ -883,6 +1026,7 @@ input:focus { outline:none; border-color:var(--gold); }
 
   function loop() {
     update();
+    updateParticles();
     draw();
     if (showMap) drawMinimap();
     requestAnimationFrame(loop);
@@ -934,7 +1078,6 @@ input:focus { outline:none; border-color:var(--gold); }
           const fileId = photo.file_id;
           const caption = msg.caption || '';
           
-          // استخراج معلومات الشخصية من النص
           const nameMatch = caption.match(/(?:اسم|name|character)[\s:]*([^\n]+)/i);
           const titleMatch = caption.match(/(?:عنوان|title)[\s:]*([^\n]+)/i);
           const descMatch = caption.match(/(?:وصف|description|desc)[\s:]*([^\n]+)/i);
@@ -969,6 +1112,7 @@ input:focus { outline:none; border-color:var(--gold); }
           const character = {
             fileId,
             title: name,
+            name: name,
             desc: desc,
             rating: rating,
             attack: attack,
@@ -990,6 +1134,9 @@ input:focus { outline:none; border-color:var(--gold); }
 
           newChars++;
           addCharacterToList(character);
+          
+          // Particles on spawn
+          createParticles(ax + 0.5, ay + 0.5, 30, '#4ade80');
         }
       }
 
@@ -997,11 +1144,11 @@ input:focus { outline:none; border-color:var(--gold); }
       document.getElementById('char-count-stat').textContent = characters.length;
       document.getElementById('anime-badge').textContent = characters.length;
       if (newChars > 0) {
-        setStatus('✅ تم جلب ' + newChars + ' شخصية أنمي جديدة', 'success');
+        setStatus('✅ تم جلب ' + newChars + ' شخصية أنمي', 'success');
         score += newChars * 50;
         document.getElementById('score').textContent = score;
       } else {
-        setStatus('📭 لا توجد شخصيات جديدة في القناة', 'info');
+        setStatus('📭 لا توجد شخصيات جديدة', 'info');
       }
     } catch (e) {
       setStatus('❌ خطأ: ' + e.message, 'error');
@@ -1024,8 +1171,8 @@ input:focus { outline:none; border-color:var(--gold); }
           <div class="anime-desc">${character.desc.substring(0, 40)}${character.desc.length > 40 ? '...' : ''}</div>
           <div style="display:flex; gap:10px; font-size:10px; color:#888; margin-top:2px;">
             ${character.rating ? '<span>⭐ ' + character.rating + '/10</span>' : ''}
-            <span>⚔️ ' + character.attack + '</span>
-            <span>🛡️ ' + character.defense + '</span>
+            <span>⚔️ ${character.attack}</span>
+            <span>🛡️ ${character.defense}</span>
           </div>
         </div>
       </div>
@@ -1064,11 +1211,14 @@ input:focus { outline:none; border-color:var(--gold); }
     document.getElementById('card-count-stat').textContent = cardsData.length;
     document.getElementById('card-badge').textContent = cardsData.length;
     
-    // تحميل صورة البطاقة
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => { loadedCardImages[card.id] = img; };
     img.src = card.imageUrl;
+    
+    // Epic particles
+    createParticles(ax + 0.5, ay + 0.5, 50, '#ff6b35');
+    createParticles(ax + 0.5, ay + 0.5, 30, '#ffd700');
     
     score += 200;
     document.getElementById('score').textContent = score;
@@ -1155,6 +1305,7 @@ input:focus { outline:none; border-color:var(--gold); }
     loadedImages = {};
     cardsData = [];
     loadedCardImages = {};
+    particles = [];
     document.getElementById('anime-list').innerHTML = '<div style="color:#888; text-align:center; padding:20px 0;">تم المسح. اتصل بالقناة للجلب من جديد.</div>';
     document.getElementById('cards-list').innerHTML = '<div style="color:#888; text-align:center; padding:20px 0;">اضغط "إضافة شخصية KAITO" لإضافة الشخصية الأسطورية</div>';
     document.getElementById('char-count').textContent = '0';
@@ -1170,7 +1321,6 @@ input:focus { outline:none; border-color:var(--gold); }
 
   // ========== DEMO DATA ==========
   function loadDemoData() {
-    // إضافة شخصيات تجريبية
     const demoChars = [
       { title: 'ناروتو', desc: 'نينجا من قرية الورق المخفية', rating: 9.5, fileId: 'demo1', x: 5.5, y: 5.5, attack: 85, defense: 70, imageUrl: 'https://i.ibb.co/9cLqVnY/naruto.png', date: new Date().toISOString() },
       { title: 'سايتاما', desc: 'أقوى بطل في العالم', rating: 9.9, fileId: 'demo2', x: 10.5, y: 8.5, attack: 99, defense: 95, imageUrl: 'https://i.ibb.co/J3kC8YQ/saitama.png', date: new Date().toISOString() },
@@ -1188,21 +1338,19 @@ input:focus { outline:none; border-color:var(--gold); }
     document.getElementById('char-count-stat').textContent = characters.length;
     document.getElementById('anime-badge').textContent = characters.length;
 
-    // إضافة الشخصية الأسطورية بعد قليل
     setTimeout(() => {
       addLegendaryCard();
     }, 1500);
   }
 
-  // اتصال تلقائي بالتليجرام
   setTimeout(() => {
     testConnection();
   }, 500);
 
-  // تحميل البيانات التجريبية
   setTimeout(loadDemoData, 1000);
 
 })();
 </script>
 </body>
 </html>
+
