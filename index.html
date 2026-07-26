@@ -3,12 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ناردو 3D — شخصيات الأنمي المتحركة 🎮</title>
+<title>ناردو 3D — شخصيات الأنمي الاحترافية 🎮</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 :root {
   --gold:#ffd700; --success:#4ade80; --error:#f87171; --warning:#fbbf24;
   --info:#60a5fa; --teal:#20b2aa; --purple:#8b5cf6; --legendary:#ff6b35;
+  --neon-blue:#00d4ff; --neon-pink:#ff6b9d;
 }
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -27,6 +28,8 @@ body {
 .btn-green { background:var(--success); color:#111; }
 .btn-legendary { background:var(--legendary); color:#fff; }
 .btn-legendary:hover { transform:scale(1.05); box-shadow:0 0 20px rgba(255,107,53,0.4); }
+.btn-neon { background:var(--neon-blue); color:#111; }
+.btn-neon:hover { transform:scale(1.05); box-shadow:0 0 30px rgba(0,212,255,0.4); }
 input {
   padding:8px 12px; border-radius:8px; border:1px solid rgba(255,215,0,0.2);
   background:#0a0a1a; color:#fff; font-family:inherit; font-size:13px; width:100%;
@@ -179,15 +182,15 @@ input:focus { outline:none; border-color:var(--gold); }
   from { opacity:0; transform:translate(-50%,-45%); }
   to   { opacity:1; transform:translate(-50%,-50%); }
 }
-@keyframes float {
-  0%, 100% { transform:translateY(0px); }
-  50% { transform:translateY(-10px); }
+@keyframes float3D {
+  0%, 100% { transform:translateY(0px) rotate(0deg); }
+  50% { transform:translateY(-8px) rotate(2deg); }
 }
 @keyframes legendaryGlow {
   0%, 100% { box-shadow: 0 0 20px rgba(255,107,53,0.2); }
   50% { box-shadow: 0 0 60px rgba(255,107,53,0.6); }
 }
-.float-animation { animation:float 3s ease-in-out infinite; }
+.float-animation { animation:float3D 3s ease-in-out infinite; }
 .legendary-glow { animation:legendaryGlow 2s infinite; }
 @media (max-width:600px) {
   .game-area { flex-direction:column; }
@@ -244,6 +247,9 @@ input:focus { outline:none; border-color:var(--gold); }
       <button id="add-card-btn" class="btn btn-legendary">
         ⚡ إضافة شخصية KAITO
       </button>
+      <button id="add-3d-char-btn" class="btn btn-neon">
+        🎮 إضافة شخصية 3D
+      </button>
     </div>
     <div id="conn-status" style="margin-top:8px; font-size:12px; color:#888;"></div>
   </div>
@@ -256,7 +262,7 @@ input:focus { outline:none; border-color:var(--gold); }
       <div class="overlay-ui">
         <div>FPS: <span id="fps">60</span></div>
         <div>X: <span id="pos-x">0</span> Y: <span id="pos-y">0</span></div>
-        <div style="color:var(--legendary);">👤 الشخصيات: <span id="char-count">0</span></div>
+        <div style="color:var(--neon-blue);">🎮 شخصيات 3D: <span id="char-3d-count">0</span></div>
       </div>
       <div class="controls-hint">
         <span>WASD / الأسهم للتحرك</span>
@@ -266,6 +272,8 @@ input:focus { outline:none; border-color:var(--gold); }
         <span>E للتفاعل</span>
         <span style="color:#444;">|</span>
         <span>Space للقفز</span>
+        <span style="color:var(--neon-blue);">|</span>
+        <span style="color:var(--neon-blue);">🎮 شخصيات 3D</span>
       </div>
       <!-- Anime preview popup -->
       <div id="anime-popup" class="anime-preview">
@@ -299,7 +307,7 @@ input:focus { outline:none; border-color:var(--gold); }
       </div>
 
       <!-- Cards from channel -->
-      <div class="panel-box" style="flex:1; min-height:180px; display:flex; flex-direction:column;">
+      <div class="panel-box" style="flex:1; min-height:150px; display:flex; flex-direction:column;">
         <h3>
           🃏 الشخصيات الأسطورية
           <span id="card-badge" style="font-size:11px; color:var(--legendary); background:rgba(255,107,53,0.15); padding:2px 8px; border-radius:10px;">0</span>
@@ -310,7 +318,7 @@ input:focus { outline:none; border-color:var(--gold); }
       </div>
 
       <!-- Anime from channel -->
-      <div class="panel-box" style="flex:1; min-height:180px; display:flex; flex-direction:column;">
+      <div class="panel-box" style="flex:1; min-height:150px; display:flex; flex-direction:column;">
         <h3>
           🎌 شخصيات الأنمي من القناة
           <span id="anime-badge" style="font-size:11px; color:#888; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:10px;">0</span>
@@ -323,12 +331,13 @@ input:focus { outline:none; border-color:var(--gold); }
       <!-- Environment -->
       <div class="panel-box">
         <h3>🌍 البيئة الحالية</h3>
-        <div id="env-name" style="font-size:16px; font-weight:600; color:var(--teal); margin-bottom:4px;">عالم شخصيات الأنمي</div>
+        <div id="env-name" style="font-size:16px; font-weight:600; color:var(--teal); margin-bottom:4px;">عالم شخصيات الأنمي 3D</div>
         <div id="env-desc" style="font-size:12px; color:#888;">شخصيات ثلاثية الأبعاد متحركة</div>
         <div style="margin-top:8px;">
           <span class="env-tag" style="background:rgba(255,215,0,0.12); color:var(--gold);">أنمي</span>
           <span class="env-tag" style="background:rgba(139,92,246,0.12); color:var(--purple);">3D</span>
           <span class="env-tag" style="background:rgba(255,107,53,0.12); color:var(--legendary);">⭐ أسطوري</span>
+          <span class="env-tag" style="background:rgba(0,212,255,0.12); color:var(--neon-blue);">🎮 احترافي</span>
         </div>
       </div>
     </div>
@@ -356,6 +365,7 @@ input:focus { outline:none; border-color:var(--gold); }
   let loadedImages = {};
   let lastUpdateId = 0;
   let particles = [];
+  let characters3D = [];
 
   // ========== CARDS DATA ==========
   let cardsData = [];
@@ -382,6 +392,49 @@ input:focus { outline:none; border-color:var(--gold); }
     y: 7.5,
     isLegendary: true
   };
+
+  // تعريف شخصيات 3D احترافية
+  const professional3DChars = [
+    {
+      id: 'worker_12',
+      name: 'Worker 12',
+      title: 'العامل 12',
+      class: '3D Model Character',
+      attack: 85,
+      defense: 75,
+      energy: 90,
+      speed: 80,
+      imageUrl: 'https://i.ibb.co/4RcGxXq/worker-12-3d.png',
+      desc: 'نموذج ثلاثي الأبعاد احترافي - Worker 12',
+      is3D: true
+    },
+    {
+      id: 'ninja_pro',
+      name: 'Shadow Ninja',
+      title: 'النينجا الظل',
+      class: 'Elite Assassin',
+      attack: 95,
+      defense: 70,
+      energy: 85,
+      speed: 98,
+      imageUrl: 'https://i.ibb.co/3mJjz3N/ninja-pro-3d.png',
+      desc: 'نينجا محترف ثلاثي الأبعاد',
+      is3D: true
+    },
+    {
+      id: 'samurai_3d',
+      name: 'Samurai X',
+      title: 'الساموراي إكس',
+      class: 'Master Swordsman',
+      attack: 98,
+      defense: 85,
+      energy: 88,
+      speed: 82,
+      imageUrl: 'https://i.ibb.co/PWxQmTp/samurai-3d.png',
+      desc: 'ساموراي ثلاثي الأبعاد متقدم',
+      is3D: true
+    }
+  ];
 
   // ========== RESIZE ==========
   function resize() {
@@ -419,18 +472,18 @@ input:focus { outline:none; border-color:var(--gold); }
     rotSpeed: 0.035,
     jumping: false,
     jumpHeight: 0,
-    jumpVelocity: 0,
-    eyeHeight: 0.5
+    jumpVelocity: 0
   };
   let score = 0;
   let showMap = false;
   let nearCharacter = null;
   let nearCard = null;
+  let near3DChar = null;
 
   // ========== ENV ==========
   let env = {
-    name: 'عالم شخصيات الأنمي',
-    desc: 'شخصيات ثلاثية الأبعاد متحركة',
+    name: 'عالم شخصيات الأنمي 3D',
+    desc: 'شخصيات ثلاثية الأبعاد متحركة احترافية',
     wallColor1: '#2a2a3a', wallColor2: '#1a1a2a',
     floorColor: '#0a0a1a', ceilingColor: '#050510',
     fogDensity: 0.06
@@ -445,7 +498,9 @@ input:focus { outline:none; border-color:var(--gold); }
       document.getElementById('minimap-container').style.display = showMap ? 'block' : 'none';
     }
     if (e.key.toLowerCase() === 'e') {
-      if (nearCard) {
+      if (near3DChar) {
+        show3DCharPopup(near3DChar);
+      } else if (nearCard) {
         showCardPopup(nearCard);
       } else if (nearCharacter) {
         showCharacterPopup(nearCharacter);
@@ -472,7 +527,6 @@ input:focus { outline:none; border-color:var(--gold); }
     const x = (touch.clientX - rect.left) / rect.width;
     const y = (touch.clientY - rect.top) / rect.height;
     
-    // Virtual joystick area (left half)
     if (x < 0.5) {
       const dx = x - 0.25;
       const dy = y - 0.5;
@@ -485,7 +539,6 @@ input:focus { outline:none; border-color:var(--gold); }
         touchControls.right = Math.cos(angle) > 0.3;
       }
     } else {
-      // Tap right side = jump
       if (!player.jumping) {
         player.jumping = true;
         player.jumpVelocity = 0.08;
@@ -516,18 +569,19 @@ input:focus { outline:none; border-color:var(--gold); }
   
   canvas.addEventListener('touchend', e => {
     touchControls = { left: false, right: false, up: false, down: false };
-    if (nearCard) showCardPopup(nearCard);
+    if (near3DChar) show3DCharPopup(near3DChar);
+    else if (nearCard) showCardPopup(nearCard);
     else if (nearCharacter) showCharacterPopup(nearCharacter);
   });
 
   // ========== PARTICLES SYSTEM ==========
-  function createParticles(x, y, count, color) {
+  function createParticles(x, y, count, color, spread) {
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 0.03 + 0.01;
+      const speed = (Math.random() * 0.04 + 0.01) * (spread || 1);
       particles.push({
-        x: x,
-        y: y,
+        x: x * 20,
+        y: y * 20,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed - 0.01,
         life: 1,
@@ -598,163 +652,225 @@ input:focus { outline:none; border-color:var(--gold); }
     return { dist: Math.abs(dist), side, mapX, mapY };
   }
 
-  // ========== DRAW 3D CHARACTERS ==========
+  // ========== DRAW 3D CHARACTERS PROFESSIONAL ==========
   let time = 0;
 
-  function draw3DCharacter(screenX, charY, size, charData, isLegendary) {
-    const floatOffset = Math.sin(time * 1.5 + charData.x * 2) * 5;
+  function drawProfessional3DChar(screenX, charY, size, charData) {
+    const floatOffset = Math.sin(time * 1.2 + charData.x * 2.5) * 6;
     const yPos = charY + floatOffset;
-    const bounceOffset = Math.sin(time * 2 + charData.x * 3) * 2;
+    const rotY = Math.sin(time * 0.5 + charData.x) * 0.1;
     
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.save();
+    ctx.translate(screenX, yPos);
+
+    // --- Shadow ---
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath();
-    ctx.ellipse(screenX, yPos + size * 0.45, size * 0.3, size * 0.08, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, size * 0.5, size * 0.35, size * 0.08, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Glow effect for legendary
-    if (isLegendary) {
-      const glow = ctx.createRadialGradient(
-        screenX, yPos, 0,
-        screenX, yPos, size * 1.2
-      );
-      glow.addColorStop(0, 'rgba(255,107,53,0.3)');
-      glow.addColorStop(0.5, 'rgba(255,215,0,0.15)');
-      glow.addColorStop(1, 'rgba(255,107,53,0)');
+    // --- Glow effect ---
+    if (charData.isLegendary || charData.is3D) {
+      const glowColor = charData.isLegendary ? 'rgba(255,107,53,' : 'rgba(0,212,255,';
+      const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.3);
+      glow.addColorStop(0, glowColor + '0.3)');
+      glow.addColorStop(0.5, glowColor + '0.1)');
+      glow.addColorStop(1, glowColor + '0)');
       ctx.fillStyle = glow;
       ctx.beginPath();
-      ctx.arc(screenX, yPos, size * 1.2, 0, Math.PI * 2);
+      ctx.arc(0, 0, size * 1.3, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    // Body (3D sphere effect)
-    const grad = ctx.createRadialGradient(
-      screenX - size * 0.2, yPos - size * 0.2, size * 0.1,
-      screenX, yPos, size * 0.5
+    // --- 3D Body (Humanoid shape) ---
+    const bodyGrad = ctx.createRadialGradient(
+      -size * 0.1, -size * 0.2, 0,
+      0, 0, size * 0.5
     );
-    if (isLegendary) {
-      grad.addColorStop(0, '#ff8a5c');
-      grad.addColorStop(0.3, '#ff6b35');
-      grad.addColorStop(0.7, '#e0552a');
-      grad.addColorStop(1, '#cc4a1a');
+    if (charData.isLegendary) {
+      bodyGrad.addColorStop(0, '#ff8a5c');
+      bodyGrad.addColorStop(0.4, '#ff6b35');
+      bodyGrad.addColorStop(0.8, '#e0552a');
+      bodyGrad.addColorStop(1, '#cc4a1a');
+    } else if (charData.is3D) {
+      bodyGrad.addColorStop(0, '#4a8ae0');
+      bodyGrad.addColorStop(0.3, '#3a7ad0');
+      bodyGrad.addColorStop(0.7, '#2a5ab0');
+      bodyGrad.addColorStop(1, '#1a3a90');
     } else {
-      grad.addColorStop(0, '#4a6a8a');
-      grad.addColorStop(0.3, '#3a5a7a');
-      grad.addColorStop(0.7, '#2a4a6a');
-      grad.addColorStop(1, '#1a3a5a');
+      bodyGrad.addColorStop(0, '#4a6a8a');
+      bodyGrad.addColorStop(0.4, '#3a5a7a');
+      bodyGrad.addColorStop(0.8, '#2a4a6a');
+      bodyGrad.addColorStop(1, '#1a3a5a');
     }
-    ctx.fillStyle = grad;
-    ctx.shadowColor = isLegendary ? 'rgba(255,107,53,0.3)' : 'rgba(0,0,0,0.3)';
-    ctx.shadowBlur = isLegendary ? 30 : 15;
+    ctx.fillStyle = bodyGrad;
+    ctx.shadowColor = charData.isLegendary ? 'rgba(255,107,53,0.4)' : 'rgba(0,212,255,0.3)';
+    ctx.shadowBlur = charData.isLegendary ? 40 : 20;
+
+    // Body (torso + head)
     ctx.beginPath();
-    ctx.arc(screenX, yPos + bounceOffset, size * 0.45, 0, Math.PI * 2);
+    ctx.ellipse(0, size * 0.05, size * 0.4, size * 0.45, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Border ring with animation
-    ctx.strokeStyle = isLegendary ? '#ffd700' : '#4a8a6a';
-    ctx.lineWidth = isLegendary ? 4 : 2;
-    const ringPhase = Math.sin(time * 2 + charData.x) * 0.1 + 0.9;
-    ctx.globalAlpha = ringPhase;
+    // Head (slightly above)
+    ctx.fillStyle = charData.isLegendary ? '#ffb08a' : '#c8d8e8';
     ctx.beginPath();
-    ctx.arc(screenX, yPos + bounceOffset, size * 0.47, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.arc(0, -size * 0.25, size * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Hair/helmet accent
+    ctx.fillStyle = charData.isLegendary ? '#ff6b35' : '#00d4ff';
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.arc(0, -size * 0.3, size * 0.2, 0, Math.PI * 2);
+    ctx.fill();
     ctx.globalAlpha = 1;
 
-    // Second ring for legendary
-    if (isLegendary) {
-      ctx.strokeStyle = 'rgba(255,215,0,0.3)';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([5, 5]);
-      ctx.beginPath();
-      ctx.arc(screenX, yPos + bounceOffset, size * 0.55, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.setLineDash([]);
-    }
-
-    // Character face/image
+    // --- Character face/image ---
     const img = loadedImages[charData.fileId] || loadedCardImages[charData.id];
     if (img && img.complete) {
       ctx.save();
       ctx.beginPath();
-      ctx.arc(screenX, yPos + bounceOffset, size * 0.33, 0, Math.PI * 2);
+      ctx.arc(0, -size * 0.25, size * 0.2, 0, Math.PI * 2);
       ctx.clip();
-      ctx.drawImage(img, screenX - size * 0.33, yPos + bounceOffset - size * 0.33, size * 0.66, size * 0.66);
+      ctx.drawImage(img, -size * 0.2, -size * 0.45, size * 0.4, size * 0.4);
       ctx.restore();
-    } else {
-      // Placeholder face
-      ctx.fillStyle = '#555';
-      ctx.beginPath();
-      ctx.arc(screenX, yPos + bounceOffset, size * 0.33, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#888';
-      ctx.font = Math.floor(size * 0.2) + 'px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('👤', screenX, yPos + bounceOffset + 2);
     }
 
-    // Name tag with background
-    const nameY = yPos - size * 0.6 + bounceOffset * 0.5;
+    // --- Shoulder armor / accents ---
+    if (charData.is3D || charData.isLegendary) {
+      const accentColor = charData.isLegendary ? '#ffd700' : '#00d4ff';
+      ctx.strokeStyle = accentColor;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.5;
+      // Left shoulder
+      ctx.beginPath();
+      ctx.arc(-size * 0.32, -size * 0.1, size * 0.1, 0, Math.PI * 2);
+      ctx.stroke();
+      // Right shoulder
+      ctx.beginPath();
+      ctx.arc(size * 0.32, -size * 0.1, size * 0.1, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    // --- Energy aura lines (3D effect) ---
+    if (charData.is3D) {
+      ctx.strokeStyle = 'rgba(0,212,255,0.3)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 5]);
+      for (let i = 0; i < 3; i++) {
+        const angle = time * 0.5 + i * 2.1;
+        const dist = size * 0.5 + Math.sin(time + i) * size * 0.1;
+        ctx.beginPath();
+        ctx.arc(0, 0, dist, angle, angle + 0.3);
+        ctx.stroke();
+      }
+      ctx.setLineDash([]);
+    }
+
+    // --- Border ring ---
+    ctx.strokeStyle = charData.isLegendary ? '#ffd700' : 
+                     charData.is3D ? '#00d4ff' : '#4a8a6a';
+    ctx.lineWidth = charData.isLegendary ? 4 : charData.is3D ? 3 : 2;
+    const ringPhase = Math.sin(time * 2 + charData.x) * 0.1 + 0.9;
+    ctx.globalAlpha = ringPhase;
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 0.48, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // --- Name tag ---
     ctx.shadowColor = 'rgba(0,0,0,0.8)';
     ctx.shadowBlur = 8;
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.roundRect ? ctx.roundRect(screenX - size * 0.3, nameY - size * 0.08, size * 0.6, size * 0.16, 4) : 0;
-    ctx.fillRect(screenX - size * 0.3, nameY - size * 0.08, size * 0.6, size * 0.16);
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    const nameY = -size * 0.58;
+    ctx.fillRect(-size * 0.35, nameY - size * 0.08, size * 0.7, size * 0.16);
     ctx.shadowBlur = 0;
     
-    ctx.fillStyle = isLegendary ? '#ffd700' : '#fff';
+    ctx.fillStyle = charData.isLegendary ? '#ffd700' : 
+                   charData.is3D ? '#00d4ff' : '#fff';
     ctx.font = 'bold ' + Math.floor(size * 0.1) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(charData.name || charData.title, screenX, nameY + 2);
+    ctx.fillText(charData.name || charData.title || '??', 0, nameY + 2);
 
-    // Level/HP bar
-    const barY = yPos + size * 0.5 + bounceOffset * 0.5;
+    // --- Class badge ---
+    if (charData.class) {
+      ctx.fillStyle = 'rgba(0,0,0,0.5)';
+      ctx.fillRect(-size * 0.25, size * 0.52, size * 0.5, size * 0.07);
+      ctx.fillStyle = '#888';
+      ctx.font = Math.floor(size * 0.04) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(charData.class.substring(0, 12), 0, size * 0.555);
+    }
+
+    // --- HP/Energy bar ---
+    const barY = size * 0.45;
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(screenX - size * 0.25, barY, size * 0.5, size * 0.05);
+    ctx.fillRect(-size * 0.3, barY, size * 0.6, size * 0.05);
     
     const hpPercent = (charData.attack || 80) / 100;
-    const hpGrad = ctx.createLinearGradient(screenX - size * 0.25, 0, screenX + size * 0.25, 0);
-    if (isLegendary) {
+    const hpGrad = ctx.createLinearGradient(-size * 0.3, 0, size * 0.3, 0);
+    if (charData.isLegendary) {
       hpGrad.addColorStop(0, '#ff6b35');
       hpGrad.addColorStop(0.5, '#ffd700');
       hpGrad.addColorStop(1, '#ff6b35');
+    } else if (charData.is3D) {
+      hpGrad.addColorStop(0, '#00d4ff');
+      hpGrad.addColorStop(0.5, '#4ade80');
+      hpGrad.addColorStop(1, '#00d4ff');
     } else {
       hpGrad.addColorStop(0, '#4ade80');
       hpGrad.addColorStop(1, '#22c55e');
     }
     ctx.fillStyle = hpGrad;
-    ctx.fillRect(screenX - size * 0.25, barY, size * 0.5 * hpPercent, size * 0.05);
+    ctx.fillRect(-size * 0.3, barY, size * 0.6 * hpPercent, size * 0.05);
     
     // HP text
     ctx.fillStyle = '#fff';
     ctx.font = Math.floor(size * 0.04) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(Math.floor(hpPercent * 100) + '%', screenX, barY + size * 0.025);
+    ctx.fillText(Math.floor(hpPercent * 100) + '%', 0, barY + size * 0.025);
 
-    // Rarity badge for legendary
-    if (isLegendary) {
+    // --- Rarity badge ---
+    if (charData.isLegendary) {
       ctx.fillStyle = '#ff6b35';
       ctx.font = 'bold ' + Math.floor(size * 0.06) + 'px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
       ctx.shadowColor = 'rgba(0,0,0,0.8)';
       ctx.shadowBlur = 6;
-      ctx.fillText('⭐ LEGENDARY', screenX, yPos + size * 0.65 + bounceOffset * 0.5);
+      ctx.fillText('⭐ LEGENDARY', 0, size * 0.65);
+      ctx.shadowBlur = 0;
+    } else if (charData.is3D) {
+      ctx.fillStyle = '#00d4ff';
+      ctx.font = 'bold ' + Math.floor(size * 0.055) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 6;
+      ctx.fillText('🎮 3D PRO', 0, size * 0.65);
       ctx.shadowBlur = 0;
     }
 
-    // Floating particles for legendary characters
-    if (isLegendary && Math.random() < 0.1) {
+    ctx.restore();
+
+    // --- Floating particles ---
+    if ((charData.isLegendary || charData.is3D) && Math.random() < 0.08) {
       const angle = Math.random() * Math.PI * 2;
       const dist = size * 0.6 + Math.random() * size * 0.3;
+      const color = charData.isLegendary ? 
+        ['#ff6b35', '#ffd700', '#ff8a5c'][Math.floor(Math.random() * 3)] :
+        ['#00d4ff', '#4ade80', '#60a5fa'][Math.floor(Math.random() * 3)];
       createParticles(
-        screenX + Math.cos(angle) * dist,
-        yPos + Math.sin(angle) * dist,
+        (screenX + Math.cos(angle) * dist) / 20,
+        (yPos + Math.sin(angle) * dist) / 20,
         1,
-        ['#ff6b35', '#ffd700', '#ff8a5c'][Math.floor(Math.random() * 3)]
+        color
       );
     }
   }
@@ -776,14 +892,12 @@ input:focus { outline:none; border-color:var(--gold); }
       for (let x = 0; x < w; x++) {
         const idx = (y * w + x) * 4;
         if (y < h / 2) {
-          // Sky gradient
           const t = y / (h / 2);
           buf[idx] = Math.floor(5 + t * 20);
           buf[idx+1] = Math.floor(5 + t * 15);
           buf[idx+2] = Math.floor(16 + t * 30);
           buf[idx+3] = 255;
         } else {
-          // Floor gradient
           const t = (y - h / 2) / (h / 2);
           const shade = Math.floor(10 + t * 30);
           buf[idx] = shade;
@@ -809,7 +923,6 @@ input:focus { outline:none; border-color:var(--gold); }
       let g = hit.side === 0 ? 42 : 26;
       let b = hit.side === 0 ? 58 : 42;
       
-      // Wall texture variation
       if (hit.side === 0) {
         r = Math.floor(r * (0.8 + 0.2 * Math.sin(x * 0.1)));
         g = Math.floor(g * (0.8 + 0.2 * Math.cos(x * 0.1)));
@@ -827,49 +940,29 @@ input:focus { outline:none; border-color:var(--gold); }
 
     ctx.putImageData(imgData, 0, 0);
 
-    // Draw legendary cards first (behind other characters)
+    // Draw all characters in order
+    const allChars = [...cardsData, ...characters, ...characters3D];
+    
+    near3DChar = null;
     nearCard = null;
-    let nearestCardDist = Infinity;
-
-    for (const card of cardsData) {
-      if (!card.x || !card.y) continue;
-      const dx = card.x - player.x;
-      const dy = card.y - player.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist < 2.5 && dist < nearestCardDist) {
-        nearestCardDist = dist;
-        nearCard = card;
-      }
-
-      if (dist > 20) continue;
-      const angle = Math.atan2(dy, dx) - player.angle;
-      let a = angle;
-      while (a > Math.PI) a -= Math.PI * 2;
-      while (a < -Math.PI) a += Math.PI * 2;
-      if (Math.abs(a) < fov / 2) {
-        const screenX = w / 2 + a / (fov / 2) * (w / 2);
-        const size = Math.min(200, h / dist * 0.9);
-        const fog = Math.min(1, dist * env.fogDensity);
-        
-        ctx.save();
-        ctx.globalAlpha = 1 - fog;
-        draw3DCharacter(screenX, h / 2, size, card, true);
-        ctx.restore();
-      }
-    }
-
-    // Draw anime characters from channel
     nearCharacter = null;
+    let nearest3DDist = Infinity;
+    let nearestCardDist = Infinity;
     let nearestCharDist = Infinity;
 
-    for (const char of characters) {
+    for (const char of allChars) {
       if (!char.x || !char.y) continue;
       const dx = char.x - player.x;
       const dy = char.y - player.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (dist < 2.0 && dist < nearestCharDist) {
+      if (char.is3D && dist < 2.5 && dist < nearest3DDist) {
+        nearest3DDist = dist;
+        near3DChar = char;
+      } else if (char.isLegendary && dist < 2.5 && dist < nearestCardDist) {
+        nearestCardDist = dist;
+        nearCard = char;
+      } else if (!char.is3D && !char.isLegendary && dist < 2.0 && dist < nearestCharDist) {
         nearestCharDist = dist;
         nearCharacter = char;
       }
@@ -881,12 +974,12 @@ input:focus { outline:none; border-color:var(--gold); }
       while (a < -Math.PI) a += Math.PI * 2;
       if (Math.abs(a) < fov / 2) {
         const screenX = w / 2 + a / (fov / 2) * (w / 2);
-        const size = Math.min(180, h / dist * 0.85);
+        const size = Math.min(220, h / dist * 0.9);
         const fog = Math.min(1, dist * env.fogDensity);
         
         ctx.save();
         ctx.globalAlpha = 1 - fog;
-        draw3DCharacter(screenX, h / 2, size, char, false);
+        drawProfessional3DChar(screenX, h / 2, size, char);
         ctx.restore();
       }
     }
@@ -895,7 +988,15 @@ input:focus { outline:none; border-color:var(--gold); }
     drawParticles();
 
     // Interaction hint
-    if (nearCard) {
+    if (near3DChar) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(w / 2 - 140, h - 50, 280, 30);
+      ctx.fillStyle = '#00d4ff';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🎮 اضغط E لفتح ' + (near3DChar.name || near3DChar.title), w / 2, h - 35);
+    } else if (nearCard) {
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
       ctx.fillRect(w / 2 - 130, h - 50, 260, 30);
       ctx.fillStyle = '#ff6b35';
@@ -946,32 +1047,39 @@ input:focus { outline:none; border-color:var(--gold); }
         }
       }
     }
-    // Cards
-    for (const card of cardsData) {
-      if (card.x && card.y) {
-        minimapCtx.fillStyle = card.isLegendary ? '#ff6b35' : '#ffd700';
-        minimapCtx.beginPath();
-        minimapCtx.arc(card.x * s, card.y * s, 5, 0, Math.PI * 2);
-        minimapCtx.fill();
-        if (card.isLegendary) {
+    
+    const allChars = [...cardsData, ...characters, ...characters3D];
+    for (const char of allChars) {
+      if (char.x && char.y) {
+        if (char.is3D) {
+          minimapCtx.fillStyle = '#00d4ff';
+          minimapCtx.beginPath();
+          minimapCtx.arc(char.x * s, char.y * s, 5, 0, Math.PI * 2);
+          minimapCtx.fill();
+          minimapCtx.strokeStyle = '#4ade80';
+          minimapCtx.lineWidth = 1;
+          minimapCtx.beginPath();
+          minimapCtx.arc(char.x * s, char.y * s, 7, 0, Math.PI * 2);
+          minimapCtx.stroke();
+        } else if (char.isLegendary) {
+          minimapCtx.fillStyle = '#ff6b35';
+          minimapCtx.beginPath();
+          minimapCtx.arc(char.x * s, char.y * s, 5, 0, Math.PI * 2);
+          minimapCtx.fill();
           minimapCtx.strokeStyle = '#ffd700';
           minimapCtx.lineWidth = 1.5;
           minimapCtx.beginPath();
-          minimapCtx.arc(card.x * s, card.y * s, 8, 0, Math.PI * 2);
+          minimapCtx.arc(char.x * s, char.y * s, 8, 0, Math.PI * 2);
           minimapCtx.stroke();
+        } else {
+          minimapCtx.fillStyle = '#4ade80';
+          minimapCtx.beginPath();
+          minimapCtx.arc(char.x * s, char.y * s, 3, 0, Math.PI * 2);
+          minimapCtx.fill();
         }
       }
     }
-    // Characters
-    for (const char of characters) {
-      if (char.x && char.y) {
-        minimapCtx.fillStyle = '#4ade80';
-        minimapCtx.beginPath();
-        minimapCtx.arc(char.x * s, char.y * s, 3, 0, Math.PI * 2);
-        minimapCtx.fill();
-      }
-    }
-    // Player
+    
     minimapCtx.fillStyle = '#4ade80';
     minimapCtx.beginPath();
     minimapCtx.arc(player.x * s, player.y * s, 3, 0, Math.PI * 2);
@@ -985,7 +1093,6 @@ input:focus { outline:none; border-color:var(--gold); }
 
   // ========== UPDATE ==========
   function update() {
-    // Jump physics
     if (player.jumping) {
       player.jumpHeight += player.jumpVelocity;
       player.jumpVelocity -= 0.002;
@@ -996,7 +1103,6 @@ input:focus { outline:none; border-color:var(--gold); }
       }
     }
 
-    // Movement
     let moveX = 0, moveY = 0;
     const speed = player.speed * (1 + player.jumpHeight * 0.1);
     
@@ -1107,7 +1213,8 @@ input:focus { outline:none; border-color:var(--gold); }
             attempts++;
           } while ((map[ay][ax] !== 0 || 
             characters.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2) ||
-            cardsData.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2)) && attempts < 50);
+            cardsData.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2) ||
+            characters3D.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2)) && attempts < 50);
 
           const character = {
             fileId,
@@ -1117,11 +1224,16 @@ input:focus { outline:none; border-color:var(--gold); }
             rating: rating,
             attack: attack,
             defense: defense,
+            energy: Math.floor(Math.random() * 30) + 70,
+            speed: Math.floor(Math.random() * 30) + 70,
             imageUrl: imageUrl,
             x: ax + 0.5,
             y: ay + 0.5,
             msgId: msg.message_id,
-            date: new Date(msg.date * 1000).toISOString()
+            date: new Date(msg.date * 1000).toISOString(),
+            class: 'Anime Character',
+            is3D: false,
+            isLegendary: false
           };
           characters.push(character);
 
@@ -1134,9 +1246,7 @@ input:focus { outline:none; border-color:var(--gold); }
 
           newChars++;
           addCharacterToList(character);
-          
-          // Particles on spawn
-          createParticles(ax + 0.5, ay + 0.5, 30, '#4ade80');
+          createParticles(ax + 0.5, ay + 0.5, 20, '#4ade80');
         }
       }
 
@@ -1182,6 +1292,68 @@ input:focus { outline:none; border-color:var(--gold); }
     if (list.children.length > 30) list.removeChild(list.lastChild);
   }
 
+  // ========== 3D CHARACTER FUNCTIONS ==========
+  function add3DCharacter(charData) {
+    let ax = 0, ay = 0, attempts = 0;
+    do {
+      ax = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+      ay = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+      attempts++;
+    } while ((map[ay][ax] !== 0 || 
+      characters3D.some(c => Math.abs(c.x - ax) < 3 && Math.abs(c.y - ay) < 3) ||
+      cardsData.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2) ||
+      characters.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2)) && attempts < 50);
+
+    const newChar = {
+      ...charData,
+      x: ax + 0.5,
+      y: ay + 0.5,
+      date: new Date().toISOString(),
+      is3D: true,
+      fileId: charData.id
+    };
+    characters3D.push(newChar);
+    
+    // Load image
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { loadedImages[newChar.fileId] = img; };
+    img.src = newChar.imageUrl;
+    
+    add3DCharToList(newChar);
+    document.getElementById('char-3d-count').textContent = characters3D.length;
+    createParticles(ax + 0.5, ay + 0.5, 30, '#00d4ff');
+    createParticles(ax + 0.5, ay + 0.5, 20, '#4ade80');
+    
+    score += 100;
+    document.getElementById('score').textContent = score;
+    setStatus('🎮 تم إضافة شخصية 3D: ' + newChar.name, 'success');
+  }
+
+  function add3DCharToList(char) {
+    const list = document.getElementById('cards-list');
+    if (list.children.length === 1 && list.children[0].textContent.includes('اضغط')) {
+      list.innerHTML = '';
+    }
+    const div = document.createElement('div');
+    div.className = 'card-item';
+    div.style.borderRightColor = '#00d4ff';
+    div.style.background = 'rgba(0,212,255,0.08)';
+    div.innerHTML = `
+      <span class="time">${new Date(char.date).toLocaleTimeString('ar-EG')}</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <img src="${char.imageUrl}" onerror="this.style.display='none'" alt="">
+        <div style="flex:1;">
+          <div class="card-title" style="color:var(--neon-blue);">🎮 ${char.name}</div>
+          <div class="card-desc">${char.class}</div>
+          <div style="font-size:10px; color:var(--neon-blue); margin-top:2px;">⚔️ ${char.attack} 🛡️ ${char.defense} ⚡ ${char.energy}</div>
+        </div>
+      </div>
+    `;
+    div.onclick = () => show3DCharPopup(char);
+    list.insertBefore(div, list.firstChild);
+  }
+
   // ========== CARD FUNCTIONS ==========
   function addLegendaryCard() {
     if (cardsData.some(c => c.id === legendaryCard.id)) {
@@ -1196,7 +1368,8 @@ input:focus { outline:none; border-color:var(--gold); }
       attempts++;
     } while ((map[ay][ax] !== 0 || 
       cardsData.some(c => Math.abs(c.x - ax) < 3 && Math.abs(c.y - ay) < 3) || 
-      characters.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2)) && attempts < 50);
+      characters.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2) ||
+      characters3D.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2)) && attempts < 50);
 
     const card = {
       ...legendaryCard,
@@ -1216,7 +1389,6 @@ input:focus { outline:none; border-color:var(--gold); }
     img.onload = () => { loadedCardImages[card.id] = img; };
     img.src = card.imageUrl;
     
-    // Epic particles
     createParticles(ax + 0.5, ay + 0.5, 50, '#ff6b35');
     createParticles(ax + 0.5, ay + 0.5, 30, '#ffd700');
     
@@ -1247,6 +1419,7 @@ input:focus { outline:none; border-color:var(--gold); }
     list.insertBefore(div, list.firstChild);
   }
 
+  // ========== POPUPS ==========
   function showCharacterPopup(character) {
     const popup = document.getElementById('anime-popup');
     document.getElementById('popup-img').src = character.imageUrl || '';
@@ -1257,6 +1430,7 @@ input:focus { outline:none; border-color:var(--gold); }
         ${character.rating ? '<span>⭐ ' + character.rating + '/10</span>' : ''}
         <span>⚔️ هجوم: ${character.attack || '??'}</span>
         <span>🛡️ دفاع: ${character.defense || '??'}</span>
+        <span>⚡ طاقة: ${character.energy || '??'}</span>
       </div>
     `;
     popup.classList.add('show');
@@ -1283,6 +1457,26 @@ input:focus { outline:none; border-color:var(--gold); }
     popup.classList.add('show');
   }
 
+  function show3DCharPopup(char) {
+    const popup = document.getElementById('card-popup');
+    document.getElementById('card-popup-img').src = char.imageUrl || '';
+    document.getElementById('card-popup-name').textContent = '🎮 ' + char.name;
+    document.getElementById('card-popup-rarity').textContent = '🎮 3D Model Character';
+    
+    const statsHtml = `
+      <div class="stat-item"><span class="stat-label">⚔️ الهجوم</span><span class="stat-value">${char.attack}/100</span></div>
+      <div class="stat-item"><span class="stat-label">🛡️ الدفاع</span><span class="stat-value">${char.defense}/100</span></div>
+      <div class="stat-item"><span class="stat-label">⚡ الطاقة</span><span class="stat-value">${char.energy}/100</span></div>
+      <div class="stat-item"><span class="stat-label">🏃 السرعة</span><span class="stat-value">${char.speed}/100</span></div>
+      <div class="stat-item"><span class="stat-label">📐 الأبعاد</span><span class="stat-value">3D Professional</span></div>
+    `;
+    document.getElementById('card-popup-stats').innerHTML = statsHtml;
+    document.getElementById('card-popup-quote').textContent = '🎮 نموذج ثلاثي الأبعاد احترافي';
+    document.getElementById('card-popup-class').textContent = '🏷️ ' + char.class;
+    
+    popup.classList.add('show');
+  }
+
   window.closeAnimePopup = function() {
     document.getElementById('anime-popup').classList.remove('show');
   };
@@ -1304,27 +1498,35 @@ input:focus { outline:none; border-color:var(--gold); }
     characters = [];
     loadedImages = {};
     cardsData = [];
+    characters3D = [];
     loadedCardImages = {};
     particles = [];
     document.getElementById('anime-list').innerHTML = '<div style="color:#888; text-align:center; padding:20px 0;">تم المسح. اتصل بالقناة للجلب من جديد.</div>';
-    document.getElementById('cards-list').innerHTML = '<div style="color:#888; text-align:center; padding:20px 0;">اضغط "إضافة شخصية KAITO" لإضافة الشخصية الأسطورية</div>';
+    document.getElementById('cards-list').innerHTML = '<div style="color:#888; text-align:center; padding:20px 0;">اضغط "إضافة شخصية KAITO" أو "إضافة شخصية 3D"</div>';
     document.getElementById('char-count').textContent = '0';
     document.getElementById('char-count-stat').textContent = '0';
     document.getElementById('anime-badge').textContent = '0';
     document.getElementById('card-count-stat').textContent = '0';
     document.getElementById('card-badge').textContent = '0';
+    document.getElementById('char-3d-count').textContent = '0';
     document.getElementById('score').textContent = '0';
     setStatus('تم مسح جميع الشخصيات', 'info');
   });
 
   document.getElementById('add-card-btn').addEventListener('click', addLegendaryCard);
+  
+  document.getElementById('add-3d-char-btn').addEventListener('click', () => {
+    const char = professional3DChars[Math.floor(Math.random() * professional3DChars.length)];
+    add3DCharacter(char);
+  });
 
   // ========== DEMO DATA ==========
   function loadDemoData() {
+    // شخصيات أنمي تجريبية
     const demoChars = [
-      { title: 'ناروتو', desc: 'نينجا من قرية الورق المخفية', rating: 9.5, fileId: 'demo1', x: 5.5, y: 5.5, attack: 85, defense: 70, imageUrl: 'https://i.ibb.co/9cLqVnY/naruto.png', date: new Date().toISOString() },
-      { title: 'سايتاما', desc: 'أقوى بطل في العالم', rating: 9.9, fileId: 'demo2', x: 10.5, y: 8.5, attack: 99, defense: 95, imageUrl: 'https://i.ibb.co/J3kC8YQ/saitama.png', date: new Date().toISOString() },
-      { title: 'لوفي', desc: 'قرصان يبحث عن الكنز الأسطوري', rating: 9.0, fileId: 'demo3', x: 15.5, y: 12.5, attack: 88, defense: 75, imageUrl: 'https://i.ibb.co/2gYzRw9/luffy.png', date: new Date().toISOString() },
+      { title: 'ناروتو', desc: 'نينجا من قرية الورق المخفية', rating: 9.5, fileId: 'demo1', x: 5.5, y: 5.5, attack: 85, defense: 70, energy: 80, speed: 90, imageUrl: 'https://i.ibb.co/9cLqVnY/naruto.png', date: new Date().toISOString(), class: 'Ninja', is3D: false, isLegendary: false },
+      { title: 'سايتاما', desc: 'أقوى بطل في العالم', rating: 9.9, fileId: 'demo2', x: 10.5, y: 8.5, attack: 99, defense: 95, energy: 98, speed: 85, imageUrl: 'https://i.ibb.co/J3kC8YQ/saitama.png', date: new Date().toISOString(), class: 'Hero', is3D: false, isLegendary: false },
+      { title: 'لوفي', desc: 'قرصان يبحث عن الكنز الأسطوري', rating: 9.0, fileId: 'demo3', x: 15.5, y: 12.5, attack: 88, defense: 75, energy: 85, speed: 92, imageUrl: 'https://i.ibb.co/2gYzRw9/luffy.png', date: new Date().toISOString(), class: 'Pirate', is3D: false, isLegendary: false },
     ];
     for (const c of demoChars) {
       characters.push(c);
@@ -1338,9 +1540,15 @@ input:focus { outline:none; border-color:var(--gold); }
     document.getElementById('char-count-stat').textContent = characters.length;
     document.getElementById('anime-badge').textContent = characters.length;
 
+    // إضافة شخصيات 3D
+    setTimeout(() => {
+      add3DCharacter(professional3DChars[0]);
+    }, 1500);
+
+    // إضافة الشخصية الأسطورية
     setTimeout(() => {
       addLegendaryCard();
-    }, 1500);
+    }, 2000);
   }
 
   setTimeout(() => {
@@ -1353,4 +1561,3 @@ input:focus { outline:none; border-color:var(--gold); }
 </script>
 </body>
 </html>
-
