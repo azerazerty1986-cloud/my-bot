@@ -1,605 +1,1082 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html dir="rtl" lang="ar">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title>سوبر - النظام المتكامل 2026</title>
-    
-    <!-- Bootstrap 5 RTL -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-    
-    <!-- Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
-    
-    <!-- الخطوط العربية -->
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <!-- Chart.js للرسوم البيانية -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- QuaggaJS للباركود -->
-    <script src="https://cdn.jsdelivr.net/npm/quagga/dist/quagga.min.js"></script>
-    
-    <!-- SheetJS لقراءة Excel -->
-    <script src="https://cdn.sheetjs.com/xlsx-0.20.2/package/dist/xlsx.full.min.js"></script>
-    
-    <!-- مكتبة الباركود -->
-    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
-    
-    <!-- ملف CSS المخصص -->
-    <link rel="stylesheet" href="css/style.css">
-    
-    <style>
-        /* أنماط إضافية مؤقتة لحين تحميل style.css */
-        body {
-            font-family: 'Cairo', 'Tajawal', 'Segoe UI', Tahoma, Arial, sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecf2 100%);
-            min-height: 100vh;
-            padding-bottom: 90px;
-            direction: rtl;
-            margin: 0;
-            color: #1e293b;
-        }
-        
-        .loading-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(135deg, #4361ee 0%, #7209b7 100%);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 9999;
-            color: white;
-            font-size: 24px;
-            transition: opacity 0.5s;
-        }
-        
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 5px solid rgba(255,255,255,0.3);
-            border-top: 5px solid white;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ناردو 3D — عالم الأنمي 🎴</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+:root {
+  --gold:#ffd700; --success:#4ade80; --error:#f87171; --warning:#fbbf24;
+  --info:#60a5fa; --teal:#20b2aa; --purple:#8b5cf6; --legendary:#ff6b35;
+  --rare:#ffd700; --epic:#9b59b6;
+}
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #0a0a1a, #15152a);
+  color:#fff; min-height:100vh; padding:15px;
+}
+.container { max-width:1100px; margin:0 auto; }
+.btn {
+  padding:8px 18px; border:none; border-radius:10px; font-weight:700; font-size:13px;
+  cursor:pointer; transition:0.3s; font-family:inherit; display:inline-flex; align-items:center; gap:6px;
+}
+.btn-gold { background:var(--gold); color:#111; }
+.btn-gold:hover { transform:scale(1.02); }
+.btn-blue { background:var(--info); color:#fff; }
+.btn-red { background:var(--error); color:#fff; }
+.btn-green { background:var(--success); color:#111; }
+.btn-legendary { background:var(--legendary); color:#fff; }
+.btn-legendary:hover { transform:scale(1.05); box-shadow:0 0 20px rgba(255,107,53,0.4); }
+input {
+  padding:8px 12px; border-radius:8px; border:1px solid rgba(255,215,0,0.2);
+  background:#0a0a1a; color:#fff; font-family:inherit; font-size:13px; width:100%;
+}
+input:focus { outline:none; border-color:var(--gold); }
+.game-area { display:flex; gap:12px; flex-wrap:wrap; }
+.canvas-wrap {
+  flex:2; min-width:300px; position:relative;
+  border-radius:12px; overflow:hidden; border:1px solid rgba(255,215,0,0.15);
+}
+#game-canvas { display:block; width:100%; height:420px; background:#0a0a1a; }
+.overlay-ui {
+  position:absolute; top:10px; left:10px;
+  display:flex; flex-direction:column; gap:6px;
+}
+.overlay-ui div {
+  background:rgba(0,0,0,0.7); padding:4px 10px; border-radius:6px;
+  font-size:12px; color:#888;
+}
+.overlay-ui span { color:#fff; font-weight:600; }
+.controls-hint {
+  position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,0.7); padding:6px 14px; border-radius:8px;
+  font-size:12px; color:#888; display:flex; gap:12px;
+  flex-wrap:wrap; justify-content:center;
+}
+.side-panel {
+  flex:1; min-width:260px; display:flex; flex-direction:column; gap:10px;
+}
+.panel-box {
+  border:1px solid rgba(255,215,0,0.15); border-radius:10px; padding:14px;
+  background:rgba(255,255,255,0.02);
+}
+.panel-box h3 {
+  font-size:14px; font-weight:600; color:var(--gold); margin-bottom:10px;
+  display:flex; justify-content:space-between; align-items:center;
+}
+.stat-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.stat-grid div { text-align:center; }
+.stat-grid .num {
+  font-size:26px; font-weight:700; color:var(--gold);
+  font-variant-numeric:tabular-nums;
+}
+.stat-grid .num.legendary { color:var(--legendary); }
+.stat-grid .lbl { font-size:12px; color:#888; }
+#commands-list, #anime-list, #cards-list {
+  flex:1; overflow-y:auto; max-height:220px;
+  display:flex; flex-direction:column; gap:6px; font-size:12px;
+}
+.cmd-item, .anime-item, .card-item {
+  padding:8px 10px; border-radius:8px;
+  background:rgba(255,255,255,0.03);
+  border-right:3px solid var(--gold);
+  color:#fff; animation:slideIn 0.3s ease;
+  cursor:pointer; transition:0.3s;
+}
+.cmd-item:hover, .anime-item:hover, .card-item:hover {
+  background:rgba(255,255,255,0.08);
+}
+.card-item { border-right-color: var(--legendary); background: rgba(255,107,53,0.08); }
+.card-item.legendary { border-right-color: var(--legendary); }
+.cmd-item .time, .anime-item .time, .card-item .time { font-size:10px; color:#888; display:block; margin-bottom:2px; }
+.anime-item img, .card-item img {
+  width:40px; height:40px; border-radius:6px; object-fit:cover;
+  float:left; margin-left:8px; border:1px solid rgba(255,215,0,0.3);
+}
+.card-item img { border-color: var(--legendary); }
+.anime-item .anime-title, .card-item .card-title { font-weight:600; color:var(--gold); font-size:13px; }
+.card-item .card-title { color:var(--legendary); }
+.anime-item .anime-desc, .card-item .card-desc { color:#aaa; font-size:11px; margin-top:2px; }
+.card-item .card-rarity { 
+  font-size:10px; padding:2px 8px; border-radius:4px; 
+  display:inline-block; margin-top:4px;
+  background:rgba(255,107,53,0.2); color:var(--legendary);
+}
+.env-tag {
+  font-size:11px; padding:3px 10px; border-radius:6px;
+  display:inline-block; margin-top:6px; margin-left:4px;
+}
+#minimap-container {
+  display:none; border:1px solid rgba(255,215,0,0.15);
+  border-radius:10px; padding:10px; background:rgba(255,255,255,0.02);
+}
+#minimap { display:block; margin:0 auto; border-radius:6px; }
+.top-bar {
+  display:flex; justify-content:space-between; align-items:center;
+  flex-wrap:wrap; gap:8px; margin-bottom:12px;
+}
+.top-bar .logo { display:flex; align-items:center; gap:10px; }
+.top-bar h1 { font-size:18px; color:var(--gold); }
+.status-dot {
+  width:8px; height:8px; border-radius:50%;
+  background:var(--success); display:inline-block; margin-left:4px;
+}
+.status-dot.offline { background:var(--error); }
+.telegram-config {
+  display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;
+}
+.telegram-config label { font-size:12px; color:#888; display:block; margin-bottom:3px; }
+.anime-preview, .card-preview {
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  background:rgba(0,0,0,0.95); border:2px solid var(--gold);
+  border-radius:16px; padding:20px; max-width:400px; width:90%;
+  text-align:center; display:none; z-index:100;
+}
+.card-preview { border-color: var(--legendary); max-width:420px; }
+.anime-preview.show, .card-preview.show { display:block; animation:fadeIn 0.3s; }
+.anime-preview img, .card-preview img {
+  width:120px; height:120px; border-radius:12px; object-fit:cover;
+  margin-bottom:10px; border:2px solid var(--gold);
+}
+.card-preview img { border-color: var(--legendary); width:150px; height:150px; }
+.anime-preview h4, .card-preview h4 { color:var(--gold); font-size:16px; margin-bottom:6px; }
+.card-preview h4 { color:var(--legendary); font-size:22px; }
+.anime-preview p, .card-preview p { color:#aaa; font-size:12px; margin-bottom:4px; }
+.card-preview .stats-grid {
+  display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:10px 0;
+}
+.card-preview .stats-grid .stat-item {
+  background:rgba(255,255,255,0.05); padding:6px 10px; border-radius:6px;
+  display:flex; justify-content:space-between; font-size:13px;
+}
+.card-preview .stats-grid .stat-item .stat-label { color:#888; }
+.card-preview .stats-grid .stat-item .stat-value { color:var(--gold); font-weight:700; }
+.card-preview .quote {
+  font-style:italic; color:var(--legendary); font-size:13px;
+  padding:8px; border-right:3px solid var(--legendary);
+  margin:8px 0; background:rgba(255,107,53,0.05);
+  border-radius:4px;
+}
+.anime-preview .close-btn, .card-preview .close-btn {
+  position:absolute; top:8px; left:12px; background:none; border:none;
+  color:#888; font-size:20px; cursor:pointer;
+}
+.anime-preview .close-btn:hover, .card-preview .close-btn:hover { color:var(--gold); }
+@keyframes slideIn {
+  from { opacity:0; transform:translateX(20px); }
+  to   { opacity:1; transform:translateX(0); }
+}
+@keyframes fadeIn {
+  from { opacity:0; transform:translate(-50%,-45%); }
+  to   { opacity:1; transform:translate(-50%,-50%); }
+}
+@keyframes spin {
+  from { transform:rotate(0deg); }
+  to   { transform:rotate(360deg); }
+}
+@keyframes legendaryGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(255,107,53,0.2); }
+  50% { box-shadow: 0 0 40px rgba(255,107,53,0.6); }
+}
+.legendary-glow { animation: legendaryGlow 2s infinite; }
+@media (max-width:600px) {
+  .game-area { flex-direction:column; }
+  #game-canvas { height:280px; }
+  .telegram-config { grid-template-columns:1fr; }
+  .stat-grid { grid-template-columns:1fr 1fr; }
+}
+</style>
 </head>
 <body>
-    <!-- شاشة التحميل المؤقتة -->
-    <div id="loading-screen" class="loading-screen">
-        <div class="text-center">
-            <div class="loading-spinner"></div>
-            <h2>سوبر - النظام المتكامل 2026</h2>
-            <p class="mt-3">جاري تحميل التطبيق...</p>
-            <small class="opacity-75">الإصدار 2.0.0</small>
-        </div>
+
+<div class="container">
+
+  <!-- Top bar -->
+  <div class="top-bar">
+    <div class="logo">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--gold);"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+      <h1>ناردو 3D — عالم الأنمي 🎴</h1>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <span style="font-size:12px; color:#888;">
+        <span id="conn-dot" class="status-dot offline"></span>
+        <span id="conn-text">غير متصل</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- Telegram Config -->
+  <div class="panel-box" style="margin-bottom:12px;">
+    <h3>📡 إعدادات قناة التليجرام</h3>
+    <div class="telegram-config">
+      <div>
+        <label>Bot Token</label>
+        <input type="text" id="bot-token" value="8309126051:AAH3EvvDAo6KkYJNNBaI28pgPexVdjqW2uM" placeholder="123456:ABC-DEF...">
+      </div>
+      <div>
+        <label>Channel ID / Chat ID</label>
+        <input type="text" id="chat-id" value="-1003822964890" placeholder="-1001234567890">
+      </div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+      <button id="connect-btn" class="btn btn-green">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        اتصال بالقناة
+      </button>
+      <button id="sync-btn" class="btn btn-gold" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        جلب صور الأنمي
+      </button>
+      <button id="clear-btn" class="btn btn-red">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        مسح
+      </button>
+      <button id="add-card-btn" class="btn btn-legendary">
+        ⚡ إضافة بطاقة KAITO
+      </button>
+    </div>
+    <div id="conn-status" style="margin-top:8px; font-size:12px; color:#888;"></div>
+  </div>
+
+  <!-- Game area -->
+  <div class="game-area">
+    <!-- Canvas -->
+    <div class="canvas-wrap">
+      <canvas id="game-canvas"></canvas>
+      <div class="overlay-ui">
+        <div>FPS: <span id="fps">60</span></div>
+        <div>X: <span id="pos-x">0</span> Y: <span id="pos-y">0</span></div>
+        <div style="color:var(--legendary);">⭐ البطاقات: <span id="card-count">0</span></div>
+      </div>
+      <div class="controls-hint">
+        <span>WASD / الأسهم للتحرك</span>
+        <span style="color:#444;">|</span>
+        <span>M للخريطة</span>
+        <span style="color:#444;">|</span>
+        <span>E للتفاعل</span>
+        <span style="color:#444;">|</span>
+        <span style="color:var(--legendary);">⭐ بطاقات أسطورية</span>
+      </div>
+      <!-- Anime preview popup -->
+      <div id="anime-popup" class="anime-preview">
+        <button class="close-btn" onclick="closeAnimePopup()">×</button>
+        <img id="popup-img" src="" alt="">
+        <h4 id="popup-title"></h4>
+        <p id="popup-desc"></p>
+        <p id="popup-rating" style="color:var(--gold);"></p>
+      </div>
+      <!-- Card preview popup -->
+      <div id="card-popup" class="card-preview">
+        <button class="close-btn" onclick="closeCardPopup()">×</button>
+        <img id="card-popup-img" src="" alt="">
+        <h4 id="card-popup-name"></h4>
+        <div id="card-popup-rarity" style="color:var(--legendary); font-size:12px; margin-bottom:8px;"></div>
+        <div class="stats-grid" id="card-popup-stats"></div>
+        <div class="quote" id="card-popup-quote"></div>
+        <p id="card-popup-class" style="color:#888; font-size:12px;"></p>
+      </div>
     </div>
 
-    <!-- حاوية التطبيق الرئيسية -->
-    <div id="app"></div>
+    <!-- Side panel -->
+    <div class="side-panel">
+      <!-- Stats -->
+      <div class="panel-box">
+        <div class="stat-grid">
+          <div><div class="num" id="score">0</div><div class="lbl">النقاط</div></div>
+          <div><div class="num" id="anime-count" style="color:var(--info);">0</div><div class="lbl">أنمي في القناة</div></div>
+          <div><div class="num legendary" id="card-count-stat">0</div><div class="lbl">🃏 بطاقات أسطورية</div></div>
+        </div>
+      </div>
 
-    <!-- مخفي لاختيار ملف الاستيراد -->
-    <input type="file" id="backup-file-input" accept=".json" style="display: none;">
+      <!-- Cards from channel -->
+      <div class="panel-box" style="flex:1; min-height:180px; display:flex; flex-direction:column;">
+        <h3>
+          🃏 البطاقات الأسطورية
+          <span id="card-badge" style="font-size:11px; color:var(--legendary); background:rgba(255,107,53,0.15); padding:2px 8px; border-radius:10px;">0</span>
+        </h3>
+        <div id="cards-list">
+          <div style="color:#888; text-align:center; padding:20px 0;">اضغط "إضافة بطاقة KAITO" لإضافة البطاقة الأسطورية</div>
+        </div>
+      </div>
 
-    <!-- ===== تحميل JavaScript Modules بالترتيب الصحيح ===== -->
+      <!-- Anime from channel -->
+      <div class="panel-box" style="flex:1; min-height:180px; display:flex; flex-direction:column;">
+        <h3>
+          🎌 صور الأنمي من القناة
+          <span id="anime-badge" style="font-size:11px; color:#888; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:10px;">0</span>
+        </h3>
+        <div id="anime-list">
+          <div style="color:#888; text-align:center; padding:20px 0;">اتصل بالقناة ثم اضغط "جلب صور الأنمي"</div>
+        </div>
+      </div>
+
+      <!-- Environment -->
+      <div class="panel-box">
+        <h3>🌍 البيئة الحالية</h3>
+        <div id="env-name" style="font-size:16px; font-weight:600; color:var(--teal); margin-bottom:4px;">عالم الأنمي الافتراضي</div>
+        <div id="env-desc" style="font-size:12px; color:#888;">استكشف البطاقات الأسطورية وصور الأنمي</div>
+        <div style="margin-top:8px;">
+          <span class="env-tag" style="background:rgba(255,215,0,0.12); color:var(--gold);">أنمي</span>
+          <span class="env-tag" style="background:rgba(139,92,246,0.12); color:var(--purple);">3D</span>
+          <span class="env-tag" style="background:rgba(255,107,53,0.12); color:var(--legendary);">⭐ أسطوري</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Minimap -->
+  <div id="minimap-container">
+    <canvas id="minimap" width="200" height="200"></canvas>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  // ========== CONFIG ==========
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+  const minimapCanvas = document.getElementById('minimap');
+  const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
+
+  let botToken = '8309126051:AAH3EvvDAo6KkYJNNBaI28pgPexVdjqW2uM';
+  let chatId = '-1003822964890';
+  let connected = false;
+  let animeData = [];
+  let loadedImages = {};
+  let lastUpdateId = 0;
+
+  // ========== CARDS DATA ==========
+  let cardsData = [];
+  let loadedCardImages = {};
+
+  // تعريف بطاقة KAITO الأسطورية
+  const legendaryCard = {
+    id: 'kaito_legendary',
+    name: 'KAITO',
+    nameJp: '海斗',
+    rarity: 'LEGENDARY',
+    stars: 5,
+    class: 'ENERGY SWORDSMAN',
+    speed: 95,
+    weapon: 'PLASMA KATANA',
+    ability: 'THUNDER STRIKE',
+    attack: 92,
+    defense: 88,
+    energy: 96,
+    agility: 94,
+    quote: '"THE STORM OBEYS ME. THE BLADE DECIDES ALL."',
+    imageUrl: '', // سيتم تعيينها من الصورة المرفقة
+    x: 7.5,
+    y: 7.5,
+    isLegendary: true
+  };
+
+  // ========== RESIZE ==========
+  function resize() {
+    const rect = canvas.parentElement.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  // ========== MAP ==========
+  const MAP_SIZE = 20;
+  let map = [];
+  function generateMap() {
+    map = [];
+    for (let y = 0; y < MAP_SIZE; y++) {
+      const row = [];
+      for (let x = 0; x < MAP_SIZE; x++) {
+        if (x === 0 || x === MAP_SIZE - 1 || y === 0 || y === MAP_SIZE - 1) row.push(1);
+        else if (Math.random() < 0.12 && !(x === 1 && y === 1)) row.push(1);
+        else row.push(0);
+      }
+      map.push(row);
+    }
+    map[1][1] = 0; map[1][2] = 0; map[2][1] = 0;
+  }
+  generateMap();
+
+  // ========== PLAYER ==========
+  let player = { x: 1.5, y: 1.5, angle: 0, speed: 0.04, rotSpeed: 0.035 };
+  let score = 0;
+  let showMap = false;
+  let nearAnime = null;
+  let nearCard = null;
+
+  // ========== ENV ==========
+  let env = {
+    name: 'عالم الأنمي الافتراضي',
+    desc: 'استكشف البطاقات الأسطورية وصور الأنمي',
+    wallColor1: '#2a2a3a', wallColor2: '#1a1a2a',
+    floorColor: '#0a0a1a', ceilingColor: '#050510',
+    fogDensity: 0.06
+  };
+
+  // ========== KEYS ==========
+  const keys = {};
+  window.addEventListener('keydown', e => {
+    keys[e.key.toLowerCase()] = true;
+    if (e.key.toLowerCase() === 'm') {
+      showMap = !showMap;
+      document.getElementById('minimap-container').style.display = showMap ? 'block' : 'none';
+    }
+    if (e.key.toLowerCase() === 'e') {
+      if (nearCard) {
+        showCardPopup(nearCard);
+      } else if (nearAnime) {
+        showAnimePopup(nearAnime);
+      }
+    }
+  });
+  window.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+
+  // Touch
+  let touchStartX = 0, touchStartY = 0;
+  canvas.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  });
+  canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+    player.angle += dx * 0.003;
+    const nx = player.x + Math.cos(player.angle) * dy * 0.002;
+    const ny = player.y + Math.sin(player.angle) * dy * 0.002;
+    if (map[Math.floor(ny)] && map[Math.floor(ny)][Math.floor(nx)] !== 1) {
+      player.x = nx; player.y = ny;
+    }
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  });
+  canvas.addEventListener('touchend', e => {
+    if (nearCard) showCardPopup(nearCard);
+    else if (nearAnime) showAnimePopup(nearAnime);
+  });
+
+  // ========== RAYCASTING ==========
+  function castRay(rayAngle) {
+    let rayX = Math.cos(rayAngle);
+    let rayY = Math.sin(rayAngle);
+    let mapX = Math.floor(player.x);
+    let mapY = Math.floor(player.y);
+    let deltaDistX = Math.abs(1 / rayX);
+    let deltaDistY = Math.abs(1 / rayY);
+    let stepX, stepY, sideDistX, sideDistY;
+
+    if (rayX < 0) { stepX = -1; sideDistX = (player.x - mapX) * deltaDistX; }
+    else { stepX = 1; sideDistX = (mapX + 1 - player.x) * deltaDistX; }
+    if (rayY < 0) { stepY = -1; sideDistY = (player.y - mapY) * deltaDistY; }
+    else { stepY = 1; sideDistY = (mapY + 1 - player.y) * deltaDistY; }
+
+    let hit = 0, side = 0, dist = 0;
+    while (hit === 0 && dist < 25) {
+      if (sideDistX < sideDistY) {
+        sideDistX += deltaDistX; mapX += stepX; side = 0;
+      } else {
+        sideDistY += deltaDistY; mapY += stepY; side = 1;
+      }
+      if (mapX < 0 || mapX >= MAP_SIZE || mapY < 0 || mapY >= MAP_SIZE) { hit = 1; dist = 25; }
+      else if (map[mapY][mapX] === 1) {
+        hit = 1;
+        dist = side === 0 ? (mapX - player.x + (1 - stepX) / 2) / rayX : (mapY - player.y + (1 - stepY) / 2) / rayY;
+      }
+    }
+    if (hit === 0) dist = 25;
+    if (dist < 0) dist = 25;
+    return { dist: Math.abs(dist), side, mapX, mapY };
+  }
+
+  // ========== DRAW ==========
+  let lastTime = performance.now();
+  let frameCount = 0;
+  let fps = 60;
+
+  function draw() {
+    const w = canvas.width;
+    const h = canvas.height;
+    const imgData = ctx.createImageData(w, h);
+    const buf = imgData.data;
+
+    // Floor & ceiling
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = (y * w + x) * 4;
+        if (y < h / 2) {
+          buf[idx] = 5; buf[idx+1] = 5; buf[idx+2] = 16; buf[idx+3] = 255;
+        } else {
+          const shade = Math.floor(10 + (y - h / 2) / (h / 2) * 20);
+          buf[idx] = shade; buf[idx+1] = shade; buf[idx+2] = shade + 5; buf[idx+3] = 255;
+        }
+      }
+    }
+
+    const fov = Math.PI / 3;
+    for (let x = 0; x < w; x++) {
+      const rayAngle = player.angle - fov / 2 + (x / w) * fov;
+      const hit = castRay(rayAngle);
+      let dist = hit.dist * Math.cos(rayAngle - player.angle);
+      if (dist < 0.1) dist = 0.1;
+      const wallH = Math.floor(h / dist * 0.8);
+      const wallTop = Math.max(0, Math.floor((h - wallH) / 2));
+      const wallBot = Math.min(h, Math.floor((h + wallH) / 2));
+
+      const fog = Math.min(1, dist * env.fogDensity);
+      let r = hit.side === 0 ? 42 : 26;
+      let g = hit.side === 0 ? 42 : 26;
+      let b = hit.side === 0 ? 58 : 42;
+      r = Math.floor(r * (1 - fog) + 10 * fog);
+      g = Math.floor(g * (1 - fog) + 10 * fog);
+      b = Math.floor(b * (1 - fog) + 16 * fog);
+
+      for (let y = wallTop; y < wallBot; y++) {
+        const idx = (y * w + x) * 4;
+        buf[idx] = r; buf[idx+1] = g; buf[idx+2] = b; buf[idx+3] = 255;
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+
+    // Draw cards (billboards)
+    nearCard = null;
+    let nearestCardDist = Infinity;
+
+    for (const card of cardsData) {
+      if (!card.x || !card.y) continue;
+      const dx = card.x - player.x;
+      const dy = card.y - player.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 2.0 && dist < nearestCardDist) {
+        nearestCardDist = dist;
+        nearCard = card;
+      }
+
+      if (dist > 20) continue;
+      const angle = Math.atan2(dy, dx) - player.angle;
+      let a = angle;
+      while (a > Math.PI) a -= Math.PI * 2;
+      while (a < -Math.PI) a += Math.PI * 2;
+      if (Math.abs(a) < fov / 2) {
+        const screenX = w / 2 + a / (fov / 2) * (w / 2);
+        const size = Math.min(180, h / dist * 0.9);
+        const fog = Math.min(1, dist * env.fogDensity);
+
+        ctx.save();
+        ctx.globalAlpha = 1 - fog;
+
+        // Glow effect for legendary cards
+        if (card.isLegendary) {
+          const glow = ctx.createRadialGradient(screenX, h / 2, 0, screenX, h / 2, size * 0.8);
+          glow.addColorStop(0, 'rgba(255,107,53,0.3)');
+          glow.addColorStop(1, 'rgba(255,107,53,0)');
+          ctx.fillStyle = glow;
+          ctx.fillRect(screenX - size, h / 2 - size, size * 2, size * 2);
+        }
+
+        // Card frame
+        const grad = ctx.createLinearGradient(screenX - size * 0.45, h / 2 - size * 0.55, screenX + size * 0.45, h / 2 + size * 0.55);
+        if (card.isLegendary) {
+          grad.addColorStop(0, '#ff6b35');
+          grad.addColorStop(0.5, '#ffd700');
+          grad.addColorStop(1, '#ff6b35');
+        } else {
+          grad.addColorStop(0, '#2a2a3a');
+          grad.addColorStop(1, '#1a1a2a');
+        }
+        ctx.fillStyle = grad;
+        ctx.shadowColor = card.isLegendary ? '#ff6b35' : 'transparent';
+        ctx.shadowBlur = card.isLegendary ? 30 : 0;
+        ctx.fillRect(screenX - size * 0.45, h / 2 - size * 0.55, size * 0.9, size * 1.1);
+        ctx.shadowBlur = 0;
+
+        // Border
+        ctx.strokeStyle = card.isLegendary ? '#ffd700' : '#444';
+        ctx.lineWidth = card.isLegendary ? 3 : 1;
+        ctx.strokeRect(screenX - size * 0.45, h / 2 - size * 0.55, size * 0.9, size * 1.1);
+
+        // Rarity badge
+        if (card.isLegendary) {
+          ctx.fillStyle = '#ff6b35';
+          ctx.font = 'bold ' + Math.floor(size * 0.08) + 'px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('⭐ LEGENDARY', screenX, h / 2 - size * 0.45);
+        }
+
+        // Name
+        ctx.fillStyle = card.isLegendary ? '#ffd700' : '#fff';
+        ctx.font = 'bold ' + Math.floor(size * 0.1) + 'px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(card.name, screenX, h / 2 + size * 0.6);
+
+        // Japanese name
+        if (card.nameJp) {
+          ctx.fillStyle = '#888';
+          ctx.font = Math.floor(size * 0.07) + 'px sans-serif';
+          ctx.fillText(card.nameJp, screenX, h / 2 + size * 0.72);
+        }
+
+        ctx.restore();
+      }
+    }
+
+    // Draw anime sprites
+    nearAnime = null;
+    let nearestAnimeDist = Infinity;
+
+    for (const anime of animeData) {
+      if (!anime.x || !anime.y) continue;
+      const dx = anime.x - player.x;
+      const dy = anime.y - player.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 1.5 && dist < nearestAnimeDist) {
+        nearestAnimeDist = dist;
+        nearAnime = anime;
+      }
+
+      if (dist > 20) continue;
+      const angle = Math.atan2(dy, dx) - player.angle;
+      let a = angle;
+      while (a > Math.PI) a -= Math.PI * 2;
+      while (a < -Math.PI) a += Math.PI * 2;
+      if (Math.abs(a) < fov / 2) {
+        const screenX = w / 2 + a / (fov / 2) * (w / 2);
+        const size = Math.min(150, h / dist * 0.8);
+        const fog = Math.min(1, dist * env.fogDensity);
+
+        ctx.save();
+        ctx.globalAlpha = 1 - fog;
+
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(screenX - size * 0.4, h / 2 - size * 0.5, size * 0.8, size);
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(screenX - size * 0.4, h / 2 - size * 0.5, size * 0.8, size);
+
+        const img = loadedImages[anime.fileId];
+        if (img && img.complete) {
+          ctx.drawImage(img, screenX - size * 0.35, h / 2 - size * 0.4, size * 0.7, size * 0.7);
+        } else {
+          ctx.fillStyle = '#2a2a3a';
+          ctx.fillRect(screenX - size * 0.35, h / 2 - size * 0.4, size * 0.7, size * 0.7);
+          ctx.fillStyle = '#ffd700';
+          ctx.font = 'bold ' + Math.floor(size * 0.15) + 'px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('🎌', screenX, h / 2);
+        }
+
+        ctx.fillStyle = '#ffd700';
+        ctx.font = 'bold ' + Math.max(10, Math.floor(size * 0.08)) + 'px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(anime.title.substring(0, 12), screenX, h / 2 + size * 0.55);
+
+        ctx.restore();
+      }
+    }
+
+    // Interaction hint
+    if (nearCard) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(w / 2 - 120, h - 50, 240, 30);
+      ctx.fillStyle = '#ff6b35';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('⭐ اضغط E لفتح بطاقة ' + nearCard.name, w / 2, h - 30);
+    } else if (nearAnime) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(w / 2 - 100, h - 50, 200, 30);
+      ctx.fillStyle = '#ffd700';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('اضغط E لفتح ' + nearAnime.title.substring(0, 15), w / 2, h - 30);
+    }
+
+    // HUD
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    ctx.fillRect(10, 10, 120, 30);
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText('♦ ' + score, 20, 30);
+
+    frameCount++;
+    const now = performance.now();
+    if (now - lastTime > 1000) {
+      fps = frameCount;
+      frameCount = 0;
+      lastTime = now;
+      document.getElementById('fps').textContent = fps;
+    }
+  }
+
+  // ========== MINIMAP ==========
+  function drawMinimap() {
+    if (!minimapCtx) return;
+    const s = minimapCanvas.width / MAP_SIZE;
+    minimapCtx.fillStyle = '#0a0a1a';
+    minimapCtx.fillRect(0, 0, 200, 200);
+    for (let y = 0; y < MAP_SIZE; y++) {
+      for (let x = 0; x < MAP_SIZE; x++) {
+        if (map[y][x] === 1) {
+          minimapCtx.fillStyle = '#333';
+          minimapCtx.fillRect(x * s, y * s, s, s);
+        }
+      }
+    }
+    // Cards
+    for (const card of cardsData) {
+      if (card.x && card.y) {
+        minimapCtx.fillStyle = card.isLegendary ? '#ff6b35' : '#ffd700';
+        minimapCtx.beginPath();
+        minimapCtx.arc(card.x * s, card.y * s, 4, 0, Math.PI * 2);
+        minimapCtx.fill();
+        if (card.isLegendary) {
+          minimapCtx.strokeStyle = '#ffd700';
+          minimapCtx.lineWidth = 1;
+          minimapCtx.beginPath();
+          minimapCtx.arc(card.x * s, card.y * s, 6, 0, Math.PI * 2);
+          minimapCtx.stroke();
+        }
+      }
+    }
+    // Anime positions
+    for (const anime of animeData) {
+      if (anime.x && anime.y) {
+        minimapCtx.fillStyle = '#4ade80';
+        minimapCtx.beginPath();
+        minimapCtx.arc(anime.x * s, anime.y * s, 3, 0, Math.PI * 2);
+        minimapCtx.fill();
+      }
+    }
+    // Player
+    minimapCtx.fillStyle = '#4ade80';
+    minimapCtx.beginPath();
+    minimapCtx.arc(player.x * s, player.y * s, 3, 0, Math.PI * 2);
+    minimapCtx.fill();
+    minimapCtx.strokeStyle = '#4ade80';
+    minimapCtx.beginPath();
+    minimapCtx.moveTo(player.x * s, player.y * s);
+    minimapCtx.lineTo((player.x + Math.cos(player.angle) * 0.8) * s, (player.y + Math.sin(player.angle) * 0.8) * s);
+    minimapCtx.stroke();
+  }
+
+  // ========== UPDATE ==========
+  function update() {
+    let moveX = 0, moveY = 0;
+    if (keys['w'] || keys['arrowup']) {
+      moveX += Math.cos(player.angle) * player.speed;
+      moveY += Math.sin(player.angle) * player.speed;
+    }
+    if (keys['s'] || keys['arrowdown']) {
+      moveX -= Math.cos(player.angle) * player.speed;
+      moveY -= Math.sin(player.angle) * player.speed;
+    }
+    if (keys['a'] || keys['arrowleft']) player.angle -= player.rotSpeed;
+    if (keys['d'] || keys['arrowright']) player.angle += player.rotSpeed;
+
+    const newX = player.x + moveX;
+    const newY = player.y + moveY;
+    if (map[Math.floor(newY)] && map[Math.floor(newY)][Math.floor(player.x)] !== 1) player.y = newY;
+    if (map[Math.floor(player.y)] && map[Math.floor(player.y)][Math.floor(newX)] !== 1) player.x = newX;
+
+    document.getElementById('pos-x').textContent = player.x.toFixed(1);
+    document.getElementById('pos-y').textContent = player.y.toFixed(1);
+  }
+
+  function loop() {
+    update();
+    draw();
+    if (showMap) drawMinimap();
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  // ========== TELEGRAM API ==========
+  async function testConnection() {
+    botToken = document.getElementById('bot-token').value.trim();
+    chatId = document.getElementById('chat-id').value.trim();
+    if (!botToken || !chatId) {
+      setStatus('يرجى إدخال Bot Token و Chat ID', 'error');
+      return;
+    }
+    setStatus('جاري الاختبار...', 'info');
+    try {
+      const res = await fetch('https://api.telegram.org/bot' + botToken + '/getMe');
+      const data = await res.json();
+      if (data.ok) {
+        connected = true;
+        document.getElementById('conn-dot').classList.remove('offline');
+        document.getElementById('conn-text').textContent = 'متصل';
+        document.getElementById('sync-btn').disabled = false;
+        setStatus('✅ متصل بـ @' + data.result.username, 'success');
+      } else {
+        setStatus('❌ خطأ: ' + data.description, 'error');
+      }
+    } catch (e) {
+      setStatus('❌ فشل الاتصال: ' + e.message, 'error');
+    }
+  }
+
+  async function fetchAnimeFromChannel() {
+    if (!connected) { setStatus('يرجى الاتصال أولاً', 'warning'); return; }
+    setStatus('جاري جلب الرسائل...', 'info');
+    try {
+      const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=100&offset=' + (lastUpdateId + 1));
+      const data = await res.json();
+      if (!data.ok) { setStatus('❌ خطأ: ' + data.description, 'error'); return; }
+
+      let newAnime = 0;
+      for (const update of data.result || []) {
+        lastUpdateId = Math.max(lastUpdateId, update.update_id);
+        const msg = update.channel_post || update.message;
+        if (!msg) continue;
+
+        if (msg.photo && msg.photo.length > 0) {
+          const photo = msg.photo[msg.photo.length - 1];
+          const fileId = photo.file_id;
+          const caption = msg.caption || '';
+          const titleMatch = caption.match(/(?:اسم|عنوان|title)[\s:]*([^\n]+)/i);
+          const descMatch = caption.match(/(?:وصف|description|desc)[\s:]*([^\n]+)/i);
+          const ratingMatch = caption.match(/(?:تقييم|rating)[\s:]*(\d+(?:\.\d+)?)/i);
+
+          const title = titleMatch ? titleMatch[1].trim() : ('أنمي #' + (animeData.length + 1));
+          const desc = descMatch ? descMatch[1].trim() : 'لا يوجد وصف';
+          const rating = ratingMatch ? parseFloat(ratingMatch[1]) : 0;
+
+          if (animeData.some(a => a.fileId === fileId)) continue;
+
+          const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+          const fileData = await fileRes.json();
+          let imageUrl = '';
+          if (fileData.ok && fileData.result.file_path) {
+            imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+          }
+
+          let ax = 0, ay = 0, attempts = 0;
+          do {
+            ax = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+            ay = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+            attempts++;
+          } while ((map[ay][ax] !== 0 || animeData.some(a => Math.abs(a.x - ax) < 2 && Math.abs(a.y - ay) < 2)) && attempts < 50);
+
+          const anime = {
+            fileId, title, desc, rating, imageUrl,
+            x: ax + 0.5, y: ay + 0.5,
+            msgId: msg.message_id,
+            date: new Date(msg.date * 1000).toISOString()
+          };
+          animeData.push(anime);
+
+          if (imageUrl) {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => { loadedImages[fileId] = img; };
+            img.src = imageUrl;
+          }
+
+          newAnime++;
+          addAnimeToList(anime);
+        }
+      }
+
+      document.getElementById('anime-count').textContent = animeData.length;
+      document.getElementById('anime-badge').textContent = animeData.length;
+      if (newAnime > 0) {
+        setStatus('✅ تم جلب ' + newAnime + ' صورة أنمي جديدة', 'success');
+        score += newAnime * 50;
+        document.getElementById('score').textContent = score;
+      } else {
+        setStatus('📭 لا توجد صور أنمي جديدة في القناة', 'info');
+      }
+    } catch (e) {
+      setStatus('❌ خطأ: ' + e.message, 'error');
+    }
+  }
+
+  function addAnimeToList(anime) {
+    const list = document.getElementById('anime-list');
+    if (list.children.length === 1 && list.children[0].textContent.includes('اتصل')) {
+      list.innerHTML = '';
+    }
+    const div = document.createElement('div');
+    div.className = 'anime-item';
+    div.innerHTML = `
+      <span class="time">${new Date(anime.date).toLocaleTimeString('ar-EG')}</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <img src="${anime.imageUrl || ''}" onerror="this.style.display='none'" alt="">
+        <div style="flex:1;">
+          <div class="anime-title">${anime.title}</div>
+          <div class="anime-desc">${anime.desc.substring(0, 40)}${anime.desc.length > 40 ? '...' : ''}</div>
+          ${anime.rating ? '<div style="color:var(--gold); font-size:11px;">⭐ ' + anime.rating + '/10</div>' : ''}
+        </div>
+      </div>
+    `;
+    div.onclick = () => showAnimePopup(anime);
+    list.insertBefore(div, list.firstChild);
+    if (list.children.length > 30) list.removeChild(list.lastChild);
+  }
+
+  // ========== CARD FUNCTIONS ==========
+  function addLegendaryCard() {
+    // Check if card already exists
+    if (cardsData.some(c => c.id === legendaryCard.id)) {
+      setStatus('⚠️ بطاقة KAITO موجودة بالفعل!', 'warning');
+      return;
+    }
+
+    // Add card to map
+    let ax = 0, ay = 0, attempts = 0;
+    do {
+      ax = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+      ay = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+      attempts++;
+    } while ((map[ay][ax] !== 0 || cardsData.some(c => Math.abs(c.x - ax) < 3 && Math.abs(c.y - ay) < 3) || 
+      animeData.some(a => Math.abs(a.x - ax) < 2 && Math.abs(a.y - ay) < 2)) && attempts < 50);
+
+    const card = {
+      ...legendaryCard,
+      x: ax + 0.5,
+      y: ay + 0.5,
+      date: new Date().toISOString()
+    };
+
+    cardsData.push(card);
+    addCardToList(card);
     
-    <!-- 1️⃣ المكتبات الخارجية -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    document.getElementById('card-count').textContent = cardsData.length;
+    document.getElementById('card-count-stat').textContent = cardsData.length;
+    document.getElementById('card-badge').textContent = cardsData.length;
     
-    <!-- 2️⃣ الدوال المساعدة أولاً (الأساس) -->
-    <script src="js/modules/utils.js"></script>
+    score += 200; // Bonus for legendary card
+    document.getElementById('score').textContent = score;
     
-    <!-- 3️⃣ ملفات البيانات الأساسية -->
-    <script src="js/modules/product.js"></script>
-    <script src="js/modules/inventory.js"></script>
-    <script src="js/modules/customer.js"></script>
-    <script src="js/modules/supplier.js"></script>
+    setStatus('⭐ تم إضافة البطاقة الأسطورية KAITO!', 'success');
+  }
+
+  function addCardToList(card) {
+    const list = document.getElementById('cards-list');
+    if (list.children.length === 1 && list.children[0].textContent.includes('اضغط')) {
+      list.innerHTML = '';
+    }
+    const div = document.createElement('div');
+    div.className = 'card-item legendary';
+    div.innerHTML = `
+      <span class="time">${new Date(card.date).toLocaleTimeString('ar-EG')}</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <div style="flex:1;">
+          <div class="card-title">⭐ ${card.name}</div>
+          <div class="card-desc">${card.class} • ${card.weapon}</div>
+          <div class="card-rarity">${card.rarity} ★★★★★</div>
+        </div>
+      </div>
+    `;
+    div.onclick = () => showCardPopup(card);
+    list.insertBefore(div, list.firstChild);
+  }
+
+  function showAnimePopup(anime) {
+    const popup = document.getElementById('anime-popup');
+    document.getElementById('popup-img').src = anime.imageUrl || '';
+    document.getElementById('popup-title').textContent = anime.title;
+    document.getElementById('popup-desc').textContent = anime.desc;
+    document.getElementById('popup-rating').textContent = anime.rating ? '⭐ التقييم: ' + anime.rating + '/10' : '';
+    popup.classList.add('show');
+  }
+
+  function showCardPopup(card) {
+    const popup = document.getElementById('card-popup');
+    document.getElementById('card-popup-img').src = card.imageUrl || '';
+    document.getElementById('card-popup-name').textContent = card.name + ' ' + (card.nameJp || '');
+    document.getElementById('card-popup-rarity').textContent = '⭐ ' + card.rarity + ' ★★★★★';
     
-    <!-- 4️⃣ ملفات العمليات -->
-    <script src="js/modules/sales.js"></script>
-    <script src="js/modules/purchases.js"></script>
+    const statsHtml = `
+      <div class="stat-item"><span class="stat-label">⚔️ الهجوم</span><span class="stat-value">${card.attack}/100</span></div>
+      <div class="stat-item"><span class="stat-label">🛡️ الدفاع</span><span class="stat-value">${card.defense}/100</span></div>
+      <div class="stat-item"><span class="stat-label">⚡ الطاقة</span><span class="stat-value">${card.energy}/100</span></div>
+      <div class="stat-item"><span class="stat-label">🏃 السرعة</span><span class="stat-value">${card.speed}/100</span></div>
+      <div class="stat-item"><span class="stat-label">🎯 الرشاقة</span><span class="stat-value">${card.agility}/100</span></div>
+      <div class="stat-item"><span class="stat-label">🗡️ السلاح</span><span class="stat-value">${card.weapon}</span></div>
+    `;
+    document.getElementById('card-popup-stats').innerHTML = statsHtml;
+    document.getElementById('card-popup-quote').textContent = card.quote || '';
+    document.getElementById('card-popup-class').textContent = '🏷️ ' + card.class;
     
-    <!-- 5️⃣ ملفات الفواتير والتقارير -->
-    <script src="js/modules/invoices.js"></script>
-    <script src="js/modules/reports.js"></script>
-    <script src="js/modules/debt.js"></script>
-    
-    <!-- 6️⃣ ملفات إضافية -->
-    <script src="js/modules/backup.js"></script>
-    <script src="js/modules/ai.js"></script>
-    
-    <!-- 7️⃣ الملف الرئيسي (آخراً) -->
-    <script src="js/app.js"></script>
+    popup.classList.add('show');
+  }
 
-    <!-- ===== تحميل أقسام HTML ===== -->
-    <script>
-        // ترتيب تحميل الأقسام (17 ملف HTML في includes/)
-        const sections = [
-            'login.html',               // الرقم 2
-            'header.html',              // الرقم 3
-            'sales-section.html',        // الرقم 4
-            'purchases-section.html',    // الرقم 5
-            'add-section.html',          // الرقم 6
-            'inventory-section.html',    // الرقم 7
-            'reports-section.html',      // الرقم 8
-            'product-section.html',      // الرقم 9
-            'customer-section.html',     // الرقم 10
-            'supplier-section.html',     // الرقم 11
-            'invoices.html',             // الرقم 12
-            'debt-section.html',         // الرقم 13
-            'ai-section.html',            // الرقم 14
-            'modals.html',               // الرقم 15
-            'print-areas.html',           // الرقم 16
-            'footer.html'                 // الرقم 17
-        ];
+  window.closeAnimePopup = function() {
+    document.getElementById('anime-popup').classList.remove('show');
+  };
 
-        // دالة تحميل الأقسام
-        async function loadSections() {
-            const app = document.getElementById('app');
-            let loadedCount = 0;
-            let failedSections = [];
-            
-            for (const section of sections) {
-                try {
-                    const response = await fetch(`includes/${section}`);
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const html = await response.text();
-                    app.innerHTML += html;
-                    loadedCount++;
-                    console.log(`✅ تم تحميل ${section} (${loadedCount}/${sections.length})`);
-                } catch (error) {
-                    console.error(`❌ فشل تحميل ${section}:`, error);
-                    failedSections.push(section);
-                    
-                    // إنشاء أقسام افتراضية للفواتير والديون والذكاء الاصطناعي إذا فشل التحميل
-                    if (section === 'invoices.html') {
-                        app.innerHTML += `
-                            <div id="invoices" class="section">
-                                <div class="main-card">
-                                    <h3 class="text-center">قسم الفواتير</h3>
-                                    <p class="text-center text-muted">جاري تجهيز القسم...</p>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    if (section === 'debt-section.html') {
-                        app.innerHTML += `
-                            <div id="debt" class="section">
-                                <div class="main-card">
-                                    <h3 class="text-center">قسم الديون</h3>
-                                    <p class="text-center text-muted">جاري تجهيز القسم...</p>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    if (section === 'ai-section.html') {
-                        app.innerHTML += `
-                            <div id="ai" class="section">
-                                <div class="main-card">
-                                    <h3 class="text-center">قسم الذكاء الاصطناعي</h3>
-                                    <p class="text-center text-muted">جاري تجهيز القسم...</p>
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-            }
-            
-            // إخفاء شاشة التحميل مع تأثير
-            const loadingScreen = document.getElementById('loading-screen');
-            loadingScreen.style.opacity = '0';
-            setTimeout(() => {
-                loadingScreen.style.display = 'none';
-            }, 500);
-            
-            // إعلام أن HTML جاهز
-            document.dispatchEvent(new Event('html-loaded'));
-            
-            if (failedSections.length > 0) {
-                console.warn('⚠️ بعض الأقسام فشل تحميلها:', failedSections);
-            } else {
-                console.log('✅ جميع أقسام HTML محملة بنجاح');
-            }
-        }
+  window.closeCardPopup = function() {
+    document.getElementById('card-popup').classList.remove('show');
+  };
 
-        // بدأ التحميل بعد تحميل الصفحة
-        document.addEventListener('DOMContentLoaded', loadSections);
-    </script>
+  function setStatus(msg, type) {
+    const el = document.getElementById('conn-status');
+    el.textContent = msg;
+    el.style.color = type === 'error' ? '#f87171' : type === 'success' ? '#4ade80' : type === 'warning' ? '#fbbf24' : '#888';
+  }
 
-    <!-- ===== دوال التنقل الأساسية (موحدة) ===== -->
-    <script>
-        // ================== دوال التنقل ==================
-        
-        // التبديل بين الأقسام الرئيسية
-        function switchSection(sectionId, element) {
-            console.log('🔄 التبديل إلى:', sectionId);
-            
-            // إخفاء جميع الأقسام
-            document.querySelectorAll('.section').forEach(s => {
-                s.classList.remove('active-section');
-            });
-            
-            // إظهار القسم المطلوب
-            const section = document.getElementById(sectionId);
-            if (section) {
-                section.classList.add('active-section');
-                console.log('✅ تم العثور على القسم:', sectionId);
-                
-                // تحديث الشريط السفلي
-                document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-                if (element) element.classList.add('active');
-                
-                // تحديث بيانات القسم عند عرضه
-                refreshSectionData(sectionId);
-            } else {
-                console.error('❌ القسم غير موجود:', sectionId);
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'خطأ',
-                        text: `القسم "${sectionId}" غير موجود`
-                    });
-                }
-            }
-        }
+  // ========== BUTTONS ==========
+  document.getElementById('connect-btn').addEventListener('click', testConnection);
+  document.getElementById('sync-btn').addEventListener('click', fetchAnimeFromChannel);
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    animeData = [];
+    loadedImages = {};
+    cardsData = [];
+    document.getElementById('anime-list').innerHTML = '<div style="color:#888; text-align:center; padding:20px 0;">تم المسح. اتصل بالقناة للجلب من جديد.</div>';
+    document.getElementById('cards-list').innerHTML = '<div style="color:#888; text-align:center; padding:20px 0;">اضغط "إضافة بطاقة KAITO" لإضافة البطاقة الأسطورية</div>';
+    document.getElementById('anime-count').textContent = '0';
+    document.getElementById('anime-badge').textContent = '0';
+    document.getElementById('card-count').textContent = '0';
+    document.getElementById('card-count-stat').textContent = '0';
+    document.getElementById('card-badge').textContent = '0';
+    setStatus('تم مسح البيانات', 'info');
+  });
 
-        // تحديث بيانات القسم
-        function refreshSectionData(sectionId) {
-            switch(sectionId) {
-                case 'sales':
-                    if (window.salesModule) {
-                        if (salesModule.loadCustomers) salesModule.loadCustomers();
-                        if (salesModule.renderInvoices) salesModule.renderInvoices();
-                        if (salesModule.renderCart) salesModule.renderCart();
-                    }
-                    break;
-                case 'purchases':
-                    if (window.purchasesModule) {
-                        if (purchasesModule.loadSuppliers) purchasesModule.loadSuppliers();
-                        if (purchasesModule.renderInvoices) purchasesModule.renderInvoices();
-                        if (purchasesModule.renderCart) purchasesModule.renderCart();
-                    }
-                    break;
-                case 'inventory':
-                    if (window.productModule) productModule.renderProducts();
-                    if (window.inventoryModule) inventoryModule.renderInventory?.();
-                    break;
-                case 'reports':
-                    if (window.reportsModule) reportsModule.updateDashboard?.();
-                    break;
-                case 'invoices':
-                    if (window.invoicesModule) invoicesModule.refresh?.();
-                    break;
-                case 'debt':
-                    if (window.debtModule) {
-                        if (debtModule.renderAllDebts) debtModule.renderAllDebts();
-                        if (debtModule.renderCustomerDebts) debtModule.renderCustomerDebts();
-                        if (debtModule.renderSupplierDebts) debtModule.renderSupplierDebts();
-                        if (debtModule.renderPayments) debtModule.renderPayments();
-                        if (debtModule.updateStats) debtModule.updateStats();
-                    }
-                    break;
-                case 'ai':
-                    if (window.aiModule && typeof loadAIOverview === 'function') {
-                        setTimeout(loadAIOverview, 100);
-                    }
-                    break;
-                case 'products':
-                    if (window.productModule) productModule.renderProducts();
-                    break;
-                case 'customers':
-                    if (window.customerModule) customerModule.renderCustomers();
-                    break;
-                case 'suppliers':
-                    if (window.supplierModule) supplierModule.renderSuppliers();
-                    break;
-            }
-        }
+  document.getElementById('add-card-btn').addEventListener('click', addLegendaryCard);
 
-        // التبديل بين الأقسام الفرعية
-        function showSubSection(subId) {
-            const parent = document.querySelector('.active-section');
-            if (!parent) return;
-            
-            parent.querySelectorAll('.sub-section').forEach(s => s.style.display = 'none');
-            const target = document.getElementById(subId);
-            if (target) target.style.display = 'block';
-            
-            // تحديث التبويبات
-            const tabs = parent.querySelectorAll('.tab-item');
-            tabs.forEach(t => t.classList.remove('active-red', 'active-green', 'active-nardo'));
-            
-            tabs.forEach(t => {
-                if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(subId)) {
-                    if (parent.id === 'sales') t.classList.add('active-red');
-                    else if (parent.id === 'purchases') t.classList.add('active-green');
-                    else if (parent.id === 'add' || parent.id === 'invoices' || parent.id === 'debt' || parent.id === 'ai') {
-                        t.classList.add('active-nardo');
-                    }
-                }
-            });
-        }
+  // ========== DEMO DATA ==========
+  function loadDemoData() {
+    // Add some demo anime
+    const demoAnime = [
+      { title: 'Attack on Titan', desc: 'بشرية محاصرة behind walls من عمالقة', rating: 9.5, fileId: 'demo1', x: 5.5, y: 5.5, imageUrl: 'https://upload.wikimedia.org/wikipedia/en/d/d6/Shingeki_no_Kyojin_manga_volume_1.jpg', date: new Date().toISOString() },
+      { title: 'One Piece', desc: 'مغامرة قراصنة البحث عن الكنز الأعظم', rating: 9.0, fileId: 'demo2', x: 10.5, y: 8.5, imageUrl: 'https://upload.wikimedia.org/wikipedia/en/9/90/One_Piece%2C_Volume_61_Cover.jpg', date: new Date().toISOString() },
+      { title: 'Demon Slayer', desc: 'صياد الشياطين تانجيرو ينتقم لعائلته', rating: 8.7, fileId: 'demo3', x: 15.5, y: 12.5, imageUrl: 'https://upload.wikimedia.org/wikipedia/en/0/09/Demon_Slayer_-_Kimetsu_no_Yaiba%2C_volume_1.jpg', date: new Date().toISOString() },
+    ];
+    for (const a of demoAnime) {
+      animeData.push(a);
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => { loadedImages[a.fileId] = img; };
+      img.src = a.imageUrl;
+      addAnimeToList(a);
+    }
+    document.getElementById('anime-count').textContent = animeData.length;
+    document.getElementById('anime-badge').textContent = animeData.length;
 
-        // ================== دوال القائمة الجانبية ==================
-        function toggleSidebar() {
-            document.getElementById('sidebar')?.classList.toggle('show');
-        }
+    // Auto-add legendary card after a moment
+    setTimeout(() => {
+      addLegendaryCard();
+    }, 1500);
+  }
 
-        function openUserMenu() {
-            Swal.fire({
-                title: 'حساب المستخدم',
-                html: `
-                    <div style="text-align:right">
-                        <p><strong>المستخدم:</strong> مدير النظام</p>
-                        <p><strong>الصلاحية:</strong> كاملة</p>
-                        <p><strong>الإصدار:</strong> 2.0.0</p>
-                        <p><strong>آخر دخول:</strong> ${new Date().toLocaleDateString('ar-EG')}</p>
-                    </div>
-                `,
-                confirmButtonText: 'تسجيل الخروج',
-                showCancelButton: true,
-                cancelButtonText: 'إلغاء'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    logout();
-                }
-            });
-        }
+  // Auto-connect to Telegram with provided credentials
+  setTimeout(() => {
+    testConnection();
+  }, 500);
 
-        function openSettings() {
-            Swal.fire({
-                title: 'الإعدادات',
-                text: 'قريباً...',
-                icon: 'info'
-            });
-        }
+  // Load demo data
+  setTimeout(loadDemoData, 1000);
 
-        function logout() {
-            localStorage.removeItem('isLoggedIn');
-            location.reload();
-        }
-
-        // ================== دوال تسجيل الدخول ==================
-        function checkPassword() {
-            const password = document.getElementById('password-input')?.value;
-            const error = document.getElementById('error-message');
-            
-            if (password === '123456') {
-                if (error) error.style.display = 'none';
-                document.getElementById('login-screen').style.display = 'none';
-                localStorage.setItem('isLoggedIn', 'true');
-                
-                Swal.fire({
-                    icon: 'success',
-                    title: 'مرحباً بك',
-                    text: 'تم تسجيل الدخول بنجاح',
-                    timer: 1500,
-                    showConfirmButton: false
-                });
-            } else {
-                if (error) error.style.display = 'flex';
-            }
-        }
-
-        function togglePasswordVisibility() {
-            const input = document.getElementById('password-input');
-            const icon = document.querySelector('.toggle-password');
-            if (input.type === 'password') {
-                input.type = 'text';
-                icon.textContent = 'visibility';
-            } else {
-                input.type = 'password';
-                icon.textContent = 'visibility_off';
-            }
-        }
-
-        function showResetPassword() {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('reset-password-screen').style.display = 'flex';
-        }
-
-        function backToLogin() {
-            document.getElementById('reset-password-screen').style.display = 'none';
-            document.getElementById('login-screen').style.display = 'flex';
-        }
-
-        function useDefaultPassword() {
-            document.getElementById('password-input').value = '123456';
-            backToLogin();
-            Swal.fire({
-                icon: 'info',
-                title: 'تم',
-                text: 'تم تعيين كلمة السر إلى 123456',
-                timer: 2000,
-                showConfirmButton: false
-            });
-        }
-
-        // ================== دوال الباركود ==================
-        function openBarcodeScanner(inputId) {
-            const modal = document.getElementById('barcodeScannerModal');
-            if (modal) {
-                const bsModal = new bootstrap.Modal(modal);
-                bsModal.show();
-                
-                setTimeout(() => {
-                    const mockBarcode = '2' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
-                    const resultEl = document.getElementById('barcode-result');
-                    if (resultEl) resultEl.textContent = `تم المسح: ${mockBarcode}`;
-                    
-                    if (inputId) {
-                        const input = document.getElementById(inputId);
-                        if (input) input.value = mockBarcode;
-                    }
-                    
-                    window.dispatchEvent(new CustomEvent('barcode-scanned', { 
-                        detail: { barcode: mockBarcode }
-                    }));
-                }, 2000);
-            } else {
-                Swal.fire('معلومة', 'ماسح الباركود غير متوفر', 'info');
-            }
-        }
-
-        function generateBarcode() {
-            return '2' + Math.floor(Math.random() * 1000000000).toString().padStart(9, '0');
-        }
-
-        // ================== دوال البحث الصوتي ==================
-        function startVoiceSearch(callback) {
-            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-                const recognition = new SpeechRecognition();
-                recognition.lang = 'ar-SA';
-                
-                recognition.onstart = function() {
-                    Swal.fire({
-                        title: '🎤 استمع...',
-                        text: 'تحدث الآن',
-                        timer: 5000,
-                        timerProgressBar: true,
-                        showConfirmButton: false
-                    });
-                };
-                
-                recognition.onresult = function(event) {
-                    const text = event.results[0][0].transcript;
-                    if (callback) callback(text);
-                };
-                
-                recognition.onerror = function() {
-                    Swal.fire('خطأ', 'فشل التعرف على الصوت', 'error');
-                };
-                
-                recognition.start();
-            } else {
-                Swal.fire('خطأ', 'المتصفح لا يدعم البحث الصوتي', 'error');
-            }
-        }
-
-        // ================== دوال النسخ الاحتياطي ==================
-        function exportBackup() {
-            if (window.backupModule) {
-                backupModule.exportBackup();
-            } else {
-                Swal.fire('معلومة', 'النسخ الاحتياطي غير متوفر', 'info');
-            }
-        }
-
-        function importBackup() {
-            document.getElementById('backup-file-input').click();
-        }
-
-        document.getElementById('backup-file-input')?.addEventListener('change', function(e) {
-            if (e.target.files.length > 0 && window.backupModule) {
-                backupModule.importBackup(e.target.files[0]);
-            }
-        });
-
-        // ================== دوال عامة ==================
-        function uploadExcel() {
-            Swal.fire('رفع Excel', 'قريباً', 'info');
-        }
-
-        // ================== دوال الذكاء الاصطناعي ==================
-        function loadAIOverview() {
-            if (window.aiModule && typeof window.aiModule.getFullAnalysis === 'function') {
-                const analysis = aiModule.getFullAnalysis();
-                
-                const totalSalesEl = document.getElementById('ai-total-sales');
-                const totalProfitEl = document.getElementById('ai-total-profit');
-                const totalCustomersEl = document.getElementById('ai-total-customers');
-                const activeProductsEl = document.getElementById('ai-active-products');
-                const lowStockEl = document.getElementById('ai-low-stock');
-                const lastUpdateEl = document.getElementById('ai-last-update');
-                
-                if (totalSalesEl) totalSalesEl.textContent = formatCurrency(analysis.sales.summary?.totalSales || 0);
-                if (totalProfitEl) totalProfitEl.textContent = formatCurrency(analysis.financial.summary?.grossProfit || 0);
-                if (totalCustomersEl) totalCustomersEl.textContent = analysis.customers.summary?.totalCustomers || 0;
-                if (activeProductsEl) activeProductsEl.textContent = analysis.products.summary?.productsWithSales || 0;
-                if (lowStockEl) lowStockEl.textContent = analysis.inventory.status?.lowStock || 0;
-                if (lastUpdateEl) lastUpdateEl.textContent = new Date().toLocaleString('ar-EG');
-                
-                const recommendationsEl = document.getElementById('ai-recommendations');
-                if (recommendationsEl && analysis.recommendations.list.length > 0) {
-                    let html = '';
-                    analysis.recommendations.list.slice(0, 5).forEach(rec => {
-                        let icon = 'lightbulb';
-                        let color = '#4361ee';
-                        
-                        if (rec.includes('⚠️') || rec.includes('منخفض') || rec.includes('ناقصة')) {
-                            icon = 'warning';
-                            color = '#ffb703';
-                        } else if (rec.includes('❌') || rec.includes('نفدت')) {
-                            icon = 'error';
-                            color = '#e63946';
-                        } else if (rec.includes('🌟') || rec.includes('ممتاز')) {
-                            icon = 'star';
-                            color = '#06d6a0';
-                        }
-                        
-                        html += `
-                            <div class="recommendation-item" style="display: flex; align-items: center; gap: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px; margin-bottom: 8px; border-right: 3px solid ${color};">
-                                <i class="material-icons-round" style="color: ${color};">${icon}</i>
-                                <span>${rec}</span>
-                            </div>
-                        `;
-                    });
-                    recommendationsEl.innerHTML = html;
-                }
-            }
-        }
-
-        // ================== دالة تنسيق العملة ==================
-        function formatCurrency(amount) {
-            if (window.utilsModule) {
-                return utilsModule.formatCurrency(amount);
-            }
-            return Number(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,') + ' دج';
-        }
-
-        // ================== التحقق من حالة تسجيل الدخول ==================
-        (function() {
-            if (localStorage.getItem('isLoggedIn') === 'true') {
-                setTimeout(() => {
-                    document.getElementById('login-screen')?.style.display = 'none';
-                }, 100);
-            }
-        })();
-
-        // ================== إغلاق القائمة الجانبية عند النقر خارجها ==================
-        document.addEventListener('click', function(e) {
-            const sidebar = document.getElementById('sidebar');
-            const menuIcon = document.querySelector('.app-header i:first-child');
-            if (sidebar?.classList.contains('show') && 
-                !sidebar.contains(e.target) && 
-                e.target !== menuIcon) {
-                sidebar.classList.remove('show');
-            }
-        });
-
-        // ================== إغلاق نتائج البحث ==================
-        document.addEventListener('click', function(e) {
-            document.querySelectorAll('.search-results').forEach(box => {
-                if (!box.contains(e.target) && !e.target.closest('.search-container')) {
-                    box.classList.remove('show');
-                }
-            });
-        });
-
-        console.log('✅ جميع الدوال العامة جاهزة');
-    </script>
+})();
+</script>
 </body>
 </html>
+
