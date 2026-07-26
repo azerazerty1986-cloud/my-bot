@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ناردو 3D — شخصيات الأنمي الاحترافية 🎮</title>
+<title>ناردو 3D — شخصيات الأنمي المتحركة 🎮</title>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
 :root {
   --gold:#ffd700; --success:#4ade80; --error:#f87171; --warning:#fbbf24;
   --info:#60a5fa; --teal:#20b2aa; --purple:#8b5cf6; --legendary:#ff6b35;
-  --neon-blue:#00d4ff; --neon-pink:#ff6b9d;
+  --neon-blue:#00d4ff; --neon-pink:#ff6b9d; --gif-glow:#ff0080;
 }
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -28,6 +28,8 @@ body {
 .btn-green { background:var(--success); color:#111; }
 .btn-legendary { background:var(--legendary); color:#fff; }
 .btn-legendary:hover { transform:scale(1.05); box-shadow:0 0 20px rgba(255,107,53,0.4); }
+.btn-gif { background:var(--gif-glow); color:#fff; }
+.btn-gif:hover { transform:scale(1.05); box-shadow:0 0 30px rgba(255,0,128,0.4); }
 .btn-neon { background:var(--neon-blue); color:#111; }
 .btn-neon:hover { transform:scale(1.05); box-shadow:0 0 30px rgba(0,212,255,0.4); }
 input {
@@ -74,44 +76,47 @@ input:focus { outline:none; border-color:var(--gold); }
   font-variant-numeric:tabular-nums;
 }
 .stat-grid .num.legendary { color:var(--legendary); }
+.stat-grid .num.gif { color:var(--gif-glow); }
 .stat-grid .lbl { font-size:12px; color:#888; }
-#anime-list, #cards-list {
-  flex:1; overflow-y:auto; max-height:220px;
+#anime-list, #cards-list, #gif-list {
+  flex:1; overflow-y:auto; max-height:200px;
   display:flex; flex-direction:column; gap:6px; font-size:12px;
 }
-.anime-item, .card-item {
+.anime-item, .card-item, .gif-item {
   padding:8px 10px; border-radius:8px;
   background:rgba(255,255,255,0.03);
   border-right:3px solid var(--gold);
   color:#fff; animation:slideIn 0.3s ease;
   cursor:pointer; transition:0.3s;
 }
-.anime-item:hover, .card-item:hover {
+.anime-item:hover, .card-item:hover, .gif-item:hover {
   background:rgba(255,255,255,0.08);
   transform:translateX(-5px);
 }
 .card-item { border-right-color: var(--legendary); background: rgba(255,107,53,0.08); }
-.anime-item .time, .card-item .time { font-size:10px; color:#888; display:block; margin-bottom:2px; }
-.anime-item img, .card-item img {
+.gif-item { border-right-color: var(--gif-glow); background: rgba(255,0,128,0.08); }
+.anime-item .time, .card-item .time, .gif-item .time { font-size:10px; color:#888; display:block; margin-bottom:2px; }
+.anime-item img, .card-item img, .gif-item img {
   width:50px; height:50px; border-radius:50%;
   object-fit:cover;
   float:left; margin-left:10px; border:2px solid rgba(255,215,0,0.3);
   transition:0.3s;
 }
-.anime-item img:hover, .card-item img:hover {
+.anime-item img:hover, .card-item img:hover, .gif-item img:hover {
   transform:scale(1.1) rotate(5deg);
   border-color:var(--gold);
 }
-.card-item img { border-color: var(--legendary); }
-.anime-item .anime-title, .card-item .card-title {
+.gif-item img { border-color: var(--gif-glow); }
+.anime-item .anime-title, .card-item .card-title, .gif-item .gif-title {
   font-weight:600; color:var(--gold); font-size:13px;
 }
+.gif-item .gif-title { color:var(--gif-glow); }
 .card-item .card-title { color:var(--legendary); }
-.anime-item .anime-desc, .card-item .card-desc { color:#aaa; font-size:11px; margin-top:2px; }
-.card-item .card-rarity { 
-  font-size:10px; padding:2px 8px; border-radius:4px; 
+.anime-item .anime-desc, .card-item .card-desc, .gif-item .gif-desc { color:#aaa; font-size:11px; margin-top:2px; }
+.gif-item .gif-badge {
+  font-size:10px; padding:2px 8px; border-radius:4px;
   display:inline-block; margin-top:4px;
-  background:rgba(255,107,53,0.2); color:var(--legendary);
+  background:rgba(255,0,128,0.2); color:var(--gif-glow);
 }
 .env-tag {
   font-size:11px; padding:3px 10px; border-radius:6px;
@@ -137,43 +142,47 @@ input:focus { outline:none; border-color:var(--gold); }
   display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;
 }
 .telegram-config label { font-size:12px; color:#888; display:block; margin-bottom:3px; }
-.anime-preview, .card-preview {
+.anime-preview, .card-preview, .gif-preview {
   position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
   background:rgba(0,0,0,0.95); border:2px solid var(--gold);
   border-radius:16px; padding:20px; max-width:400px; width:90%;
   text-align:center; display:none; z-index:100;
 }
+.gif-preview { border-color: var(--gif-glow); max-width:420px; }
 .card-preview { border-color: var(--legendary); max-width:420px; }
-.anime-preview.show, .card-preview.show { display:block; animation:fadeIn 0.3s; }
-.anime-preview img, .card-preview img {
+.anime-preview.show, .card-preview.show, .gif-preview.show { display:block; animation:fadeIn 0.3s; }
+.anime-preview img, .card-preview img, .gif-preview img {
   width:120px; height:120px; border-radius:50%;
   object-fit:cover;
   margin-bottom:10px; border:3px solid var(--gold);
 }
-.card-preview img { border-color: var(--legendary); width:150px; height:150px; }
-.anime-preview h4, .card-preview h4 { color:var(--gold); font-size:16px; margin-bottom:6px; }
+.gif-preview img { border-color: var(--gif-glow); width:150px; height:150px; }
+.anime-preview h4, .card-preview h4, .gif-preview h4 { color:var(--gold); font-size:16px; margin-bottom:6px; }
+.gif-preview h4 { color:var(--gif-glow); font-size:22px; }
 .card-preview h4 { color:var(--legendary); font-size:22px; }
-.anime-preview p, .card-preview p { color:#aaa; font-size:12px; margin-bottom:4px; }
-.card-preview .stats-grid {
+.anime-preview p, .card-preview p, .gif-preview p { color:#aaa; font-size:12px; margin-bottom:4px; }
+.card-preview .stats-grid, .gif-preview .stats-grid {
   display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:10px 0;
 }
-.card-preview .stats-grid .stat-item {
+.card-preview .stats-grid .stat-item, .gif-preview .stats-grid .stat-item {
   background:rgba(255,255,255,0.05); padding:6px 10px; border-radius:6px;
   display:flex; justify-content:space-between; font-size:13px;
 }
-.card-preview .stats-grid .stat-item .stat-label { color:#888; }
-.card-preview .stats-grid .stat-item .stat-value { color:var(--gold); font-weight:700; }
-.card-preview .quote {
-  font-style:italic; color:var(--legendary); font-size:13px;
-  padding:8px; border-right:3px solid var(--legendary);
-  margin:8px 0; background:rgba(255,107,53,0.05);
-  border-radius:4px;
+.card-preview .stats-grid .stat-item .stat-label, .gif-preview .stats-grid .stat-item .stat-label { color:#888; }
+.card-preview .stats-grid .stat-item .stat-value, .gif-preview .stats-grid .stat-item .stat-value { color:var(--gold); font-weight:700; }
+.gif-preview .stats-grid .stat-item .stat-value { color:var(--gif-glow); }
+.card-preview .quote, .gif-preview .quote {
+  font-style:italic; font-size:13px;
+  padding:8px; border-right:3px solid;
+  margin:8px 0; border-radius:4px;
 }
-.anime-preview .close-btn, .card-preview .close-btn {
+.card-preview .quote { color:var(--legendary); border-color:var(--legendary); background:rgba(255,107,53,0.05); }
+.gif-preview .quote { color:var(--gif-glow); border-color:var(--gif-glow); background:rgba(255,0,128,0.05); }
+.anime-preview .close-btn, .card-preview .close-btn, .gif-preview .close-btn {
   position:absolute; top:8px; left:12px; background:none; border:none;
   color:#888; font-size:20px; cursor:pointer;
 }
-.anime-preview .close-btn:hover, .card-preview .close-btn:hover { color:var(--gold); }
+.anime-preview .close-btn:hover, .card-preview .close-btn:hover, .gif-preview .close-btn:hover { color:var(--gold); }
 @keyframes slideIn {
   from { opacity:0; transform:translateX(20px); }
   to   { opacity:1; transform:translateX(0); }
@@ -186,12 +195,17 @@ input:focus { outline:none; border-color:var(--gold); }
   0%, 100% { transform:translateY(0px) rotate(0deg); }
   50% { transform:translateY(-8px) rotate(2deg); }
 }
+@keyframes gifPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(255,0,128,0.3); }
+  50% { box-shadow: 0 0 60px rgba(255,0,128,0.8); }
+}
 @keyframes legendaryGlow {
   0%, 100% { box-shadow: 0 0 20px rgba(255,107,53,0.2); }
   50% { box-shadow: 0 0 60px rgba(255,107,53,0.6); }
 }
 .float-animation { animation:float3D 3s ease-in-out infinite; }
 .legendary-glow { animation:legendaryGlow 2s infinite; }
+.gif-pulse { animation:gifPulse 1.5s infinite; }
 @media (max-width:600px) {
   .game-area { flex-direction:column; }
   #game-canvas { height:280px; }
@@ -208,7 +222,7 @@ input:focus { outline:none; border-color:var(--gold); }
   <div class="top-bar">
     <div class="logo">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--gold);"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-      <h1>ناردو 3D — شخصيات الأنمي 🎮</h1>
+      <h1>ناردو 3D — شخصيات GIF 🎬</h1>
     </div>
     <div style="display:flex; gap:8px; align-items:center;">
       <span style="font-size:12px; color:#888;">
@@ -238,7 +252,10 @@ input:focus { outline:none; border-color:var(--gold); }
       </button>
       <button id="sync-btn" class="btn btn-gold" disabled>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-        جلب شخصيات الأنمي
+        جلب الصور
+      </button>
+      <button id="sync-gif-btn" class="btn btn-gif" disabled>
+        🎬 جلب GIF متحركة
       </button>
       <button id="clear-btn" class="btn btn-red">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
@@ -247,8 +264,8 @@ input:focus { outline:none; border-color:var(--gold); }
       <button id="add-card-btn" class="btn btn-legendary">
         ⚡ إضافة شخصية KAITO
       </button>
-      <button id="add-3d-char-btn" class="btn btn-neon">
-        🎮 إضافة شخصية 3D
+      <button id="add-gif-btn" class="btn btn-gif">
+        🎬 إضافة GIF تجريبي
       </button>
     </div>
     <div id="conn-status" style="margin-top:8px; font-size:12px; color:#888;"></div>
@@ -262,7 +279,7 @@ input:focus { outline:none; border-color:var(--gold); }
       <div class="overlay-ui">
         <div>FPS: <span id="fps">60</span></div>
         <div>X: <span id="pos-x">0</span> Y: <span id="pos-y">0</span></div>
-        <div style="color:var(--neon-blue);">🎮 شخصيات 3D: <span id="char-3d-count">0</span></div>
+        <div style="color:var(--gif-glow);">🎬 GIF: <span id="gif-count">0</span></div>
       </div>
       <div class="controls-hint">
         <span>WASD / الأسهم للتحرك</span>
@@ -272,8 +289,8 @@ input:focus { outline:none; border-color:var(--gold); }
         <span>E للتفاعل</span>
         <span style="color:#444;">|</span>
         <span>Space للقفز</span>
-        <span style="color:var(--neon-blue);">|</span>
-        <span style="color:var(--neon-blue);">🎮 شخصيات 3D</span>
+        <span style="color:var(--gif-glow);">|</span>
+        <span style="color:var(--gif-glow);">🎬 GIF متحركة</span>
       </div>
       <!-- Anime preview popup -->
       <div id="anime-popup" class="anime-preview">
@@ -293,6 +310,16 @@ input:focus { outline:none; border-color:var(--gold); }
         <div class="quote" id="card-popup-quote"></div>
         <p id="card-popup-class" style="color:#888; font-size:12px;"></p>
       </div>
+      <!-- GIF preview popup -->
+      <div id="gif-popup" class="gif-preview">
+        <button class="close-btn" onclick="closeGifPopup()">×</button>
+        <img id="gif-popup-img" src="" alt="">
+        <h4 id="gif-popup-name"></h4>
+        <div id="gif-popup-rarity" style="color:var(--gif-glow); font-size:12px; margin-bottom:8px;">🎬 GIF متحركة</div>
+        <div class="stats-grid" id="gif-popup-stats"></div>
+        <div class="quote" id="gif-popup-quote">🎬 شخصية متحركة بتقنية GIF</div>
+        <p id="gif-popup-class" style="color:#888; font-size:12px;"></p>
+      </div>
     </div>
 
     <!-- Side panel -->
@@ -302,7 +329,18 @@ input:focus { outline:none; border-color:var(--gold); }
         <div class="stat-grid">
           <div><div class="num" id="score">0</div><div class="lbl">⭐ النقاط</div></div>
           <div><div class="num" id="char-count-stat" style="color:var(--info);">0</div><div class="lbl">👤 الشخصيات</div></div>
-          <div><div class="num legendary" id="card-count-stat">0</div><div class="lbl">🃏 بطاقات أسطورية</div></div>
+          <div><div class="num gif" id="gif-count-stat">0</div><div class="lbl">🎬 GIF متحركة</div></div>
+        </div>
+      </div>
+
+      <!-- GIFs from channel -->
+      <div class="panel-box" style="flex:1; min-height:150px; display:flex; flex-direction:column;">
+        <h3>
+          🎬 صور GIF من القناة
+          <span id="gif-badge" style="font-size:11px; color:var(--gif-glow); background:rgba(255,0,128,0.15); padding:2px 8px; border-radius:10px;">0</span>
+        </h3>
+        <div id="gif-list">
+          <div style="color:#888; text-align:center; padding:20px 0;">اتصل بالقناة ثم اضغط "جلب GIF متحركة"</div>
         </div>
       </div>
 
@@ -317,27 +355,16 @@ input:focus { outline:none; border-color:var(--gold); }
         </div>
       </div>
 
-      <!-- Anime from channel -->
-      <div class="panel-box" style="flex:1; min-height:150px; display:flex; flex-direction:column;">
-        <h3>
-          🎌 شخصيات الأنمي من القناة
-          <span id="anime-badge" style="font-size:11px; color:#888; background:rgba(255,255,255,0.05); padding:2px 8px; border-radius:10px;">0</span>
-        </h3>
-        <div id="anime-list">
-          <div style="color:#888; text-align:center; padding:20px 0;">اتصل بالقناة ثم اضغط "جلب شخصيات الأنمي"</div>
-        </div>
-      </div>
-
       <!-- Environment -->
       <div class="panel-box">
         <h3>🌍 البيئة الحالية</h3>
-        <div id="env-name" style="font-size:16px; font-weight:600; color:var(--teal); margin-bottom:4px;">عالم شخصيات الأنمي 3D</div>
-        <div id="env-desc" style="font-size:12px; color:#888;">شخصيات ثلاثية الأبعاد متحركة</div>
+        <div id="env-name" style="font-size:16px; font-weight:600; color:var(--teal); margin-bottom:4px;">عالم الشخصيات المتحركة</div>
+        <div id="env-desc" style="font-size:12px; color:#888;">شخصيات GIF متحركة ثلاثية الأبعاد</div>
         <div style="margin-top:8px;">
           <span class="env-tag" style="background:rgba(255,215,0,0.12); color:var(--gold);">أنمي</span>
           <span class="env-tag" style="background:rgba(139,92,246,0.12); color:var(--purple);">3D</span>
           <span class="env-tag" style="background:rgba(255,107,53,0.12); color:var(--legendary);">⭐ أسطوري</span>
-          <span class="env-tag" style="background:rgba(0,212,255,0.12); color:var(--neon-blue);">🎮 احترافي</span>
+          <span class="env-tag" style="background:rgba(255,0,128,0.12); color:var(--gif-glow);">🎬 GIF</span>
         </div>
       </div>
     </div>
@@ -362,10 +389,11 @@ input:focus { outline:none; border-color:var(--gold); }
   let chatId = '-1003822964890';
   let connected = false;
   let characters = [];
+  let gifCharacters = [];
   let loadedImages = {};
+  let loadedGifs = {};
   let lastUpdateId = 0;
   let particles = [];
-  let characters3D = [];
 
   // ========== CARDS DATA ==========
   let cardsData = [];
@@ -393,46 +421,46 @@ input:focus { outline:none; border-color:var(--gold); }
     isLegendary: true
   };
 
-  // تعريف شخصيات 3D احترافية
-  const professional3DChars = [
+  // تعريف شخصيات GIF تجريبية
+  const demoGifs = [
     {
-      id: 'worker_12',
-      name: 'Worker 12',
-      title: 'العامل 12',
-      class: '3D Model Character',
-      attack: 85,
+      id: 'gif_demo_1',
+      name: 'ناروتو المتحرك',
+      title: 'ناروتو رنينجان',
+      class: 'Ninja Legend',
+      attack: 92,
+      defense: 78,
+      energy: 95,
+      speed: 97,
+      imageUrl: 'https://i.ibb.co/4RcGxXq/naruto-gif.gif',
+      desc: 'شخصية ناروتو متحركة بتقنية GIF',
+      isGif: true
+    },
+    {
+      id: 'gif_demo_2',
+      name: 'سايتاما المتحرك',
+      title: 'وان بنش مان',
+      class: 'Hero Supreme',
+      attack: 99,
+      defense: 98,
+      energy: 100,
+      speed: 85,
+      imageUrl: 'https://i.ibb.co/3mJjz3N/saitama-gif.gif',
+      desc: 'شخصية سايتاما متحركة بتقنية GIF',
+      isGif: true
+    },
+    {
+      id: 'gif_demo_3',
+      name: 'لوفي المتحرك',
+      title: 'قرصان المطاط',
+      class: 'Pirate King',
+      attack: 88,
       defense: 75,
       energy: 90,
-      speed: 80,
-      imageUrl: 'https://i.ibb.co/4RcGxXq/worker-12-3d.png',
-      desc: 'نموذج ثلاثي الأبعاد احترافي - Worker 12',
-      is3D: true
-    },
-    {
-      id: 'ninja_pro',
-      name: 'Shadow Ninja',
-      title: 'النينجا الظل',
-      class: 'Elite Assassin',
-      attack: 95,
-      defense: 70,
-      energy: 85,
-      speed: 98,
-      imageUrl: 'https://i.ibb.co/3mJjz3N/ninja-pro-3d.png',
-      desc: 'نينجا محترف ثلاثي الأبعاد',
-      is3D: true
-    },
-    {
-      id: 'samurai_3d',
-      name: 'Samurai X',
-      title: 'الساموراي إكس',
-      class: 'Master Swordsman',
-      attack: 98,
-      defense: 85,
-      energy: 88,
-      speed: 82,
-      imageUrl: 'https://i.ibb.co/PWxQmTp/samurai-3d.png',
-      desc: 'ساموراي ثلاثي الأبعاد متقدم',
-      is3D: true
+      speed: 92,
+      imageUrl: 'https://i.ibb.co/PWxQmTp/luffy-gif.gif',
+      desc: 'شخصية لوفي متحركة بتقنية GIF',
+      isGif: true
     }
   ];
 
@@ -478,12 +506,12 @@ input:focus { outline:none; border-color:var(--gold); }
   let showMap = false;
   let nearCharacter = null;
   let nearCard = null;
-  let near3DChar = null;
+  let nearGif = null;
 
   // ========== ENV ==========
   let env = {
-    name: 'عالم شخصيات الأنمي 3D',
-    desc: 'شخصيات ثلاثية الأبعاد متحركة احترافية',
+    name: 'عالم الشخصيات المتحركة',
+    desc: 'شخصيات GIF متحركة ثلاثية الأبعاد',
     wallColor1: '#2a2a3a', wallColor2: '#1a1a2a',
     floorColor: '#0a0a1a', ceilingColor: '#050510',
     fogDensity: 0.06
@@ -498,8 +526,8 @@ input:focus { outline:none; border-color:var(--gold); }
       document.getElementById('minimap-container').style.display = showMap ? 'block' : 'none';
     }
     if (e.key.toLowerCase() === 'e') {
-      if (near3DChar) {
-        show3DCharPopup(near3DChar);
+      if (nearGif) {
+        showGifPopup(nearGif);
       } else if (nearCard) {
         showCardPopup(nearCard);
       } else if (nearCharacter) {
@@ -569,7 +597,7 @@ input:focus { outline:none; border-color:var(--gold); }
   
   canvas.addEventListener('touchend', e => {
     touchControls = { left: false, right: false, up: false, down: false };
-    if (near3DChar) show3DCharPopup(near3DChar);
+    if (nearGif) showGifPopup(nearGif);
     else if (nearCard) showCardPopup(nearCard);
     else if (nearCharacter) showCharacterPopup(nearCharacter);
   });
@@ -652,51 +680,51 @@ input:focus { outline:none; border-color:var(--gold); }
     return { dist: Math.abs(dist), side, mapX, mapY };
   }
 
-  // ========== DRAW 3D CHARACTERS PROFESSIONAL ==========
+  // ========== DRAW 3D CHARACTERS WITH GIF SUPPORT ==========
   let time = 0;
 
-  function drawProfessional3DChar(screenX, charY, size, charData) {
+  function draw3DCharacter(screenX, charY, size, charData) {
     const floatOffset = Math.sin(time * 1.2 + charData.x * 2.5) * 6;
     const yPos = charY + floatOffset;
-    const rotY = Math.sin(time * 0.5 + charData.x) * 0.1;
     
     ctx.save();
     ctx.translate(screenX, yPos);
 
-    // --- Shadow ---
+    // Shadow
     ctx.fillStyle = 'rgba(0,0,0,0.4)';
     ctx.beginPath();
     ctx.ellipse(0, size * 0.5, size * 0.35, size * 0.08, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // --- Glow effect ---
-    if (charData.isLegendary || charData.is3D) {
-      const glowColor = charData.isLegendary ? 'rgba(255,107,53,' : 'rgba(0,212,255,';
-      const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.3);
-      glow.addColorStop(0, glowColor + '0.3)');
-      glow.addColorStop(0.5, glowColor + '0.1)');
-      glow.addColorStop(1, glowColor + '0)');
-      ctx.fillStyle = glow;
-      ctx.beginPath();
-      ctx.arc(0, 0, size * 1.3, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    // Glow effect based on type
+    let glowColor = 'rgba(255,215,0,';
+    if (charData.isGif) glowColor = 'rgba(255,0,128,';
+    else if (charData.isLegendary) glowColor = 'rgba(255,107,53,';
+    
+    const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.3);
+    glow.addColorStop(0, glowColor + '0.3)');
+    glow.addColorStop(0.5, glowColor + '0.1)');
+    glow.addColorStop(1, glowColor + '0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 1.3, 0, Math.PI * 2);
+    ctx.fill();
 
-    // --- 3D Body (Humanoid shape) ---
+    // Body
     const bodyGrad = ctx.createRadialGradient(
       -size * 0.1, -size * 0.2, 0,
       0, 0, size * 0.5
     );
-    if (charData.isLegendary) {
+    if (charData.isGif) {
+      bodyGrad.addColorStop(0, '#ff4d8a');
+      bodyGrad.addColorStop(0.4, '#ff0080');
+      bodyGrad.addColorStop(0.8, '#cc0066');
+      bodyGrad.addColorStop(1, '#99004d');
+    } else if (charData.isLegendary) {
       bodyGrad.addColorStop(0, '#ff8a5c');
       bodyGrad.addColorStop(0.4, '#ff6b35');
       bodyGrad.addColorStop(0.8, '#e0552a');
       bodyGrad.addColorStop(1, '#cc4a1a');
-    } else if (charData.is3D) {
-      bodyGrad.addColorStop(0, '#4a8ae0');
-      bodyGrad.addColorStop(0.3, '#3a7ad0');
-      bodyGrad.addColorStop(0.7, '#2a5ab0');
-      bodyGrad.addColorStop(1, '#1a3a90');
     } else {
       bodyGrad.addColorStop(0, '#4a6a8a');
       bodyGrad.addColorStop(0.4, '#3a5a7a');
@@ -704,31 +732,35 @@ input:focus { outline:none; border-color:var(--gold); }
       bodyGrad.addColorStop(1, '#1a3a5a');
     }
     ctx.fillStyle = bodyGrad;
-    ctx.shadowColor = charData.isLegendary ? 'rgba(255,107,53,0.4)' : 'rgba(0,212,255,0.3)';
-    ctx.shadowBlur = charData.isLegendary ? 40 : 20;
-
-    // Body (torso + head)
+    ctx.shadowColor = charData.isGif ? 'rgba(255,0,128,0.4)' : 
+                     charData.isLegendary ? 'rgba(255,107,53,0.4)' : 'rgba(0,0,0,0.3)';
+    ctx.shadowBlur = charData.isGif ? 40 : 30;
     ctx.beginPath();
     ctx.ellipse(0, size * 0.05, size * 0.4, size * 0.45, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.shadowBlur = 0;
 
-    // Head (slightly above)
-    ctx.fillStyle = charData.isLegendary ? '#ffb08a' : '#c8d8e8';
+    // Head
+    ctx.fillStyle = charData.isGif ? '#ff6b9d' : '#c8d8e8';
     ctx.beginPath();
     ctx.arc(0, -size * 0.25, size * 0.25, 0, Math.PI * 2);
     ctx.fill();
 
-    // Hair/helmet accent
-    ctx.fillStyle = charData.isLegendary ? '#ff6b35' : '#00d4ff';
-    ctx.globalAlpha = 0.6;
-    ctx.beginPath();
-    ctx.arc(0, -size * 0.3, size * 0.2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.globalAlpha = 1;
+    // GIF animation badge
+    if (charData.isGif) {
+      ctx.fillStyle = 'rgba(255,0,128,0.3)';
+      ctx.beginPath();
+      ctx.arc(0, -size * 0.3, size * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold ' + Math.floor(size * 0.06) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🎬', 0, -size * 0.3);
+    }
 
-    // --- Character face/image ---
-    const img = loadedImages[charData.fileId] || loadedCardImages[charData.id];
+    // Character face/image (GIF support)
+    const img = loadedImages[charData.fileId] || loadedGifs[charData.id] || loadedCardImages[charData.id];
     if (img && img.complete) {
       ctx.save();
       ctx.beginPath();
@@ -738,42 +770,10 @@ input:focus { outline:none; border-color:var(--gold); }
       ctx.restore();
     }
 
-    // --- Shoulder armor / accents ---
-    if (charData.is3D || charData.isLegendary) {
-      const accentColor = charData.isLegendary ? '#ffd700' : '#00d4ff';
-      ctx.strokeStyle = accentColor;
-      ctx.lineWidth = 2;
-      ctx.globalAlpha = 0.5;
-      // Left shoulder
-      ctx.beginPath();
-      ctx.arc(-size * 0.32, -size * 0.1, size * 0.1, 0, Math.PI * 2);
-      ctx.stroke();
-      // Right shoulder
-      ctx.beginPath();
-      ctx.arc(size * 0.32, -size * 0.1, size * 0.1, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.globalAlpha = 1;
-    }
-
-    // --- Energy aura lines (3D effect) ---
-    if (charData.is3D) {
-      ctx.strokeStyle = 'rgba(0,212,255,0.3)';
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 5]);
-      for (let i = 0; i < 3; i++) {
-        const angle = time * 0.5 + i * 2.1;
-        const dist = size * 0.5 + Math.sin(time + i) * size * 0.1;
-        ctx.beginPath();
-        ctx.arc(0, 0, dist, angle, angle + 0.3);
-        ctx.stroke();
-      }
-      ctx.setLineDash([]);
-    }
-
-    // --- Border ring ---
-    ctx.strokeStyle = charData.isLegendary ? '#ffd700' : 
-                     charData.is3D ? '#00d4ff' : '#4a8a6a';
-    ctx.lineWidth = charData.isLegendary ? 4 : charData.is3D ? 3 : 2;
+    // Border ring
+    ctx.strokeStyle = charData.isGif ? '#ff0080' : 
+                     charData.isLegendary ? '#ffd700' : '#4a8a6a';
+    ctx.lineWidth = charData.isGif ? 4 : 3;
     const ringPhase = Math.sin(time * 2 + charData.x) * 0.1 + 0.9;
     ctx.globalAlpha = ringPhase;
     ctx.beginPath();
@@ -781,7 +781,7 @@ input:focus { outline:none; border-color:var(--gold); }
     ctx.stroke();
     ctx.globalAlpha = 1;
 
-    // --- Name tag ---
+    // Name tag
     ctx.shadowColor = 'rgba(0,0,0,0.8)';
     ctx.shadowBlur = 8;
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -789,14 +789,14 @@ input:focus { outline:none; border-color:var(--gold); }
     ctx.fillRect(-size * 0.35, nameY - size * 0.08, size * 0.7, size * 0.16);
     ctx.shadowBlur = 0;
     
-    ctx.fillStyle = charData.isLegendary ? '#ffd700' : 
-                   charData.is3D ? '#00d4ff' : '#fff';
+    ctx.fillStyle = charData.isGif ? '#ff0080' : 
+                   charData.isLegendary ? '#ffd700' : '#fff';
     ctx.font = 'bold ' + Math.floor(size * 0.1) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(charData.name || charData.title || '??', 0, nameY + 2);
 
-    // --- Class badge ---
+    // Class badge
     if (charData.class) {
       ctx.fillStyle = 'rgba(0,0,0,0.5)';
       ctx.fillRect(-size * 0.25, size * 0.52, size * 0.5, size * 0.07);
@@ -807,21 +807,21 @@ input:focus { outline:none; border-color:var(--gold); }
       ctx.fillText(charData.class.substring(0, 12), 0, size * 0.555);
     }
 
-    // --- HP/Energy bar ---
+    // HP/Energy bar
     const barY = size * 0.45;
     ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.fillRect(-size * 0.3, barY, size * 0.6, size * 0.05);
     
     const hpPercent = (charData.attack || 80) / 100;
     const hpGrad = ctx.createLinearGradient(-size * 0.3, 0, size * 0.3, 0);
-    if (charData.isLegendary) {
+    if (charData.isGif) {
+      hpGrad.addColorStop(0, '#ff0080');
+      hpGrad.addColorStop(0.5, '#ff6b9d');
+      hpGrad.addColorStop(1, '#ff0080');
+    } else if (charData.isLegendary) {
       hpGrad.addColorStop(0, '#ff6b35');
       hpGrad.addColorStop(0.5, '#ffd700');
       hpGrad.addColorStop(1, '#ff6b35');
-    } else if (charData.is3D) {
-      hpGrad.addColorStop(0, '#00d4ff');
-      hpGrad.addColorStop(0.5, '#4ade80');
-      hpGrad.addColorStop(1, '#00d4ff');
     } else {
       hpGrad.addColorStop(0, '#4ade80');
       hpGrad.addColorStop(1, '#22c55e');
@@ -829,15 +829,23 @@ input:focus { outline:none; border-color:var(--gold); }
     ctx.fillStyle = hpGrad;
     ctx.fillRect(-size * 0.3, barY, size * 0.6 * hpPercent, size * 0.05);
     
-    // HP text
     ctx.fillStyle = '#fff';
     ctx.font = Math.floor(size * 0.04) + 'px sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(Math.floor(hpPercent * 100) + '%', 0, barY + size * 0.025);
 
-    // --- Rarity badge ---
-    if (charData.isLegendary) {
+    // Rarity/GIF badge
+    if (charData.isGif) {
+      ctx.fillStyle = '#ff0080';
+      ctx.font = 'bold ' + Math.floor(size * 0.06) + 'px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
+      ctx.shadowBlur = 6;
+      ctx.fillText('🎬 GIF', 0, size * 0.65);
+      ctx.shadowBlur = 0;
+    } else if (charData.isLegendary) {
       ctx.fillStyle = '#ff6b35';
       ctx.font = 'bold ' + Math.floor(size * 0.06) + 'px sans-serif';
       ctx.textAlign = 'center';
@@ -846,31 +854,19 @@ input:focus { outline:none; border-color:var(--gold); }
       ctx.shadowBlur = 6;
       ctx.fillText('⭐ LEGENDARY', 0, size * 0.65);
       ctx.shadowBlur = 0;
-    } else if (charData.is3D) {
-      ctx.fillStyle = '#00d4ff';
-      ctx.font = 'bold ' + Math.floor(size * 0.055) + 'px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'top';
-      ctx.shadowColor = 'rgba(0,0,0,0.8)';
-      ctx.shadowBlur = 6;
-      ctx.fillText('🎮 3D PRO', 0, size * 0.65);
-      ctx.shadowBlur = 0;
     }
 
     ctx.restore();
 
-    // --- Floating particles ---
-    if ((charData.isLegendary || charData.is3D) && Math.random() < 0.08) {
+    // Floating particles for GIF characters
+    if (charData.isGif && Math.random() < 0.12) {
       const angle = Math.random() * Math.PI * 2;
       const dist = size * 0.6 + Math.random() * size * 0.3;
-      const color = charData.isLegendary ? 
-        ['#ff6b35', '#ffd700', '#ff8a5c'][Math.floor(Math.random() * 3)] :
-        ['#00d4ff', '#4ade80', '#60a5fa'][Math.floor(Math.random() * 3)];
       createParticles(
         (screenX + Math.cos(angle) * dist) / 20,
         (yPos + Math.sin(angle) * dist) / 20,
         1,
-        color
+        ['#ff0080', '#ff6b9d', '#ff4d8a'][Math.floor(Math.random() * 3)]
       );
     }
   }
@@ -940,13 +936,13 @@ input:focus { outline:none; border-color:var(--gold); }
 
     ctx.putImageData(imgData, 0, 0);
 
-    // Draw all characters in order
-    const allChars = [...cardsData, ...characters, ...characters3D];
+    // Draw all characters
+    const allChars = [...cardsData, ...characters, ...gifCharacters];
     
-    near3DChar = null;
+    nearGif = null;
     nearCard = null;
     nearCharacter = null;
-    let nearest3DDist = Infinity;
+    let nearestGifDist = Infinity;
     let nearestCardDist = Infinity;
     let nearestCharDist = Infinity;
 
@@ -956,13 +952,13 @@ input:focus { outline:none; border-color:var(--gold); }
       const dy = char.y - player.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      if (char.is3D && dist < 2.5 && dist < nearest3DDist) {
-        nearest3DDist = dist;
-        near3DChar = char;
+      if (char.isGif && dist < 2.5 && dist < nearestGifDist) {
+        nearestGifDist = dist;
+        nearGif = char;
       } else if (char.isLegendary && dist < 2.5 && dist < nearestCardDist) {
         nearestCardDist = dist;
         nearCard = char;
-      } else if (!char.is3D && !char.isLegendary && dist < 2.0 && dist < nearestCharDist) {
+      } else if (!char.isGif && !char.isLegendary && dist < 2.0 && dist < nearestCharDist) {
         nearestCharDist = dist;
         nearCharacter = char;
       }
@@ -979,23 +975,22 @@ input:focus { outline:none; border-color:var(--gold); }
         
         ctx.save();
         ctx.globalAlpha = 1 - fog;
-        drawProfessional3DChar(screenX, h / 2, size, char);
+        draw3DCharacter(screenX, h / 2, size, char);
         ctx.restore();
       }
     }
 
-    // Draw particles
     drawParticles();
 
     // Interaction hint
-    if (near3DChar) {
+    if (nearGif) {
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
       ctx.fillRect(w / 2 - 140, h - 50, 280, 30);
-      ctx.fillStyle = '#00d4ff';
+      ctx.fillStyle = '#ff0080';
       ctx.font = 'bold 13px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('🎮 اضغط E لفتح ' + (near3DChar.name || near3DChar.title), w / 2, h - 35);
+      ctx.fillText('🎬 اضغط E لفتح ' + (nearGif.name || nearGif.title), w / 2, h - 35);
     } else if (nearCard) {
       ctx.fillStyle = 'rgba(0,0,0,0.7)';
       ctx.fillRect(w / 2 - 130, h - 50, 260, 30);
@@ -1048,15 +1043,15 @@ input:focus { outline:none; border-color:var(--gold); }
       }
     }
     
-    const allChars = [...cardsData, ...characters, ...characters3D];
+    const allChars = [...cardsData, ...characters, ...gifCharacters];
     for (const char of allChars) {
       if (char.x && char.y) {
-        if (char.is3D) {
-          minimapCtx.fillStyle = '#00d4ff';
+        if (char.isGif) {
+          minimapCtx.fillStyle = '#ff0080';
           minimapCtx.beginPath();
           minimapCtx.arc(char.x * s, char.y * s, 5, 0, Math.PI * 2);
           minimapCtx.fill();
-          minimapCtx.strokeStyle = '#4ade80';
+          minimapCtx.strokeStyle = '#ff6b9d';
           minimapCtx.lineWidth = 1;
           minimapCtx.beginPath();
           minimapCtx.arc(char.x * s, char.y * s, 7, 0, Math.PI * 2);
@@ -1156,6 +1151,7 @@ input:focus { outline:none; border-color:var(--gold); }
         document.getElementById('conn-dot').classList.remove('offline');
         document.getElementById('conn-text').textContent = 'متصل';
         document.getElementById('sync-btn').disabled = false;
+        document.getElementById('sync-gif-btn').disabled = false;
         setStatus('✅ متصل بـ @' + data.result.username, 'success');
       } else {
         setStatus('❌ خطأ: ' + data.description, 'error');
@@ -1165,9 +1161,153 @@ input:focus { outline:none; border-color:var(--gold); }
     }
   }
 
+  // ========== FETCH GIFS FROM TELEGRAM ==========
+  async function fetchGifsFromChannel() {
+    if (!connected) { setStatus('يرجى الاتصال أولاً', 'warning'); return; }
+    setStatus('جاري جلب صور GIF المتحركة...', 'info');
+    try {
+      const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=100&offset=' + (lastUpdateId + 1));
+      const data = await res.json();
+      if (!data.ok) { setStatus('❌ خطأ: ' + data.description, 'error'); return; }
+
+      let newGifs = 0;
+      for (const update of data.result || []) {
+        lastUpdateId = Math.max(lastUpdateId, update.update_id);
+        const msg = update.channel_post || update.message;
+        if (!msg) continue;
+
+        // Check for animation (GIF) or document (GIF file)
+        let fileId = null;
+        let isGif = false;
+        let imageUrl = '';
+        let mimeType = '';
+
+        if (msg.animation) {
+          fileId = msg.animation.file_id;
+          isGif = true;
+          mimeType = 'image/gif';
+        } else if (msg.document && msg.document.mime_type === 'image/gif') {
+          fileId = msg.document.file_id;
+          isGif = true;
+          mimeType = 'image/gif';
+        }
+
+        if (!isGif || !fileId) continue;
+
+        const caption = msg.caption || '';
+        const nameMatch = caption.match(/(?:اسم|name|character)[\s:]*([^\n]+)/i);
+        const titleMatch = caption.match(/(?:عنوان|title)[\s:]*([^\n]+)/i);
+        const descMatch = caption.match(/(?:وصف|description|desc)[\s:]*([^\n]+)/i);
+        const attackMatch = caption.match(/(?:هجوم|attack)[\s:]*(\d+)/i);
+        const defenseMatch = caption.match(/(?:دفاع|defense)[\s:]*(\d+)/i);
+
+        if (gifCharacters.some(g => g.fileId === fileId)) continue;
+
+        // Get file URL
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        if (fileData.ok && fileData.result.file_path) {
+          imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+        }
+
+        const name = nameMatch ? nameMatch[1].trim() : (titleMatch ? titleMatch[1].trim() : 'شخصية GIF #' + (gifCharacters.length + 1));
+        const desc = descMatch ? descMatch[1].trim() : 'شخصية متحركة بتقنية GIF';
+        const attack = attackMatch ? parseInt(attackMatch[1]) : Math.floor(Math.random() * 40) + 60;
+        const defense = defenseMatch ? parseInt(defenseMatch[1]) : Math.floor(Math.random() * 40) + 60;
+
+        let ax = 0, ay = 0, attempts = 0;
+        do {
+          ax = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+          ay = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+          attempts++;
+        } while ((map[ay][ax] !== 0 || 
+          gifCharacters.some(g => Math.abs(g.x - ax) < 2 && Math.abs(g.y - ay) < 2) ||
+          characters.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2) ||
+          cardsData.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2)) && attempts < 50);
+
+        const gifChar = {
+          id: 'gif_' + fileId,
+          fileId: fileId,
+          name: name,
+          title: name,
+          desc: desc,
+          attack: attack,
+          defense: defense,
+          energy: Math.floor(Math.random() * 30) + 70,
+          speed: Math.floor(Math.random() * 30) + 70,
+          imageUrl: imageUrl,
+          x: ax + 0.5,
+          y: ay + 0.5,
+          msgId: msg.message_id,
+          date: new Date(msg.date * 1000).toISOString(),
+          class: 'GIF Character',
+          isGif: true,
+          isLegendary: false
+        };
+
+        gifCharacters.push(gifChar);
+
+        // Load GIF image
+        if (imageUrl) {
+          const img = new Image();
+          img.crossOrigin = 'anonymous';
+          img.onload = () => { loadedGifs[gifChar.id] = img; };
+          img.src = imageUrl;
+        }
+
+        newGifs++;
+        addGifToList(gifChar);
+        createParticles(ax + 0.5, ay + 0.5, 30, '#ff0080');
+        createParticles(ax + 0.5, ay + 0.5, 20, '#ff6b9d');
+      }
+
+      document.getElementById('gif-count').textContent = gifCharacters.length;
+      document.getElementById('gif-count-stat').textContent = gifCharacters.length;
+      document.getElementById('gif-badge').textContent = gifCharacters.length;
+      
+      if (newGifs > 0) {
+        setStatus('✅ تم جلب ' + newGifs + ' شخصية GIF متحركة', 'success');
+        score += newGifs * 75;
+        document.getElementById('score').textContent = score;
+      } else {
+        setStatus('📭 لا توجد صور GIF جديدة في القناة', 'info');
+      }
+    } catch (e) {
+      setStatus('❌ خطأ: ' + e.message, 'error');
+    }
+  }
+
+  function addGifToList(gifChar) {
+    const list = document.getElementById('gif-list');
+    if (list.children.length === 1 && list.children[0].textContent.includes('اتصل')) {
+      list.innerHTML = '';
+    }
+    const div = document.createElement('div');
+    div.className = 'gif-item';
+    div.innerHTML = `
+      <span class="time">${new Date(gifChar.date).toLocaleTimeString('ar-EG')}</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <img src="${gifChar.imageUrl || ''}" onerror="this.style.display='none'" alt="">
+        <div style="flex:1;">
+          <div class="gif-title">🎬 ${gifChar.name}</div>
+          <div class="gif-desc">${gifChar.desc.substring(0, 40)}${gifChar.desc.length > 40 ? '...' : ''}</div>
+          <div style="display:flex; gap:10px; font-size:10px; color:#888; margin-top:2px;">
+            <span>⚔️ ${gifChar.attack}</span>
+            <span>🛡️ ${gifChar.defense}</span>
+            <span style="color:var(--gif-glow);">🎬 GIF</span>
+          </div>
+        </div>
+      </div>
+    `;
+    div.onclick = () => showGifPopup(gifChar);
+    list.insertBefore(div, list.firstChild);
+    if (list.children.length > 30) list.removeChild(list.lastChild);
+  }
+
+  // ========== FETCH IMAGES FROM TELEGRAM ==========
   async function fetchCharactersFromChannel() {
     if (!connected) { setStatus('يرجى الاتصال أولاً', 'warning'); return; }
-    setStatus('جاري جلب شخصيات الأنمي...', 'info');
+    setStatus('جاري جلب صور الأنمي...', 'info');
     try {
       const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=100&offset=' + (lastUpdateId + 1));
       const data = await res.json();
@@ -1178,6 +1318,9 @@ input:focus { outline:none; border-color:var(--gold); }
         lastUpdateId = Math.max(lastUpdateId, update.update_id);
         const msg = update.channel_post || update.message;
         if (!msg) continue;
+
+        // Skip if it's a GIF (animation or document)
+        if (msg.animation || (msg.document && msg.document.mime_type === 'image/gif')) continue;
 
         if (msg.photo && msg.photo.length > 0) {
           const photo = msg.photo[msg.photo.length - 1];
@@ -1213,8 +1356,8 @@ input:focus { outline:none; border-color:var(--gold); }
             attempts++;
           } while ((map[ay][ax] !== 0 || 
             characters.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2) ||
-            cardsData.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2) ||
-            characters3D.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2)) && attempts < 50);
+            gifCharacters.some(g => Math.abs(g.x - ax) < 2 && Math.abs(g.y - ay) < 2) ||
+            cardsData.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2)) && attempts < 50);
 
           const character = {
             fileId,
@@ -1232,7 +1375,7 @@ input:focus { outline:none; border-color:var(--gold); }
             msgId: msg.message_id,
             date: new Date(msg.date * 1000).toISOString(),
             class: 'Anime Character',
-            is3D: false,
+            isGif: false,
             isLegendary: false
           };
           characters.push(character);
@@ -1258,7 +1401,7 @@ input:focus { outline:none; border-color:var(--gold); }
         score += newChars * 50;
         document.getElementById('score').textContent = score;
       } else {
-        setStatus('📭 لا توجد شخصيات جديدة', 'info');
+        setStatus('📭 لا توجد صور جديدة', 'info');
       }
     } catch (e) {
       setStatus('❌ خطأ: ' + e.message, 'error');
@@ -1292,68 +1435,6 @@ input:focus { outline:none; border-color:var(--gold); }
     if (list.children.length > 30) list.removeChild(list.lastChild);
   }
 
-  // ========== 3D CHARACTER FUNCTIONS ==========
-  function add3DCharacter(charData) {
-    let ax = 0, ay = 0, attempts = 0;
-    do {
-      ax = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
-      ay = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
-      attempts++;
-    } while ((map[ay][ax] !== 0 || 
-      characters3D.some(c => Math.abs(c.x - ax) < 3 && Math.abs(c.y - ay) < 3) ||
-      cardsData.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2) ||
-      characters.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2)) && attempts < 50);
-
-    const newChar = {
-      ...charData,
-      x: ax + 0.5,
-      y: ay + 0.5,
-      date: new Date().toISOString(),
-      is3D: true,
-      fileId: charData.id
-    };
-    characters3D.push(newChar);
-    
-    // Load image
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => { loadedImages[newChar.fileId] = img; };
-    img.src = newChar.imageUrl;
-    
-    add3DCharToList(newChar);
-    document.getElementById('char-3d-count').textContent = characters3D.length;
-    createParticles(ax + 0.5, ay + 0.5, 30, '#00d4ff');
-    createParticles(ax + 0.5, ay + 0.5, 20, '#4ade80');
-    
-    score += 100;
-    document.getElementById('score').textContent = score;
-    setStatus('🎮 تم إضافة شخصية 3D: ' + newChar.name, 'success');
-  }
-
-  function add3DCharToList(char) {
-    const list = document.getElementById('cards-list');
-    if (list.children.length === 1 && list.children[0].textContent.includes('اضغط')) {
-      list.innerHTML = '';
-    }
-    const div = document.createElement('div');
-    div.className = 'card-item';
-    div.style.borderRightColor = '#00d4ff';
-    div.style.background = 'rgba(0,212,255,0.08)';
-    div.innerHTML = `
-      <span class="time">${new Date(char.date).toLocaleTimeString('ar-EG')}</span>
-      <div style="display:flex; align-items:center; gap:8px;">
-        <img src="${char.imageUrl}" onerror="this.style.display='none'" alt="">
-        <div style="flex:1;">
-          <div class="card-title" style="color:var(--neon-blue);">🎮 ${char.name}</div>
-          <div class="card-desc">${char.class}</div>
-          <div style="font-size:10px; color:var(--neon-blue); margin-top:2px;">⚔️ ${char.attack} 🛡️ ${char.defense} ⚡ ${char.energy}</div>
-        </div>
-      </div>
-    `;
-    div.onclick = () => show3DCharPopup(char);
-    list.insertBefore(div, list.firstChild);
-  }
-
   // ========== CARD FUNCTIONS ==========
   function addLegendaryCard() {
     if (cardsData.some(c => c.id === legendaryCard.id)) {
@@ -1369,7 +1450,7 @@ input:focus { outline:none; border-color:var(--gold); }
     } while ((map[ay][ax] !== 0 || 
       cardsData.some(c => Math.abs(c.x - ax) < 3 && Math.abs(c.y - ay) < 3) || 
       characters.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2) ||
-      characters3D.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2)) && attempts < 50);
+      gifCharacters.some(g => Math.abs(g.x - ax) < 2 && Math.abs(g.y - ay) < 2)) && attempts < 50);
 
     const card = {
       ...legendaryCard,
@@ -1419,6 +1500,49 @@ input:focus { outline:none; border-color:var(--gold); }
     list.insertBefore(div, list.firstChild);
   }
 
+  // ========== ADD DEMO GIF ==========
+  function addDemoGif() {
+    const gif = demoGifs[Math.floor(Math.random() * demoGifs.length)];
+    
+    let ax = 0, ay = 0, attempts = 0;
+    do {
+      ax = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+      ay = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+      attempts++;
+    } while ((map[ay][ax] !== 0 || 
+      gifCharacters.some(g => Math.abs(g.x - ax) < 2 && Math.abs(g.y - ay) < 2) ||
+      characters.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2) ||
+      cardsData.some(c => Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2)) && attempts < 50);
+
+    const newGif = {
+      ...gif,
+      x: ax + 0.5,
+      y: ay + 0.5,
+      date: new Date().toISOString(),
+      fileId: gif.id
+    };
+
+    gifCharacters.push(newGif);
+    
+    // Load GIF image
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => { loadedGifs[newGif.id] = img; };
+    img.src = newGif.imageUrl;
+    
+    addGifToList(newGif);
+    document.getElementById('gif-count').textContent = gifCharacters.length;
+    document.getElementById('gif-count-stat').textContent = gifCharacters.length;
+    document.getElementById('gif-badge').textContent = gifCharacters.length;
+    
+    createParticles(ax + 0.5, ay + 0.5, 40, '#ff0080');
+    createParticles(ax + 0.5, ay + 0.5, 30, '#ff6b9d');
+    
+    score += 75;
+    document.getElementById('score').textContent = score;
+    setStatus('🎬 تم إضافة شخصية GIF: ' + newGif.name, 'success');
+  }
+
   // ========== POPUPS ==========
   function showCharacterPopup(character) {
     const popup = document.getElementById('anime-popup');
@@ -1457,22 +1581,22 @@ input:focus { outline:none; border-color:var(--gold); }
     popup.classList.add('show');
   }
 
-  function show3DCharPopup(char) {
-    const popup = document.getElementById('card-popup');
-    document.getElementById('card-popup-img').src = char.imageUrl || '';
-    document.getElementById('card-popup-name').textContent = '🎮 ' + char.name;
-    document.getElementById('card-popup-rarity').textContent = '🎮 3D Model Character';
+  function showGifPopup(gifChar) {
+    const popup = document.getElementById('gif-popup');
+    document.getElementById('gif-popup-img').src = gifChar.imageUrl || '';
+    document.getElementById('gif-popup-name').textContent = '🎬 ' + gifChar.name;
+    document.getElementById('gif-popup-rarity').textContent = '🎬 شخصية متحركة GIF';
     
     const statsHtml = `
-      <div class="stat-item"><span class="stat-label">⚔️ الهجوم</span><span class="stat-value">${char.attack}/100</span></div>
-      <div class="stat-item"><span class="stat-label">🛡️ الدفاع</span><span class="stat-value">${char.defense}/100</span></div>
-      <div class="stat-item"><span class="stat-label">⚡ الطاقة</span><span class="stat-value">${char.energy}/100</span></div>
-      <div class="stat-item"><span class="stat-label">🏃 السرعة</span><span class="stat-value">${char.speed}/100</span></div>
-      <div class="stat-item"><span class="stat-label">📐 الأبعاد</span><span class="stat-value">3D Professional</span></div>
+      <div class="stat-item"><span class="stat-label">⚔️ الهجوم</span><span class="stat-value">${gifChar.attack}/100</span></div>
+      <div class="stat-item"><span class="stat-label">🛡️ الدفاع</span><span class="stat-value">${gifChar.defense}/100</span></div>
+      <div class="stat-item"><span class="stat-label">⚡ الطاقة</span><span class="stat-value">${gifChar.energy}/100</span></div>
+      <div class="stat-item"><span class="stat-label">🏃 السرعة</span><span class="stat-value">${gifChar.speed}/100</span></div>
+      <div class="stat-item"><span class="stat-label">🎬 النوع</span><span class="stat-value">GIF متحركة</span></div>
     `;
-    document.getElementById('card-popup-stats').innerHTML = statsHtml;
-    document.getElementById('card-popup-quote').textContent = '🎮 نموذج ثلاثي الأبعاد احترافي';
-    document.getElementById('card-popup-class').textContent = '🏷️ ' + char.class;
+    document.getElementById('gif-popup-stats').innerHTML = statsHtml;
+    document.getElementById('gif-popup-quote').textContent = '🎬 شخصية متحركة بتقنية GIF';
+    document.getElementById('gif-popup-class').textContent = '🏷️ ' + gifChar.class;
     
     popup.classList.add('show');
   }
@@ -1485,6 +1609,10 @@ input:focus { outline:none; border-color:var(--gold); }
     document.getElementById('card-popup').classList.remove('show');
   };
 
+  window.closeGifPopup = function() {
+    document.getElementById('gif-popup').classList.remove('show');
+  };
+
   function setStatus(msg, type) {
     const el = document.getElementById('conn-status');
     el.textContent = msg;
@@ -1494,39 +1622,39 @@ input:focus { outline:none; border-color:var(--gold); }
   // ========== BUTTONS ==========
   document.getElementById('connect-btn').addEventListener('click', testConnection);
   document.getElementById('sync-btn').addEventListener('click', fetchCharactersFromChannel);
+  document.getElementById('sync-gif-btn').addEventListener('click', fetchGifsFromChannel);
+  document.getElementById('add-card-btn').addEventListener('click', addLegendaryCard);
+  document.getElementById('add-gif-btn').addEventListener('click', addDemoGif);
+  
   document.getElementById('clear-btn').addEventListener('click', () => {
     characters = [];
     loadedImages = {};
     cardsData = [];
-    characters3D = [];
+    gifCharacters = [];
+    loadedGifs = {};
     loadedCardImages = {};
     particles = [];
     document.getElementById('anime-list').innerHTML = '<div style="color:#888; text-align:center; padding:20px 0;">تم المسح. اتصل بالقناة للجلب من جديد.</div>';
-    document.getElementById('cards-list').innerHTML = '<div style="color:#888; text-align:center; padding:20px 0;">اضغط "إضافة شخصية KAITO" أو "إضافة شخصية 3D"</div>';
+    document.getElementById('cards-list').innerHTML = '<div style="color:#888; text-align:center; padding:20px 0;">اضغط "إضافة شخصية KAITO"</div>';
+    document.getElementById('gif-list').innerHTML = '<div style="color:#888; text-align:center; padding:20px 0;">اتصل بالقناة ثم اضغط "جلب GIF متحركة"</div>';
     document.getElementById('char-count').textContent = '0';
     document.getElementById('char-count-stat').textContent = '0';
     document.getElementById('anime-badge').textContent = '0';
     document.getElementById('card-count-stat').textContent = '0';
     document.getElementById('card-badge').textContent = '0';
-    document.getElementById('char-3d-count').textContent = '0';
+    document.getElementById('gif-count').textContent = '0';
+    document.getElementById('gif-count-stat').textContent = '0';
+    document.getElementById('gif-badge').textContent = '0';
     document.getElementById('score').textContent = '0';
     setStatus('تم مسح جميع الشخصيات', 'info');
-  });
-
-  document.getElementById('add-card-btn').addEventListener('click', addLegendaryCard);
-  
-  document.getElementById('add-3d-char-btn').addEventListener('click', () => {
-    const char = professional3DChars[Math.floor(Math.random() * professional3DChars.length)];
-    add3DCharacter(char);
   });
 
   // ========== DEMO DATA ==========
   function loadDemoData() {
     // شخصيات أنمي تجريبية
     const demoChars = [
-      { title: 'ناروتو', desc: 'نينجا من قرية الورق المخفية', rating: 9.5, fileId: 'demo1', x: 5.5, y: 5.5, attack: 85, defense: 70, energy: 80, speed: 90, imageUrl: 'https://i.ibb.co/9cLqVnY/naruto.png', date: new Date().toISOString(), class: 'Ninja', is3D: false, isLegendary: false },
-      { title: 'سايتاما', desc: 'أقوى بطل في العالم', rating: 9.9, fileId: 'demo2', x: 10.5, y: 8.5, attack: 99, defense: 95, energy: 98, speed: 85, imageUrl: 'https://i.ibb.co/J3kC8YQ/saitama.png', date: new Date().toISOString(), class: 'Hero', is3D: false, isLegendary: false },
-      { title: 'لوفي', desc: 'قرصان يبحث عن الكنز الأسطوري', rating: 9.0, fileId: 'demo3', x: 15.5, y: 12.5, attack: 88, defense: 75, energy: 85, speed: 92, imageUrl: 'https://i.ibb.co/2gYzRw9/luffy.png', date: new Date().toISOString(), class: 'Pirate', is3D: false, isLegendary: false },
+      { title: 'ناروتو', desc: 'نينجا من قرية الورق المخفية', rating: 9.5, fileId: 'demo1', x: 5.5, y: 5.5, attack: 85, defense: 70, energy: 80, speed: 90, imageUrl: 'https://i.ibb.co/9cLqVnY/naruto.png', date: new Date().toISOString(), class: 'Ninja', isGif: false, isLegendary: false },
+      { title: 'سايتاما', desc: 'أقوى بطل في العالم', rating: 9.9, fileId: 'demo2', x: 10.5, y: 8.5, attack: 99, defense: 95, energy: 98, speed: 85, imageUrl: 'https://i.ibb.co/J3kC8YQ/saitama.png', date: new Date().toISOString(), class: 'Hero', isGif: false, isLegendary: false },
     ];
     for (const c of demoChars) {
       characters.push(c);
@@ -1540,14 +1668,14 @@ input:focus { outline:none; border-color:var(--gold); }
     document.getElementById('char-count-stat').textContent = characters.length;
     document.getElementById('anime-badge').textContent = characters.length;
 
-    // إضافة شخصيات 3D
-    setTimeout(() => {
-      add3DCharacter(professional3DChars[0]);
-    }, 1500);
-
     // إضافة الشخصية الأسطورية
     setTimeout(() => {
       addLegendaryCard();
+    }, 1500);
+
+    // إضافة GIF تجريبي
+    setTimeout(() => {
+      addDemoGif();
     }, 2000);
   }
 
