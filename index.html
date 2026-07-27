@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>شخصيتي من الملصقات</title>
+<title>شخصيتي في الوسط — كاميرا تابعة</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -97,11 +97,11 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <!-- START -->
 <div id="start-screen">
-  <div class="start-logo">🎨 شخصيتي من الملصقات</div>
-  <div class="start-subtitle">جلب تلقائي • شخصيتك تظهر فوراً</div>
+  <div class="start-logo">🎮 شخصيتي في الوسط</div>
+  <div class="start-subtitle">كاميرا تابعة • الخريطة تتحرك</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v12.0 | تلقائي + مشي</div>
+  <div class="version-tag">v13.0 | Follow Camera</div>
 </div>
 
 <!-- GAME -->
@@ -110,7 +110,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
   <div class="hud">
     <div class="player-bar">
-      <div class="label"><span>🎨 شخصيتي</span><span id="char-name">جاري التحميل...</span></div>
+      <div class="label"><span>🎯 شخصيتي</span><span id="char-name">جاري التحميل...</span></div>
     </div>
   </div>
 
@@ -161,7 +161,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  شخصيتي من الملصقات v12.0 — تلقائي
+//  شخصيتي في الوسط v13.0 — Follow Camera
 // ============================================================
 
 // ============================================================
@@ -253,14 +253,34 @@ function selectSkin(char) {
   document.getElementById('skin-selector').classList.remove('show');
 }
 
-// ============================================================
-//  AUTO SELECT FIRST STICKER
-// ============================================================
+function setTGStatus(msg, type) {
+  const el = document.getElementById('tg-status');
+  el.textContent = msg;
+  el.style.color = type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : '#888';
+}
+
+async function testTelegram() {
+  botToken = document.getElementById('bot-token').value.trim();
+  channelId = document.getElementById('chat-id').value.trim();
+  if (!botToken || !channelId) { setTGStatus('❌ ادخل البيانات', 'error'); return; }
+  setTGStatus('🔄 جاري...', '');
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getMe');
+    const data = await res.json();
+    if (data.ok) {
+      connected = true;
+      setTGStatus('✅ متصل بـ @' + data.result.username, 'success');
+      localStorage.setItem('nardo_bot_token', botToken);
+      localStorage.setItem('nardo_chat_id', channelId);
+      showToast('✅ تم الاتصال!', 'success');
+    } else {
+      setTGStatus('❌ ' + data.description, 'error');
+    }
+  } catch(e) { setTGStatus('❌ فشل الاتصال', 'error'); }
+}
 
 function autoSelectFirstSticker() {
     if (autoSelectDone) return;
-    
-    // البحث عن أول ملصق
     const stickers = fetchedCharacters.filter(c => c.isSticker);
     if (stickers.length > 0) {
         const firstSticker = stickers[0];
@@ -269,8 +289,6 @@ function autoSelectFirstSticker() {
         autoSelectDone = true;
         return true;
     }
-    
-    // إذا لم يوجد ملصق، جرب أي صورة
     if (fetchedCharacters.length > 0) {
         const firstChar = fetchedCharacters[0];
         showToast('🖼️ تم اختيار الصورة تلقائياً: ' + firstChar.name, 'success');
@@ -278,13 +296,8 @@ function autoSelectFirstSticker() {
         autoSelectDone = true;
         return true;
     }
-    
     return false;
 }
-
-// ============================================================
-//  جلب الملصقات مع اختيار تلقائي
-// ============================================================
 
 async function fetchStickersAuto() {
   if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
@@ -304,7 +317,6 @@ async function fetchStickersAuto() {
 
       let fileId = null, imageUrl = '';
 
-      // البحث عن الملصقات
       if (msg.sticker) {
         fileId = msg.sticker.file_id;
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
@@ -314,7 +326,6 @@ async function fetchStickersAuto() {
         }
       }
 
-      // البحث عن الصور
       if (!fileId && msg.photo && msg.photo.length > 0) {
         fileId = msg.photo[msg.photo.length - 1].file_id;
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
@@ -347,7 +358,6 @@ async function fetchStickersAuto() {
         img.crossOrigin = 'anonymous';
         img.onload = function() { 
           loadedImages[char.id] = img;
-          // إذا كان هذا أول ملصق ولم يتم الاختيار بعد
           if (isSticker && !autoSelectDone && fetchedCharacters.length === 1) {
             setTimeout(autoSelectFirstSticker, 300);
           }
@@ -361,8 +371,6 @@ async function fetchStickersAuto() {
       showCharGrid();
       renderSkinSelector();
       showToast('🎨 تم جلب ' + newChars + ' عنصر!', 'success');
-      
-      // اختيار تلقائي إذا لم يتم بعد
       if (!autoSelectDone) {
         setTimeout(autoSelectFirstSticker, 500);
       }
@@ -374,10 +382,6 @@ async function fetchStickersAuto() {
     console.error(e);
   }
 }
-
-// ============================================================
-//  جلب الصور العادية
-// ============================================================
 
 async function fetchImages() {
   if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
@@ -446,32 +450,6 @@ async function fetchImages() {
   }
 }
 
-function setTGStatus(msg, type) {
-  const el = document.getElementById('tg-status');
-  el.textContent = msg;
-  el.style.color = type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : '#888';
-}
-
-async function testTelegram() {
-  botToken = document.getElementById('bot-token').value.trim();
-  channelId = document.getElementById('chat-id').value.trim();
-  if (!botToken || !channelId) { setTGStatus('❌ ادخل البيانات', 'error'); return; }
-  setTGStatus('🔄 جاري...', '');
-  try {
-    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getMe');
-    const data = await res.json();
-    if (data.ok) {
-      connected = true;
-      setTGStatus('✅ متصل بـ @' + data.result.username, 'success');
-      localStorage.setItem('nardo_bot_token', botToken);
-      localStorage.setItem('nardo_chat_id', channelId);
-      showToast('✅ تم الاتصال!', 'success');
-    } else {
-      setTGStatus('❌ ' + data.description, 'error');
-    }
-  } catch(e) { setTGStatus('❌ فشل الاتصال', 'error'); }
-}
-
 function showCharGrid() {
   const panel = document.getElementById('char-grid-panel');
   const grid = document.getElementById('char-grid');
@@ -493,21 +471,31 @@ function showCharGrid() {
 }
 
 // ============================================================
-//  THREE.JS 3D VIEWER
+//  THREE.JS 3D VIEWER — FOLLOW CAMERA
 // ============================================================
 
 let scene, camera, renderer;
 let player3D = null;
 let clock = new THREE.Clock();
-let autoRotate = true;
+let autoRotate = false; // إيقاف الدوران التلقائي (للكاميرا التابعة)
 let autoRun = false;
 let runSpeed = 2.5;
-let moveSpeed = 0.04;
+let moveSpeed = 0.06; // زيادة السرعة قليلاً
 let runTime = 0;
 let limbRefs = {};
 let playerState = 'idle';
 let touchDirs = { up: false, down: false, left: false, right: false };
-let cameraAngleX = 0, cameraAngleY = 0, cameraDistance = 4;
+
+// متغيرات الكاميرا التابعة
+let cameraAngleX = 0.3;
+let cameraAngleY = 0.3;
+let cameraDistance = 4.5;
+let targetCameraPosition = new THREE.Vector3();
+let cameraSmoothness = 0.08; // سرعة تتبع الكاميرا
+
+// عالم اللعبة
+let worldGroup = null;
+let groundSize = 30;
 
 function initThreeJS() {
   const container = document.getElementById('game-canvas');
@@ -516,9 +504,9 @@ function initThreeJS() {
   scene.background = new THREE.Color(0x0a0a1a);
 
   const aspect = window.innerWidth / window.innerHeight;
-  camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 50);
-  camera.position.set(0, 1.5, 4);
-  camera.lookAt(0, 0.8, 0);
+  camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
+  camera.position.set(0, 5, 5);
+  camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -534,37 +522,30 @@ function initThreeJS() {
   scene.add(ambient);
 
   const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  dirLight.position.set(5, 8, 5);
+  dirLight.position.set(10, 15, 10);
   dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 2048;
+  dirLight.shadow.mapSize.height = 2048;
+  dirLight.shadow.camera.near = 0.5;
+  dirLight.shadow.camera.far = 50;
+  dirLight.shadow.camera.left = -15;
+  dirLight.shadow.camera.right = 15;
+  dirLight.shadow.camera.top = 15;
+  dirLight.shadow.camera.bottom = -15;
   scene.add(dirLight);
 
   const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
-  fillLight.position.set(-5, 3, 5);
+  fillLight.position.set(-10, 5, 10);
   scene.add(fillLight);
 
   const rimLight = new THREE.DirectionalLight(0x446688, 0.3);
-  rimLight.position.set(0, 2, -5);
+  rimLight.position.set(0, 3, -15);
   scene.add(rimLight);
 
-  // Ground
-  const groundGeo = new THREE.PlaneGeometry(20, 20);
-  const groundMat = new THREE.MeshStandardMaterial({
-    color: 0x0a0a15,
-    roughness: 0.9,
-    metalness: 0.1,
-    transparent: true,
-    opacity: 0.8
-  });
-  const ground = new THREE.Mesh(groundGeo, groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -0.1;
-  ground.receiveShadow = true;
-  scene.add(ground);
+  // إنشاء عالم اللعبة (خريطة)
+  createWorld();
 
-  const gridHelper = new THREE.GridHelper(20, 40, 0x333366, 0x222244);
-  gridHelper.position.y = 0;
-  scene.add(gridHelper);
-
+  // إنشاء الشخصية
   createDefaultPlayer();
 
   window.addEventListener('resize', function() {
@@ -574,6 +555,94 @@ function initThreeJS() {
   });
 
   animateThree();
+}
+
+// ============================================================
+//  إنشاء العالم (الخريطة)
+// ============================================================
+
+function createWorld() {
+  // إزالة العالم القديم
+  if (worldGroup) {
+    scene.remove(worldGroup);
+    worldGroup = null;
+  }
+
+  worldGroup = new THREE.Group();
+  scene.add(worldGroup);
+
+  // الأرضية
+  const groundGeo = new THREE.PlaneGeometry(groundSize, groundSize);
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: 0x0a0a20,
+    roughness: 0.9,
+    metalness: 0.1
+  });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.1;
+  ground.receiveShadow = true;
+  worldGroup.add(ground);
+
+  // شبكة الأرضية
+  const gridHelper = new THREE.GridHelper(groundSize, 30, 0x333366, 0x222244);
+  gridHelper.position.y = 0;
+  worldGroup.add(gridHelper);
+
+  // أعمدة أو أشياء في الخريطة (لإظهار الحركة)
+  const colors = [0x4444ff, 0xff4444, 0x44ff44, 0xffff44, 0xff44ff, 0x44ffff];
+  for (let i = 0; i < 40; i++) {
+    const x = (Math.random() - 0.5) * (groundSize - 4);
+    const z = (Math.random() - 0.5) * (groundSize - 4);
+    // تجنب مكان البداية
+    if (Math.abs(x) < 2 && Math.abs(z) < 2) continue;
+    
+    const height = 0.3 + Math.random() * 1.2;
+    const boxMat = new THREE.MeshStandardMaterial({
+      color: colors[Math.floor(Math.random() * colors.length)],
+      roughness: 0.7,
+      metalness: 0.3,
+      emissive: colors[Math.floor(Math.random() * colors.length)],
+      emissiveIntensity: 0.1
+    });
+    const box = new THREE.Mesh(new THREE.BoxGeometry(0.4, height, 0.4), boxMat);
+    box.position.set(x, height/2, z);
+    box.castShadow = true;
+    box.receiveShadow = true;
+    worldGroup.add(box);
+  }
+
+  // أعمدة أكبر (معالم)
+  const landmarkPositions = [
+    [-8, -8], [8, -8], [-8, 8], [8, 8],
+    [-6, 6], [6, -6], [-6, -6], [6, 6]
+  ];
+  for (const [lx, lz] of landmarkPositions) {
+    const pillarMat = new THREE.MeshStandardMaterial({
+      color: 0x444466,
+      roughness: 0.5,
+      metalness: 0.5,
+      emissive: 0x222244,
+      emissiveIntensity: 0.2
+    });
+    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.8, 2, 8), pillarMat);
+    pillar.position.set(lx, 1, lz);
+    pillar.castShadow = true;
+    pillar.receiveShadow = true;
+    worldGroup.add(pillar);
+    
+    // إضاءة على العمود
+    const lightMat = new THREE.MeshStandardMaterial({
+      color: 0x6666ff,
+      emissive: 0x4444ff,
+      emissiveIntensity: 0.3,
+      transparent: true,
+      opacity: 0.5
+    });
+    const light = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), lightMat);
+    light.position.set(lx, 2.2, lz);
+    worldGroup.add(light);
+  }
 }
 
 function createDefaultPlayer() {
@@ -660,6 +729,20 @@ function createDefaultPlayer() {
   legGroupR.add(legR);
   group.add(legGroupR);
   limbRefs.legR = legGroupR;
+
+  // Shadow
+  const circleGeo = new THREE.RingGeometry(0.5, 0.8, 32);
+  const circleMat = new THREE.MeshBasicMaterial({
+    color: 0x333366,
+    transparent: true,
+    opacity: 0.3,
+    side: THREE.DoubleSide
+  });
+  const circle = new THREE.Mesh(circleGeo, circleMat);
+  circle.rotation.x = -Math.PI / 2;
+  circle.position.y = 0.01;
+  group.add(circle);
+  limbRefs.shadow = circle;
 
   group.position.set(0, 0, 0);
   scene.add(group);
@@ -852,6 +935,10 @@ function updatePlayer3D() {
   }
 }
 
+// ============================================================
+//  حركة الشخصية والكاميرا التابعة
+// ============================================================
+
 function updateAnimationState() {
   const stateText = document.getElementById('anim-state-text');
   if (playerState === 'run') {
@@ -883,7 +970,9 @@ function animateLimbs(delta) {
     if (limbRefs.body) limbRefs.body.position.y = 0.45 + bobbing;
     if (limbRefs.head) limbRefs.head.position.y = 1.0 + bobbing;
 
+    // تحريك الشخصية
     if (player3D) {
+      const speed = moveSpeed * (touchDirs.up || autoRun ? 1 : 0);
       if (touchDirs.up || autoRun) {
         player3D.position.x += Math.sin(player3D.rotation.y) * moveSpeed;
         player3D.position.z += Math.cos(player3D.rotation.y) * moveSpeed;
@@ -892,13 +981,12 @@ function animateLimbs(delta) {
         player3D.position.x -= Math.sin(player3D.rotation.y) * moveSpeed * 0.5;
         player3D.position.z -= Math.cos(player3D.rotation.y) * moveSpeed * 0.5;
       }
-      const boundary = 8;
-      player3D.position.x = Math.max(-boundary, Math.min(boundary, player3D.position.x));
-      player3D.position.z = Math.max(-boundary, Math.min(boundary, player3D.position.z));
     }
   } else if (playerState === 'rotate') {
     if (player3D) {
-      player3D.rotation.y += (touchDirs.left ? 0.04 : 0) - (touchDirs.right ? 0.04 : 0);
+      const rotSpeed = 0.04;
+      if (touchDirs.left) player3D.rotation.y += rotSpeed;
+      if (touchDirs.right) player3D.rotation.y -= rotSpeed;
     }
     limbRefs.armL.rotation.x *= 0.9;
     limbRefs.armR.rotation.x *= 0.9;
@@ -930,21 +1018,53 @@ function handleMovementInput() {
   }
 }
 
+// ============================================================
+//  تحديث الكاميرا التابعة
+// ============================================================
+
+function updateFollowCamera() {
+  if (!player3D) return;
+
+  // حساب موقع الكاميرا بالنسبة للشخصية
+  const targetX = player3D.position.x;
+  const targetY = player3D.position.y + 1.2;
+  const targetZ = player3D.position.z;
+
+  // حساب الزوايا
+  const x = Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+  const y = Math.sin(cameraAngleY) * cameraDistance + 0.5;
+  const z = Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+
+  // موقع الكاميرا المستهدف
+  targetCameraPosition.set(targetX + x, targetY + y, targetZ + z);
+
+  // تحريك الكاميرا بسلاسة
+  camera.position.lerp(targetCameraPosition, cameraSmoothness);
+  camera.lookAt(targetX, targetY, targetZ);
+}
+
 function animateThree() {
   if (!renderer) return;
   requestAnimationFrame(animateThree);
+
   const delta = clock.getDelta();
+
   handleMovementInput();
   animateLimbs(delta);
-  if (autoRotate && playerState === 'idle' && player3D) {
-    player3D.rotation.y += delta * 0.2;
-  }
+
+  // تحديث الكاميرا التابعة
+  updateFollowCamera();
+
   renderer.render(scene, camera);
 }
 
+// ============================================================
+//  التحكم بالكاميرا
+// ============================================================
+
 function toggleRotate() {
-  autoRotate = !autoRotate;
-  showToast(autoRotate ? '🔄 دوران تلقائي مفعل' : '⏸️ دوران تلقائي متوقف', 'info');
+  // لا نحتاج دوران تلقائي مع الكاميرا التابعة
+  showToast('🔄 الكاميرا تتبع الشخصية', 'info');
 }
 
 function toggleAutoRun() {
@@ -960,11 +1080,9 @@ function toggleAutoRun() {
 }
 
 function resetCamera() {
-  camera.position.set(0, 1.5, 4);
-  camera.lookAt(0, 0.8, 0);
-  cameraAngleX = 0;
-  cameraAngleY = 0;
-  cameraDistance = 4;
+  cameraAngleX = 0.3;
+  cameraAngleY = 0.3;
+  cameraDistance = 4.5;
   if (player3D) {
     player3D.position.set(0, 0, 0);
     player3D.rotation.y = 0;
@@ -999,26 +1117,7 @@ function setupTouchControls() {
   });
 }
 
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'ArrowUp') touchDirs.up = true;
-  if (e.key === 'ArrowDown') touchDirs.down = true;
-  if (e.key === 'ArrowLeft') touchDirs.left = true;
-  if (e.key === 'ArrowRight') touchDirs.right = true;
-  if (e.key === 'r' || e.key === 'R') toggleRotate();
-  if (e.key === 'c' || e.key === 'C') resetCamera();
-  if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); toggleAutoRun(); }
-});
-document.addEventListener('keyup', function(e) {
-  if (e.key === 'ArrowUp') touchDirs.up = false;
-  if (e.key === 'ArrowDown') touchDirs.down = false;
-  if (e.key === 'ArrowLeft') touchDirs.left = false;
-  if (e.key === 'ArrowRight') touchDirs.right = false;
-});
-
-// ============================================================
-//  CAMERA
-// ============================================================
-
+// تحريك الكاميرا بالسحب (لمسة واحدة)
 let isDragging = false;
 let prevMouseX = 0, prevMouseY = 0;
 
@@ -1032,33 +1131,36 @@ document.addEventListener('mousemove', function(e) {
   if (!isDragging) return;
   const dx = e.clientX - prevMouseX;
   const dy = e.clientY - prevMouseY;
-  cameraAngleX += dx * 0.01;
-  cameraAngleY += dy * 0.01;
-  cameraAngleY = Math.max(-1.2, Math.min(1.2, cameraAngleY));
-  updateCameraPosition();
+  cameraAngleX += dx * 0.005;
+  cameraAngleY += dy * 0.005;
+  cameraAngleY = Math.max(-1.0, Math.min(1.0, cameraAngleY));
   prevMouseX = e.clientX;
   prevMouseY = e.clientY;
 });
 
 document.addEventListener('mouseup', function() { isDragging = false; });
 
+// تكبير/تصغير
 document.addEventListener('wheel', function(e) {
-  cameraDistance += e.deltaY * 0.002;
-  cameraDistance = Math.max(1.5, Math.min(8, cameraDistance));
-  updateCameraPosition();
+  cameraDistance += e.deltaY * 0.005;
+  cameraDistance = Math.max(2, Math.min(8, cameraDistance));
 }, { passive: true });
 
-function updateCameraPosition() {
-  const x = Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
-  const y = Math.sin(cameraAngleY) * cameraDistance + 1;
-  const z = Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
-  camera.position.set(x, y, z);
-  if (player3D) {
-    camera.lookAt(player3D.position.x, player3D.position.y + 0.8, player3D.position.z);
-  } else {
-    camera.lookAt(0, 0.8, 0);
-  }
-}
+// Keyboard
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowUp') touchDirs.up = true;
+  if (e.key === 'ArrowDown') touchDirs.down = true;
+  if (e.key === 'ArrowLeft') touchDirs.left = true;
+  if (e.key === 'ArrowRight') touchDirs.right = true;
+  if (e.key === 'c' || e.key === 'C') resetCamera();
+  if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); toggleAutoRun(); }
+});
+document.addEventListener('keyup', function(e) {
+  if (e.key === 'ArrowUp') touchDirs.up = false;
+  if (e.key === 'ArrowDown') touchDirs.down = false;
+  if (e.key === 'ArrowLeft') touchDirs.left = false;
+  if (e.key === 'ArrowRight') touchDirs.right = false;
+});
 
 // ============================================================
 //  TOAST
@@ -1086,7 +1188,6 @@ function enterApp() {
     document.getElementById('skin-toggle').style.display = 'block';
     initThreeJS();
     
-    // محاولة جلب الملصقات تلقائياً بعد 1 ثانية
     setTimeout(function() {
       if (connected) {
         fetchStickersAuto();
@@ -1102,7 +1203,6 @@ function enterApp() {
   if (savedToken) document.getElementById('bot-token').value = savedToken;
   if (savedChat) document.getElementById('chat-id').value = savedChat;
   
-  // محاولة اتصال تلقائي
   setTimeout(function() {
     if (savedToken && savedChat) {
       testTelegram();
@@ -1123,7 +1223,7 @@ setTimeout(function() {
   document.getElementById('start-btn').style.display = 'block';
 }, 500);
 
-console.log('🎨 شخصيتي من الملصقات — تلقائي جاهزة!');
+console.log('🎮 شخصيتي في الوسط — كاميرا تابعة جاهزة!');
 </script>
 </body>
 </html>
