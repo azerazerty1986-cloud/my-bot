@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ملصق متحرك في الخريطة</title>
+<title>الملصق في الخريطة — أعمدة شفافة</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
 :root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--info:#60a5fa;--accent:#00f2ff;--purple:#8b5cf6}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none}
+
 #start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px}
 .start-logo{font-size:42px;font-weight:900;color:var(--gold);animation:float 3s ease-in-out infinite}
 .start-subtitle{font-size:15px;color:#666;text-align:center;max-width:350px}
@@ -21,11 +21,14 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .user-info{color:var(--accent);font-size:13px;background:rgba(0,0,0,0.6);padding:8px 24px;border-radius:30px}
 .version-tag{position:absolute;bottom:15px;font-size:11px;color:#444}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
 #game-container{position:fixed;inset:0;display:none;background:#050510}
 #game-canvas{display:block;width:100%;height:100%}
+
 .hud{position:fixed;top:0;left:0;right:0;padding:6px 10px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:100}
 .player-bar{background:rgba(0,0,0,0.8);border-radius:8px;padding:5px 10px;backdrop-filter:blur(10px);min-width:120px;border:1px solid rgba(139,92,246,0.3)}
 .player-bar .label{font-size:9px;font-weight:700;color:var(--purple);display:flex;justify-content:space-between;margin-bottom:2px}
+
 .dpad{position:fixed;bottom:20px;left:16px;width:120px;height:120px;z-index:200}
 .dpad-btn{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .1s}
 .dpad-btn:active{background:rgba(139,92,246,0.15);border-color:var(--purple);color:var(--purple);transform:scale(0.88)}
@@ -33,12 +36,14 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .dpad-down{bottom:0;left:40px}
 .dpad-left{top:40px;left:0}
 .dpad-right{top:40px;right:0}
+
 .action-btns{position:fixed;bottom:20px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;z-index:200}
 .action-btn{width:54px;height:54px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)}
 .action-btn:active{transform:scale(0.86)}
 .btn-rotate{border-color:var(--gold);color:var(--gold)}
 .btn-run{border-color:var(--success);color:var(--success);width:46px;height:46px;font-size:16px}
 .btn-zoom{border-color:var(--accent);color:var(--accent);width:46px;height:46px;font-size:16px}
+
 .tg-dropdown{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;z-index:250;min-width:300px;max-width:92%;display:none;backdrop-filter:blur(12px)}
 .tg-dropdown.show{display:block}
 .tg-dropdown .row{display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap}
@@ -50,6 +55,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .btn-green{background:var(--success);color:#111}
 .btn-red{background:var(--error);color:#fff}
 .tg-toggle{position:fixed;bottom:155px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none}
+
 .skin-selector{position:fixed;bottom:220px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:12px;z-index:230;display:none;backdrop-filter:blur(12px);min-width:200px;max-height:200px;overflow-y:auto}
 .skin-selector.show{display:block}
 .skin-selector h4{color:var(--gold);font-size:12px;margin-bottom:8px;text-align:center}
@@ -60,6 +66,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .skin-option .preview img{width:100%;height:100%;object-fit:cover}
 .skin-option .sname{font-size:8px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .skin-option.active{border-color:var(--gold);background:rgba(255,215,0,0.05)}
+
 .char-grid-panel{position:fixed;bottom:280px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:10px 12px;z-index:230;max-width:92%;width:360px;display:none;max-height:160px;overflow-y:auto}
 .char-grid-panel.show{display:block}
 .char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px}
@@ -68,14 +75,17 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .char-mini .avatar{width:28px;height:28px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
 .char-mini .avatar img{width:100%;height:100%;object-fit:cover}
 .char-mini .cname{font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 .toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
 .toast{background:rgba(0,0,0,0.9);padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
 .toast.success{border-color:var(--success);color:var(--success)}
 .toast.error{border-color:var(--error);color:var(--error)}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
+
 .skin-toggle{position:fixed;top:10px;right:60px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;cursor:pointer;display:none}
 .skin-toggle:hover{color:var(--gold)}
+
 .anim-status{position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(139,92,246,0.15);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;pointer-events:none}
 .anim-status span{margin-left:4px}
 .anim-status .state-idle{color:#888}
@@ -87,11 +97,11 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <!-- START -->
 <div id="start-screen">
-  <div class="start-logo">🎬 ملصق متحرك 3D</div>
-  <div class="start-subtitle">جلب الملصق المتحرك من القناة • يظهر في الخريطة</div>
+  <div class="start-logo">📌 الملصق في الخريطة</div>
+  <div class="start-subtitle">جلب الملصق من القناة • يظهر في الخريطة • أعمدة شفافة</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v16.0 | Animated Sticker in Map</div>
+  <div class="version-tag">v17.0 | Sticker in Map + Pillars</div>
 </div>
 
 <!-- GAME -->
@@ -100,7 +110,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
   <div class="hud">
     <div class="player-bar">
-      <div class="label"><span>🎬 شخصيتي</span><span id="char-name">جاري التحميل...</span></div>
+      <div class="label"><span>📌 شخصيتي</span><span id="char-name">جاري التحميل...</span></div>
     </div>
   </div>
 
@@ -128,14 +138,14 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     </div>
     <div class="row">
       <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
-      <button class="btn btn-purple" onclick="fetchAnimatedStickers()">🎬 جلب ملصق متحرك</button>
+      <button class="btn btn-purple" onclick="fetchStickers()">📌 جلب ملصق</button>
       <button class="btn btn-red" onclick="toggleTG()">✖</button>
     </div>
     <div style="font-size:10px;color:#888;" id="tg-status">⭕ غير متصل</div>
   </div>
 
   <div class="skin-selector" id="skin-selector">
-    <h4>🎬 اختر الملصق المتحرك</h4>
+    <h4>📌 اختر الملصق</h4>
     <div class="skin-grid" id="skin-grid"></div>
   </div>
 
@@ -143,14 +153,14 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     <div class="char-grid" id="char-grid"></div>
   </div>
 
-  <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">🎬 شخصيتي</button>
+  <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">📌 شخصيتي</button>
 </div>
 
 <div class="toast-container" id="toast-container"></div>
 
 <script>
 // ============================================================
-//  ملصق متحرك في الخريطة v16.0
+//  الملصق في الخريطة v17.0 — أعمدة شفافة
 // ============================================================
 
 // ============================================================
@@ -211,11 +221,11 @@ function renderSkinSelector() {
   for (const char of fetchedStickers) {
     const opt = document.createElement('div');
     opt.className = 'skin-option' + (playerSkin && playerSkin.id === char.id ? ' active' : '');
-    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '🎬';
+    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '📌';
     opt.innerHTML = `
       <div class="preview">${avatar}</div>
       <div class="sname">${char.name}</div>
-      <div style="font-size:7px;color:#888;">${char.isAnimated ? '🎬 متحرك' : '🖼️ صورة'}</div>
+      <div style="font-size:7px;color:#888;">${char.isSticker ? '📌 ملصق' : '🖼️ صورة'}</div>
     `;
     opt.onclick = function() { selectSkin(char); };
     grid.appendChild(opt);
@@ -228,10 +238,9 @@ function selectSkin(char) {
       id: char.id,
       name: char.name,
       imageUrl: char.imageUrl,
-      isAnimated: char.isAnimated || false,
-      tgsUrl: char.tgsUrl || null
+      isSticker: char.isSticker || false
     };
-    document.getElementById('char-name').textContent = char.name + ' 🎬';
+    document.getElementById('char-name').textContent = char.name + ' 📌';
     showToast('✅ تم اختيار ' + char.name, 'success');
   } else {
     playerSkin = null;
@@ -270,13 +279,33 @@ async function testTelegram() {
   } catch(e) { setTGStatus('❌ فشل الاتصال', 'error'); }
 }
 
+function autoSelectFirstSticker() {
+    if (autoSelectDone) return;
+    const stickers = fetchedStickers.filter(c => c.isSticker);
+    if (stickers.length > 0) {
+        const first = stickers[0];
+        showToast('📌 تم اختيار الملصق تلقائياً: ' + first.name, 'success');
+        selectSkin(first);
+        autoSelectDone = true;
+        return true;
+    }
+    if (fetchedStickers.length > 0) {
+        const first = fetchedStickers[0];
+        showToast('🖼️ تم اختيار الصورة تلقائياً: ' + first.name, 'success');
+        selectSkin(first);
+        autoSelectDone = true;
+        return true;
+    }
+    return false;
+}
+
 // ============================================================
-//  جلب الملصقات المتحركة من القناة
+//  جلب الملصقات من القناة
 // ============================================================
 
-async function fetchAnimatedStickers() {
+async function fetchStickers() {
   if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
-  setTGStatus('🎬 جاري جلب الملصقات المتحركة...', '');
+  setTGStatus('📌 جاري جلب الملصقات...', '');
 
   try {
     const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
@@ -290,31 +319,23 @@ async function fetchAnimatedStickers() {
       const msg = update.channel_post || update.message;
       if (!msg) continue;
 
-      let fileId = null, imageUrl = '', tgsUrl = '';
-      let isAnimated = false;
+      let fileId = null, imageUrl = '';
 
-      // الكشف عن الملصق المتحرك
       if (msg.sticker) {
         fileId = msg.sticker.file_id;
-        isAnimated = msg.sticker.is_animated || false;
-        
-        // جلب رابط الملف
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
         const fileData = await fileRes.json();
         if (fileData.ok && fileData.result.file_path) {
-          if (isAnimated) {
-            tgsUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
-            // للملصق المتحرك، نأخذ صورة مصغرة من الثمبنايل
-            if (msg.sticker.thumbnail) {
-              const thumbRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + msg.sticker.thumbnail.file_id);
-              const thumbData = await thumbRes.json();
-              if (thumbData.ok && thumbData.result.file_path) {
-                imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + thumbData.result.file_path;
-              }
-            }
-          } else {
-            imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
-          }
+          imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+        }
+      }
+
+      if (!fileId && msg.photo && msg.photo.length > 0) {
+        fileId = msg.photo[msg.photo.length - 1].file_id;
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        if (fileData.ok && fileData.result.file_path) {
+          imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
         }
       }
 
@@ -324,13 +345,13 @@ async function fetchAnimatedStickers() {
       const caption = msg.caption || '';
       const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
 
+      const isSticker = !!msg.sticker;
       const char = {
-        id: (isAnimated ? 'anim_' : 'sticker_') + fileId,
+        id: (isSticker ? 'sticker_' : 'image_') + fileId,
         fileId: fileId,
-        name: nameMatch ? nameMatch[1].trim() : (isAnimated ? 'ملصق متحرك #' : 'ملصق #') + (fetchedStickers.length + 1),
+        name: nameMatch ? nameMatch[1].trim() : (isSticker ? 'ملصق #' : 'صورة #') + (fetchedStickers.length + 1),
         imageUrl: imageUrl,
-        tgsUrl: tgsUrl,
-        isAnimated: isAnimated
+        isSticker: isSticker
       };
 
       fetchedStickers.push(char);
@@ -341,7 +362,7 @@ async function fetchAnimatedStickers() {
         img.crossOrigin = 'anonymous';
         img.onload = function() { 
           loadedImages[char.id] = img;
-          if (isAnimated && !autoSelectDone && fetchedStickers.length === 1) {
+          if (isSticker && !autoSelectDone && fetchedStickers.length === 1) {
             setTimeout(autoSelectFirstSticker, 500);
           }
         };
@@ -350,41 +371,21 @@ async function fetchAnimatedStickers() {
     }
 
     if (newItems > 0) {
-      setTGStatus('✅ جلب ' + newItems + ' ملصق!', 'success');
+      setTGStatus('✅ جلب ' + newItems + ' عنصر!', 'success');
       showCharGrid();
       renderSkinSelector();
-      showToast('🎬 تم جلب ' + newItems + ' ملصق!', 'success');
+      showToast('📌 تم جلب ' + newItems + ' ملصق/صورة!', 'success');
       
       if (!autoSelectDone) {
         setTimeout(autoSelectFirstSticker, 800);
       }
     } else {
-      setTGStatus('📭 لا توجد ملصقات جديدة', '');
+      setTGStatus('📭 لا توجد عناصر جديدة', '');
     }
   } catch(e) {
     setTGStatus('❌ خطأ', 'error');
     console.error(e);
   }
-}
-
-function autoSelectFirstSticker() {
-    if (autoSelectDone) return;
-    const anims = fetchedStickers.filter(c => c.isAnimated);
-    if (anims.length > 0) {
-        const first = anims[0];
-        showToast('🎬 تم اختيار الملصق المتحرك تلقائياً: ' + first.name, 'success');
-        selectSkin(first);
-        autoSelectDone = true;
-        return true;
-    }
-    if (fetchedStickers.length > 0) {
-        const first = fetchedStickers[0];
-        showToast('📌 تم اختيار الملصق تلقائياً: ' + first.name, 'success');
-        selectSkin(first);
-        autoSelectDone = true;
-        return true;
-    }
-    return false;
 }
 
 function showCharGrid() {
@@ -395,11 +396,11 @@ function showCharGrid() {
   for (const char of fetchedStickers) {
     const div = document.createElement('div');
     div.className = 'char-mini';
-    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : (char.isAnimated ? '🎬' : '📌');
+    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '📌';
     div.innerHTML = `
       <div class="avatar">${avatar}</div>
       <div class="cname">${char.name}</div>
-      <div style="font-size:7px;color:#888;">${char.isAnimated ? '🎬 متحرك' : '📌 ملصق'}</div>
+      <div style="font-size:7px;color:#888;">${char.isSticker ? '📌 ملصق' : '🖼️ صورة'}</div>
     `;
     div.onclick = function() { selectSkin(char); };
     grid.appendChild(div);
@@ -408,7 +409,7 @@ function showCharGrid() {
 }
 
 // ============================================================
-//  THREE.JS — الخريطة مع الملصق المتحرك
+//  THREE.JS — الخريطة مع الشخصية
 // ============================================================
 
 let scene, camera, renderer;
@@ -432,10 +433,6 @@ let worldGroup = null;
 let mapSize = 20;
 let mapData = [];
 
-// متغيرات للملصق المتحرك
-let animatedTexture = null;
-let animationInterval = null;
-
 function initThreeJS() {
   const container = document.getElementById('game-canvas');
 
@@ -457,7 +454,6 @@ function initThreeJS() {
   renderer.toneMappingExposure = 1.2;
   container.appendChild(renderer.domElement);
 
-  // الإضاءة
   const ambient = new THREE.AmbientLight(0x404060, 0.6);
   scene.add(ambient);
 
@@ -560,7 +556,40 @@ function createMap() {
 }
 
 // ============================================================
-//  إنشاء الشخصية من الملصق المتحرك
+//  استخراج اللون السائد من الملصق
+// ============================================================
+
+function getDominantColor(image) {
+    try {
+        const canvas = document.createElement('canvas');
+        canvas.width = 50;
+        canvas.height = 50;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0, 50, 50);
+        
+        const imageData = ctx.getImageData(0, 0, 50, 50);
+        const data = imageData.data;
+        
+        let r = 0, g = 0, b = 0, count = 0;
+        for (let i = 0; i < data.length; i += 4) {
+            r += data[i];
+            g += data[i + 1];
+            b += data[i + 2];
+            count++;
+        }
+        
+        r = Math.round(r / count);
+        g = Math.round(g / count);
+        b = Math.round(b / count);
+        
+        return (r << 16) | (g << 8) | b;
+    } catch(e) {
+        return 0x8b5cf6;
+    }
+}
+
+// ============================================================
+//  إنشاء الشخصية من الملصق مع أعمدة شفافة
 // ============================================================
 
 function createPlayerInMap() {
@@ -568,146 +597,200 @@ function createPlayerInMap() {
     scene.remove(playerGroup);
     playerGroup = null;
     limbRefs = {};
-    
-    // إيقاف المؤقت القديم
-    if (animationInterval) {
-      clearInterval(animationInterval);
-      animationInterval = null;
-    }
   }
 
   const group = new THREE.Group();
 
   if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
-    // جسم يحمل الملصق
+    const img = loadedImages[playerSkin.id];
+    const dominantColor = getDominantColor(img);
+    const isSticker = playerSkin.isSticker || false;
+    
+    // ============================================================
+    //  1. الجسم الرئيسي (الملصق)
+    // ============================================================
     const bodyMat = new THREE.MeshStandardMaterial({
-      color: 0x8b5cf6,
-      roughness: 0.3,
-      metalness: 0.1,
-      transparent: true,
-      side: THREE.DoubleSide
+        color: 0x8b5cf6,
+        roughness: 0.3,
+        metalness: 0.1,
+        transparent: true,
+        side: THREE.DoubleSide
     });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.2), bodyMat);
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.95, 0.15), bodyMat);
     body.position.y = 0.45;
     body.castShadow = true;
     group.add(body);
     limbRefs.body = body;
-
-    // تطبيق الصورة (أو النسيج المتحرك)
-    if (playerSkin.isAnimated && playerSkin.tgsUrl) {
-      // للملصق المتحرك: نستخدم صورة ثابتة حالياً
-      // (يمكن إضافة Lottie لاحقاً)
-      try {
-        const img = loadedImages[playerSkin.id];
+    
+    // تطبيق الملصق على الجسم
+    try {
         const imgCanvas = document.createElement('canvas');
-        imgCanvas.width = 256;
-        imgCanvas.height = 256;
+        const size = 256;
+        imgCanvas.width = size;
+        imgCanvas.height = size;
         const ctx = imgCanvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, 256, 256);
-        const texture = new THREE.CanvasTexture(imgCanvas);
-        texture.needsUpdate = true;
-        body.material.map = texture;
-        body.material.needsUpdate = true;
         
-        // إضافة إطار متوهج للملصق المتحرك
-        const glowMat = new THREE.MeshStandardMaterial({
-          color: 0xff6b6b,
-          transparent: true,
-          opacity: 0.15,
-          emissive: 0xff6b6b,
-          emissiveIntensity: 0.3
-        });
-        const glow = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.0, 0.25), glowMat);
-        glow.position.y = 0.45;
-        group.add(glow);
-      } catch(e) {}
-    } else {
-      // ملصق عادي
-      try {
-        const img = loadedImages[playerSkin.id];
-        const imgCanvas = document.createElement('canvas');
-        imgCanvas.width = 256;
-        imgCanvas.height = 256;
-        const ctx = imgCanvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, 256, 256);
+        const imgSize = size * 0.85;
+        const offset = (size - imgSize) / 2;
+        ctx.clearRect(0, 0, size, size);
+        ctx.drawImage(img, offset, offset, imgSize, imgSize);
+        
         const texture = new THREE.CanvasTexture(imgCanvas);
         texture.needsUpdate = true;
         body.material.map = texture;
         body.material.needsUpdate = true;
-      } catch(e) {}
-    }
-
-    // رأس
+    } catch(e) {}
+    
+    // ============================================================
+    //  2. الرأس
+    // ============================================================
     const headMat = new THREE.MeshStandardMaterial({
-      color: playerSkin.isAnimated ? 0xff6b6b : 0x8b5cf6,
-      roughness: 0.3,
-      metalness: 0.2,
-      emissive: playerSkin.isAnimated ? 0xff6b6b : 0x3b1f6e,
-      emissiveIntensity: playerSkin.isAnimated ? 0.3 : 0.2
+        color: dominantColor || 0x8b5cf6,
+        roughness: 0.3,
+        metalness: 0.2,
+        emissive: dominantColor || 0x3b1f6e,
+        emissiveIntensity: 0.2
     });
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), headMat);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), headMat);
     head.position.y = 1.0;
     head.castShadow = true;
     group.add(head);
     limbRefs.head = head;
-
-    // عيون (متحركة للملصق المتحرك)
-    const eyeMat = new THREE.MeshStandardMaterial({
-      color: playerSkin.isAnimated ? 0xffd700 : 0xffd700,
-      emissive: 0xffd700,
-      emissiveIntensity: playerSkin.isAnimated ? 1.0 : 0.8
+    
+    // ============================================================
+    //  3. الأعمدة الشفافة (تتحرك ولا تُرى)
+    // ============================================================
+    const transparentMat = new THREE.MeshStandardMaterial({
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.0,
+        roughness: 0.5,
+        metalness: 0.1
     });
-    const eyeGeo = new THREE.SphereGeometry(0.03, 6, 6);
+    
+    // العمود الأيسر (ذراع) - شفاف
+    const armPivotL = new THREE.Group();
+    armPivotL.position.set(-0.45, 0.75, 0);
+    const armPillarL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.5, 6), transparentMat);
+    armPillarL.position.y = -0.25;
+    armPillarL.castShadow = false;
+    armPivotL.add(armPillarL);
+    group.add(armPivotL);
+    limbRefs.armL = armPivotL;
+    
+    // العمود الأيمن (ذراع) - شفاف
+    const armPivotR = new THREE.Group();
+    armPivotR.position.set(0.45, 0.75, 0);
+    const armPillarR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.5, 6), transparentMat);
+    armPillarR.position.y = -0.25;
+    armPillarR.castShadow = false;
+    armPivotR.add(armPillarR);
+    group.add(armPivotR);
+    limbRefs.armR = armPivotR;
+    
+    // العمود الأيسر (رجل) - شفاف
+    const legPivotL = new THREE.Group();
+    legPivotL.position.set(-0.16, 0.0, 0);
+    const legPillarL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.4, 6), transparentMat);
+    legPillarL.position.y = -0.2;
+    legPillarL.castShadow = false;
+    legPivotL.add(legPillarL);
+    group.add(legPivotL);
+    limbRefs.legL = legPivotL;
+    
+    // العمود الأيمن (رجل) - شفاف
+    const legPivotR = new THREE.Group();
+    legPivotR.position.set(0.16, 0.0, 0);
+    const legPillarR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.4, 6), transparentMat);
+    legPillarR.position.y = -0.2;
+    legPillarR.castShadow = false;
+    legPivotR.add(legPillarR);
+    group.add(legPivotR);
+    limbRefs.legR = legPivotR;
+    
+    // ============================================================
+    //  4. الأطراف الملونة (تظهر وتتحرك)
+    // ============================================================
+    const limbColor = dominantColor || 0x8b5cf6;
+    const limbMat = new THREE.MeshStandardMaterial({
+        color: limbColor,
+        roughness: 0.4,
+        metalness: 0.3,
+        emissive: limbColor,
+        emissiveIntensity: 0.1
+    });
+    
+    // الذراع الأيسر
+    const armLimbL = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.35, 6), limbMat);
+    armLimbL.position.set(-0.45, 0.55, 0);
+    armLimbL.castShadow = true;
+    group.add(armLimbL);
+    
+    // الذراع الأيمن
+    const armLimbR = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.35, 6), limbMat);
+    armLimbR.position.set(0.45, 0.55, 0);
+    armLimbR.castShadow = true;
+    group.add(armLimbR);
+    
+    // الرجل اليسرى
+    const legLimbL = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.3, 6), limbMat);
+    legLimbL.position.set(-0.16, 0.15, 0);
+    legLimbL.castShadow = true;
+    group.add(legLimbL);
+    
+    // الرجل اليمنى
+    const legLimbR = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.3, 6), limbMat);
+    legLimbR.position.set(0.16, 0.15, 0);
+    legLimbR.castShadow = true;
+    group.add(legLimbR);
+    
+    // ============================================================
+    //  5. عيون متوهجة
+    // ============================================================
+    const eyeMat = new THREE.MeshStandardMaterial({
+        color: 0xffd700,
+        emissive: 0xffd700,
+        emissiveIntensity: 0.8
+    });
+    const eyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
     const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeL.position.set(-0.06, 1.02, 0.14);
+    eyeL.position.set(-0.07, 1.04, 0.14);
     group.add(eyeL);
     const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeR.position.set(0.06, 1.02, 0.14);
+    eyeR.position.set(0.07, 1.04, 0.14);
     group.add(eyeR);
     limbRefs.eyeL = eyeL;
     limbRefs.eyeR = eyeR;
-
-    // إذا كان ملصقاً متحركاً، نضيف جزيئات حوله
-    if (playerSkin.isAnimated) {
-      // جزيئات متوهجة
-      for (let i = 0; i < 8; i++) {
-        const particleMat = new THREE.MeshStandardMaterial({
-          color: 0xff6b6b,
-          emissive: 0xff6b6b,
-          emissiveIntensity: 0.5,
-          transparent: true,
-          opacity: 0.6
-        });
-        const particle = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), particleMat);
-        const angle = (i / 8) * Math.PI * 2;
-        particle.position.set(Math.cos(angle) * 0.5, 0.5 + Math.sin(i) * 0.2, Math.sin(angle) * 0.5);
-        group.add(particle);
-      }
-    }
+    
+    // ============================================================
+    //  6. الظل
+    // ============================================================
+    const circleGeo = new THREE.RingGeometry(0.3, 0.6, 16);
+    const circleMat = new THREE.MeshBasicMaterial({
+        color: 0x333366,
+        transparent: true,
+        opacity: 0.3,
+        side: THREE.DoubleSide
+    });
+    const circle = new THREE.Mesh(circleGeo, circleMat);
+    circle.rotation.x = -Math.PI / 2;
+    circle.position.y = 0.01;
+    group.add(circle);
+    limbRefs.shadow = circle;
 
   } else {
     // شخصية افتراضية
     createDefaultCharacter(group);
   }
 
-  // الظل
-  const circleGeo = new THREE.RingGeometry(0.3, 0.6, 16);
-  const circleMat = new THREE.MeshBasicMaterial({
-    color: 0x333366,
-    transparent: true,
-    opacity: 0.3,
-    side: THREE.DoubleSide
-  });
-  const circle = new THREE.Mesh(circleGeo, circleMat);
-  circle.rotation.x = -Math.PI / 2;
-  circle.position.y = 0.01;
-  group.add(circle);
-  limbRefs.shadow = circle;
-
   group.position.set(0, 0, 0);
   scene.add(group);
   playerGroup = group;
 }
+
+// ============================================================
+//  شخصية افتراضية
+// ============================================================
 
 function createDefaultCharacter(group) {
   const bodyMat = new THREE.MeshStandardMaterial({
@@ -996,9 +1079,9 @@ function enterApp() {
     
     setTimeout(function() {
       if (connected) {
-        fetchAnimatedStickers();
+        fetchStickers();
       } else {
-        showToast('📡 اضغط "اتصال" ثم "🎬 جلب ملصق متحرك"', 'info');
+        showToast('📡 اضغط "اتصال" ثم "📌 جلب ملصق"', 'info');
       }
     }, 1500);
     
@@ -1029,7 +1112,8 @@ setTimeout(function() {
   document.getElementById('start-btn').style.display = 'block';
 }, 500);
 
-console.log('🎬 ملصق متحرك في الخريطة — جاهز!');
+console.log('📌 الملصق في الخريطة مع أعمدة شفافة — جاهز!');
 </script>
 </body>
 </html>
+
