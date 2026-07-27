@@ -3,16 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>الملصق في الخريطة — أعمدة شفافة</title>
+<title>خريطة 2D — ملصقات ظاهرة</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
 :root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--info:#60a5fa;--accent:#00f2ff;--purple:#8b5cf6}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none}
-
 #start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px}
 .start-logo{font-size:42px;font-weight:900;color:var(--gold);animation:float 3s ease-in-out infinite}
 .start-subtitle{font-size:15px;color:#666;text-align:center;max-width:350px}
@@ -22,59 +19,44 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .version-tag{position:absolute;bottom:15px;font-size:11px;color:#444}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 
-#game-container{position:fixed;inset:0;display:none;background:#050510}
+#game-container{position:fixed;inset:0;display:none;background:#0a0a1a}
 #game-canvas{display:block;width:100%;height:100%}
 
-.hud{position:fixed;top:0;left:0;right:0;padding:6px 10px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:100}
-.player-bar{background:rgba(0,0,0,0.8);border-radius:8px;padding:5px 10px;backdrop-filter:blur(10px);min-width:120px;border:1px solid rgba(139,92,246,0.3)}
-.player-bar .label{font-size:9px;font-weight:700;color:var(--purple);display:flex;justify-content:space-between;margin-bottom:2px}
+.hud{position:fixed;top:0;left:0;right:0;padding:6px 12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:100;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px)}
+.hud .title{color:var(--gold);font-size:13px;font-weight:700}
+.hud .info{color:#aaa;font-size:11px}
 
 .dpad{position:fixed;bottom:20px;left:16px;width:120px;height:120px;z-index:200}
-.dpad-btn{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .1s}
-.dpad-btn:active{background:rgba(139,92,246,0.15);border-color:var(--purple);color:var(--purple);transform:scale(0.88)}
+.dpad-btn{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .1s}
+.dpad-btn:active{background:rgba(139,92,246,0.2);border-color:var(--purple);color:var(--purple);transform:scale(0.88)}
 .dpad-up{top:0;left:40px}
 .dpad-down{bottom:0;left:40px}
 .dpad-left{top:40px;left:0}
 .dpad-right{top:40px;right:0}
 
-.action-btns{position:fixed;bottom:20px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;z-index:200}
-.action-btn{width:54px;height:54px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)}
-.action-btn:active{transform:scale(0.86)}
-.btn-rotate{border-color:var(--gold);color:var(--gold)}
-.btn-run{border-color:var(--success);color:var(--success);width:46px;height:46px;font-size:16px}
-.btn-zoom{border-color:var(--accent);color:var(--accent);width:46px;height:46px;font-size:16px}
-
-.tg-dropdown{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;z-index:250;min-width:300px;max-width:92%;display:none;backdrop-filter:blur(12px)}
+.tg-dropdown{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:10px 14px;z-index:250;min-width:280px;max-width:92%;display:none;backdrop-filter:blur(12px)}
 .tg-dropdown.show{display:block}
 .tg-dropdown .row{display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap}
-.tg-dropdown input{flex:1;padding:5px 10px;border-radius:6px;border:1px solid rgba(255,215,0,0.1);background:#0a0a1a;color:#fff;font-size:11px;font-family:inherit;min-width:60px}
-.tg-dropdown .btn{padding:5px 12px;border:none;border-radius:6px;font-weight:700;font-size:10px;cursor:pointer;font-family:inherit}
+.tg-dropdown input{flex:1;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,215,0,0.1);background:#0a0a1a;color:#fff;font-size:10px;font-family:inherit;min-width:50px}
+.tg-dropdown .btn{padding:4px 10px;border:none;border-radius:6px;font-weight:700;font-size:10px;cursor:pointer;font-family:inherit}
 .btn-accent{background:var(--accent);color:#111}
-.btn-gold{background:var(--gold);color:#111}
 .btn-purple{background:var(--purple);color:#fff}
-.btn-green{background:var(--success);color:#111}
 .btn-red{background:var(--error);color:#fff}
 .tg-toggle{position:fixed;bottom:155px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none}
 
-.skin-selector{position:fixed;bottom:220px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:12px;z-index:230;display:none;backdrop-filter:blur(12px);min-width:200px;max-height:200px;overflow-y:auto}
+.skin-selector{position:fixed;bottom:220px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:10px;z-index:230;display:none;backdrop-filter:blur(12px);min-width:180px;max-height:180px;overflow-y:auto}
 .skin-selector.show{display:block}
-.skin-selector h4{color:var(--gold);font-size:12px;margin-bottom:8px;text-align:center}
-.skin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}
-.skin-option{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:6px;text-align:center;cursor:pointer;transition:.2s}
-.skin-option:hover{background:rgba(139,92,246,0.08);border-color:var(--purple)}
-.skin-option .preview{width:32px;height:32px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;font-size:16px;background:#0a0a1a;overflow:hidden}
+.skin-selector h4{color:var(--gold);font-size:12px;margin-bottom:6px;text-align:center}
+.skin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px}
+.skin-option{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:4px;text-align:center;cursor:pointer;transition:.2s}
+.skin-option:hover{background:rgba(139,92,246,0.1);border-color:var(--purple)}
+.skin-option .preview{width:28px;height:28px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
 .skin-option .preview img{width:100%;height:100%;object-fit:cover}
-.skin-option .sname{font-size:8px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skin-option .sname{font-size:7px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .skin-option.active{border-color:var(--gold);background:rgba(255,215,0,0.05)}
 
-.char-grid-panel{position:fixed;bottom:280px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:10px 12px;z-index:230;max-width:92%;width:360px;display:none;max-height:160px;overflow-y:auto}
-.char-grid-panel.show{display:block}
-.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px}
-.char-mini{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);border-radius:6px;padding:6px;text-align:center;cursor:pointer;transition:.2s}
-.char-mini:hover{background:rgba(139,92,246,0.08);border-color:var(--purple)}
-.char-mini .avatar{width:28px;height:28px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
-.char-mini .avatar img{width:100%;height:100%;object-fit:cover}
-.char-mini .cname{font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skin-toggle{position:fixed;top:10px;right:60px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;cursor:pointer;display:none}
+.skin-toggle:hover{color:var(--gold)}
 
 .toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
 .toast{background:rgba(0,0,0,0.9);padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
@@ -82,40 +64,26 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .toast.error{border-color:var(--error);color:var(--error)}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
-
-.skin-toggle{position:fixed;top:10px;right:60px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;cursor:pointer;display:none}
-.skin-toggle:hover{color:var(--gold)}
-
-.anim-status{position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(139,92,246,0.15);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;pointer-events:none}
-.anim-status span{margin-left:4px}
-.anim-status .state-idle{color:#888}
-.anim-status .state-run{color:var(--success)}
-.anim-status .state-rotate{color:var(--gold)}
 </style>
 </head>
 <body>
 
 <!-- START -->
 <div id="start-screen">
-  <div class="start-logo">📌 الملصق في الخريطة</div>
-  <div class="start-subtitle">جلب الملصق من القناة • يظهر في الخريطة • أعمدة شفافة</div>
+  <div class="start-logo">🗺️ خريطة 2D</div>
+  <div class="start-subtitle">ملصقات ظاهرة • تحرك مثل بوبجي</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v17.0 | Sticker in Map + Pillars</div>
+  <div class="version-tag">v19.0 | 2D Map + Stickers</div>
 </div>
 
 <!-- GAME -->
 <div id="game-container">
-  <div id="game-canvas"></div>
+  <canvas id="game-canvas"></canvas>
 
   <div class="hud">
-    <div class="player-bar">
-      <div class="label"><span>📌 شخصيتي</span><span id="char-name">جاري التحميل...</span></div>
-    </div>
-  </div>
-
-  <div class="anim-status" id="anim-status">
-    الحالة: <span class="state-idle" id="anim-state-text">🛑 متوقف</span>
+    <div class="title">🗺️ الخريطة</div>
+    <div class="info" id="char-name">لا توجد شخصية</div>
   </div>
 
   <div class="dpad" id="dpad">
@@ -123,11 +91,6 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     <div class="dpad-btn dpad-down" data-dir="down">▼</div>
     <div class="dpad-btn dpad-left" data-dir="left">◀</div>
     <div class="dpad-btn dpad-right" data-dir="right">▶</div>
-  </div>
-  <div class="action-btns">
-    <button class="action-btn btn-rotate" onclick="toggleRotate()">🔄</button>
-    <button class="action-btn btn-run" onclick="toggleAutoRun()">🏃</button>
-    <button class="action-btn btn-zoom" onclick="resetCamera()">📷</button>
   </div>
 
   <button class="tg-toggle" id="tg-toggle" onclick="toggleTG()">📡 القناة</button>
@@ -149,10 +112,6 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     <div class="skin-grid" id="skin-grid"></div>
   </div>
 
-  <div class="char-grid-panel" id="char-grid-panel">
-    <div class="char-grid" id="char-grid"></div>
-  </div>
-
   <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">📌 شخصيتي</button>
 </div>
 
@@ -160,7 +119,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  الملصق في الخريطة v17.0 — أعمدة شفافة
+//  خريطة 2D v19.0 — ملصقات ظاهرة
 // ============================================================
 
 // ============================================================
@@ -214,7 +173,7 @@ function renderSkinSelector() {
 
   const defaultOpt = document.createElement('div');
   defaultOpt.className = 'skin-option' + (!playerSkin ? ' active' : '');
-  defaultOpt.innerHTML = `<div class="preview" style="font-size:20px;">🧑</div><div class="sname">افتراضي</div>`;
+  defaultOpt.innerHTML = `<div class="preview" style="font-size:16px;">🧑</div><div class="sname">افتراضي</div>`;
   defaultOpt.onclick = function() { selectSkin(null); };
   grid.appendChild(defaultOpt);
 
@@ -225,7 +184,6 @@ function renderSkinSelector() {
     opt.innerHTML = `
       <div class="preview">${avatar}</div>
       <div class="sname">${char.name}</div>
-      <div style="font-size:7px;color:#888;">${char.isSticker ? '📌 ملصق' : '🖼️ صورة'}</div>
     `;
     opt.onclick = function() { selectSkin(char); };
     grid.appendChild(opt);
@@ -248,7 +206,9 @@ function selectSkin(char) {
     showToast('🧑 المظهر الافتراضي', 'info');
   }
   
-  createPlayerInMap();
+  // إعادة رسم الشخصية في الخريطة
+  renderGame();
+  
   renderSkinSelector();
   document.getElementById('skin-selector').classList.remove('show');
 }
@@ -372,7 +332,6 @@ async function fetchStickers() {
 
     if (newItems > 0) {
       setTGStatus('✅ جلب ' + newItems + ' عنصر!', 'success');
-      showCharGrid();
       renderSkinSelector();
       showToast('📌 تم جلب ' + newItems + ' ملصق/صورة!', 'success');
       
@@ -388,602 +347,261 @@ async function fetchStickers() {
   }
 }
 
-function showCharGrid() {
-  const panel = document.getElementById('char-grid-panel');
-  const grid = document.getElementById('char-grid');
-  grid.innerHTML = '';
-
-  for (const char of fetchedStickers) {
-    const div = document.createElement('div');
-    div.className = 'char-mini';
-    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '📌';
-    div.innerHTML = `
-      <div class="avatar">${avatar}</div>
-      <div class="cname">${char.name}</div>
-      <div style="font-size:7px;color:#888;">${char.isSticker ? '📌 ملصق' : '🖼️ صورة'}</div>
-    `;
-    div.onclick = function() { selectSkin(char); };
-    grid.appendChild(div);
-  }
-  panel.classList.add('show');
-}
-
 // ============================================================
-//  THREE.JS — الخريطة مع الشخصية
+//  GAME ENGINE 2D
 // ============================================================
 
-let scene, camera, renderer;
-let playerGroup = null;
-let clock = new THREE.Clock();
-let autoRun = false;
-let runSpeed = 2.5;
-let moveSpeed = 0.06;
-let runTime = 0;
-let limbRefs = {};
-let playerState = 'idle';
-let touchDirs = { up: false, down: false, left: false, right: false };
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
 
-let cameraAngleX = 0.3;
-let cameraAngleY = 0.3;
-let cameraDistance = 5;
-let targetCameraPosition = new THREE.Vector3();
-let cameraSmoothness = 0.08;
-
-let worldGroup = null;
-let mapSize = 20;
+// إعدادات الخريطة
+const MAP_SIZE = 16;
+const TILE_SIZE = 40;
 let mapData = [];
 
-function initThreeJS() {
-  const container = document.getElementById('game-canvas');
+// اللاعب
+let player = {
+  x: 1.5,
+  y: 1.5,
+  speed: 0.08,
+  direction: 'down',
+  frame: 0,
+  frameTimer: 0
+};
 
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0a1a);
-  scene.fog = new THREE.Fog(0x0a0a1a, 15, 30);
+// الكاميرا
+let camera = { x: 0, y: 0 };
 
-  const aspect = window.innerWidth / window.innerHeight;
-  camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
-  camera.position.set(0, 8, 8);
-  camera.lookAt(0, 0, 0);
-
-  renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
-  container.appendChild(renderer.domElement);
-
-  const ambient = new THREE.AmbientLight(0x404060, 0.6);
-  scene.add(ambient);
-
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  dirLight.position.set(10, 15, 10);
-  dirLight.castShadow = true;
-  dirLight.shadow.mapSize.width = 2048;
-  dirLight.shadow.mapSize.height = 2048;
-  scene.add(dirLight);
-
-  const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
-  fillLight.position.set(-10, 5, 10);
-  scene.add(fillLight);
-
-  const rimLight = new THREE.DirectionalLight(0x446688, 0.3);
-  rimLight.position.set(0, 3, -15);
-  scene.add(rimLight);
-
-  createMap();
-  createPlayerInMap();
-
-  window.addEventListener('resize', function() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-  });
-
-  animateThree();
-}
+// أزرار اللمس
+let touchDirs = { up: false, down: false, left: false, right: false };
 
 // ============================================================
 //  إنشاء الخريطة
 // ============================================================
 
-function createMap() {
-  if (worldGroup) {
-    scene.remove(worldGroup);
-    worldGroup = null;
-  }
-
-  worldGroup = new THREE.Group();
-  scene.add(worldGroup);
-
+function generateMap() {
   mapData = [];
-  for (let y = 0; y < mapSize; y++) {
+  for (let y = 0; y < MAP_SIZE; y++) {
     const row = [];
-    for (let x = 0; x < mapSize; x++) {
-      if (x === 0 || x === mapSize-1 || y === 0 || y === mapSize-1) {
-        row.push(1);
-      } else if (Math.random() < 0.08 && !(x <= 3 && y <= 3)) {
-        row.push(Math.floor(Math.random() * 3) + 1);
+    for (let x = 0; x < MAP_SIZE; x++) {
+      // حدود الخريطة
+      if (x === 0 || x === MAP_SIZE-1 || y === 0 || y === MAP_SIZE-1) {
+        row.push(1); // جدار
+      } else if (Math.random() < 0.1 && !(x <= 3 && y <= 3)) {
+        row.push(1); // جدار عشوائي
       } else {
-        row.push(0);
+        row.push(0); // أرضية
       }
     }
     mapData.push(row);
   }
+  // منطقة البداية خالية
   for (let y = 1; y <= 3; y++) {
     for (let x = 1; x <= 3; x++) {
       mapData[y][x] = 0;
     }
   }
+}
 
-  const groundGeo = new THREE.PlaneGeometry(mapSize, mapSize);
-  const groundMat = new THREE.MeshStandardMaterial({
-    color: 0x0a0a20,
-    roughness: 0.9,
-    metalness: 0.1
-  });
-  const ground = new THREE.Mesh(groundGeo, groundMat);
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -0.1;
-  ground.receiveShadow = true;
-  worldGroup.add(ground);
+// ============================================================
+//  رسم الخريطة
+// ============================================================
 
-  const gridHelper = new THREE.GridHelper(mapSize, mapSize, 0x333366, 0x222244);
-  gridHelper.position.y = 0;
-  worldGroup.add(gridHelper);
-
-  const wallColors = [0x333366, 0x663333, 0x336666];
-  for (let y = 0; y < mapSize; y++) {
-    for (let x = 0; x < mapSize; x++) {
-      if (mapData[y][x] > 0) {
-        const color = wallColors[mapData[y][x] - 1] || 0x333366;
-        const wallMat = new THREE.MeshStandardMaterial({
-          color: color,
-          roughness: 0.7,
-          metalness: 0.3,
-          emissive: color,
-          emissiveIntensity: 0.1
-        });
-        const wall = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.9), wallMat);
-        wall.position.set(x - mapSize/2, 0.3, y - mapSize/2);
-        wall.castShadow = true;
-        wall.receiveShadow = true;
-        worldGroup.add(wall);
+function renderGame() {
+  const w = canvas.width;
+  const h = canvas.height;
+  
+  // مسح الشاشة
+  ctx.clearRect(0, 0, w, h);
+  
+  // حساب الكاميرا
+  const halfW = w / 2;
+  const halfH = h / 2;
+  camera.x = player.x * TILE_SIZE - halfW;
+  camera.y = player.y * TILE_SIZE - halfH;
+  
+  // حدود الكاميرا
+  const maxX = MAP_SIZE * TILE_SIZE - w;
+  const maxY = MAP_SIZE * TILE_SIZE - h;
+  camera.x = Math.max(0, Math.min(maxX, camera.x));
+  camera.y = Math.max(0, Math.min(maxY, camera.y));
+  
+  ctx.save();
+  ctx.translate(-camera.x, -camera.y);
+  
+  // رسم الخريطة
+  for (let y = 0; y < MAP_SIZE; y++) {
+    for (let x = 0; x < MAP_SIZE; x++) {
+      const px = x * TILE_SIZE;
+      const py = y * TILE_SIZE;
+      
+      if (mapData[y][x] === 1) {
+        // جدار
+        ctx.fillStyle = '#2a2a4a';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        ctx.strokeStyle = '#3a3a5a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
+      } else {
+        // أرضية
+        const isLight = (x + y) % 2 === 0;
+        ctx.fillStyle = isLight ? '#1a1a2e' : '#222244';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
       }
     }
   }
-}
-
-// ============================================================
-//  استخراج اللون السائد من الملصق
-// ============================================================
-
-function getDominantColor(image) {
-    try {
-        const canvas = document.createElement('canvas');
-        canvas.width = 50;
-        canvas.height = 50;
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(image, 0, 0, 50, 50);
-        
-        const imageData = ctx.getImageData(0, 0, 50, 50);
-        const data = imageData.data;
-        
-        let r = 0, g = 0, b = 0, count = 0;
-        for (let i = 0; i < data.length; i += 4) {
-            r += data[i];
-            g += data[i + 1];
-            b += data[i + 2];
-            count++;
-        }
-        
-        r = Math.round(r / count);
-        g = Math.round(g / count);
-        b = Math.round(b / count);
-        
-        return (r << 16) | (g << 8) | b;
-    } catch(e) {
-        return 0x8b5cf6;
-    }
-}
-
-// ============================================================
-//  إنشاء الشخصية من الملصق مع أعمدة شفافة
-// ============================================================
-
-function createPlayerInMap() {
-  if (playerGroup) {
-    scene.remove(playerGroup);
-    playerGroup = null;
-    limbRefs = {};
-  }
-
-  const group = new THREE.Group();
-
+  
+  // ============================================================
+  //  رسم الشخصية (الملصق)
+  // ============================================================
+  
+  const px = player.x * TILE_SIZE;
+  const py = player.y * TILE_SIZE;
+  const size = TILE_SIZE * 0.8;
+  
+  // ظل الشخصية
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath();
+  ctx.ellipse(px + size/2, py + size * 0.85, size * 0.4, size * 0.1, 0, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // هل لدينا ملصق؟
   if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
     const img = loadedImages[playerSkin.id];
-    const dominantColor = getDominantColor(img);
-    const isSticker = playerSkin.isSticker || false;
     
-    // ============================================================
-    //  1. الجسم الرئيسي (الملصق)
-    // ============================================================
-    const bodyMat = new THREE.MeshStandardMaterial({
-        color: 0x8b5cf6,
-        roughness: 0.3,
-        metalness: 0.1,
-        transparent: true,
-        side: THREE.DoubleSide
-    });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.85, 0.95, 0.15), bodyMat);
-    body.position.y = 0.45;
-    body.castShadow = true;
-    group.add(body);
-    limbRefs.body = body;
+    // إطار متوهج حول الملصق
+    const glow = ctx.createRadialGradient(
+      px + size/2, py + size/2, 0,
+      px + size/2, py + size/2, size * 0.9
+    );
+    glow.addColorStop(0, 'rgba(139,92,246,0.15)');
+    glow.addColorStop(1, 'rgba(139,92,246,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(px + size/2, py + size/2, size * 0.9, 0, Math.PI * 2);
+    ctx.fill();
     
-    // تطبيق الملصق على الجسم
-    try {
-        const imgCanvas = document.createElement('canvas');
-        const size = 256;
-        imgCanvas.width = size;
-        imgCanvas.height = size;
-        const ctx = imgCanvas.getContext('2d');
-        
-        const imgSize = size * 0.85;
-        const offset = (size - imgSize) / 2;
-        ctx.clearRect(0, 0, size, size);
-        ctx.drawImage(img, offset, offset, imgSize, imgSize);
-        
-        const texture = new THREE.CanvasTexture(imgCanvas);
-        texture.needsUpdate = true;
-        body.material.map = texture;
-        body.material.needsUpdate = true;
-    } catch(e) {}
+    // رسم الملصق
+    ctx.save();
+    ctx.beginPath();
+    // شكل دائري للملصق
+    ctx.arc(px + size/2, py + size/2, size * 0.45, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(img, px + size * 0.05, py + size * 0.05, size * 0.9, size * 0.9);
+    ctx.restore();
     
-    // ============================================================
-    //  2. الرأس
-    // ============================================================
-    const headMat = new THREE.MeshStandardMaterial({
-        color: dominantColor || 0x8b5cf6,
-        roughness: 0.3,
-        metalness: 0.2,
-        emissive: dominantColor || 0x3b1f6e,
-        emissiveIntensity: 0.2
-    });
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.18, 12, 12), headMat);
-    head.position.y = 1.0;
-    head.castShadow = true;
-    group.add(head);
-    limbRefs.head = head;
+    // إطار حول الملصق
+    ctx.strokeStyle = '#8b5cf6';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(px + size/2, py + size/2, size * 0.45, 0, Math.PI * 2);
+    ctx.stroke();
     
-    // ============================================================
-    //  3. الأعمدة الشفافة (تتحرك ولا تُرى)
-    // ============================================================
-    const transparentMat = new THREE.MeshStandardMaterial({
-        color: 0xffffff,
-        transparent: true,
-        opacity: 0.0,
-        roughness: 0.5,
-        metalness: 0.1
-    });
+    // اسم الملصق
+    ctx.fillStyle = '#c084fc';
+    ctx.font = 'bold 10px Cairo';
+    ctx.textAlign = 'center';
+    ctx.fillText(playerSkin.name || 'ملصق', px + size/2, py - 8);
     
-    // العمود الأيسر (ذراع) - شفاف
-    const armPivotL = new THREE.Group();
-    armPivotL.position.set(-0.45, 0.75, 0);
-    const armPillarL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.5, 6), transparentMat);
-    armPillarL.position.y = -0.25;
-    armPillarL.castShadow = false;
-    armPivotL.add(armPillarL);
-    group.add(armPivotL);
-    limbRefs.armL = armPivotL;
-    
-    // العمود الأيمن (ذراع) - شفاف
-    const armPivotR = new THREE.Group();
-    armPivotR.position.set(0.45, 0.75, 0);
-    const armPillarR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.5, 6), transparentMat);
-    armPillarR.position.y = -0.25;
-    armPillarR.castShadow = false;
-    armPivotR.add(armPillarR);
-    group.add(armPivotR);
-    limbRefs.armR = armPivotR;
-    
-    // العمود الأيسر (رجل) - شفاف
-    const legPivotL = new THREE.Group();
-    legPivotL.position.set(-0.16, 0.0, 0);
-    const legPillarL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.4, 6), transparentMat);
-    legPillarL.position.y = -0.2;
-    legPillarL.castShadow = false;
-    legPivotL.add(legPillarL);
-    group.add(legPivotL);
-    limbRefs.legL = legPivotL;
-    
-    // العمود الأيمن (رجل) - شفاف
-    const legPivotR = new THREE.Group();
-    legPivotR.position.set(0.16, 0.0, 0);
-    const legPillarR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.4, 6), transparentMat);
-    legPillarR.position.y = -0.2;
-    legPillarR.castShadow = false;
-    legPivotR.add(legPillarR);
-    group.add(legPivotR);
-    limbRefs.legR = legPivotR;
-    
-    // ============================================================
-    //  4. الأطراف الملونة (تظهر وتتحرك)
-    // ============================================================
-    const limbColor = dominantColor || 0x8b5cf6;
-    const limbMat = new THREE.MeshStandardMaterial({
-        color: limbColor,
-        roughness: 0.4,
-        metalness: 0.3,
-        emissive: limbColor,
-        emissiveIntensity: 0.1
-    });
-    
-    // الذراع الأيسر
-    const armLimbL = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.35, 6), limbMat);
-    armLimbL.position.set(-0.45, 0.55, 0);
-    armLimbL.castShadow = true;
-    group.add(armLimbL);
-    
-    // الذراع الأيمن
-    const armLimbR = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.35, 6), limbMat);
-    armLimbR.position.set(0.45, 0.55, 0);
-    armLimbR.castShadow = true;
-    group.add(armLimbR);
-    
-    // الرجل اليسرى
-    const legLimbL = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.3, 6), limbMat);
-    legLimbL.position.set(-0.16, 0.15, 0);
-    legLimbL.castShadow = true;
-    group.add(legLimbL);
-    
-    // الرجل اليمنى
-    const legLimbR = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.3, 6), limbMat);
-    legLimbR.position.set(0.16, 0.15, 0);
-    legLimbR.castShadow = true;
-    group.add(legLimbR);
-    
-    // ============================================================
-    //  5. عيون متوهجة
-    // ============================================================
-    const eyeMat = new THREE.MeshStandardMaterial({
-        color: 0xffd700,
-        emissive: 0xffd700,
-        emissiveIntensity: 0.8
-    });
-    const eyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
-    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeL.position.set(-0.07, 1.04, 0.14);
-    group.add(eyeL);
-    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeR.position.set(0.07, 1.04, 0.14);
-    group.add(eyeR);
-    limbRefs.eyeL = eyeL;
-    limbRefs.eyeR = eyeR;
-    
-    // ============================================================
-    //  6. الظل
-    // ============================================================
-    const circleGeo = new THREE.RingGeometry(0.3, 0.6, 16);
-    const circleMat = new THREE.MeshBasicMaterial({
-        color: 0x333366,
-        transparent: true,
-        opacity: 0.3,
-        side: THREE.DoubleSide
-    });
-    const circle = new THREE.Mesh(circleGeo, circleMat);
-    circle.rotation.x = -Math.PI / 2;
-    circle.position.y = 0.01;
-    group.add(circle);
-    limbRefs.shadow = circle;
-
   } else {
     // شخصية افتراضية
-    createDefaultCharacter(group);
+    ctx.fillStyle = '#00f2ff';
+    ctx.shadowColor = '#00f2ff';
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.arc(px + size/2, py + size/2, size * 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    
+    // عيون
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(px + size * 0.35, py + size * 0.4, size * 0.08, 0, Math.PI * 2);
+    ctx.arc(px + size * 0.65, py + size * 0.4, size * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#333';
+    ctx.beginPath();
+    ctx.arc(px + size * 0.38, py + size * 0.42, size * 0.04, 0, Math.PI * 2);
+    ctx.arc(px + size * 0.68, py + size * 0.42, size * 0.04, 0, Math.PI * 2);
+    ctx.fill();
   }
-
-  group.position.set(0, 0, 0);
-  scene.add(group);
-  playerGroup = group;
+  
+  ctx.restore();
+  
+  // معلومات في الأعلى
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(10, 10, 200, 20);
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px Cairo';
+  ctx.textAlign = 'left';
+  ctx.fillText('📍 ' + Math.round(player.x) + ',' + Math.round(player.y), 16, 26);
 }
 
 // ============================================================
-//  شخصية افتراضية
+//  حركة اللاعب
 // ============================================================
 
-function createDefaultCharacter(group) {
-  const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0x00f2ff,
-    roughness: 0.3,
-    metalness: 0.7
-  });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.5), bodyMat);
-  body.position.y = 0.45;
-  body.castShadow = true;
-  group.add(body);
-  limbRefs.body = body;
-
-  const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0b8, roughness: 0.5 });
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), headMat);
-  head.position.y = 1.0;
-  head.castShadow = true;
-  group.add(head);
-  limbRefs.head = head;
-
-  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x333 });
-  const eyeGeo = new THREE.SphereGeometry(0.04, 6, 6);
-  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeL.position.set(-0.1, 1.05, 0.23);
-  group.add(eyeL);
-  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeR.position.set(0.1, 1.05, 0.23);
-  group.add(eyeR);
-}
-
-// ============================================================
-//  حركة الشخصية
-// ============================================================
-
-function updateAnimationState() {
-  const stateText = document.getElementById('anim-state-text');
-  if (playerState === 'run') {
-    stateText.textContent = '🏃 يجري';
-    stateText.className = 'state-run';
-  } else if (playerState === 'rotate') {
-    stateText.textContent = '🔄 يدور';
-    stateText.className = 'state-rotate';
-  } else {
-    stateText.textContent = '🛑 متوقف';
-    stateText.className = 'state-idle';
-  }
-}
-
-function animateLimbs(delta) {
-  if (!limbRefs.armL || !limbRefs.armR || !limbRefs.legL || !limbRefs.legR) return;
-
-  if (playerState === 'run') {
-    runTime += delta * runSpeed;
-    const armAngle = Math.sin(runTime) * 0.6;
-    const legAngle = Math.sin(runTime + Math.PI) * 0.6;
-    const bobbing = Math.abs(Math.sin(runTime * 2)) * 0.05;
-
-    limbRefs.armL.rotation.x = armAngle;
-    limbRefs.armR.rotation.x = -armAngle;
-    limbRefs.legL.rotation.x = legAngle;
-    limbRefs.legR.rotation.x = -legAngle;
-
-    if (limbRefs.body) limbRefs.body.position.y = 0.45 + bobbing;
-    if (limbRefs.head) limbRefs.head.position.y = 1.0 + bobbing;
-
-    if (playerGroup) {
-      if (touchDirs.up || autoRun) {
-        playerGroup.position.x += Math.sin(playerGroup.rotation.y) * moveSpeed;
-        playerGroup.position.z += Math.cos(playerGroup.rotation.y) * moveSpeed;
-      }
-      if (touchDirs.down) {
-        playerGroup.position.x -= Math.sin(playerGroup.rotation.y) * moveSpeed * 0.5;
-        playerGroup.position.z -= Math.cos(playerGroup.rotation.y) * moveSpeed * 0.5;
-      }
-      
-      const halfMap = mapSize / 2 - 0.5;
-      playerGroup.position.x = Math.max(-halfMap, Math.min(halfMap, playerGroup.position.x));
-      playerGroup.position.z = Math.max(-halfMap, Math.min(halfMap, playerGroup.position.z));
-      checkWallCollision();
-    }
-  } else if (playerState === 'rotate') {
-    if (playerGroup) {
-      const rotSpeed = 0.04;
-      if (touchDirs.left) playerGroup.rotation.y += rotSpeed;
-      if (touchDirs.right) playerGroup.rotation.y -= rotSpeed;
-    }
-    limbRefs.armL.rotation.x *= 0.9;
-    limbRefs.armR.rotation.x *= 0.9;
-    limbRefs.legL.rotation.x *= 0.9;
-    limbRefs.legR.rotation.x *= 0.9;
-  } else {
-    const breath = Math.sin(Date.now() * 0.002) * 0.02;
-    limbRefs.armL.rotation.x += (breath - limbRefs.armL.rotation.x) * 0.1;
-    limbRefs.armR.rotation.x += (-breath - limbRefs.armR.rotation.x) * 0.1;
-    limbRefs.legL.rotation.x *= 0.9;
-    limbRefs.legR.rotation.x *= 0.9;
-    if (limbRefs.body) limbRefs.body.position.y += (0.45 - limbRefs.body.position.y) * 0.1;
-    if (limbRefs.head) limbRefs.head.position.y += (1.0 - limbRefs.head.position.y) * 0.1;
-  }
-
-  if (limbRefs.shadow && playerGroup) {
-    limbRefs.shadow.position.x = playerGroup.position.x;
-    limbRefs.shadow.position.z = playerGroup.position.z;
-  }
-}
-
-function checkWallCollision() {
-  if (!playerGroup) return;
-  const px = Math.round(playerGroup.position.x + mapSize/2);
-  const pz = Math.round(playerGroup.position.z + mapSize/2);
-  if (px >= 0 && px < mapSize && pz >= 0 && pz < mapSize) {
-    if (mapData[pz][px] > 0) {
-      playerGroup.position.x -= Math.sin(playerGroup.rotation.y) * moveSpeed * 0.5;
-      playerGroup.position.z -= Math.cos(playerGroup.rotation.y) * moveSpeed * 0.5;
+function updatePlayer() {
+  let dx = 0, dy = 0;
+  
+  if (touchDirs.up) dy = -player.speed;
+  if (touchDirs.down) dy = player.speed;
+  if (touchDirs.left) dx = -player.speed;
+  if (touchDirs.right) dx = player.speed;
+  
+  // تحديث الاتجاه
+  if (dx < 0) player.direction = 'left';
+  else if (dx > 0) player.direction = 'right';
+  else if (dy < 0) player.direction = 'up';
+  else if (dy > 0) player.direction = 'down';
+  
+  // حركة
+  const newX = player.x + dx;
+  const newY = player.y + dy;
+  
+  // التحقق من التصادم مع الجدران
+  const checkX = Math.round(newX);
+  const checkY = Math.round(newY);
+  
+  if (checkX >= 0 && checkX < MAP_SIZE && checkY >= 0 && checkY < MAP_SIZE) {
+    if (mapData[checkY][checkX] !== 1) {
+      player.x = newX;
     }
   }
-}
-
-function handleMovementInput() {
-  let newState = 'idle';
-  if (touchDirs.up || touchDirs.down || autoRun) newState = 'run';
-  else if (touchDirs.left || touchDirs.right) newState = 'rotate';
-  if (newState !== playerState) {
-    playerState = newState;
-    updateAnimationState();
+  
+  if (checkX >= 0 && checkX < MAP_SIZE && checkY >= 0 && checkY < MAP_SIZE) {
+    if (mapData[checkY][checkX] !== 1) {
+      player.y = newY;
+    }
   }
+  
+  // حدود الخريطة
+  player.x = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.x));
+  player.y = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.y));
 }
 
 // ============================================================
-//  الكاميرا التابعة
+//  حلقة اللعبة
 // ============================================================
 
-function updateFollowCamera() {
-  if (!playerGroup) return;
-  const targetX = playerGroup.position.x;
-  const targetY = playerGroup.position.y + 1.0;
-  const targetZ = playerGroup.position.z;
-
-  const x = Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
-  const y = Math.sin(cameraAngleY) * cameraDistance + 0.5;
-  const z = Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
-
-  targetCameraPosition.set(targetX + x, targetY + y, targetZ + z);
-  camera.position.lerp(targetCameraPosition, cameraSmoothness);
-  camera.lookAt(targetX, targetY, targetZ);
-}
-
-function animateThree() {
-  if (!renderer) return;
-  requestAnimationFrame(animateThree);
-
-  const delta = clock.getDelta();
-
-  handleMovementInput();
-  animateLimbs(delta);
-  updateFollowCamera();
-
-  renderer.render(scene, camera);
+function gameLoop() {
+  updatePlayer();
+  renderGame();
+  requestAnimationFrame(gameLoop);
 }
 
 // ============================================================
-//  التحكم
+//  حجم الشاشة
 // ============================================================
 
-function toggleRotate() {
-  showToast('🔄 الكاميرا تتبع الشخصية', 'info');
-}
-
-function toggleAutoRun() {
-  autoRun = !autoRun;
-  if (autoRun) {
-    playerState = 'run';
-    showToast('🏃 جري تلقائي مفعل', 'success');
-  } else {
-    playerState = 'idle';
-    showToast('🛑 توقف', 'info');
-  }
-  updateAnimationState();
-}
-
-function resetCamera() {
-  cameraAngleX = 0.3;
-  cameraAngleY = 0.3;
-  cameraDistance = 5;
-  if (playerGroup) {
-    playerGroup.position.set(0, 0, 0);
-    playerGroup.rotation.y = 0;
-  }
-  showToast('📷 تم إعادة ضبط الكاميرا', 'info');
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  renderGame();
 }
 
 // ============================================================
-//  TOUCH & CONTROLS
+//  أزرار التحكم
 // ============================================================
 
 function setupTouchControls() {
@@ -993,7 +611,7 @@ function setupTouchControls() {
       e.preventDefault();
       touchDirs[dir] = true;
       btn.style.background = 'rgba(139,92,246,0.15)';
-      btn.style.borderColor = 'var(--purple)';
+      btn.style.borderColor = '#8b5cf6';
     }, { passive: false });
     btn.addEventListener('touchend', function(e) {
       e.preventDefault();
@@ -1009,40 +627,12 @@ function setupTouchControls() {
   });
 }
 
-let isDragging = false;
-let prevMouseX = 0, prevMouseY = 0;
-
-document.addEventListener('mousedown', function(e) {
-  isDragging = true;
-  prevMouseX = e.clientX;
-  prevMouseY = e.clientY;
-});
-
-document.addEventListener('mousemove', function(e) {
-  if (!isDragging) return;
-  const dx = e.clientX - prevMouseX;
-  const dy = e.clientY - prevMouseY;
-  cameraAngleX += dx * 0.005;
-  cameraAngleY += dy * 0.005;
-  cameraAngleY = Math.max(-1.0, Math.min(1.0, cameraAngleY));
-  prevMouseX = e.clientX;
-  prevMouseY = e.clientY;
-});
-
-document.addEventListener('mouseup', function() { isDragging = false; });
-
-document.addEventListener('wheel', function(e) {
-  cameraDistance += e.deltaY * 0.005;
-  cameraDistance = Math.max(2.5, Math.min(8, cameraDistance));
-}, { passive: true });
-
+// Keyboard
 document.addEventListener('keydown', function(e) {
   if (e.key === 'ArrowUp') touchDirs.up = true;
   if (e.key === 'ArrowDown') touchDirs.down = true;
   if (e.key === 'ArrowLeft') touchDirs.left = true;
   if (e.key === 'ArrowRight') touchDirs.right = true;
-  if (e.key === 'c' || e.key === 'C') resetCamera();
-  if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); toggleAutoRun(); }
 });
 document.addEventListener('keyup', function(e) {
   if (e.key === 'ArrowUp') touchDirs.up = false;
@@ -1075,7 +665,10 @@ function enterApp() {
     document.getElementById('game-container').style.display = 'block';
     document.getElementById('tg-toggle').style.display = 'block';
     document.getElementById('skin-toggle').style.display = 'block';
-    initThreeJS();
+    
+    generateMap();
+    resize();
+    window.addEventListener('resize', resize);
     
     setTimeout(function() {
       if (connected) {
@@ -1085,6 +678,7 @@ function enterApp() {
       }
     }, 1500);
     
+    gameLoop();
   }, 500);
 
   const savedToken = localStorage.getItem('nardo_bot_token');
@@ -1112,7 +706,7 @@ setTimeout(function() {
   document.getElementById('start-btn').style.display = 'block';
 }, 500);
 
-console.log('📌 الملصق في الخريطة مع أعمدة شفافة — جاهز!');
+console.log('🗺️ خريطة 2D مع ملصقات ظاهرة — جاهز!');
 </script>
 </body>
 </html>
