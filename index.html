@@ -3,13 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>خريطة 2D — ملصقات ظاهرة</title>
+<title>ملصق متحرك في الخريطة 2D</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
 :root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--info:#60a5fa;--accent:#00f2ff;--purple:#8b5cf6}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none}
+
 #start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px}
 .start-logo{font-size:42px;font-weight:900;color:var(--gold);animation:float 3s ease-in-out infinite}
 .start-subtitle{font-size:15px;color:#666;text-align:center;max-width:350px}
@@ -41,6 +43,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .tg-dropdown .btn{padding:4px 10px;border:none;border-radius:6px;font-weight:700;font-size:10px;cursor:pointer;font-family:inherit}
 .btn-accent{background:var(--accent);color:#111}
 .btn-purple{background:var(--purple);color:#fff}
+.btn-gold{background:var(--gold);color:#111}
 .btn-red{background:var(--error);color:#fff}
 .tg-toggle{position:fixed;bottom:155px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none}
 
@@ -64,22 +67,29 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .toast.error{border-color:var(--error);color:var(--error)}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
+
+/* حاوية الملصق المتحرك */
+#sticker-container{position:fixed;width:150px;height:150px;z-index:300;pointer-events:none;display:none}
+#sticker-container svg{width:100%;height:100%}
 </style>
 </head>
 <body>
 
 <!-- START -->
 <div id="start-screen">
-  <div class="start-logo">🗺️ خريطة 2D</div>
-  <div class="start-subtitle">ملصقات ظاهرة • تحرك مثل بوبجي</div>
+  <div class="start-logo">🎬 ملصق متحرك</div>
+  <div class="start-subtitle">جلب الملصق المتحرك من القناة • يتحرك في الخريطة</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v19.0 | 2D Map + Stickers</div>
+  <div class="version-tag">v20.0 | Animated Sticker in 2D Map</div>
 </div>
 
 <!-- GAME -->
 <div id="game-container">
   <canvas id="game-canvas"></canvas>
+
+  <!-- حاوية الملصق المتحرك -->
+  <div id="sticker-container"></div>
 
   <div class="hud">
     <div class="title">🗺️ الخريطة</div>
@@ -101,7 +111,8 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     </div>
     <div class="row">
       <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
-      <button class="btn btn-purple" onclick="fetchStickers()">📌 جلب ملصق</button>
+      <button class="btn btn-purple" onclick="fetchAnimatedSticker()">🎬 جلب متحرك</button>
+      <button class="btn btn-gold" onclick="fetchStickers()">📌 جلب ملصق</button>
       <button class="btn btn-red" onclick="toggleTG()">✖</button>
     </div>
     <div style="font-size:10px;color:#888;" id="tg-status">⭕ غير متصل</div>
@@ -119,7 +130,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  خريطة 2D v19.0 — ملصقات ظاهرة
+//  ملصق متحرك في الخريطة 2D v20.0
 // ============================================================
 
 // ============================================================
@@ -155,6 +166,14 @@ let fetchedStickers = [];
 let loadedImages = {};
 let playerSkin = null;
 let autoSelectDone = false;
+
+// ============================================================
+//  Lottie Animation
+// ============================================================
+
+let lottieAnimation = null;
+let stickerContainer = document.getElementById('sticker-container');
+let animationLoaded = false;
 
 // ============================================================
 //  TELEGRAM FUNCTIONS
@@ -206,9 +225,15 @@ function selectSkin(char) {
     showToast('🧑 المظهر الافتراضي', 'info');
   }
   
-  // إعادة رسم الشخصية في الخريطة
-  renderGame();
+  // إخفاء الملصق المتحرك إذا كان ظاهراً
+  if (lottieAnimation) {
+    lottieAnimation.destroy();
+    lottieAnimation = null;
+    stickerContainer.style.display = 'none';
+    animationLoaded = false;
+  }
   
+  renderGame();
   renderSkinSelector();
   document.getElementById('skin-selector').classList.remove('show');
 }
@@ -239,28 +264,116 @@ async function testTelegram() {
   } catch(e) { setTGStatus('❌ فشل الاتصال', 'error'); }
 }
 
-function autoSelectFirstSticker() {
-    if (autoSelectDone) return;
-    const stickers = fetchedStickers.filter(c => c.isSticker);
-    if (stickers.length > 0) {
-        const first = stickers[0];
-        showToast('📌 تم اختيار الملصق تلقائياً: ' + first.name, 'success');
-        selectSkin(first);
-        autoSelectDone = true;
-        return true;
+// ============================================================
+//  جلب الملصق المتحرك (الميزة الرئيسية)
+// ============================================================
+
+async function fetchAnimatedSticker() {
+  if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
+  setTGStatus('🎬 جاري جلب الملصق المتحرك...', '');
+
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
+    const data = await res.json();
+    if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
+
+    let found = false;
+
+    for (const update of data.result || []) {
+      lastUpdateId = Math.max(lastUpdateId, update.update_id);
+      const msg = update.channel_post || update.message;
+      if (!msg) continue;
+
+      // البحث عن ملصق متحرك
+      if (msg.sticker && msg.sticker.is_animated) {
+        const fileId = msg.sticker.file_id;
+        
+        // جلب رابط ملف TGS
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        
+        if (fileData.ok && fileData.result.file_path) {
+          const tgsUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+          
+          // عرض الملصق المتحرك
+          showAnimatedSticker(tgsUrl);
+          setTGStatus('✅ تم جلب الملصق المتحرك!', 'success');
+          showToast('🎬 تم جلب الملصق المتحرك!', 'success');
+          found = true;
+          return;
+        }
+      }
     }
-    if (fetchedStickers.length > 0) {
-        const first = fetchedStickers[0];
-        showToast('🖼️ تم اختيار الصورة تلقائياً: ' + first.name, 'success');
-        selectSkin(first);
-        autoSelectDone = true;
-        return true;
+    
+    if (!found) {
+      setTGStatus('📭 لا يوجد ملصق متحرك في القناة', '');
+      showToast('📭 لا يوجد ملصق متحرك في القناة', 'info');
     }
-    return false;
+  } catch(e) {
+    setTGStatus('❌ خطأ', 'error');
+    console.error(e);
+  }
 }
 
 // ============================================================
-//  جلب الملصقات من القناة
+//  عرض الملصق المتحرك في الخريطة
+// ============================================================
+
+function showAnimatedSticker(tgsUrl) {
+    // إخفاء الملصق العادي
+    if (playerSkin) {
+        // نحتفظ بالاختيار لكن نعرض المتحرك بدلاً منه
+    }
+    
+    // إظهار الحاوية
+    stickerContainer.style.display = 'block';
+    
+    // تدمير الرسوم المتحركة القديمة
+    if (lottieAnimation) {
+        lottieAnimation.destroy();
+        lottieAnimation = null;
+    }
+    
+    // تحميل Lottie
+    lottieAnimation = lottie.loadAnimation({
+        container: stickerContainer,
+        renderer: 'svg',
+        loop: true,
+        autoplay: true,
+        path: tgsUrl
+    });
+    
+    lottieAnimation.addEventListener('DOMLoaded', function() {
+        animationLoaded = true;
+        // تحديث الموقع بعد التحميل
+        updateStickerPosition();
+    });
+    
+    // تحديث الاسم
+    document.getElementById('char-name').textContent = '🎬 ملصق متحرك';
+}
+
+// ============================================================
+//  تحديث موقع الملصق المتحرك
+// ============================================================
+
+function updateStickerPosition() {
+    if (!animationLoaded && !lottieAnimation) return;
+    
+    // حساب موقع اللاعب في الشاشة
+    const px = player.x * TILE_SIZE;
+    const py = player.y * TILE_SIZE;
+    
+    const screenX = px - camera.x;
+    const screenY = py - camera.y;
+    
+    // تحديث موقع الحاوية (في منتصف اللاعب)
+    stickerContainer.style.left = (screenX - 75) + 'px';
+    stickerContainer.style.top = (screenY - 75) + 'px';
+}
+
+// ============================================================
+//  جلب الملصقات العادية
 // ============================================================
 
 async function fetchStickers() {
@@ -281,7 +394,7 @@ async function fetchStickers() {
 
       let fileId = null, imageUrl = '';
 
-      if (msg.sticker) {
+      if (msg.sticker && !msg.sticker.is_animated) {
         fileId = msg.sticker.file_id;
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
         const fileData = await fileRes.json();
@@ -305,7 +418,7 @@ async function fetchStickers() {
       const caption = msg.caption || '';
       const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
 
-      const isSticker = !!msg.sticker;
+      const isSticker = !!msg.sticker && !msg.sticker.is_animated;
       const char = {
         id: (isSticker ? 'sticker_' : 'image_') + fileId,
         fileId: fileId,
@@ -347,6 +460,26 @@ async function fetchStickers() {
   }
 }
 
+function autoSelectFirstSticker() {
+    if (autoSelectDone) return;
+    const stickers = fetchedStickers.filter(c => c.isSticker);
+    if (stickers.length > 0) {
+        const first = stickers[0];
+        showToast('📌 تم اختيار الملصق تلقائياً: ' + first.name, 'success');
+        selectSkin(first);
+        autoSelectDone = true;
+        return true;
+    }
+    if (fetchedStickers.length > 0) {
+        const first = fetchedStickers[0];
+        showToast('🖼️ تم اختيار الصورة تلقائياً: ' + first.name, 'success');
+        selectSkin(first);
+        autoSelectDone = true;
+        return true;
+    }
+    return false;
+}
+
 // ============================================================
 //  GAME ENGINE 2D
 // ============================================================
@@ -354,12 +487,10 @@ async function fetchStickers() {
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
-// إعدادات الخريطة
 const MAP_SIZE = 16;
 const TILE_SIZE = 40;
 let mapData = [];
 
-// اللاعب
 let player = {
   x: 1.5,
   y: 1.5,
@@ -369,14 +500,11 @@ let player = {
   frameTimer: 0
 };
 
-// الكاميرا
 let camera = { x: 0, y: 0 };
-
-// أزرار اللمس
 let touchDirs = { up: false, down: false, left: false, right: false };
 
 // ============================================================
-//  إنشاء الخريطة
+//  الخريطة
 // ============================================================
 
 function generateMap() {
@@ -384,18 +512,16 @@ function generateMap() {
   for (let y = 0; y < MAP_SIZE; y++) {
     const row = [];
     for (let x = 0; x < MAP_SIZE; x++) {
-      // حدود الخريطة
       if (x === 0 || x === MAP_SIZE-1 || y === 0 || y === MAP_SIZE-1) {
-        row.push(1); // جدار
+        row.push(1);
       } else if (Math.random() < 0.1 && !(x <= 3 && y <= 3)) {
-        row.push(1); // جدار عشوائي
+        row.push(1);
       } else {
-        row.push(0); // أرضية
+        row.push(0);
       }
     }
     mapData.push(row);
   }
-  // منطقة البداية خالية
   for (let y = 1; y <= 3; y++) {
     for (let x = 1; x <= 3; x++) {
       mapData[y][x] = 0;
@@ -404,23 +530,20 @@ function generateMap() {
 }
 
 // ============================================================
-//  رسم الخريطة
+//  الرسم
 // ============================================================
 
 function renderGame() {
   const w = canvas.width;
   const h = canvas.height;
   
-  // مسح الشاشة
   ctx.clearRect(0, 0, w, h);
   
-  // حساب الكاميرا
   const halfW = w / 2;
   const halfH = h / 2;
   camera.x = player.x * TILE_SIZE - halfW;
   camera.y = player.y * TILE_SIZE - halfH;
   
-  // حدود الكاميرا
   const maxX = MAP_SIZE * TILE_SIZE - w;
   const maxY = MAP_SIZE * TILE_SIZE - h;
   camera.x = Math.max(0, Math.min(maxX, camera.x));
@@ -436,14 +559,12 @@ function renderGame() {
       const py = y * TILE_SIZE;
       
       if (mapData[y][x] === 1) {
-        // جدار
         ctx.fillStyle = '#2a2a4a';
         ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
         ctx.strokeStyle = '#3a3a5a';
         ctx.lineWidth = 1;
         ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
       } else {
-        // أرضية
         const isLight = (x + y) % 2 === 0;
         ctx.fillStyle = isLight ? '#1a1a2e' : '#222244';
         ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
@@ -452,24 +573,38 @@ function renderGame() {
   }
   
   // ============================================================
-  //  رسم الشخصية (الملصق)
+  //  رسم الشخصية (إذا لم يكن هناك ملصق متحرك)
   // ============================================================
   
-  const px = player.x * TILE_SIZE;
-  const py = player.y * TILE_SIZE;
-  const size = TILE_SIZE * 0.8;
-  
-  // ظل الشخصية
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.beginPath();
-  ctx.ellipse(px + size/2, py + size * 0.85, size * 0.4, size * 0.1, 0, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // هل لدينا ملصق؟
-  if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
+  // إذا كان هناك ملصق متحرك، لا نرسم الشخصية العادية
+  if (lottieAnimation && animationLoaded) {
+    // نرسم مؤشراً بسيطاً تحت الملصق المتحرك
+    const px = player.x * TILE_SIZE;
+    const py = player.y * TILE_SIZE;
+    const size = TILE_SIZE;
+    
+    // ظل
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(px + size/2, py + size * 0.85, size * 0.4, size * 0.08, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // تحديث موقع الملصق المتحرك
+    updateStickerPosition();
+    
+  } else if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
+    // رسم الملصق العادي
+    const px = player.x * TILE_SIZE;
+    const py = player.y * TILE_SIZE;
+    const size = TILE_SIZE * 0.8;
+    
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(px + size/2, py + size * 0.85, size * 0.4, size * 0.08, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
     const img = loadedImages[playerSkin.id];
     
-    // إطار متوهج حول الملصق
     const glow = ctx.createRadialGradient(
       px + size/2, py + size/2, 0,
       px + size/2, py + size/2, size * 0.9
@@ -481,23 +616,19 @@ function renderGame() {
     ctx.arc(px + size/2, py + size/2, size * 0.9, 0, Math.PI * 2);
     ctx.fill();
     
-    // رسم الملصق
     ctx.save();
     ctx.beginPath();
-    // شكل دائري للملصق
     ctx.arc(px + size/2, py + size/2, size * 0.45, 0, Math.PI * 2);
     ctx.clip();
     ctx.drawImage(img, px + size * 0.05, py + size * 0.05, size * 0.9, size * 0.9);
     ctx.restore();
     
-    // إطار حول الملصق
     ctx.strokeStyle = '#8b5cf6';
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(px + size/2, py + size/2, size * 0.45, 0, Math.PI * 2);
     ctx.stroke();
     
-    // اسم الملصق
     ctx.fillStyle = '#c084fc';
     ctx.font = 'bold 10px Cairo';
     ctx.textAlign = 'center';
@@ -505,6 +636,15 @@ function renderGame() {
     
   } else {
     // شخصية افتراضية
+    const px = player.x * TILE_SIZE;
+    const py = player.y * TILE_SIZE;
+    const size = TILE_SIZE * 0.7;
+    
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(px + size/2, py + size * 0.85, size * 0.4, size * 0.08, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
     ctx.fillStyle = '#00f2ff';
     ctx.shadowColor = '#00f2ff';
     ctx.shadowBlur = 20;
@@ -513,7 +653,6 @@ function renderGame() {
     ctx.fill();
     ctx.shadowBlur = 0;
     
-    // عيون
     ctx.fillStyle = '#fff';
     ctx.beginPath();
     ctx.arc(px + size * 0.35, py + size * 0.4, size * 0.08, 0, Math.PI * 2);
@@ -528,7 +667,7 @@ function renderGame() {
   
   ctx.restore();
   
-  // معلومات في الأعلى
+  // معلومات
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fillRect(10, 10, 200, 20);
   ctx.fillStyle = '#aaa';
@@ -549,17 +688,14 @@ function updatePlayer() {
   if (touchDirs.left) dx = -player.speed;
   if (touchDirs.right) dx = player.speed;
   
-  // تحديث الاتجاه
   if (dx < 0) player.direction = 'left';
   else if (dx > 0) player.direction = 'right';
   else if (dy < 0) player.direction = 'up';
   else if (dy > 0) player.direction = 'down';
   
-  // حركة
   const newX = player.x + dx;
   const newY = player.y + dy;
   
-  // التحقق من التصادم مع الجدران
   const checkX = Math.round(newX);
   const checkY = Math.round(newY);
   
@@ -575,7 +711,6 @@ function updatePlayer() {
     }
   }
   
-  // حدود الخريطة
   player.x = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.x));
   player.y = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.y));
 }
@@ -627,7 +762,6 @@ function setupTouchControls() {
   });
 }
 
-// Keyboard
 document.addEventListener('keydown', function(e) {
   if (e.key === 'ArrowUp') touchDirs.up = true;
   if (e.key === 'ArrowDown') touchDirs.down = true;
@@ -672,9 +806,10 @@ function enterApp() {
     
     setTimeout(function() {
       if (connected) {
-        fetchStickers();
+        // محاولة جلب ملصق متحرك تلقائياً
+        fetchAnimatedSticker();
       } else {
-        showToast('📡 اضغط "اتصال" ثم "📌 جلب ملصق"', 'info');
+        showToast('📡 اضغط "اتصال" ثم "🎬 جلب متحرك"', 'info');
       }
     }, 1500);
     
@@ -706,7 +841,7 @@ setTimeout(function() {
   document.getElementById('start-btn').style.display = 'block';
 }, 500);
 
-console.log('🗺️ خريطة 2D مع ملصقات ظاهرة — جاهز!');
+console.log('🎬 ملصق متحرك في الخريطة 2D — جاهز!');
 </script>
 </body>
 </html>
