@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ناردو 3D — شخصيتي ثلاثية الأبعاد</title>
+<title>عارض شخصيتي 3D</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -30,12 +30,6 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .hud{position:fixed;top:0;left:0;right:0;padding:6px 10px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:100}
 .player-bar{background:rgba(0,0,0,0.8);border-radius:8px;padding:5px 10px;backdrop-filter:blur(10px);min-width:120px;border:1px solid rgba(0,242,255,0.2)}
 .player-bar .label{font-size:9px;font-weight:700;color:var(--accent);display:flex;justify-content:space-between;margin-bottom:2px}
-.bar-track{width:100%;height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;margin-bottom:2px}
-.bar-fill{height:100%;border-radius:3px;transition:width .25s}
-.hp-fill{background:linear-gradient(90deg,#ef4444,#f87171)}
-.xp-fill{background:linear-gradient(90deg,#a855f7,#c084fc)}
-.level-badge{background:rgba(0,0,0,0.7);border:1px solid var(--gold);border-radius:20px;padding:3px 14px;font-size:12px;color:var(--gold);font-weight:700;pointer-events:none;z-index:100}
-.score-badge{background:rgba(0,0,0,0.7);border-radius:16px;padding:3px 12px;font-size:11px;color:#aaa;margin-top:2px;display:inline-block}
 
 /* Controls */
 .dpad{position:fixed;bottom:20px;left:16px;width:120px;height:120px;z-index:200}
@@ -49,8 +43,8 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .action-btns{position:fixed;bottom:20px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;z-index:200}
 .action-btn{width:54px;height:54px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)}
 .action-btn:active{transform:scale(0.86)}
-.btn-attack{border-color:var(--error);color:var(--error)}
-.btn-jump{border-color:var(--gold);color:var(--gold);width:46px;height:46px;font-size:16px}
+.btn-rotate{border-color:var(--gold);color:var(--gold)}
+.btn-zoom{border-color:var(--accent);color:var(--accent);width:46px;height:46px;font-size:16px}
 
 /* TG Dropdown */
 .tg-dropdown{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;z-index:250;min-width:300px;max-width:92%;display:none;backdrop-filter:blur(12px)}
@@ -65,27 +59,27 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .btn-red{background:var(--error);color:#fff}
 .tg-toggle{position:fixed;bottom:155px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none}
 
-/* Player Skin Selector */
-.skin-selector{position:fixed;bottom:220px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:12px;z-index:230;display:none;backdrop-filter:blur(12px);min-width:200px}
+/* Skin Selector */
+.skin-selector{position:fixed;bottom:220px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:12px;z-index:230;display:none;backdrop-filter:blur(12px);min-width:200px;max-height:200px;overflow-y:auto}
 .skin-selector.show{display:block}
 .skin-selector h4{color:var(--gold);font-size:12px;margin-bottom:8px;text-align:center}
-.skin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px}
+.skin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:6px}
 .skin-option{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:6px;text-align:center;cursor:pointer;transition:.2s}
 .skin-option:hover{background:rgba(255,255,255,0.08);border-color:var(--gold)}
-.skin-option .preview{width:40px;height:40px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;font-size:20px;background:#0a0a1a;overflow:hidden}
+.skin-option .preview{width:32px;height:32px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;font-size:16px;background:#0a0a1a;overflow:hidden}
 .skin-option .preview img{width:100%;height:100%;object-fit:cover}
-.skin-option .sname{font-size:9px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skin-option .sname{font-size:8px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .skin-option.active{border-color:var(--gold);background:rgba(255,215,0,0.05)}
 
 /* Character Grid */
 .char-grid-panel{position:fixed;bottom:280px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:10px 12px;z-index:230;max-width:92%;width:360px;display:none;max-height:160px;overflow-y:auto}
 .char-grid-panel.show{display:block}
-.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px}
 .char-mini{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);border-radius:6px;padding:6px;text-align:center;cursor:pointer;transition:.2s}
 .char-mini:hover{background:rgba(255,255,255,0.06);border-color:var(--gold)}
-.char-mini .avatar{width:32px;height:32px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden}
+.char-mini .avatar{width:28px;height:28px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
 .char-mini .avatar img{width:100%;height:100%;object-fit:cover}
-.char-mini .cname{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.char-mini .cname{font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 .toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
 .toast{background:rgba(0,0,0,0.9);padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
@@ -94,40 +88,31 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
 
-.minimap-btn{position:fixed;top:6px;right:10px;width:30px;height:30px;border-radius:6px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.06);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:200;font-size:13px}
-#minimap-container{position:fixed;top:40px;right:10px;width:110px;height:110px;background:rgba(0,0,0,0.85);border:1px solid rgba(255,215,0,0.12);border-radius:6px;padding:3px;display:none;z-index:200}
-#minimap{display:block;width:100%;height:100%;border-radius:4px}
+.skin-toggle{position:fixed;top:10px;right:60px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;cursor:pointer;display:none}
+.skin-toggle:hover{color:var(--gold)}
 </style>
 </head>
 <body>
 
 <!-- START -->
 <div id="start-screen">
-  <div class="start-logo">🎮 ناردو 3D</div>
-  <div class="start-subtitle">شخصيتك ثلاثية الأبعاد<br>اختر مظهرك من القناة</div>
+  <div class="start-logo">🎮 عارض شخصيتي</div>
+  <div class="start-subtitle">شخصيتك ثلاثية الأبعاد من القناة</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
-  <button class="start-btn" id="start-btn" onclick="enterGame()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v6.0 | My 3D Character</div>
+  <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
+  <div class="version-tag">v8.0 | My 3D Character</div>
 </div>
 
 <!-- GAME -->
 <div id="game-container">
-  <canvas id="game-canvas"></canvas>
+  <div id="game-canvas"></div>
 
   <!-- HUD -->
   <div class="hud">
     <div class="player-bar">
-      <div class="label"><span>⚔️ البطل</span><span id="player-lvl">Lv.1</span></div>
-      <div class="bar-track"><div class="bar-fill hp-fill" id="player-hp-bar" style="width:100%"></div></div>
-      <div class="bar-track"><div class="bar-fill xp-fill" id="player-xp-bar" style="width:0%"></div></div>
+      <div class="label"><span>👤 شخصيتي</span><span id="char-name">افتراضي</span></div>
     </div>
-    <div class="level-badge" id="wave-badge">الموجة 1</div>
-    <div class="score-badge">⭐ <span id="score">0</span></div>
   </div>
-
-  <!-- Minimap -->
-  <button class="minimap-btn" onclick="toggleMinimap()">🗺️</button>
-  <div id="minimap-container"><canvas id="minimap" width="110" height="110"></canvas></div>
 
   <!-- Controls -->
   <div class="dpad" id="dpad">
@@ -137,8 +122,8 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     <div class="dpad-btn dpad-right" data-dir="right">▶</div>
   </div>
   <div class="action-btns">
-    <button class="action-btn btn-jump" onclick="playerJump()">⬆️</button>
-    <button class="action-btn btn-attack" onclick="playerAttack()">⚔️</button>
+    <button class="action-btn btn-rotate" onclick="toggleRotate()">🔄</button>
+    <button class="action-btn btn-zoom" onclick="resetCamera()">📷</button>
   </div>
 
   <!-- TG -->
@@ -168,8 +153,8 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     <div class="char-grid" id="char-grid"></div>
   </div>
 
-  <!-- Skin Toggle Button -->
-  <button class="minimap-btn" style="top:44px;right:10px;font-size:11px;width:auto;padding:0 8px;" onclick="toggleSkinSelector()">👤 شخصيتي</button>
+  <!-- Skin Toggle -->
+  <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">👤 شخصيتي</button>
 </div>
 
 <!-- TOAST -->
@@ -177,7 +162,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  ناردو 3D v6.0 — شخصيتي ثلاثية الأبعاد
+//  عارض شخصيتي 3D v8.0
 // ============================================================
 
 // ============================================================
@@ -193,18 +178,18 @@ function initTelegram() {
       tg.ready(); tg.expand();
       if (tg.initDataUnsafe?.user) {
         userData = tg.initDataUnsafe.user;
-        document.getElementById('userInfoDisplay').innerHTML = '👤 ' + (userData.first_name || 'بطل');
+        document.getElementById('userInfoDisplay').innerHTML = '👤 ' + (userData.first_name || 'مستخدم');
       } else {
-        userData = { id: Math.floor(Math.random()*100000), first_name: 'بطل' };
-        document.getElementById('userInfoDisplay').innerHTML = '👤 بطل';
+        userData = { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+        document.getElementById('userInfoDisplay').innerHTML = '👤 مستخدم';
       }
     } else {
-      userData = { id: Math.floor(Math.random()*100000), first_name: 'بطل' };
-      document.getElementById('userInfoDisplay').innerHTML = '👤 بطل';
+      userData = { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+      document.getElementById('userInfoDisplay').innerHTML = '👤 مستخدم';
     }
   } catch(e) {
-    userData = { id: Math.floor(Math.random()*100000), first_name: 'بطل' };
-    document.getElementById('userInfoDisplay').innerHTML = '👤 بطل';
+    userData = { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+    document.getElementById('userInfoDisplay').innerHTML = '👤 مستخدم';
   }
 }
 
@@ -212,17 +197,13 @@ let botToken = '', channelId = '', connected = false, lastUpdateId = 0;
 let fetchedCharacters = [];
 let loadedImages = {};
 let loadedModels = {};
-
-// Player skin
-let playerSkin = null; // { imageUrl, modelUrl, isGLTF, name }
+let playerSkin = null;
 
 // ============================================================
 //  TELEGRAM FUNCTIONS
 // ============================================================
 
-function toggleTG() {
-  document.getElementById('tg-dropdown').classList.toggle('show');
-}
+function toggleTG() { document.getElementById('tg-dropdown').classList.toggle('show'); }
 
 function toggleSkinSelector() {
   document.getElementById('skin-selector').classList.toggle('show');
@@ -233,25 +214,17 @@ function renderSkinSelector() {
   const grid = document.getElementById('skin-grid');
   grid.innerHTML = '';
 
-  // Default option
   const defaultOpt = document.createElement('div');
   defaultOpt.className = 'skin-option' + (!playerSkin ? ' active' : '');
-  defaultOpt.innerHTML = `
-    <div class="preview" style="font-size:24px;">🧑</div>
-    <div class="sname">افتراضي</div>
-  `;
+  defaultOpt.innerHTML = `<div class="preview" style="font-size:20px;">🧑</div><div class="sname">افتراضي</div>`;
   defaultOpt.onclick = function() { selectSkin(null); };
   grid.appendChild(defaultOpt);
 
-  // Fetched characters
   for (const char of fetchedCharacters) {
     const opt = document.createElement('div');
     opt.className = 'skin-option' + (playerSkin && playerSkin.id === char.id ? ' active' : '');
     const avatar = char.isGLTF ? '🎨' : (char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '🖼️');
-    opt.innerHTML = `
-      <div class="preview">${avatar}</div>
-      <div class="sname">${char.name}</div>
-    `;
+    opt.innerHTML = `<div class="preview">${avatar}</div><div class="sname">${char.name}</div>`;
     opt.onclick = function() { selectSkin(char); };
     grid.appendChild(opt);
   }
@@ -264,19 +237,16 @@ function selectSkin(char) {
       name: char.name,
       imageUrl: char.imageUrl,
       modelUrl: char.modelUrl,
-      isGLTF: char.isGLTF || false,
-      attack: char.attack || 80,
-      defense: char.defense || 70
+      isGLTF: char.isGLTF || false
     };
-    showToast('✅ تم اختيار ' + char.name + ' كشخصيتك!', 'success');
+    document.getElementById('char-name').textContent = char.name;
+    showToast('✅ تم اختيار ' + char.name, 'success');
   } else {
     playerSkin = null;
-    showToast('🧑 تم اختيار المظهر الافتراضي', 'info');
+    document.getElementById('char-name').textContent = 'افتراضي';
+    showToast('🧑 المظهر الافتراضي', 'info');
   }
-
-  // Update player appearance in 3D
-  updatePlayer3DAppearance();
-
+  updatePlayer3D();
   renderSkinSelector();
   document.getElementById('skin-selector').classList.remove('show');
 }
@@ -291,7 +261,6 @@ async function testTelegram() {
   botToken = document.getElementById('bot-token').value.trim();
   channelId = document.getElementById('chat-id').value.trim();
   if (!botToken || !channelId) { setTGStatus('❌ ادخل البيانات', 'error'); return; }
-
   setTGStatus('🔄 جاري...', '');
   try {
     const res = await fetch('https://api.telegram.org/bot' + botToken + '/getMe');
@@ -340,15 +309,11 @@ async function fetchCharacters() {
 
       const caption = msg.caption || '';
       const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
-      const atkMatch = caption.match(/(?:هجوم|atk|Atk|attack)[\s:]*(\d+)/i);
-      const defMatch = caption.match(/(?:دفاع|def|Def|defense)[\s:]*(\d+)/i);
 
       const char = {
         id: 'char_' + fileId,
         fileId: fileId,
         name: nameMatch ? nameMatch[1].trim() : 'شخصية #' + (fetchedCharacters.length + 1),
-        attack: atkMatch ? parseInt(atkMatch[1]) : Math.floor(Math.random() * 30) + 60,
-        defense: defMatch ? parseInt(defMatch[1]) : Math.floor(Math.random() * 30) + 50,
         imageUrl: imageUrl,
         isGLTF: false,
         modelUrl: null
@@ -410,27 +375,20 @@ async function fetchGLTF() {
 
       const caption = msg.caption || msg.text || '';
       const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
-      const atkMatch = caption.match(/(?:هجوم|atk|Atk|attack)[\s:]*(\d+)/i);
-      const defMatch = caption.match(/(?:دفاع|def|Def|defense)[\s:]*(\d+)/i);
 
       const char = {
         id: 'gltf_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
         name: nameMatch ? nameMatch[1].trim() : 'GLTF #' + (fetchedCharacters.length + 1),
-        attack: atkMatch ? parseInt(atkMatch[1]) : Math.floor(Math.random() * 30) + 70,
-        defense: defMatch ? parseInt(defMatch[1]) : Math.floor(Math.random() * 30) + 60,
         imageUrl: null,
         isGLTF: true,
         modelUrl: modelUrl
       };
 
-      // Pre-load model
       try {
         const r = await fetch(modelUrl);
         const blob = await r.blob();
         const reader = new FileReader();
-        reader.onload = function(e) {
-          loadedModels[char.id] = e.target.result;
-        };
+        reader.onload = function(e) { loadedModels[char.id] = e.target.result; };
         reader.readAsArrayBuffer(blob);
       } catch(e) {}
 
@@ -460,42 +418,41 @@ function showCharGrid() {
     div.innerHTML = `
       <div class="avatar">${avatar}</div>
       <div class="cname">${char.name}</div>
-      <div style="font-size:8px;color:#888;">⚔️${char.attack} 🛡️${char.defense}</div>
     `;
-    div.onclick = function() {
-      // Add as skin or enemy - let's add as skin option
-      selectSkin(char);
-    };
+    div.onclick = function() { selectSkin(char); };
     grid.appendChild(div);
   }
   panel.classList.add('show');
 }
 
 // ============================================================
-//  THREE.JS 3D PLAYER
+//  THREE.JS 3D VIEWER
 // ============================================================
 
 let scene, camera, renderer;
-let player3D = null; // Three.js group
-let playerMixer = null;
+let player3D = null;
+let mixer = null;
 let clock = new THREE.Clock();
+let autoRotate = true;
 
 function initThreeJS() {
-  const container = document.getElementById('game-container');
+  const container = document.getElementById('game-canvas');
 
   scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x050510);
+  scene.background = new THREE.Color(0x0a0a1a);
 
   const aspect = window.innerWidth / window.innerHeight;
-  camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 100);
-  camera.position.set(0, 4, 8);
-  camera.lookAt(0, 0, 0);
+  camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 50);
+  camera.position.set(0, 1.5, 4);
+  camera.lookAt(0, 0.8, 0);
 
-  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
   container.appendChild(renderer.domElement);
 
   // Lights
@@ -503,18 +460,50 @@ function initThreeJS() {
   scene.add(ambient);
 
   const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  dirLight.position.set(5, 10, 7);
+  dirLight.position.set(5, 8, 5);
   dirLight.castShadow = true;
   scene.add(dirLight);
 
   const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
-  fillLight.position.set(-5, 0, 5);
+  fillLight.position.set(-5, 3, 5);
   scene.add(fillLight);
 
-  // Ground Grid
-  const gridHelper = new THREE.GridHelper(10, 20, 0x444466, 0x222244);
-  gridHelper.position.y = -0.5;
+  const rimLight = new THREE.DirectionalLight(0x446688, 0.3);
+  rimLight.position.set(0, 2, -5);
+  scene.add(rimLight);
+
+  // Ground
+  const groundGeo = new THREE.PlaneGeometry(6, 6);
+  const groundMat = new THREE.MeshStandardMaterial({
+    color: 0x0a0a15,
+    roughness: 0.9,
+    metalness: 0.1,
+    transparent: true,
+    opacity: 0.8
+  });
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.1;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  // Grid
+  const gridHelper = new THREE.GridHelper(6, 20, 0x333366, 0x222244);
+  gridHelper.position.y = 0;
   scene.add(gridHelper);
+
+  // Circle shadow
+  const circleGeo = new THREE.RingGeometry(0.5, 0.8, 32);
+  const circleMat = new THREE.MeshBasicMaterial({
+    color: 0x333366,
+    transparent: true,
+    opacity: 0.3,
+    side: THREE.DoubleSide
+  });
+  const circle = new THREE.Mesh(circleGeo, circleMat);
+  circle.rotation.x = -Math.PI / 2;
+  circle.position.y = 0.01;
+  scene.add(circle);
 
   // Create default player
   createDefaultPlayer();
@@ -537,184 +526,131 @@ function createDefaultPlayer() {
   const group = new THREE.Group();
 
   // Body
-  const bodyGeo = new THREE.BoxGeometry(0.8, 1, 0.6);
   const bodyMat = new THREE.MeshStandardMaterial({
     color: 0x00f2ff,
     roughness: 0.3,
-    metalness: 0.7
+    metalness: 0.7,
+    emissive: 0x002244,
+    emissiveIntensity: 0.1
   });
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = 0.5;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.5), bodyMat);
+  body.position.y = 0.45;
   body.castShadow = true;
   group.add(body);
 
   // Head
-  const headGeo = new THREE.SphereGeometry(0.3, 16, 16);
-  const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0b8, roughness: 0.5 });
-  const head = new THREE.Mesh(headGeo, headMat);
-  head.position.y = 1.1;
+  const headMat = new THREE.MeshStandardMaterial({
+    color: 0xf5d0b8,
+    roughness: 0.5,
+    emissive: 0x221111,
+    emissiveIntensity: 0.05
+  });
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), headMat);
+  head.position.y = 1.0;
   head.castShadow = true;
   group.add(head);
 
-  // Eye
-  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x333 });
+  // Eyes
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x333, emissive: 0x004488, emissiveIntensity: 0.2 });
   const eyeGeo = new THREE.SphereGeometry(0.05, 8, 8);
   const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeL.position.set(-0.12, 1.15, 0.28);
+  eyeL.position.set(-0.1, 1.05, 0.26);
   group.add(eyeL);
   const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeR.position.set(0.12, 1.15, 0.28);
+  eyeR.position.set(0.1, 1.05, 0.26);
   group.add(eyeR);
 
-  // Name label
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 64;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.roundRect(10, 10, 236, 44, 10);
-  ctx.fill();
-  ctx.fillStyle = '#00f2ff';
-  ctx.font = 'bold 24px Cairo';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('⚔️ البطل', 128, 38);
+  // Arm left
+  const armMat = new THREE.MeshStandardMaterial({ color: 0x00d4ff, roughness: 0.4, metalness: 0.5 });
+  const armGeo = new THREE.BoxGeometry(0.15, 0.6, 0.15);
+  const armL = new THREE.Mesh(armGeo, armMat);
+  armL.position.set(-0.42, 0.4, 0);
+  armL.castShadow = true;
+  group.add(armL);
 
-  const texture = new THREE.CanvasTexture(canvas);
-  const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
-  const sprite = new THREE.Sprite(spriteMat);
-  sprite.scale.set(1.5, 0.4, 1);
-  sprite.position.y = 1.8;
-  group.add(sprite);
+  // Arm right
+  const armR = new THREE.Mesh(armGeo, armMat);
+  armR.position.set(0.42, 0.4, 0);
+  armR.castShadow = true;
+  group.add(armR);
 
-  // HP bar
-  const barCanvas = document.createElement('canvas');
-  barCanvas.width = 128;
-  barCanvas.height = 16;
-  const bctx = barCanvas.getContext('2d');
-  bctx.fillStyle = '#333';
-  bctx.roundRect(0, 0, 128, 16, 4);
-  bctx.fill();
-  bctx.fillStyle = '#4ade80';
-  bctx.roundRect(2, 2, 124, 12, 2);
-  bctx.fill();
-  const barTexture = new THREE.CanvasTexture(barCanvas);
-  const barMat = new THREE.SpriteMaterial({ map: barTexture, transparent: true });
-  const barSprite = new THREE.Sprite(barMat);
-  barSprite.scale.set(1, 0.12, 1);
-  barSprite.position.y = 1.6;
-  group.add(barSprite);
+  // Leg left
+  const legMat = new THREE.MeshStandardMaterial({ color: 0x003366, roughness: 0.6, metalness: 0.3 });
+  const legGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2);
+  const legL = new THREE.Mesh(legGeo, legMat);
+  legL.position.set(-0.18, 0.2, 0);
+  legL.castShadow = true;
+  group.add(legL);
+
+  // Leg right
+  const legR = new THREE.Mesh(legGeo, legMat);
+  legR.position.set(0.18, 0.2, 0);
+  legR.castShadow = true;
+  group.add(legR);
 
   group.position.set(0, 0, 0);
   scene.add(group);
   player3D = group;
 }
 
-function updatePlayer3DAppearance() {
-  if (!playerSkin) {
-    // Reset to default
-    if (player3D) scene.remove(player3D);
-    createDefaultPlayer();
-    return;
+function updatePlayer3D() {
+  if (!player3D) return;
+
+  // Clear old model
+  while (player3D.children.length > 0) {
+    const child = player3D.children[0];
+    player3D.remove(child);
+    if (child.geometry) child.geometry.dispose();
+    if (child.material) child.material.dispose();
   }
 
-  // Remove old player
-  if (player3D) {
-    scene.remove(player3D);
-    player3D = null;
-  }
-
-  const group = new THREE.Group();
-
-  if (playerSkin.isGLTF && playerSkin.modelUrl && loadedModels[playerSkin.id]) {
-    // Load GLTF model for player
+  if (playerSkin && playerSkin.isGLTF && playerSkin.modelUrl && loadedModels[playerSkin.id]) {
+    // Load GLTF model
     const loader = new THREE.GLTFLoader();
     const modelData = loadedModels[playerSkin.id];
     loader.parse(modelData, '', function(gltf) {
       const model = gltf.scene;
-      model.scale.set(0.5, 0.5, 0.5);
+      model.scale.set(0.3, 0.3, 0.3);
       model.position.y = 0;
       model.rotation.y = -Math.PI / 2;
-      group.add(model);
+      player3D.add(model);
       if (gltf.animations && gltf.animations.length > 0) {
-        playerMixer = new THREE.AnimationMixer(model);
-        const action = playerMixer.clipAction(gltf.animations[0]);
+        mixer = new THREE.AnimationMixer(model);
+        const action = mixer.clipAction(gltf.animations[0]);
         action.play();
       }
     }, function(err) {
       console.error('GLTF parse error:', err);
-      createFallbackPlayer(group);
+      createDefaultPlayerBody();
     });
-  } else if (playerSkin.imageUrl && loadedImages[playerSkin.id]) {
-    // Use image on body
-    createFallbackPlayer(group, playerSkin.imageUrl);
+  } else if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
+    createDefaultPlayerBody(playerSkin.imageUrl);
   } else {
-    createFallbackPlayer(group);
+    createDefaultPlayerBody();
   }
-
-  // Name label
-  const canvas = document.createElement('canvas');
-  canvas.width = 256;
-  canvas.height = 64;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.roundRect(10, 10, 236, 44, 10);
-  ctx.fill();
-  ctx.fillStyle = '#ffd700';
-  ctx.font = 'bold 24px Cairo';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(playerSkin.name || 'البطل', 128, 38);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
-  const sprite = new THREE.Sprite(spriteMat);
-  sprite.scale.set(1.5, 0.4, 1);
-  sprite.position.y = 1.8;
-  group.add(sprite);
-
-  // HP bar
-  const barCanvas = document.createElement('canvas');
-  barCanvas.width = 128;
-  barCanvas.height = 16;
-  const bctx = barCanvas.getContext('2d');
-  bctx.fillStyle = '#333';
-  bctx.roundRect(0, 0, 128, 16, 4);
-  bctx.fill();
-  bctx.fillStyle = '#4ade80';
-  bctx.roundRect(2, 2, 124, 12, 2);
-  bctx.fill();
-  const barTexture = new THREE.CanvasTexture(barCanvas);
-  const barMat = new THREE.SpriteMaterial({ map: barTexture, transparent: true });
-  const barSprite = new THREE.Sprite(barMat);
-  barSprite.scale.set(1, 0.12, 1);
-  barSprite.position.y = 1.6;
-  group.add(barSprite);
-
-  group.position.set(0, 0, 0);
-  scene.add(group);
-  player3D = group;
 }
 
-function createFallbackPlayer(group, imageUrl) {
-  // Body with color
+function createDefaultPlayerBody(imageUrl) {
+  // Body
   const color = imageUrl ? 0x00f2ff : 0x00f2ff;
-  const bodyGeo = new THREE.BoxGeometry(0.8, 1, 0.6);
-  const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3, metalness: 0.7 });
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = 0.5;
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: color,
+    roughness: 0.3,
+    metalness: 0.7
+  });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.5), bodyMat);
+  body.position.y = 0.45;
   body.castShadow = true;
-  group.add(body);
+  player3D.add(body);
 
   // Head
-  const headGeo = new THREE.SphereGeometry(0.3, 16, 16);
   const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0b8, roughness: 0.5 });
-  const head = new THREE.Mesh(headGeo, headMat);
-  head.position.y = 1.1;
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 12), headMat);
+  head.position.y = 1.0;
   head.castShadow = true;
-  group.add(head);
+  player3D.add(head);
 
-  // If image available, put on body
+  // If image available
   if (imageUrl && loadedImages[playerSkin.id]) {
     const img = loadedImages[playerSkin.id];
     const imgCanvas = document.createElement('canvas');
@@ -727,15 +663,15 @@ function createFallbackPlayer(group, imageUrl) {
     body.material.needsUpdate = true;
   }
 
-  // Eye
+  // Eyes
   const eyeMat = new THREE.MeshStandardMaterial({ color: 0x333 });
-  const eyeGeo = new THREE.SphereGeometry(0.05, 8, 8);
+  const eyeGeo = new THREE.SphereGeometry(0.05, 6, 6);
   const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeL.position.set(-0.12, 1.15, 0.28);
-  group.add(eyeL);
+  eyeL.position.set(-0.1, 1.05, 0.26);
+  player3D.add(eyeL);
   const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeR.position.set(0.12, 1.15, 0.28);
-  group.add(eyeR);
+  eyeR.position.set(0.1, 1.05, 0.26);
+  player3D.add(eyeR);
 }
 
 function animateThree() {
@@ -744,598 +680,31 @@ function animateThree() {
 
   const delta = clock.getDelta();
 
-  if (playerMixer) playerMixer.update(delta);
+  if (mixer) mixer.update(delta);
 
-  // Rotate player slowly
-  if (player3D) {
-    player3D.rotation.y += delta * 0.3;
-  }
-
-  // Follow player position from 2D game
-  if (player3D) {
-    const px = (player.x - MAP_SIZE/2) * 0.8;
-    const pz = (player.y - MAP_SIZE/2) * 0.8;
-    player3D.position.x += (px - player3D.position.x) * 0.05;
-    player3D.position.z += (pz - player3D.position.z) * 0.05;
-
-    // Camera follows player
-    camera.position.x = player3D.position.x;
-    camera.position.z = player3D.position.z + 6;
-    camera.lookAt(player3D.position.x, 0, player3D.position.z);
+  if (player3D && autoRotate) {
+    player3D.rotation.y += delta * 0.5;
   }
 
   renderer.render(scene, camera);
 }
 
+function toggleRotate() {
+  autoRotate = !autoRotate;
+  showToast(autoRotate ? '🔄 دوران تلقائي مفعل' : '⏸️ دوران تلقائي متوقف', 'info');
+}
+
+function resetCamera() {
+  camera.position.set(0, 1.5, 4);
+  camera.lookAt(0, 0.8, 0);
+  showToast('📷 تم إعادة ضبط الكاميرا', 'info');
+}
+
 // ============================================================
-//  GAME ENGINE (2D)
+//  TOUCH CONTROLS
 // ============================================================
 
-const canvas = document.getElementById('game-canvas');
-const ctx = canvas.getContext('2d');
-const minimapCanvas = document.getElementById('minimap');
-const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
-
-let gameState = 'playing';
-let map = [];
-const MAP_SIZE = 20;
-let time = 0;
-let lastTime = performance.now();
-
-let player = {
-  x: 2.5, y: 2.5, angle: 0,
-  speed: 0.05, rotSpeed: 0.04,
-  jumping: false, jumpHeight: 0, jumpVelocity: 0,
-  hp: 100, maxHp: 100,
-  xp: 0, maxXp: 100, level: 1,
-  attack: 25, defense: 10,
-  isAttacking: false, attackTimer: 0, attackCooldown: 0,
-  kills: 0, score: 0
-};
-
-let enemies = [];
-let particles = [];
-let damageTexts = [];
-let wave = 1, waveTimer = 0, spawnTimer = 0;
-let keys = {};
 let touchDirs = { up: false, down: false, left: false, right: false };
-
-// ============================================================
-//  MAP
-// ============================================================
-
-function generateMap() {
-  map = [];
-  for (let y = 0; y < MAP_SIZE; y++) {
-    const row = [];
-    for (let x = 0; x < MAP_SIZE; x++) {
-      if (x === 0 || x === MAP_SIZE-1 || y === 0 || y === MAP_SIZE-1) row.push(1);
-      else if (Math.random() < 0.1 && !(x <= 4 && y <= 4)) row.push(Math.floor(Math.random()*3)+1);
-      else row.push(0);
-    }
-    map.push(row);
-  }
-  for (let y = 1; y <= 4; y++) {
-    for (let x = 1; x <= 4; x++) map[y][x] = 0;
-  }
-}
-
-function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-}
-
-// ============================================================
-//  ENEMIES
-// ============================================================
-
-function spawnEnemy() {
-  let ex, ey, attempts = 0;
-  do {
-    ex = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
-    ey = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
-    attempts++;
-  } while ((map[ey][ex] !== 0 || Math.hypot(ex - player.x, ey - player.y) < 6) && attempts < 50);
-  if (attempts >= 50) return;
-
-  const types = ['goblin', 'orc', 'skeleton'];
-  const type = types[Math.floor(Math.random() * types.length)];
-  const stats = {
-    goblin: { hp: 40, atk: 10, spd: 0.03, color: '#4ade80', size: 0.4, xp: 15, score: 10 },
-    orc: { hp: 80, atk: 20, spd: 0.02, color: '#ef4444', size: 0.55, xp: 30, score: 25 },
-    skeleton: { hp: 50, atk: 15, spd: 0.025, color: '#e5e7eb', size: 0.45, xp: 20, score: 15 }
-  };
-  const s = stats[type];
-
-  enemies.push({
-    x: ex + 0.5, y: ey + 0.5,
-    type: type,
-    hp: s.hp * (1 + (wave-1)*0.15),
-    maxHp: s.hp * (1 + (wave-1)*0.15),
-    atk: s.atk * (1 + (wave-1)*0.1),
-    speed: s.spd,
-    color: s.color,
-    size: s.size,
-    xp: s.xp,
-    score: s.score,
-    attackTimer: 0, attackCooldown: 1.5 + Math.random(),
-    hitFlash: 0, dead: false, deadTimer: 0, animFrame: 0,
-    id: 'enemy_' + Date.now()
-  });
-}
-
-function updateEnemies(dt) {
-  for (let i = enemies.length - 1; i >= 0; i--) {
-    const e = enemies[i];
-    if (e.dead) { e.deadTimer += dt; if (e.deadTimer > 1.5) enemies.splice(i, 1); continue; }
-
-    e.animFrame += dt * 3;
-    e.hitFlash = Math.max(0, e.hitFlash - dt * 5);
-
-    const dx = player.x - e.x, dy = player.y - e.y;
-    const dist = Math.hypot(dx, dy);
-
-    e.attackTimer -= dt;
-    if (dist < 1.2 && e.attackTimer <= 0) {
-      e.attackTimer = e.attackCooldown;
-      damagePlayer(e.atk);
-    }
-
-    if (dist > 0.8) {
-      const moveX = (dx / dist) * e.speed;
-      const moveY = (dy / dist) * e.speed;
-      const nx = e.x + moveX, ny = e.y + moveY;
-      if (map[Math.floor(ny)] && map[Math.floor(ny)][Math.floor(e.x)] === 0) e.y = ny;
-      if (map[Math.floor(e.y)] && map[Math.floor(e.y)][Math.floor(nx)] === 0) e.x = nx;
-    }
-  }
-}
-
-function damageEnemy(enemy, damage, isCrit) {
-  if (enemy.dead) return;
-  const actual = Math.floor(damage * (1 + Math.random() * 0.3));
-  enemy.hp -= actual;
-  enemy.hitFlash = 1;
-
-  damageTexts.push({
-    x: enemy.x, y: enemy.y - 0.5,
-    text: actual.toString(),
-    color: isCrit ? '#ffd700' : '#fff',
-    life: 1
-  });
-
-  createParticles(enemy.x, enemy.y, 10, enemy.color);
-
-  if (enemy.hp <= 0) {
-    enemy.dead = true;
-    player.kills++;
-    player.score += enemy.score || 10;
-    gainXp(enemy.xp || 20);
-    createParticles(enemy.x, enemy.y, 25, enemy.color);
-  }
-}
-
-function damagePlayer(amount) {
-  const actual = Math.max(1, amount - player.defense * 0.3);
-  player.hp -= actual;
-  if (player.hp <= 0) { player.hp = 0; gameOver(); }
-}
-
-function playerAttack() {
-  if (player.isAttacking || player.attackCooldown > 0) return;
-  player.isAttacking = true;
-  player.attackTimer = 0.25;
-  player.attackCooldown = 0.4;
-
-  const range = 2.5, angle = Math.PI / 3;
-  for (const e of enemies) {
-    if (e.dead) continue;
-    const dx = e.x - player.x, dy = e.y - player.y;
-    const dist = Math.hypot(dx, dy);
-    const a = Math.atan2(dy, dx);
-    let diff = a - player.angle;
-    while (diff > Math.PI) diff -= Math.PI * 2;
-    while (diff < -Math.PI) diff += Math.PI * 2;
-    if (dist < range && Math.abs(diff) < angle) {
-      const isCrit = Math.random() < 0.15;
-      damageEnemy(e, player.attack * (isCrit ? 2 : 1), isCrit);
-    }
-  }
-  createParticles(player.x + Math.cos(player.angle)*1.2, player.y + Math.sin(player.angle)*1.2, 6, '#00f2ff');
-}
-
-function playerJump() {
-  if (!player.jumping) { player.jumping = true; player.jumpVelocity = 0.1; }
-}
-
-function gainXp(amount) {
-  player.xp += amount;
-  if (player.xp >= player.maxXp) {
-    player.xp -= player.maxXp;
-    player.level++;
-    player.maxXp = Math.floor(player.maxXp * 1.3);
-    player.maxHp += 15;
-    player.hp = player.maxHp;
-    player.attack += 5;
-    player.defense += 3;
-    showToast('🎉 مستوى جديد! Lv.' + player.level, 'success');
-  }
-}
-
-// ============================================================
-//  PARTICLES
-// ============================================================
-
-function createParticles(x, y, count, color) {
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 0.08 + 0.02;
-    particles.push({
-      x: x, y: y,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 0.03,
-      life: 1, decay: 0.02 + Math.random() * 0.02,
-      size: 2 + Math.random() * 4,
-      color: color, gravity: 0.001
-    });
-  }
-}
-
-function updateParticles(dt) {
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
-    p.life -= p.decay;
-    if (p.life <= 0) particles.splice(i, 1);
-  }
-}
-
-// ============================================================
-//  WAVES
-// ============================================================
-
-function updateWave(dt) {
-  waveTimer += dt;
-  spawnTimer -= dt;
-  const maxEnemies = 3 + wave * 2;
-  const living = enemies.filter(e => !e.dead).length;
-  if (living < maxEnemies && spawnTimer <= 0) {
-    spawnEnemy();
-    spawnTimer = 2;
-  }
-  if (living === 0 && enemies.length > 0 && waveTimer > 5) {
-    wave++;
-    waveTimer = 0;
-    spawnTimer = 1;
-    document.getElementById('wave-badge').textContent = 'الموجة ' + wave;
-    showToast('🌊 الموجة ' + wave + '!', 'warning');
-    player.hp = Math.min(player.maxHp, player.hp + 15);
-  }
-}
-
-// ============================================================
-//  RENDER
-// ============================================================
-
-function castRay(rayAngle) {
-  let rayX = Math.cos(rayAngle), rayY = Math.sin(rayAngle);
-  let mapX = Math.floor(player.x), mapY = Math.floor(player.y);
-  let deltaDistX = Math.abs(1 / (rayX || 0.001));
-  let deltaDistY = Math.abs(1 / (rayY || 0.001));
-  let stepX, stepY, sideDistX, sideDistY;
-  if (rayX < 0) { stepX = -1; sideDistX = (player.x - mapX) * deltaDistX; }
-  else { stepX = 1; sideDistX = (mapX + 1 - player.x) * deltaDistX; }
-  if (rayY < 0) { stepY = -1; sideDistY = (player.y - mapY) * deltaDistY; }
-  else { stepY = 1; sideDistY = (mapY + 1 - player.y) * deltaDistY; }
-
-  let hit = 0, side = 0, dist = 0, wallType = 0;
-  while (hit === 0 && dist < 30) {
-    if (sideDistX < sideDistY) {
-      sideDistX += deltaDistX; mapX += stepX; side = 0;
-    } else {
-      sideDistY += deltaDistY; mapY += stepY; side = 1;
-    }
-    if (mapX < 0 || mapX >= MAP_SIZE || mapY < 0 || mapY >= MAP_SIZE) {
-      hit = 1; dist = 30;
-    } else if (map[mapY][mapX] !== 0) {
-      hit = 1;
-      wallType = map[mapY][mapX];
-      dist = side === 0 ? (mapX - player.x + (1-stepX)/2) / rayX : (mapY - player.y + (1-stepY)/2) / rayY;
-    }
-  }
-  return { dist: Math.abs(dist), side, wallType };
-}
-
-function draw() {
-  const w = canvas.width, h = canvas.height, fov = Math.PI / 3;
-
-  // Sky
-  const skyGrad = ctx.createLinearGradient(0, 0, 0, h/2);
-  skyGrad.addColorStop(0, '#02020a');
-  skyGrad.addColorStop(0.5, '#0a0a1a');
-  skyGrad.addColorStop(1, '#12122a');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(0, 0, w, h/2);
-
-  // Stars
-  ctx.fillStyle = '#fff';
-  for (let i = 0; i < 60; i++) {
-    const sx = (i * 137.5) % w, sy = (i * 73.3) % (h/2);
-    const b = 0.3 + Math.sin(time * 0.5 + i) * 0.3;
-    ctx.globalAlpha = b;
-    ctx.fillRect(sx, sy, 1.5, 1.5);
-  }
-  ctx.globalAlpha = 1;
-
-  // Floor
-  const floorGrad = ctx.createLinearGradient(0, h/2, 0, h);
-  floorGrad.addColorStop(0, '#0a0a15');
-  floorGrad.addColorStop(1, '#151520');
-  ctx.fillStyle = floorGrad;
-  ctx.fillRect(0, h/2, w, h/2);
-
-  // Walls
-  const stripWidth = Math.max(2, Math.floor(w / 160));
-  for (let x = 0; x < w; x += stripWidth) {
-    const rayAngle = player.angle - fov/2 + (x/w) * fov;
-    const hit = castRay(rayAngle);
-    let dist = hit.dist * Math.cos(rayAngle - player.angle);
-    if (dist < 0.1) dist = 0.1;
-    const wallH = Math.min(h, h / dist * 0.8);
-    const wallTop = Math.max(0, (h - wallH) / 2);
-    const wallBot = Math.min(h, (h + wallH) / 2);
-    const fog = Math.min(1, dist * 0.04);
-    const colors = { 1: [35,35,55], 2: [55,30,30], 3: [30,45,55] };
-    const c = colors[hit.wallType] || colors[1];
-    const shade = hit.side === 0 ? 1 : 0.65;
-    const f = 1 - fog;
-    ctx.fillStyle = 'rgb(' + Math.floor(c[0]*shade*f+8*(1-f)) + ',' + 
-                              Math.floor(c[1]*shade*f+8*(1-f)) + ',' + 
-                              Math.floor(c[2]*shade*f+12*(1-f)) + ')';
-    ctx.fillRect(x, wallTop, stripWidth + 1, wallBot - wallTop);
-  }
-
-  // Draw enemies
-  for (const e of enemies) {
-    if (e.dead && e.deadTimer > 1) continue;
-    const dx = e.x - player.x, dy = e.y - player.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist > 28) continue;
-    const angle = Math.atan2(dy, dx) - player.angle;
-    let a = angle;
-    while (a > Math.PI) a -= Math.PI * 2;
-    while (a < -Math.PI) a += Math.PI * 2;
-    if (Math.abs(a) > fov / 2 + 0.3) continue;
-    const screenX = w / 2 + a / (fov / 2) * (w / 2);
-    const size = Math.min(200, h / dist * 0.7) * (e.size || 0.4);
-    const alpha = e.dead ? Math.max(0, 1 - e.deadTimer) : 1;
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.translate(screenX, h/2 + Math.sin(e.animFrame) * 4);
-
-    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-    ctx.beginPath();
-    ctx.ellipse(0, size * 0.55, size * 0.4, size * 0.1, 0, 0, Math.PI * 2);
-    ctx.fill();
-
-    if (e.hitFlash > 0) {
-      ctx.fillStyle = 'rgba(255,255,255,' + (e.hitFlash * 0.5) + ')';
-      ctx.fillRect(-size, -size, size * 2, size * 2);
-    }
-
-    ctx.fillStyle = e.color;
-    ctx.shadowColor = e.color;
-    ctx.shadowBlur = 20;
-    ctx.beginPath();
-    ctx.ellipse(0, size * 0.1, size * 0.35, size * 0.45, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(0, -size * 0.3, size * 0.25, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
-    if (e.type === 'goblin') {
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(-size * 0.1, -size * 0.35, size * 0.06, 0, Math.PI * 2);
-      ctx.arc(size * 0.1, -size * 0.35, size * 0.06, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    if (!e.dead) {
-      const barW = size * 0.8, barH = size * 0.06, barY = -size * 0.7;
-      ctx.fillStyle = 'rgba(0,0,0,0.6)';
-      ctx.fillRect(-barW/2, barY, barW, barH);
-      ctx.fillStyle = e.hp > e.maxHp * 0.5 ? '#4ade80' : e.hp > e.maxHp * 0.25 ? '#fbbf24' : '#ef4444';
-      ctx.fillRect(-barW/2, barY, barW * (e.hp / e.maxHp), barH);
-    }
-
-    ctx.fillStyle = '#fff';
-    ctx.font = 'bold ' + Math.floor(size * 0.12) + 'px Cairo';
-    ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 6;
-    ctx.fillText(e.type.toUpperCase(), 0, -size * 0.75);
-    ctx.shadowBlur = 0;
-
-    ctx.restore();
-  }
-
-  // Particles
-  for (const p of particles) {
-    const dx = p.x - player.x, dy = p.y - player.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist > 20) continue;
-    const angle = Math.atan2(dy, dx) - player.angle;
-    let a = angle;
-    while (a > Math.PI) a -= Math.PI * 2;
-    while (a < -Math.PI) a += Math.PI * 2;
-    if (Math.abs(a) > fov / 2) continue;
-    const screenX = w / 2 + a / (fov / 2) * (w / 2);
-    const screenY = h/2 - (p.y - player.y) * (h / dist) * 0.5;
-    ctx.globalAlpha = p.life;
-    ctx.fillStyle = p.color;
-    ctx.shadowColor = p.color;
-    ctx.shadowBlur = 8;
-    ctx.beginPath();
-    ctx.arc(screenX, screenY, p.size * p.life, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-  ctx.shadowBlur = 0;
-
-  // Damage texts
-  for (let i = 0; i < damageTexts.length; i++) {
-    const d = damageTexts[i];
-    const dx = d.x - player.x, dy = d.y - player.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist > 20) continue;
-    const angle = Math.atan2(dy, dx) - player.angle;
-    let a = angle;
-    while (a > Math.PI) a -= Math.PI * 2;
-    while (a < -Math.PI) a += Math.PI * 2;
-    if (Math.abs(a) > fov / 2) continue;
-    const screenX = w / 2 + a / (fov / 2) * (w / 2);
-    const screenY = h/2 - (d.y - player.y) * (h / dist) * 0.5;
-    ctx.fillStyle = d.color;
-    ctx.font = 'bold 24px Cairo';
-    ctx.textAlign = 'center';
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 8;
-    ctx.globalAlpha = d.life;
-    ctx.fillText(d.text, screenX, screenY);
-    ctx.globalAlpha = 1;
-    ctx.shadowBlur = 0;
-  }
-
-  // Location
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  ctx.fillRect(10, 10, 120, 25);
-  ctx.fillStyle = '#ffd700';
-  ctx.font = 'bold 12px Cairo';
-  ctx.textAlign = 'left';
-  ctx.fillText('⭐ ' + player.score + ' pts', 18, 28);
-
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  ctx.fillRect(10, 38, 120, 18);
-  ctx.fillStyle = '#aaa';
-  ctx.font = '11px Cairo';
-  ctx.fillText('💀 ' + player.kills + ' kills', 18, 52);
-
-  updateHUD();
-}
-
-function updateHUD() {
-  document.getElementById('player-hp-bar').style.width = (player.hp / player.maxHp * 100) + '%';
-  document.getElementById('player-xp-bar').style.width = (player.xp / player.maxXp * 100) + '%';
-  document.getElementById('player-lvl').textContent = 'Lv.' + player.level;
-  document.getElementById('score').textContent = player.score;
-}
-
-// ============================================================
-//  MINIMAP
-// ============================================================
-
-function drawMinimap() {
-  if (!minimapCtx) return;
-  const s = minimapCanvas.width / MAP_SIZE;
-  minimapCtx.fillStyle = '#0a0a1a';
-  minimapCtx.fillRect(0, 0, 110, 110);
-
-  for (let y = 0; y < MAP_SIZE; y++) {
-    for (let x = 0; x < MAP_SIZE; x++) {
-      if (map[y][x] !== 0) {
-        const colors = { 1: '#333', 2: '#442222', 3: '#222244' };
-        minimapCtx.fillStyle = colors[map[y][x]] || '#333';
-        minimapCtx.fillRect(x * s, y * s, s, s);
-      }
-    }
-  }
-
-  for (const e of enemies) {
-    if (e.dead) continue;
-    minimapCtx.fillStyle = e.color || '#ff4444';
-    minimapCtx.beginPath();
-    minimapCtx.arc(e.x * s, e.y * s, 3, 0, Math.PI * 2);
-    minimapCtx.fill();
-  }
-
-  minimapCtx.fillStyle = '#00f2ff';
-  minimapCtx.beginPath();
-  minimapCtx.arc(player.x * s, player.y * s, 3, 0, Math.PI * 2);
-  minimapCtx.fill();
-  minimapCtx.strokeStyle = '#00f2ff';
-  minimapCtx.beginPath();
-  minimapCtx.moveTo(player.x * s, player.y * s);
-  minimapCtx.lineTo((player.x + Math.cos(player.angle) * 0.6) * s, (player.y + Math.sin(player.angle) * 0.6) * s);
-  minimapCtx.stroke();
-}
-
-// ============================================================
-//  GAME LOOP
-// ============================================================
-
-function gameLoop() {
-  const now = performance.now();
-  const dt = Math.min((now - lastTime) / 1000, 0.05);
-  lastTime = now;
-  time += dt;
-
-  // Update player
-  if (player.jumping) {
-    player.jumpHeight += player.jumpVelocity;
-    player.jumpVelocity -= 0.004;
-    if (player.jumpHeight <= 0) { player.jumpHeight = 0; player.jumping = false; }
-  }
-
-  player.attackCooldown = Math.max(0, player.attackCooldown - dt);
-
-  let moveX = 0, moveY = 0;
-  const speed = player.speed * (1 + player.jumpHeight * 0.3);
-  if (keys['w'] || keys['arrowup'] || touchDirs.up) {
-    moveX += Math.cos(player.angle) * speed;
-    moveY += Math.sin(player.angle) * speed;
-  }
-  if (keys['s'] || keys['arrowdown'] || touchDirs.down) {
-    moveX -= Math.cos(player.angle) * speed;
-    moveY -= Math.sin(player.angle) * speed;
-  }
-  if (keys['a'] || keys['arrowleft'] || touchDirs.left) player.angle -= player.rotSpeed;
-  if (keys['d'] || keys['arrowright'] || touchDirs.right) player.angle += player.rotSpeed;
-
-  const newX = player.x + moveX, newY = player.y + moveY;
-  if (map[Math.floor(newY)] && map[Math.floor(newY)][Math.floor(player.x)] === 0) player.y = newY;
-  if (map[Math.floor(player.y)] && map[Math.floor(player.y)][Math.floor(newX)] === 0) player.x = newX;
-
-  if (player.isAttacking) {
-    player.attackTimer -= dt;
-    if (player.attackTimer <= 0) player.isAttacking = false;
-  }
-
-  // Update game
-  updateEnemies(dt);
-  updateParticles(dt);
-  updateWave(dt);
-
-  // Update damage texts
-  for (let i = damageTexts.length - 1; i >= 0; i--) {
-    damageTexts[i].life -= dt;
-    if (damageTexts[i].life <= 0) damageTexts.splice(i, 1);
-  }
-
-  draw();
-
-  if (document.getElementById('minimap-container').style.display === 'block') {
-    drawMinimap();
-  }
-
-  requestAnimationFrame(gameLoop);
-}
-
-// ============================================================
-//  CONTROLS
-// ============================================================
 
 function setupTouchControls() {
   document.querySelectorAll('.dpad-btn').forEach(function(btn) {
@@ -1357,45 +726,94 @@ function setupTouchControls() {
       btn.style.background = '';
       btn.style.borderColor = '';
     });
-    btn.addEventListener('mousedown', function() { touchDirs[dir] = true; });
-    btn.addEventListener('mouseup', function() { touchDirs[dir] = false; });
-    btn.addEventListener('mouseleave', function() { touchDirs[dir] = false; });
   });
 }
 
-window.addEventListener('keydown', function(e) {
-  keys[e.key.toLowerCase()] = true;
-  if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); playerJump(); }
-  if (e.key.toLowerCase() === 'e' || e.key === 'Enter') playerAttack();
+// Keyboard controls
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowUp') touchDirs.up = true;
+  if (e.key === 'ArrowDown') touchDirs.down = true;
+  if (e.key === 'ArrowLeft') touchDirs.left = true;
+  if (e.key === 'ArrowRight') touchDirs.right = true;
+  if (e.key === 'r' || e.key === 'R') toggleRotate();
+  if (e.key === 'c' || e.key === 'C') resetCamera();
 });
-window.addEventListener('keyup', function(e) { keys[e.key.toLowerCase()] = false; });
+document.addEventListener('keyup', function(e) {
+  if (e.key === 'ArrowUp') touchDirs.up = false;
+  if (e.key === 'ArrowDown') touchDirs.down = false;
+  if (e.key === 'ArrowLeft') touchDirs.left = false;
+  if (e.key === 'ArrowRight') touchDirs.right = false;
+});
 
 // ============================================================
-//  GAME FLOW
+//  CAMERA ROTATION WITH TOUCH
 // ============================================================
 
-function toggleMinimap() {
-  const el = document.getElementById('minimap-container');
-  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+let isDragging = false;
+let prevMouseX = 0, prevMouseY = 0;
+let cameraAngleX = 0, cameraAngleY = 0;
+let cameraDistance = 4;
+
+document.addEventListener('mousedown', function(e) {
+  isDragging = true;
+  prevMouseX = e.clientX;
+  prevMouseY = e.clientY;
+});
+
+document.addEventListener('mousemove', function(e) {
+  if (!isDragging) return;
+  const dx = e.clientX - prevMouseX;
+  const dy = e.clientY - prevMouseY;
+  cameraAngleX += dx * 0.01;
+  cameraAngleY += dy * 0.01;
+  cameraAngleY = Math.max(-1.2, Math.min(1.2, cameraAngleY));
+  updateCameraPosition();
+  prevMouseX = e.clientX;
+  prevMouseY = e.clientY;
+});
+
+document.addEventListener('mouseup', function() { isDragging = false; });
+
+// Touch drag
+let touchStartX = 0, touchStartY = 0;
+document.addEventListener('touchstart', function(e) {
+  if (e.touches.length === 1) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }
+}, { passive: true });
+
+document.addEventListener('touchmove', function(e) {
+  if (e.touches.length === 1) {
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+    cameraAngleX += dx * 0.01;
+    cameraAngleY += dy * 0.01;
+    cameraAngleY = Math.max(-1.2, Math.min(1.2, cameraAngleY));
+    updateCameraPosition();
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }
+}, { passive: true });
+
+// Zoom with wheel
+document.addEventListener('wheel', function(e) {
+  cameraDistance += e.deltaY * 0.002;
+  cameraDistance = Math.max(1.5, Math.min(8, cameraDistance));
+  updateCameraPosition();
+}, { passive: true });
+
+function updateCameraPosition() {
+  const x = Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+  const y = Math.sin(cameraAngleY) * cameraDistance + 1;
+  const z = Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
+  camera.position.set(x, y, z);
+  camera.lookAt(0, 0.8, 0);
 }
 
-function gameOver() {
-  showToast('💀 انتهت المعركة!', 'error');
-  restartGame();
-}
-
-function restartGame() {
-  player.hp = player.maxHp;
-  player.x = 2.5; player.y = 2.5;
-  enemies = [];
-  particles = [];
-  damageTexts = [];
-  wave = 1;
-  waveTimer = 0;
-  spawnTimer = 1;
-  document.getElementById('wave-badge').textContent = 'الموجة 1';
-  showToast('🔄 تم إعادة البدء', 'info');
-}
+// ============================================================
+//  TOAST
+// ============================================================
 
 function showToast(message, type) {
   const container = document.getElementById('toast-container');
@@ -1406,16 +824,18 @@ function showToast(message, type) {
   setTimeout(function() { toast.remove(); }, 3000);
 }
 
-function enterGame() {
+// ============================================================
+//  ENTER APP
+// ============================================================
+
+function enterApp() {
   document.getElementById('start-screen').style.opacity = '0';
   setTimeout(function() {
     document.getElementById('start-screen').style.display = 'none';
     document.getElementById('game-container').style.display = 'block';
     document.getElementById('tg-toggle').style.display = 'block';
-    resize();
-    generateMap();
+    document.getElementById('skin-toggle').style.display = 'block';
     initThreeJS();
-    gameLoop();
   }, 500);
 
   const savedToken = localStorage.getItem('nardo_bot_token');
@@ -1431,14 +851,12 @@ function enterGame() {
 
 initTelegram();
 setupTouchControls();
-resize();
-window.addEventListener('resize', resize);
 
 setTimeout(function() {
   document.getElementById('start-btn').style.display = 'block';
 }, 500);
 
-console.log('🎮 ناردو 3D v6.0 — شخصيتي ثلاثية الأبعاد جاهزة!');
+console.log('🎮 عارض شخصيتي 3D جاهز!');
 </script>
 </body>
 </html>
