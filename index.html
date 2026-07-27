@@ -3,16 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>إيموجي 3D — شخصيتي المتحركة</title>
+<title>ملصق متحرك في الخريطة</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
 :root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--info:#60a5fa;--accent:#00f2ff;--purple:#8b5cf6}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none}
-
 #start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px}
 .start-logo{font-size:42px;font-weight:900;color:var(--gold);animation:float 3s ease-in-out infinite}
 .start-subtitle{font-size:15px;color:#666;text-align:center;max-width:350px}
@@ -21,14 +21,11 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .user-info{color:var(--accent);font-size:13px;background:rgba(0,0,0,0.6);padding:8px 24px;border-radius:30px}
 .version-tag{position:absolute;bottom:15px;font-size:11px;color:#444}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-
 #game-container{position:fixed;inset:0;display:none;background:#050510}
 #game-canvas{display:block;width:100%;height:100%}
-
 .hud{position:fixed;top:0;left:0;right:0;padding:6px 10px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:100}
 .player-bar{background:rgba(0,0,0,0.8);border-radius:8px;padding:5px 10px;backdrop-filter:blur(10px);min-width:120px;border:1px solid rgba(139,92,246,0.3)}
 .player-bar .label{font-size:9px;font-weight:700;color:var(--purple);display:flex;justify-content:space-between;margin-bottom:2px}
-
 .dpad{position:fixed;bottom:20px;left:16px;width:120px;height:120px;z-index:200}
 .dpad-btn{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .1s}
 .dpad-btn:active{background:rgba(139,92,246,0.15);border-color:var(--purple);color:var(--purple);transform:scale(0.88)}
@@ -36,14 +33,12 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .dpad-down{bottom:0;left:40px}
 .dpad-left{top:40px;left:0}
 .dpad-right{top:40px;right:0}
-
 .action-btns{position:fixed;bottom:20px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;z-index:200}
 .action-btn{width:54px;height:54px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)}
 .action-btn:active{transform:scale(0.86)}
 .btn-rotate{border-color:var(--gold);color:var(--gold)}
 .btn-run{border-color:var(--success);color:var(--success);width:46px;height:46px;font-size:16px}
 .btn-zoom{border-color:var(--accent);color:var(--accent);width:46px;height:46px;font-size:16px}
-
 .tg-dropdown{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;z-index:250;min-width:300px;max-width:92%;display:none;backdrop-filter:blur(12px)}
 .tg-dropdown.show{display:block}
 .tg-dropdown .row{display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap}
@@ -55,7 +50,6 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .btn-green{background:var(--success);color:#111}
 .btn-red{background:var(--error);color:#fff}
 .tg-toggle{position:fixed;bottom:155px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none}
-
 .skin-selector{position:fixed;bottom:220px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:12px;z-index:230;display:none;backdrop-filter:blur(12px);min-width:200px;max-height:200px;overflow-y:auto}
 .skin-selector.show{display:block}
 .skin-selector h4{color:var(--gold);font-size:12px;margin-bottom:8px;text-align:center}
@@ -66,7 +60,6 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .skin-option .preview img{width:100%;height:100%;object-fit:cover}
 .skin-option .sname{font-size:8px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .skin-option.active{border-color:var(--gold);background:rgba(255,215,0,0.05)}
-
 .char-grid-panel{position:fixed;bottom:280px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:10px 12px;z-index:230;max-width:92%;width:360px;display:none;max-height:160px;overflow-y:auto}
 .char-grid-panel.show{display:block}
 .char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px}
@@ -75,17 +68,14 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .char-mini .avatar{width:28px;height:28px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
 .char-mini .avatar img{width:100%;height:100%;object-fit:cover}
 .char-mini .cname{font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
 .toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
 .toast{background:rgba(0,0,0,0.9);padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
 .toast.success{border-color:var(--success);color:var(--success)}
 .toast.error{border-color:var(--error);color:var(--error)}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
-
 .skin-toggle{position:fixed;top:10px;right:60px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;cursor:pointer;display:none}
 .skin-toggle:hover{color:var(--gold)}
-
 .anim-status{position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(139,92,246,0.15);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;pointer-events:none}
 .anim-status span{margin-left:4px}
 .anim-status .state-idle{color:#888}
@@ -97,11 +87,11 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <!-- START -->
 <div id="start-screen">
-  <div class="start-logo">🎨 إيموجي 3D</div>
-  <div class="start-subtitle">جلب الإيموجي من القناة • تحريك مثل بوبجي</div>
+  <div class="start-logo">🎬 ملصق متحرك 3D</div>
+  <div class="start-subtitle">جلب الملصق المتحرك من القناة • يظهر في الخريطة</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v14.0 | Emoji 3D + Walking</div>
+  <div class="version-tag">v16.0 | Animated Sticker in Map</div>
 </div>
 
 <!-- GAME -->
@@ -110,7 +100,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
   <div class="hud">
     <div class="player-bar">
-      <div class="label"><span>😊 شخصيتي</span><span id="char-name">جاري التحميل...</span></div>
+      <div class="label"><span>🎬 شخصيتي</span><span id="char-name">جاري التحميل...</span></div>
     </div>
   </div>
 
@@ -138,14 +128,14 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     </div>
     <div class="row">
       <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
-      <button class="btn btn-purple" onclick="fetchEmojisFromChannel()">😊 جلب إيموجي</button>
+      <button class="btn btn-purple" onclick="fetchAnimatedStickers()">🎬 جلب ملصق متحرك</button>
       <button class="btn btn-red" onclick="toggleTG()">✖</button>
     </div>
     <div style="font-size:10px;color:#888;" id="tg-status">⭕ غير متصل</div>
   </div>
 
   <div class="skin-selector" id="skin-selector">
-    <h4>😊 اختر الإيموجي</h4>
+    <h4>🎬 اختر الملصق المتحرك</h4>
     <div class="skin-grid" id="skin-grid"></div>
   </div>
 
@@ -153,14 +143,14 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     <div class="char-grid" id="char-grid"></div>
   </div>
 
-  <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">😊 شخصيتي</button>
+  <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">🎬 شخصيتي</button>
 </div>
 
 <div class="toast-container" id="toast-container"></div>
 
 <script>
 // ============================================================
-//  إيموجي 3D v14.0 — جلب الإيموجي من القناة وتحريكه
+//  ملصق متحرك في الخريطة v16.0
 // ============================================================
 
 // ============================================================
@@ -192,7 +182,7 @@ function initTelegram() {
 }
 
 let botToken = '', channelId = '', connected = false, lastUpdateId = 0;
-let fetchedEmojis = [];
+let fetchedStickers = [];
 let loadedImages = {};
 let playerSkin = null;
 let autoSelectDone = false;
@@ -218,14 +208,14 @@ function renderSkinSelector() {
   defaultOpt.onclick = function() { selectSkin(null); };
   grid.appendChild(defaultOpt);
 
-  for (const char of fetchedEmojis) {
+  for (const char of fetchedStickers) {
     const opt = document.createElement('div');
     opt.className = 'skin-option' + (playerSkin && playerSkin.id === char.id ? ' active' : '');
-    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '😊';
+    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '🎬';
     opt.innerHTML = `
       <div class="preview">${avatar}</div>
       <div class="sname">${char.name}</div>
-      <div style="font-size:7px;color:#888;">${char.isEmoji ? '😊 إيموجي' : '🖼️ صورة'}</div>
+      <div style="font-size:7px;color:#888;">${char.isAnimated ? '🎬 متحرك' : '🖼️ صورة'}</div>
     `;
     opt.onclick = function() { selectSkin(char); };
     grid.appendChild(opt);
@@ -238,16 +228,18 @@ function selectSkin(char) {
       id: char.id,
       name: char.name,
       imageUrl: char.imageUrl,
-      isEmoji: char.isEmoji || false
+      isAnimated: char.isAnimated || false,
+      tgsUrl: char.tgsUrl || null
     };
-    document.getElementById('char-name').textContent = char.name + ' 😊';
+    document.getElementById('char-name').textContent = char.name + ' 🎬';
     showToast('✅ تم اختيار ' + char.name, 'success');
   } else {
     playerSkin = null;
     document.getElementById('char-name').textContent = 'افتراضي';
     showToast('🧑 المظهر الافتراضي', 'info');
   }
-  updatePlayer3D();
+  
+  createPlayerInMap();
   renderSkinSelector();
   document.getElementById('skin-selector').classList.remove('show');
 }
@@ -278,33 +270,13 @@ async function testTelegram() {
   } catch(e) { setTGStatus('❌ فشل الاتصال', 'error'); }
 }
 
-function autoSelectFirstEmoji() {
-    if (autoSelectDone) return;
-    const emojis = fetchedEmojis.filter(c => c.isEmoji);
-    if (emojis.length > 0) {
-        const first = emojis[0];
-        showToast('😊 تم اختيار الإيموجي تلقائياً: ' + first.name, 'success');
-        selectSkin(first);
-        autoSelectDone = true;
-        return true;
-    }
-    if (fetchedEmojis.length > 0) {
-        const first = fetchedEmojis[0];
-        showToast('🖼️ تم اختيار الصورة تلقائياً: ' + first.name, 'success');
-        selectSkin(first);
-        autoSelectDone = true;
-        return true;
-    }
-    return false;
-}
-
 // ============================================================
-//  جلب الإيموجي من القناة (الميزة الرئيسية)
+//  جلب الملصقات المتحركة من القناة
 // ============================================================
 
-async function fetchEmojisFromChannel() {
+async function fetchAnimatedStickers() {
   if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
-  setTGStatus('😊 جاري جلب الإيموجي...', '');
+  setTGStatus('🎬 جاري جلب الملصقات المتحركة...', '');
 
   try {
     const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
@@ -318,44 +290,50 @@ async function fetchEmojisFromChannel() {
       const msg = update.channel_post || update.message;
       if (!msg) continue;
 
-      let fileId = null, imageUrl = '';
+      let fileId = null, imageUrl = '', tgsUrl = '';
+      let isAnimated = false;
 
-      // البحث عن الإيموجي (ملصق)
+      // الكشف عن الملصق المتحرك
       if (msg.sticker) {
         fileId = msg.sticker.file_id;
+        isAnimated = msg.sticker.is_animated || false;
+        
+        // جلب رابط الملف
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
         const fileData = await fileRes.json();
         if (fileData.ok && fileData.result.file_path) {
-          imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
-        }
-      }
-
-      // البحث عن الصور
-      if (!fileId && msg.photo && msg.photo.length > 0) {
-        fileId = msg.photo[msg.photo.length - 1].file_id;
-        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
-        const fileData = await fileRes.json();
-        if (fileData.ok && fileData.result.file_path) {
-          imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+          if (isAnimated) {
+            tgsUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+            // للملصق المتحرك، نأخذ صورة مصغرة من الثمبنايل
+            if (msg.sticker.thumbnail) {
+              const thumbRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + msg.sticker.thumbnail.file_id);
+              const thumbData = await thumbRes.json();
+              if (thumbData.ok && thumbData.result.file_path) {
+                imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + thumbData.result.file_path;
+              }
+            }
+          } else {
+            imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+          }
         }
       }
 
       if (!fileId) continue;
-      if (fetchedEmojis.some(c => c.fileId === fileId)) continue;
+      if (fetchedStickers.some(c => c.fileId === fileId)) continue;
 
       const caption = msg.caption || '';
       const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
 
-      const isEmoji = !!msg.sticker;
       const char = {
-        id: (isEmoji ? 'emoji_' : 'image_') + fileId,
+        id: (isAnimated ? 'anim_' : 'sticker_') + fileId,
         fileId: fileId,
-        name: nameMatch ? nameMatch[1].trim() : (isEmoji ? 'إيموجي #' : 'صورة #') + (fetchedEmojis.length + 1),
+        name: nameMatch ? nameMatch[1].trim() : (isAnimated ? 'ملصق متحرك #' : 'ملصق #') + (fetchedStickers.length + 1),
         imageUrl: imageUrl,
-        isEmoji: isEmoji
+        tgsUrl: tgsUrl,
+        isAnimated: isAnimated
       };
 
-      fetchedEmojis.push(char);
+      fetchedStickers.push(char);
       newItems++;
 
       if (imageUrl) {
@@ -363,9 +341,8 @@ async function fetchEmojisFromChannel() {
         img.crossOrigin = 'anonymous';
         img.onload = function() { 
           loadedImages[char.id] = img;
-          // إذا كان إيموجي ولم يتم الاختيار بعد
-          if (isEmoji && !autoSelectDone && fetchedEmojis.length === 1) {
-            setTimeout(autoSelectFirstEmoji, 500);
+          if (isAnimated && !autoSelectDone && fetchedStickers.length === 1) {
+            setTimeout(autoSelectFirstSticker, 500);
           }
         };
         img.src = imageUrl;
@@ -373,16 +350,16 @@ async function fetchEmojisFromChannel() {
     }
 
     if (newItems > 0) {
-      setTGStatus('✅ جلب ' + newItems + ' عنصر!', 'success');
+      setTGStatus('✅ جلب ' + newItems + ' ملصق!', 'success');
       showCharGrid();
       renderSkinSelector();
-      showToast('😊 تم جلب ' + newItems + ' إيموجي/صورة!', 'success');
+      showToast('🎬 تم جلب ' + newItems + ' ملصق!', 'success');
       
       if (!autoSelectDone) {
-        setTimeout(autoSelectFirstEmoji, 800);
+        setTimeout(autoSelectFirstSticker, 800);
       }
     } else {
-      setTGStatus('📭 لا توجد عناصر جديدة', '');
+      setTGStatus('📭 لا توجد ملصقات جديدة', '');
     }
   } catch(e) {
     setTGStatus('❌ خطأ', 'error');
@@ -390,19 +367,39 @@ async function fetchEmojisFromChannel() {
   }
 }
 
+function autoSelectFirstSticker() {
+    if (autoSelectDone) return;
+    const anims = fetchedStickers.filter(c => c.isAnimated);
+    if (anims.length > 0) {
+        const first = anims[0];
+        showToast('🎬 تم اختيار الملصق المتحرك تلقائياً: ' + first.name, 'success');
+        selectSkin(first);
+        autoSelectDone = true;
+        return true;
+    }
+    if (fetchedStickers.length > 0) {
+        const first = fetchedStickers[0];
+        showToast('📌 تم اختيار الملصق تلقائياً: ' + first.name, 'success');
+        selectSkin(first);
+        autoSelectDone = true;
+        return true;
+    }
+    return false;
+}
+
 function showCharGrid() {
   const panel = document.getElementById('char-grid-panel');
   const grid = document.getElementById('char-grid');
   grid.innerHTML = '';
 
-  for (const char of fetchedEmojis) {
+  for (const char of fetchedStickers) {
     const div = document.createElement('div');
     div.className = 'char-mini';
-    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '😊';
+    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : (char.isAnimated ? '🎬' : '📌');
     div.innerHTML = `
       <div class="avatar">${avatar}</div>
       <div class="cname">${char.name}</div>
-      <div style="font-size:7px;color:#888;">${char.isEmoji ? '😊 إيموجي' : '🖼️ صورة'}</div>
+      <div style="font-size:7px;color:#888;">${char.isAnimated ? '🎬 متحرك' : '📌 ملصق'}</div>
     `;
     div.onclick = function() { selectSkin(char); };
     grid.appendChild(div);
@@ -411,13 +408,12 @@ function showCharGrid() {
 }
 
 // ============================================================
-//  THREE.JS 3D VIEWER مع تكبير الإيموجي وتحريك
+//  THREE.JS — الخريطة مع الملصق المتحرك
 // ============================================================
 
 let scene, camera, renderer;
-let player3D = null;
+let playerGroup = null;
 let clock = new THREE.Clock();
-let autoRotate = false;
 let autoRun = false;
 let runSpeed = 2.5;
 let moveSpeed = 0.06;
@@ -426,26 +422,30 @@ let limbRefs = {};
 let playerState = 'idle';
 let touchDirs = { up: false, down: false, left: false, right: false };
 
-// متغيرات الكاميرا التابعة
 let cameraAngleX = 0.3;
 let cameraAngleY = 0.3;
-let cameraDistance = 4.5;
+let cameraDistance = 5;
 let targetCameraPosition = new THREE.Vector3();
 let cameraSmoothness = 0.08;
 
-// عالم اللعبة
 let worldGroup = null;
-let groundSize = 30;
+let mapSize = 20;
+let mapData = [];
+
+// متغيرات للملصق المتحرك
+let animatedTexture = null;
+let animationInterval = null;
 
 function initThreeJS() {
   const container = document.getElementById('game-canvas');
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a1a);
+  scene.fog = new THREE.Fog(0x0a0a1a, 15, 30);
 
   const aspect = window.innerWidth / window.innerHeight;
-  camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-  camera.position.set(0, 5, 5);
+  camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
+  camera.position.set(0, 8, 8);
   camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -457,7 +457,7 @@ function initThreeJS() {
   renderer.toneMappingExposure = 1.2;
   container.appendChild(renderer.domElement);
 
-  // Lights
+  // الإضاءة
   const ambient = new THREE.AmbientLight(0x404060, 0.6);
   scene.add(ambient);
 
@@ -466,12 +466,6 @@ function initThreeJS() {
   dirLight.castShadow = true;
   dirLight.shadow.mapSize.width = 2048;
   dirLight.shadow.mapSize.height = 2048;
-  dirLight.shadow.camera.near = 0.5;
-  dirLight.shadow.camera.far = 50;
-  dirLight.shadow.camera.left = -15;
-  dirLight.shadow.camera.right = 15;
-  dirLight.shadow.camera.top = 15;
-  dirLight.shadow.camera.bottom = -15;
   scene.add(dirLight);
 
   const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
@@ -482,11 +476,8 @@ function initThreeJS() {
   rimLight.position.set(0, 3, -15);
   scene.add(rimLight);
 
-  // إنشاء العالم (خريطة مع أعمدة)
-  createWorld();
-
-  // إنشاء الشخصية الافتراضية
-  createDefaultPlayer();
+  createMap();
+  createPlayerInMap();
 
   window.addEventListener('resize', function() {
     camera.aspect = window.innerWidth / window.innerHeight;
@@ -498,10 +489,10 @@ function initThreeJS() {
 }
 
 // ============================================================
-//  إنشاء العالم (الخريطة)
+//  إنشاء الخريطة
 // ============================================================
 
-function createWorld() {
+function createMap() {
   if (worldGroup) {
     scene.remove(worldGroup);
     worldGroup = null;
@@ -510,8 +501,27 @@ function createWorld() {
   worldGroup = new THREE.Group();
   scene.add(worldGroup);
 
-  // الأرضية
-  const groundGeo = new THREE.PlaneGeometry(groundSize, groundSize);
+  mapData = [];
+  for (let y = 0; y < mapSize; y++) {
+    const row = [];
+    for (let x = 0; x < mapSize; x++) {
+      if (x === 0 || x === mapSize-1 || y === 0 || y === mapSize-1) {
+        row.push(1);
+      } else if (Math.random() < 0.08 && !(x <= 3 && y <= 3)) {
+        row.push(Math.floor(Math.random() * 3) + 1);
+      } else {
+        row.push(0);
+      }
+    }
+    mapData.push(row);
+  }
+  for (let y = 1; y <= 3; y++) {
+    for (let x = 1; x <= 3; x++) {
+      mapData[y][x] = 0;
+    }
+  }
+
+  const groundGeo = new THREE.PlaneGeometry(mapSize, mapSize);
   const groundMat = new THREE.MeshStandardMaterial({
     color: 0x0a0a20,
     roughness: 0.9,
@@ -523,156 +533,165 @@ function createWorld() {
   ground.receiveShadow = true;
   worldGroup.add(ground);
 
-  // شبكة الأرضية
-  const gridHelper = new THREE.GridHelper(groundSize, 30, 0x333366, 0x222244);
+  const gridHelper = new THREE.GridHelper(mapSize, mapSize, 0x333366, 0x222244);
   gridHelper.position.y = 0;
   worldGroup.add(gridHelper);
 
-  // أعمدة ملونة
-  const colors = [0x4444ff, 0xff4444, 0x44ff44, 0xffff44, 0xff44ff, 0x44ffff];
-  for (let i = 0; i < 40; i++) {
-    const x = (Math.random() - 0.5) * (groundSize - 4);
-    const z = (Math.random() - 0.5) * (groundSize - 4);
-    if (Math.abs(x) < 2 && Math.abs(z) < 2) continue;
-    
-    const height = 0.3 + Math.random() * 1.2;
-    const boxMat = new THREE.MeshStandardMaterial({
-      color: colors[Math.floor(Math.random() * colors.length)],
-      roughness: 0.7,
-      metalness: 0.3,
-      emissive: colors[Math.floor(Math.random() * colors.length)],
-      emissiveIntensity: 0.1
-    });
-    const box = new THREE.Mesh(new THREE.BoxGeometry(0.4, height, 0.4), boxMat);
-    box.position.set(x, height/2, z);
-    box.castShadow = true;
-    box.receiveShadow = true;
-    worldGroup.add(box);
-  }
-
-  // أعمدة كبيرة (معالم)
-  const landmarkPositions = [
-    [-8, -8], [8, -8], [-8, 8], [8, 8],
-    [-6, 6], [6, -6], [-6, -6], [6, 6]
-  ];
-  for (const [lx, lz] of landmarkPositions) {
-    const pillarMat = new THREE.MeshStandardMaterial({
-      color: 0x444466,
-      roughness: 0.5,
-      metalness: 0.5,
-      emissive: 0x222244,
-      emissiveIntensity: 0.2
-    });
-    const pillar = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.8, 2, 8), pillarMat);
-    pillar.position.set(lx, 1, lz);
-    pillar.castShadow = true;
-    pillar.receiveShadow = true;
-    worldGroup.add(pillar);
-    
-    const lightMat = new THREE.MeshStandardMaterial({
-      color: 0x6666ff,
-      emissive: 0x4444ff,
-      emissiveIntensity: 0.3,
-      transparent: true,
-      opacity: 0.5
-    });
-    const light = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), lightMat);
-    light.position.set(lx, 2.2, lz);
-    worldGroup.add(light);
+  const wallColors = [0x333366, 0x663333, 0x336666];
+  for (let y = 0; y < mapSize; y++) {
+    for (let x = 0; x < mapSize; x++) {
+      if (mapData[y][x] > 0) {
+        const color = wallColors[mapData[y][x] - 1] || 0x333366;
+        const wallMat = new THREE.MeshStandardMaterial({
+          color: color,
+          roughness: 0.7,
+          metalness: 0.3,
+          emissive: color,
+          emissiveIntensity: 0.1
+        });
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.6, 0.9), wallMat);
+        wall.position.set(x - mapSize/2, 0.3, y - mapSize/2);
+        wall.castShadow = true;
+        wall.receiveShadow = true;
+        worldGroup.add(wall);
+      }
+    }
   }
 }
 
 // ============================================================
-//  الشخصية الافتراضية
+//  إنشاء الشخصية من الملصق المتحرك
 // ============================================================
 
-function createDefaultPlayer() {
-  if (player3D) {
-    scene.remove(player3D);
-    player3D = null;
+function createPlayerInMap() {
+  if (playerGroup) {
+    scene.remove(playerGroup);
+    playerGroup = null;
+    limbRefs = {};
+    
+    // إيقاف المؤقت القديم
+    if (animationInterval) {
+      clearInterval(animationInterval);
+      animationInterval = null;
+    }
   }
 
-  limbRefs = {};
   const group = new THREE.Group();
 
-  // Body
-  const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0x8b5cf6,
-    roughness: 0.3,
-    metalness: 0.5,
-    emissive: 0x3b1f6e,
-    emissiveIntensity: 0.1
-  });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.5), bodyMat);
-  body.position.y = 0.45;
-  body.castShadow = true;
-  group.add(body);
-  limbRefs.body = body;
+  if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
+    // جسم يحمل الملصق
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: 0x8b5cf6,
+      roughness: 0.3,
+      metalness: 0.1,
+      transparent: true,
+      side: THREE.DoubleSide
+    });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.9, 0.2), bodyMat);
+    body.position.y = 0.45;
+    body.castShadow = true;
+    group.add(body);
+    limbRefs.body = body;
 
-  // Head
-  const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0b8, roughness: 0.5 });
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 12), headMat);
-  head.position.y = 1.0;
-  head.castShadow = true;
-  group.add(head);
-  limbRefs.head = head;
+    // تطبيق الصورة (أو النسيج المتحرك)
+    if (playerSkin.isAnimated && playerSkin.tgsUrl) {
+      // للملصق المتحرك: نستخدم صورة ثابتة حالياً
+      // (يمكن إضافة Lottie لاحقاً)
+      try {
+        const img = loadedImages[playerSkin.id];
+        const imgCanvas = document.createElement('canvas');
+        imgCanvas.width = 256;
+        imgCanvas.height = 256;
+        const ctx = imgCanvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, 256, 256);
+        const texture = new THREE.CanvasTexture(imgCanvas);
+        texture.needsUpdate = true;
+        body.material.map = texture;
+        body.material.needsUpdate = true;
+        
+        // إضافة إطار متوهج للملصق المتحرك
+        const glowMat = new THREE.MeshStandardMaterial({
+          color: 0xff6b6b,
+          transparent: true,
+          opacity: 0.15,
+          emissive: 0xff6b6b,
+          emissiveIntensity: 0.3
+        });
+        const glow = new THREE.Mesh(new THREE.BoxGeometry(0.9, 1.0, 0.25), glowMat);
+        glow.position.y = 0.45;
+        group.add(glow);
+      } catch(e) {}
+    } else {
+      // ملصق عادي
+      try {
+        const img = loadedImages[playerSkin.id];
+        const imgCanvas = document.createElement('canvas');
+        imgCanvas.width = 256;
+        imgCanvas.height = 256;
+        const ctx = imgCanvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, 256, 256);
+        const texture = new THREE.CanvasTexture(imgCanvas);
+        texture.needsUpdate = true;
+        body.material.map = texture;
+        body.material.needsUpdate = true;
+      } catch(e) {}
+    }
 
-  // Eyes
-  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x8b5cf6, emissive: 0x8b5cf6, emissiveIntensity: 0.5 });
-  const eyeGeo = new THREE.SphereGeometry(0.06, 8, 8);
-  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeL.position.set(-0.12, 1.05, 0.26);
-  group.add(eyeL);
-  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeR.position.set(0.12, 1.05, 0.26);
-  group.add(eyeR);
-  limbRefs.eyeL = eyeL;
-  limbRefs.eyeR = eyeR;
+    // رأس
+    const headMat = new THREE.MeshStandardMaterial({
+      color: playerSkin.isAnimated ? 0xff6b6b : 0x8b5cf6,
+      roughness: 0.3,
+      metalness: 0.2,
+      emissive: playerSkin.isAnimated ? 0xff6b6b : 0x3b1f6e,
+      emissiveIntensity: playerSkin.isAnimated ? 0.3 : 0.2
+    });
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8), headMat);
+    head.position.y = 1.0;
+    head.castShadow = true;
+    group.add(head);
+    limbRefs.head = head;
 
-  // Arms
-  const armGroupL = new THREE.Group();
-  armGroupL.position.set(-0.42, 0.75, 0);
-  const armMat = new THREE.MeshStandardMaterial({ color: 0x7c4df6, roughness: 0.4, metalness: 0.5 });
-  const armGeo = new THREE.BoxGeometry(0.15, 0.6, 0.15);
-  const armL = new THREE.Mesh(armGeo, armMat);
-  armL.position.y = -0.3;
-  armL.castShadow = true;
-  armGroupL.add(armL);
-  group.add(armGroupL);
-  limbRefs.armL = armGroupL;
+    // عيون (متحركة للملصق المتحرك)
+    const eyeMat = new THREE.MeshStandardMaterial({
+      color: playerSkin.isAnimated ? 0xffd700 : 0xffd700,
+      emissive: 0xffd700,
+      emissiveIntensity: playerSkin.isAnimated ? 1.0 : 0.8
+    });
+    const eyeGeo = new THREE.SphereGeometry(0.03, 6, 6);
+    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeL.position.set(-0.06, 1.02, 0.14);
+    group.add(eyeL);
+    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+    eyeR.position.set(0.06, 1.02, 0.14);
+    group.add(eyeR);
+    limbRefs.eyeL = eyeL;
+    limbRefs.eyeR = eyeR;
 
-  const armGroupR = new THREE.Group();
-  armGroupR.position.set(0.42, 0.75, 0);
-  const armR = new THREE.Mesh(armGeo, armMat);
-  armR.position.y = -0.3;
-  armR.castShadow = true;
-  armGroupR.add(armR);
-  group.add(armGroupR);
-  limbRefs.armR = armGroupR;
+    // إذا كان ملصقاً متحركاً، نضيف جزيئات حوله
+    if (playerSkin.isAnimated) {
+      // جزيئات متوهجة
+      for (let i = 0; i < 8; i++) {
+        const particleMat = new THREE.MeshStandardMaterial({
+          color: 0xff6b6b,
+          emissive: 0xff6b6b,
+          emissiveIntensity: 0.5,
+          transparent: true,
+          opacity: 0.6
+        });
+        const particle = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), particleMat);
+        const angle = (i / 8) * Math.PI * 2;
+        particle.position.set(Math.cos(angle) * 0.5, 0.5 + Math.sin(i) * 0.2, Math.sin(angle) * 0.5);
+        group.add(particle);
+      }
+    }
 
-  // Legs
-  const legGroupL = new THREE.Group();
-  legGroupL.position.set(-0.18, 0.0, 0);
-  const legMat = new THREE.MeshStandardMaterial({ color: 0x2d1b4e, roughness: 0.6, metalness: 0.3 });
-  const legGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2);
-  const legL = new THREE.Mesh(legGeo, legMat);
-  legL.position.y = -0.2;
-  legL.castShadow = true;
-  legGroupL.add(legL);
-  group.add(legGroupL);
-  limbRefs.legL = legGroupL;
+  } else {
+    // شخصية افتراضية
+    createDefaultCharacter(group);
+  }
 
-  const legGroupR = new THREE.Group();
-  legGroupR.position.set(0.18, 0.0, 0);
-  const legR = new THREE.Mesh(legGeo, legMat);
-  legR.position.y = -0.2;
-  legR.castShadow = true;
-  legGroupR.add(legR);
-  group.add(legGroupR);
-  limbRefs.legR = legGroupR;
-
-  // Shadow
-  const circleGeo = new THREE.RingGeometry(0.5, 0.8, 32);
+  // الظل
+  const circleGeo = new THREE.RingGeometry(0.3, 0.6, 16);
   const circleMat = new THREE.MeshBasicMaterial({
     color: 0x333366,
     transparent: true,
@@ -687,244 +706,40 @@ function createDefaultPlayer() {
 
   group.position.set(0, 0, 0);
   scene.add(group);
-  player3D = group;
+  playerGroup = group;
+}
+
+function createDefaultCharacter(group) {
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: 0x00f2ff,
+    roughness: 0.3,
+    metalness: 0.7
+  });
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.5), bodyMat);
+  body.position.y = 0.45;
+  body.castShadow = true;
+  group.add(body);
+  limbRefs.body = body;
+
+  const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0b8, roughness: 0.5 });
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), headMat);
+  head.position.y = 1.0;
+  head.castShadow = true;
+  group.add(head);
+  limbRefs.head = head;
+
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x333 });
+  const eyeGeo = new THREE.SphereGeometry(0.04, 6, 6);
+  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+  eyeL.position.set(-0.1, 1.05, 0.23);
+  group.add(eyeL);
+  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+  eyeR.position.set(0.1, 1.05, 0.23);
+  group.add(eyeR);
 }
 
 // ============================================================
-//  تكبير الإيموجي وتحويله إلى نسيج
-// ============================================================
-
-function createEmojiTexture(imageUrl, callback) {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    
-    img.onload = function() {
-        // Canvas بحجم كبير لتكبير الإيموجي
-        const canvas = document.createElement('canvas');
-        const size = 512; // حجم كبير لجودة عالية
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext('2d');
-        
-        // خلفية شفافة
-        ctx.clearRect(0, 0, size, size);
-        
-        // حساب حجم الإيموجي (تكبير 2x - يغطي 85% من المساحة)
-        const imgSize = size * 0.85;
-        const offset = (size - imgSize) / 2;
-        
-        // رسم الإيموجي مكبراً
-        ctx.drawImage(img, offset, offset, imgSize, imgSize);
-        
-        // إضافة تأثير إضاءة خفيف
-        const gradient = ctx.createRadialGradient(
-            size/2, size/2, 0,
-            size/2, size/2, size/2
-        );
-        gradient.addColorStop(0, 'rgba(255,255,255,0.08)');
-        gradient.addColorStop(1, 'rgba(255,255,255,0)');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, size, size);
-        
-        // إنشاء النسيج
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.needsUpdate = true;
-        texture.minFilter = THREE.LinearFilter;
-        texture.magFilter = THREE.LinearFilter;
-        
-        callback(texture);
-    };
-    
-    img.onerror = function() {
-        // في حال فشل التحميل، استخدم إيموجي افتراضي
-        const canvas = document.createElement('canvas');
-        canvas.width = 128;
-        canvas.height = 128;
-        const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#8b5cf6';
-        ctx.fillRect(0, 0, 128, 128);
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 80px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('😊', 64, 72);
-        const texture = new THREE.CanvasTexture(canvas);
-        texture.needsUpdate = true;
-        callback(texture);
-    };
-    
-    img.src = imageUrl;
-}
-
-// ============================================================
-//  تحديث الشخصية بالإيموجي المكبر
-// ============================================================
-
-function updatePlayer3D() {
-    if (!player3D) return;
-
-    // مسح الأجزاء القديمة
-    while (player3D.children.length > 0) {
-        const child = player3D.children[0];
-        player3D.remove(child);
-        if (child.geometry) child.geometry.dispose();
-        if (child.material) child.material.dispose();
-    }
-
-    if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
-        const img = loadedImages[playerSkin.id];
-        const isEmoji = playerSkin.isEmoji || false;
-        
-        // إنشاء نسيج الإيموجي المكبر
-        createEmojiTexture(playerSkin.imageUrl, function(texture) {
-            // 1. الجسم مع الإيموجي المكبر
-            const bodyMat = new THREE.MeshStandardMaterial({
-                map: texture,
-                roughness: 0.3,
-                metalness: 0.1,
-                transparent: true,
-                side: THREE.DoubleSide
-            });
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.3), bodyMat);
-            body.position.y = 0.5;
-            body.castShadow = true;
-            player3D.add(body);
-            limbRefs.body = body;
-            
-            // 2. إطار حول الإيموجي (لإبرازه)
-            const borderMat = new THREE.MeshStandardMaterial({
-                color: 0x8b5cf6,
-                transparent: true,
-                opacity: 0.2,
-                wireframe: true
-            });
-            const border = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.05, 0.35), borderMat);
-            border.position.y = 0.5;
-            player3D.add(border);
-            
-            // 3. رأس (صغير) مع لون مميز
-            const headMat = new THREE.MeshStandardMaterial({
-                color: 0x8b5cf6,
-                roughness: 0.3,
-                metalness: 0.2,
-                emissive: 0x3b1f6e,
-                emissiveIntensity: 0.2
-            });
-            const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), headMat);
-            head.position.y = 1.1;
-            head.castShadow = true;
-            player3D.add(head);
-            limbRefs.head = head;
-            
-            // 4. عيون متوهجة
-            const eyeMat = new THREE.MeshStandardMaterial({
-                color: 0xffd700,
-                emissive: 0xffd700,
-                emissiveIntensity: 0.8
-            });
-            const eyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
-            const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-            eyeL.position.set(-0.08, 1.12, 0.18);
-            player3D.add(eyeL);
-            const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-            eyeR.position.set(0.08, 1.12, 0.18);
-            player3D.add(eyeR);
-            limbRefs.eyeL = eyeL;
-            limbRefs.eyeR = eyeR;
-            
-            // 5. الأطراف
-            const armMat = new THREE.MeshStandardMaterial({ color: 0x7c4df6, roughness: 0.4 });
-            const armGeo = new THREE.BoxGeometry(0.12, 0.5, 0.12);
-            
-            const armGroupL = new THREE.Group();
-            armGroupL.position.set(-0.46, 0.7, 0);
-            const armL = new THREE.Mesh(armGeo, armMat);
-            armL.position.y = -0.25;
-            armL.castShadow = true;
-            armGroupL.add(armL);
-            player3D.add(armGroupL);
-            limbRefs.armL = armGroupL;
-            
-            const armGroupR = new THREE.Group();
-            armGroupR.position.set(0.46, 0.7, 0);
-            const armR = new THREE.Mesh(armGeo, armMat);
-            armR.position.y = -0.25;
-            armR.castShadow = true;
-            armGroupR.add(armR);
-            player3D.add(armGroupR);
-            limbRefs.armR = armGroupR;
-            
-            // 6. الأرجل
-            const legMat = new THREE.MeshStandardMaterial({ color: 0x2d1b4e, roughness: 0.6 });
-            const legGeo = new THREE.BoxGeometry(0.18, 0.35, 0.18);
-            
-            const legGroupL = new THREE.Group();
-            legGroupL.position.set(-0.16, 0.0, 0);
-            const legL = new THREE.Mesh(legGeo, legMat);
-            legL.position.y = -0.175;
-            legL.castShadow = true;
-            legGroupL.add(legL);
-            player3D.add(legGroupL);
-            limbRefs.legL = legGroupL;
-            
-            const legGroupR = new THREE.Group();
-            legGroupR.position.set(0.16, 0.0, 0);
-            const legR = new THREE.Mesh(legGeo, legMat);
-            legR.position.y = -0.175;
-            legR.castShadow = true;
-            legGroupR.add(legR);
-            player3D.add(legGroupR);
-            limbRefs.legR = legGroupR;
-            
-            // 7. الظل
-            const circleGeo = new THREE.RingGeometry(0.4, 0.7, 32);
-            const circleMat = new THREE.MeshBasicMaterial({
-                color: 0x333366,
-                transparent: true,
-                opacity: 0.3,
-                side: THREE.DoubleSide
-            });
-            const circle = new THREE.Mesh(circleGeo, circleMat);
-            circle.rotation.x = -Math.PI / 2;
-            circle.position.y = 0.01;
-            player3D.add(circle);
-            limbRefs.shadow = circle;
-            
-            // 8. اسم الإيموجي
-            if (isEmoji && playerSkin.name) {
-                const nameCanvas = document.createElement('canvas');
-                nameCanvas.width = 256;
-                nameCanvas.height = 64;
-                const nctx = nameCanvas.getContext('2d');
-                nctx.fillStyle = 'rgba(139,92,246,0.2)';
-                nctx.roundRect(10, 10, 236, 44, 10);
-                nctx.fill();
-                nctx.strokeStyle = '#8b5cf6';
-                nctx.lineWidth = 1;
-                nctx.roundRect(10, 10, 236, 44, 10);
-                nctx.stroke();
-                nctx.fillStyle = '#c084fc';
-                nctx.font = 'bold 22px Cairo';
-                nctx.textAlign = 'center';
-                nctx.textBaseline = 'middle';
-                nctx.fillText(playerSkin.name, 128, 38);
-                
-                const nameTexture = new THREE.CanvasTexture(nameCanvas);
-                const nameMat = new THREE.SpriteMaterial({ map: nameTexture, transparent: true });
-                const nameSprite = new THREE.Sprite(nameMat);
-                nameSprite.scale.set(1.5, 0.4, 1);
-                nameSprite.position.y = 1.6;
-                player3D.add(nameSprite);
-            }
-        });
-        
-    } else {
-        createDefaultPlayer();
-    }
-}
-
-// ============================================================
-//  حركة الشخصية مثل بوبجي
+//  حركة الشخصية
 // ============================================================
 
 function updateAnimationState() {
@@ -946,34 +761,38 @@ function animateLimbs(delta) {
 
   if (playerState === 'run') {
     runTime += delta * runSpeed;
-    const armAngle = Math.sin(runTime) * 0.8;
-    const legAngle = Math.sin(runTime + Math.PI) * 0.8;
-    const bobbing = Math.abs(Math.sin(runTime * 2)) * 0.08;
+    const armAngle = Math.sin(runTime) * 0.6;
+    const legAngle = Math.sin(runTime + Math.PI) * 0.6;
+    const bobbing = Math.abs(Math.sin(runTime * 2)) * 0.05;
 
     limbRefs.armL.rotation.x = armAngle;
     limbRefs.armR.rotation.x = -armAngle;
     limbRefs.legL.rotation.x = legAngle;
     limbRefs.legR.rotation.x = -legAngle;
 
-    if (limbRefs.body) limbRefs.body.position.y = 0.5 + bobbing;
-    if (limbRefs.head) limbRefs.head.position.y = 1.1 + bobbing;
+    if (limbRefs.body) limbRefs.body.position.y = 0.45 + bobbing;
+    if (limbRefs.head) limbRefs.head.position.y = 1.0 + bobbing;
 
-    // تحريك الشخصية
-    if (player3D) {
+    if (playerGroup) {
       if (touchDirs.up || autoRun) {
-        player3D.position.x += Math.sin(player3D.rotation.y) * moveSpeed;
-        player3D.position.z += Math.cos(player3D.rotation.y) * moveSpeed;
+        playerGroup.position.x += Math.sin(playerGroup.rotation.y) * moveSpeed;
+        playerGroup.position.z += Math.cos(playerGroup.rotation.y) * moveSpeed;
       }
       if (touchDirs.down) {
-        player3D.position.x -= Math.sin(player3D.rotation.y) * moveSpeed * 0.5;
-        player3D.position.z -= Math.cos(player3D.rotation.y) * moveSpeed * 0.5;
+        playerGroup.position.x -= Math.sin(playerGroup.rotation.y) * moveSpeed * 0.5;
+        playerGroup.position.z -= Math.cos(playerGroup.rotation.y) * moveSpeed * 0.5;
       }
+      
+      const halfMap = mapSize / 2 - 0.5;
+      playerGroup.position.x = Math.max(-halfMap, Math.min(halfMap, playerGroup.position.x));
+      playerGroup.position.z = Math.max(-halfMap, Math.min(halfMap, playerGroup.position.z));
+      checkWallCollision();
     }
   } else if (playerState === 'rotate') {
-    if (player3D) {
+    if (playerGroup) {
       const rotSpeed = 0.04;
-      if (touchDirs.left) player3D.rotation.y += rotSpeed;
-      if (touchDirs.right) player3D.rotation.y -= rotSpeed;
+      if (touchDirs.left) playerGroup.rotation.y += rotSpeed;
+      if (touchDirs.right) playerGroup.rotation.y -= rotSpeed;
     }
     limbRefs.armL.rotation.x *= 0.9;
     limbRefs.armR.rotation.x *= 0.9;
@@ -985,13 +804,25 @@ function animateLimbs(delta) {
     limbRefs.armR.rotation.x += (-breath - limbRefs.armR.rotation.x) * 0.1;
     limbRefs.legL.rotation.x *= 0.9;
     limbRefs.legR.rotation.x *= 0.9;
-    if (limbRefs.body) limbRefs.body.position.y += (0.5 - limbRefs.body.position.y) * 0.1;
-    if (limbRefs.head) limbRefs.head.position.y += (1.1 - limbRefs.head.position.y) * 0.1;
+    if (limbRefs.body) limbRefs.body.position.y += (0.45 - limbRefs.body.position.y) * 0.1;
+    if (limbRefs.head) limbRefs.head.position.y += (1.0 - limbRefs.head.position.y) * 0.1;
   }
 
-  if (limbRefs.shadow && player3D) {
-    limbRefs.shadow.position.x = player3D.position.x;
-    limbRefs.shadow.position.z = player3D.position.z;
+  if (limbRefs.shadow && playerGroup) {
+    limbRefs.shadow.position.x = playerGroup.position.x;
+    limbRefs.shadow.position.z = playerGroup.position.z;
+  }
+}
+
+function checkWallCollision() {
+  if (!playerGroup) return;
+  const px = Math.round(playerGroup.position.x + mapSize/2);
+  const pz = Math.round(playerGroup.position.z + mapSize/2);
+  if (px >= 0 && px < mapSize && pz >= 0 && pz < mapSize) {
+    if (mapData[pz][px] > 0) {
+      playerGroup.position.x -= Math.sin(playerGroup.rotation.y) * moveSpeed * 0.5;
+      playerGroup.position.z -= Math.cos(playerGroup.rotation.y) * moveSpeed * 0.5;
+    }
   }
 }
 
@@ -1006,22 +837,20 @@ function handleMovementInput() {
 }
 
 // ============================================================
-//  الكاميرا التابعة (مثل بوبجي)
+//  الكاميرا التابعة
 // ============================================================
 
 function updateFollowCamera() {
-  if (!player3D) return;
-
-  const targetX = player3D.position.x;
-  const targetY = player3D.position.y + 1.2;
-  const targetZ = player3D.position.z;
+  if (!playerGroup) return;
+  const targetX = playerGroup.position.x;
+  const targetY = playerGroup.position.y + 1.0;
+  const targetZ = playerGroup.position.z;
 
   const x = Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
   const y = Math.sin(cameraAngleY) * cameraDistance + 0.5;
   const z = Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
 
   targetCameraPosition.set(targetX + x, targetY + y, targetZ + z);
-
   camera.position.lerp(targetCameraPosition, cameraSmoothness);
   camera.lookAt(targetX, targetY, targetZ);
 }
@@ -1062,10 +891,10 @@ function toggleAutoRun() {
 function resetCamera() {
   cameraAngleX = 0.3;
   cameraAngleY = 0.3;
-  cameraDistance = 4.5;
-  if (player3D) {
-    player3D.position.set(0, 0, 0);
-    player3D.rotation.y = 0;
+  cameraDistance = 5;
+  if (playerGroup) {
+    playerGroup.position.set(0, 0, 0);
+    playerGroup.rotation.y = 0;
   }
   showToast('📷 تم إعادة ضبط الكاميرا', 'info');
 }
@@ -1097,7 +926,6 @@ function setupTouchControls() {
   });
 }
 
-// تحريك الكاميرا بالسحب
 let isDragging = false;
 let prevMouseX = 0, prevMouseY = 0;
 
@@ -1120,13 +948,11 @@ document.addEventListener('mousemove', function(e) {
 
 document.addEventListener('mouseup', function() { isDragging = false; });
 
-// تكبير/تصغير
 document.addEventListener('wheel', function(e) {
   cameraDistance += e.deltaY * 0.005;
-  cameraDistance = Math.max(2, Math.min(8, cameraDistance));
+  cameraDistance = Math.max(2.5, Math.min(8, cameraDistance));
 }, { passive: true });
 
-// Keyboard
 document.addEventListener('keydown', function(e) {
   if (e.key === 'ArrowUp') touchDirs.up = true;
   if (e.key === 'ArrowDown') touchDirs.down = true;
@@ -1170,9 +996,9 @@ function enterApp() {
     
     setTimeout(function() {
       if (connected) {
-        fetchEmojisFromChannel();
+        fetchAnimatedStickers();
       } else {
-        showToast('📡 اضغط "اتصال" ثم "😊 جلب إيموجي"', 'info');
+        showToast('📡 اضغط "اتصال" ثم "🎬 جلب ملصق متحرك"', 'info');
       }
     }, 1500);
     
@@ -1203,8 +1029,7 @@ setTimeout(function() {
   document.getElementById('start-btn').style.display = 'block';
 }, 500);
 
-console.log('😊 إيموجي 3D — جاهز مع تكبير وتحريك مثل بوبجي!');
+console.log('🎬 ملصق متحرك في الخريطة — جاهز!');
 </script>
 </body>
 </html>
-
