@@ -41,6 +41,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .action-btn{width:54px;height:54px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)}
 .action-btn:active{transform:scale(0.86)}
 .btn-rotate{border-color:var(--gold);color:var(--gold)}
+.btn-run{border-color:var(--success);color:var(--success);width:46px;height:46px;font-size:16px}
 .btn-zoom{border-color:var(--accent);color:var(--accent);width:46px;height:46px;font-size:16px}
 
 .tg-dropdown{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;z-index:250;min-width:300px;max-width:92%;display:none;backdrop-filter:blur(12px)}
@@ -84,6 +85,12 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 .skin-toggle{position:fixed;top:10px;right:60px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;cursor:pointer;display:none}
 .skin-toggle:hover{color:var(--gold)}
+
+.anim-status{position:fixed;top:10px;left:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(139,92,246,0.15);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;pointer-events:none}
+.anim-status span{margin-left:4px}
+.anim-status .state-idle{color:#888}
+.anim-status .state-run{color:var(--success)}
+.anim-status .state-rotate{color:var(--gold)}
 </style>
 </head>
 <body>
@@ -91,10 +98,10 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 <!-- START -->
 <div id="start-screen">
   <div class="start-logo">🎨 شخصيتي من الملصقات</div>
-  <div class="start-subtitle">اختر ملصقاً ليصبح شخصيتك 3D</div>
+  <div class="start-subtitle">اختر ملصقاً ليصبح شخصيتك 3D مع المشي</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v10.0 | Sticker Avatar</div>
+  <div class="version-tag">v11.0 | Sticker Avatar + Walking</div>
 </div>
 
 <!-- GAME -->
@@ -107,6 +114,10 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     </div>
   </div>
 
+  <div class="anim-status" id="anim-status">
+    الحالة: <span class="state-idle" id="anim-state-text">🛑 متوقف</span>
+  </div>
+
   <div class="dpad" id="dpad">
     <div class="dpad-btn dpad-up" data-dir="up">▲</div>
     <div class="dpad-btn dpad-down" data-dir="down">▼</div>
@@ -115,6 +126,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
   </div>
   <div class="action-btns">
     <button class="action-btn btn-rotate" onclick="toggleRotate()">🔄</button>
+    <button class="action-btn btn-run" onclick="toggleAutoRun()">🏃</button>
     <button class="action-btn btn-zoom" onclick="resetCamera()">📷</button>
   </div>
 
@@ -149,7 +161,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  شخصيتي من الملصقات v10.0
+//  شخصيتي من الملصقات v11.0
 // ============================================================
 
 // ============================================================
@@ -183,7 +195,6 @@ function initTelegram() {
 let botToken = '', channelId = '', connected = false, lastUpdateId = 0;
 let fetchedCharacters = [];
 let loadedImages = {};
-let loadedModels = {};
 let playerSkin = null;
 
 // ============================================================
@@ -227,8 +238,7 @@ function selectSkin(char) {
       id: char.id,
       name: char.name,
       imageUrl: char.imageUrl,
-      isSticker: char.isSticker || false,
-      isGLTF: false
+      isSticker: char.isSticker || false
     };
     document.getElementById('char-name').textContent = char.name + (char.isSticker ? ' 📌' : '');
     showToast('✅ تم اختيار ' + char.name, 'success');
@@ -269,7 +279,7 @@ async function testTelegram() {
 }
 
 // ============================================================
-//  جلب الملصقات - الميزة الرئيسية
+//  جلب الملصقات
 // ============================================================
 
 async function fetchStickers() {
@@ -290,7 +300,6 @@ async function fetchStickers() {
 
       let fileId = null, imageUrl = '';
 
-      // البحث عن الملصقات
       if (msg.sticker) {
         fileId = msg.sticker.file_id;
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
@@ -305,19 +314,13 @@ async function fetchStickers() {
 
       const caption = msg.caption || '';
       const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
-      const atkMatch = caption.match(/(?:هجوم|atk|Atk|attack)[\s:]*(\d+)/i);
-      const defMatch = caption.match(/(?:دفاع|def|Def|defense)[\s:]*(\d+)/i);
 
       const char = {
         id: 'sticker_' + fileId,
         fileId: fileId,
         name: nameMatch ? nameMatch[1].trim() : 'ملصق #' + (fetchedCharacters.length + 1),
-        attack: atkMatch ? parseInt(atkMatch[1]) : Math.floor(Math.random() * 30) + 60,
-        defense: defMatch ? parseInt(defMatch[1]) : Math.floor(Math.random() * 30) + 50,
         imageUrl: imageUrl,
-        isSticker: true,
-        isGLTF: false,
-        modelUrl: null
+        isSticker: true
       };
 
       fetchedCharacters.push(char);
@@ -346,7 +349,7 @@ async function fetchStickers() {
 }
 
 // ============================================================
-//  جلب الصور العادية
+//  جلب الصور
 // ============================================================
 
 async function fetchImages() {
@@ -390,9 +393,7 @@ async function fetchImages() {
         fileId: fileId,
         name: nameMatch ? nameMatch[1].trim() : 'صورة #' + (fetchedCharacters.length + 1),
         imageUrl: imageUrl,
-        isSticker: false,
-        isGLTF: false,
-        modelUrl: null
+        isSticker: false
       };
 
       fetchedCharacters.push(char);
@@ -439,13 +440,20 @@ function showCharGrid() {
 }
 
 // ============================================================
-//  THREE.JS 3D VIEWER
+//  THREE.JS 3D VIEWER WITH WALKING
 // ============================================================
 
 let scene, camera, renderer;
 let player3D = null;
 let clock = new THREE.Clock();
 let autoRotate = true;
+let autoRun = false;
+let runSpeed = 2.5;
+let moveSpeed = 0.04;
+let runTime = 0;
+let limbRefs = {};
+let playerState = 'idle'; // 'idle', 'run', 'rotate'
+let touchDirs = { up: false, down: false, left: false, right: false };
 
 function initThreeJS() {
   const container = document.getElementById('game-canvas');
@@ -485,7 +493,7 @@ function initThreeJS() {
   scene.add(rimLight);
 
   // Ground
-  const groundGeo = new THREE.PlaneGeometry(6, 6);
+  const groundGeo = new THREE.PlaneGeometry(20, 20);
   const groundMat = new THREE.MeshStandardMaterial({
     color: 0x0a0a15,
     roughness: 0.9,
@@ -499,11 +507,24 @@ function initThreeJS() {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  const gridHelper = new THREE.GridHelper(6, 20, 0x333366, 0x222244);
+  const gridHelper = new THREE.GridHelper(20, 40, 0x333366, 0x222244);
   gridHelper.position.y = 0;
   scene.add(gridHelper);
 
-  // Create default player
+  // Circle shadow
+  const circleGeo = new THREE.RingGeometry(0.5, 0.8, 32);
+  const circleMat = new THREE.MeshBasicMaterial({
+    color: 0x333366,
+    transparent: true,
+    opacity: 0.3,
+    side: THREE.DoubleSide
+  });
+  const circle = new THREE.Mesh(circleGeo, circleMat);
+  circle.rotation.x = -Math.PI / 2;
+  circle.position.y = 0.01;
+  scene.add(circle);
+  limbRefs.shadow = circle;
+
   createDefaultPlayer();
 
   window.addEventListener('resize', function() {
@@ -515,19 +536,16 @@ function initThreeJS() {
   animateThree();
 }
 
-// ============================================================
-//  شخصية من الملصق
-// ============================================================
-
 function createDefaultPlayer() {
   if (player3D) {
     scene.remove(player3D);
     player3D = null;
   }
 
+  limbRefs = {};
   const group = new THREE.Group();
 
-  // جسم بسيط
+  // Body
   const bodyMat = new THREE.MeshStandardMaterial({
     color: 0x8b5cf6,
     roughness: 0.3,
@@ -539,15 +557,17 @@ function createDefaultPlayer() {
   body.position.y = 0.45;
   body.castShadow = true;
   group.add(body);
+  limbRefs.body = body;
 
-  // رأس
+  // Head
   const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0b8, roughness: 0.5 });
   const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 12), headMat);
   head.position.y = 1.0;
   head.castShadow = true;
   group.add(head);
+  limbRefs.head = head;
 
-  // عيون (تعبر عن الملصق)
+  // Eyes (purple glow for sticker style)
   const eyeMat = new THREE.MeshStandardMaterial({ color: 0x8b5cf6, emissive: 0x8b5cf6, emissiveIntensity: 0.5 });
   const eyeGeo = new THREE.SphereGeometry(0.06, 8, 8);
   const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
@@ -556,26 +576,57 @@ function createDefaultPlayer() {
   const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
   eyeR.position.set(0.12, 1.05, 0.26);
   group.add(eyeR);
+  limbRefs.eyeL = eyeL;
+  limbRefs.eyeR = eyeR;
 
-  // إطار حول الرأس (يشبه الملصق)
-  const borderMat = new THREE.MeshStandardMaterial({
-    color: 0x8b5cf6,
-    transparent: true,
-    opacity: 0.3,
-    wireframe: true
-  });
-  const border = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 12), borderMat);
-  border.position.y = 1.0;
-  group.add(border);
+  // Arm left with pivot
+  const armGroupL = new THREE.Group();
+  armGroupL.position.set(-0.42, 0.75, 0);
+  const armMat = new THREE.MeshStandardMaterial({ color: 0x7c4df6, roughness: 0.4, metalness: 0.5 });
+  const armGeo = new THREE.BoxGeometry(0.15, 0.6, 0.15);
+  const armL = new THREE.Mesh(armGeo, armMat);
+  armL.position.y = -0.3;
+  armL.castShadow = true;
+  armGroupL.add(armL);
+  group.add(armGroupL);
+  limbRefs.armL = armGroupL;
+
+  // Arm right with pivot
+  const armGroupR = new THREE.Group();
+  armGroupR.position.set(0.42, 0.75, 0);
+  const armR = new THREE.Mesh(armGeo, armMat);
+  armR.position.y = -0.3;
+  armR.castShadow = true;
+  armGroupR.add(armR);
+  group.add(armGroupR);
+  limbRefs.armR = armGroupR;
+
+  // Leg left with pivot
+  const legGroupL = new THREE.Group();
+  legGroupL.position.set(-0.18, 0.0, 0);
+  const legMat = new THREE.MeshStandardMaterial({ color: 0x2d1b4e, roughness: 0.6, metalness: 0.3 });
+  const legGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2);
+  const legL = new THREE.Mesh(legGeo, legMat);
+  legL.position.y = -0.2;
+  legL.castShadow = true;
+  legGroupL.add(legL);
+  group.add(legGroupL);
+  limbRefs.legL = legGroupL;
+
+  // Leg right with pivot
+  const legGroupR = new THREE.Group();
+  legGroupR.position.set(0.18, 0.0, 0);
+  const legR = new THREE.Mesh(legGeo, legMat);
+  legR.position.y = -0.2;
+  legR.castShadow = true;
+  legGroupR.add(legR);
+  group.add(legGroupR);
+  limbRefs.legR = legGroupR;
 
   group.position.set(0, 0, 0);
   scene.add(group);
   player3D = group;
 }
-
-// ============================================================
-//  تحديث الشخصية بالملصق
-// ============================================================
 
 function updatePlayer3D() {
   if (!player3D) return;
@@ -588,10 +639,9 @@ function updatePlayer3D() {
   }
 
   if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
-    // إنشاء شخصية من الملصق/الصورة
     const img = loadedImages[playerSkin.id];
 
-    // جسم مع الصورة
+    // Body with image
     const bodyMat = new THREE.MeshStandardMaterial({
       color: 0x8b5cf6,
       roughness: 0.3,
@@ -603,8 +653,9 @@ function updatePlayer3D() {
     body.position.y = 0.45;
     body.castShadow = true;
     player3D.add(body);
+    limbRefs.body = body;
 
-    // الصورة على الجسم
+    // Apply image texture
     const imgCanvas = document.createElement('canvas');
     imgCanvas.width = 128;
     imgCanvas.height = 128;
@@ -614,7 +665,7 @@ function updatePlayer3D() {
     body.material.map = imgTexture;
     body.material.needsUpdate = true;
 
-    // رأس مع لون مميز
+    // Head with glow
     const headMat = new THREE.MeshStandardMaterial({
       color: 0x8b5cf6,
       roughness: 0.3,
@@ -626,8 +677,9 @@ function updatePlayer3D() {
     head.position.y = 1.0;
     head.castShadow = true;
     player3D.add(head);
+    limbRefs.head = head;
 
-    // عيون متوهجة
+    // Glowing eyes
     const eyeMat = new THREE.MeshStandardMaterial({
       color: 0xffd700,
       emissive: 0xffd700,
@@ -640,64 +692,166 @@ function updatePlayer3D() {
     const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
     eyeR.position.set(0.12, 1.05, 0.26);
     player3D.add(eyeR);
+    limbRefs.eyeL = eyeL;
+    limbRefs.eyeR = eyeR;
 
-    // إطار متوهج حول الشخصية
-    const glowMat = new THREE.MeshStandardMaterial({
-      color: 0x8b5cf6,
+    // Arms
+    const armGroupL = new THREE.Group();
+    armGroupL.position.set(-0.42, 0.75, 0);
+    const armMat = new THREE.MeshStandardMaterial({ color: 0x7c4df6, roughness: 0.4, metalness: 0.5 });
+    const armGeo = new THREE.BoxGeometry(0.15, 0.6, 0.15);
+    const armL = new THREE.Mesh(armGeo, armMat);
+    armL.position.y = -0.3;
+    armL.castShadow = true;
+    armGroupL.add(armL);
+    player3D.add(armGroupL);
+    limbRefs.armL = armGroupL;
+
+    const armGroupR = new THREE.Group();
+    armGroupR.position.set(0.42, 0.75, 0);
+    const armR = new THREE.Mesh(armGeo, armMat);
+    armR.position.y = -0.3;
+    armR.castShadow = true;
+    armGroupR.add(armR);
+    player3D.add(armGroupR);
+    limbRefs.armR = armGroupR;
+
+    // Legs
+    const legGroupL = new THREE.Group();
+    legGroupL.position.set(-0.18, 0.0, 0);
+    const legMat = new THREE.MeshStandardMaterial({ color: 0x2d1b4e, roughness: 0.6, metalness: 0.3 });
+    const legGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2);
+    const legL = new THREE.Mesh(legGeo, legMat);
+    legL.position.y = -0.2;
+    legL.castShadow = true;
+    legGroupL.add(legL);
+    player3D.add(legGroupL);
+    limbRefs.legL = legGroupL;
+
+    const legGroupR = new THREE.Group();
+    legGroupR.position.set(0.18, 0.0, 0);
+    const legR = new THREE.Mesh(legGeo, legMat);
+    legR.position.y = -0.2;
+    legR.castShadow = true;
+    legGroupR.add(legR);
+    player3D.add(legGroupR);
+    limbRefs.legR = legGroupR;
+
+    // Shadow
+    const circleGeo = new THREE.RingGeometry(0.5, 0.8, 32);
+    const circleMat = new THREE.MeshBasicMaterial({
+      color: 0x333366,
       transparent: true,
-      opacity: 0.2,
-      wireframe: true
+      opacity: 0.3,
+      side: THREE.DoubleSide
     });
-    const glow = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), glowMat);
-    glow.position.y = 0.5;
-    player3D.add(glow);
-
-    // اسم الشخصية على شكل لوحة
-    const nameCanvas = document.createElement('canvas');
-    nameCanvas.width = 256;
-    nameCanvas.height = 64;
-    const nctx = nameCanvas.getContext('2d');
-    nctx.fillStyle = 'rgba(139,92,246,0.2)';
-    nctx.roundRect(10, 10, 236, 44, 10);
-    nctx.fill();
-    nctx.strokeStyle = '#8b5cf6';
-    nctx.lineWidth = 1;
-    nctx.roundRect(10, 10, 236, 44, 10);
-    nctx.stroke();
-    nctx.fillStyle = '#c084fc';
-    nctx.font = 'bold 22px Cairo';
-    nctx.textAlign = 'center';
-    nctx.textBaseline = 'middle';
-    nctx.fillText(playerSkin.name || 'شخصيتي', 128, 38);
-
-    const nameTexture = new THREE.CanvasTexture(nameCanvas);
-    const nameMat = new THREE.SpriteMaterial({ map: nameTexture, transparent: true });
-    const nameSprite = new THREE.Sprite(nameMat);
-    nameSprite.scale.set(1.5, 0.4, 1);
-    nameSprite.position.y = 1.6;
-    player3D.add(nameSprite);
-
-    // جزيئات حول الشخصية
-    const starGeo = new THREE.BufferGeometry();
-    const starCount = 50;
-    const positions = new Float32Array(starCount * 3);
-    for (let i = 0; i < starCount * 3; i++) {
-      positions[i] = (Math.random() - 0.5) * 3;
-    }
-    starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const starMat = new THREE.PointsMaterial({
-      color: 0x8b5cf6,
-      size: 0.02,
-      transparent: true,
-      opacity: 0.5
-    });
-    const stars = new THREE.Points(starGeo, starMat);
-    stars.position.y = 0.5;
-    player3D.add(stars);
+    const circle = new THREE.Mesh(circleGeo, circleMat);
+    circle.rotation.x = -Math.PI / 2;
+    circle.position.y = 0.01;
+    player3D.add(circle);
+    limbRefs.shadow = circle;
 
   } else {
-    // شخصية افتراضية
     createDefaultPlayer();
+  }
+}
+
+function updateAnimationState() {
+  const stateText = document.getElementById('anim-state-text');
+  if (playerState === 'run') {
+    stateText.textContent = '🏃 يجري';
+    stateText.className = 'state-run';
+  } else if (playerState === 'rotate') {
+    stateText.textContent = '🔄 يدور';
+    stateText.className = 'state-rotate';
+  } else {
+    stateText.textContent = '🛑 متوقف';
+    stateText.className = 'state-idle';
+  }
+}
+
+function animateLimbs(delta) {
+  if (!limbRefs.armL || !limbRefs.armR || !limbRefs.legL || !limbRefs.legR) return;
+
+  if (playerState === 'run') {
+    runTime += delta * runSpeed;
+    const armAngle = Math.sin(runTime) * 0.8;
+    const legAngle = Math.sin(runTime + Math.PI) * 0.8;
+    const bobbing = Math.abs(Math.sin(runTime * 2)) * 0.08;
+
+    limbRefs.armL.rotation.x = armAngle;
+    limbRefs.armR.rotation.x = -armAngle;
+    limbRefs.legL.rotation.x = legAngle;
+    limbRefs.legR.rotation.x = -legAngle;
+
+    if (limbRefs.body) {
+      limbRefs.body.position.y = 0.45 + bobbing;
+    }
+    if (limbRefs.head) {
+      limbRefs.head.position.y = 1.0 + bobbing;
+    }
+
+    // Move forward
+    if (player3D) {
+      const speed = moveSpeed * (touchDirs.up || touchDirs.down || autoRun ? 1 : 0);
+      if (touchDirs.up || autoRun) {
+        player3D.position.x += Math.sin(player3D.rotation.y) * moveSpeed;
+        player3D.position.z += Math.cos(player3D.rotation.y) * moveSpeed;
+      }
+      if (touchDirs.down) {
+        player3D.position.x -= Math.sin(player3D.rotation.y) * moveSpeed * 0.5;
+        player3D.position.z -= Math.cos(player3D.rotation.y) * moveSpeed * 0.5;
+      }
+
+      // Boundary check
+      const boundary = 8;
+      player3D.position.x = Math.max(-boundary, Math.min(boundary, player3D.position.x));
+      player3D.position.z = Math.max(-boundary, Math.min(boundary, player3D.position.z));
+    }
+  } else if (playerState === 'rotate') {
+    if (player3D) {
+      player3D.rotation.y += (touchDirs.left ? 0.04 : 0) - (touchDirs.right ? 0.04 : 0);
+    }
+    // Reset limbs
+    limbRefs.armL.rotation.x *= 0.9;
+    limbRefs.armR.rotation.x *= 0.9;
+    limbRefs.legL.rotation.x *= 0.9;
+    limbRefs.legR.rotation.x *= 0.9;
+  } else {
+    // Idle - breathing
+    const breath = Math.sin(Date.now() * 0.002) * 0.02;
+    limbRefs.armL.rotation.x += (breath - limbRefs.armL.rotation.x) * 0.1;
+    limbRefs.armR.rotation.x += (-breath - limbRefs.armR.rotation.x) * 0.1;
+    limbRefs.legL.rotation.x *= 0.9;
+    limbRefs.legR.rotation.x *= 0.9;
+
+    if (limbRefs.body) {
+      limbRefs.body.position.y += (0.45 - limbRefs.body.position.y) * 0.1;
+    }
+    if (limbRefs.head) {
+      limbRefs.head.position.y += (1.0 - limbRefs.head.position.y) * 0.1;
+    }
+  }
+
+  // Update shadow
+  if (limbRefs.shadow && player3D) {
+    limbRefs.shadow.position.x = player3D.position.x;
+    limbRefs.shadow.position.z = player3D.position.z;
+  }
+}
+
+function handleMovementInput() {
+  let newState = 'idle';
+
+  if (touchDirs.up || touchDirs.down || autoRun) {
+    newState = 'run';
+  } else if (touchDirs.left || touchDirs.right) {
+    newState = 'rotate';
+  }
+
+  if (newState !== playerState) {
+    playerState = newState;
+    updateAnimationState();
   }
 }
 
@@ -707,8 +861,12 @@ function animateThree() {
 
   const delta = clock.getDelta();
 
-  if (player3D && autoRotate) {
-    player3D.rotation.y += delta * 0.5;
+  handleMovementInput();
+  animateLimbs(delta);
+
+  // Auto rotate
+  if (autoRotate && playerState === 'idle' && player3D) {
+    player3D.rotation.y += delta * 0.2;
   }
 
   renderer.render(scene, camera);
@@ -719,14 +877,77 @@ function toggleRotate() {
   showToast(autoRotate ? '🔄 دوران تلقائي مفعل' : '⏸️ دوران تلقائي متوقف', 'info');
 }
 
+function toggleAutoRun() {
+  autoRun = !autoRun;
+  if (autoRun) {
+    playerState = 'run';
+    showToast('🏃 جري تلقائي مفعل', 'success');
+  } else {
+    playerState = 'idle';
+    showToast('🛑 توقف', 'info');
+  }
+  updateAnimationState();
+}
+
 function resetCamera() {
   camera.position.set(0, 1.5, 4);
   camera.lookAt(0, 0.8, 0);
+  cameraAngleX = 0;
+  cameraAngleY = 0;
+  cameraDistance = 4;
+  if (player3D) {
+    player3D.position.set(0, 0, 0);
+    player3D.rotation.y = 0;
+  }
   showToast('📷 تم إعادة ضبط الكاميرا', 'info');
 }
 
 // ============================================================
-//  CAMERA CONTROLS
+//  TOUCH CONTROLS
+// ============================================================
+
+function setupTouchControls() {
+  document.querySelectorAll('.dpad-btn').forEach(function(btn) {
+    const dir = btn.getAttribute('data-dir');
+    btn.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      touchDirs[dir] = true;
+      btn.style.background = 'rgba(139,92,246,0.15)';
+      btn.style.borderColor = 'var(--purple)';
+    }, { passive: false });
+    btn.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      touchDirs[dir] = false;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    }, { passive: false });
+    btn.addEventListener('touchcancel', function() {
+      touchDirs[dir] = false;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    });
+  });
+}
+
+// Keyboard
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowUp') touchDirs.up = true;
+  if (e.key === 'ArrowDown') touchDirs.down = true;
+  if (e.key === 'ArrowLeft') touchDirs.left = true;
+  if (e.key === 'ArrowRight') touchDirs.right = true;
+  if (e.key === 'r' || e.key === 'R') toggleRotate();
+  if (e.key === 'c' || e.key === 'C') resetCamera();
+  if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); toggleAutoRun(); }
+});
+document.addEventListener('keyup', function(e) {
+  if (e.key === 'ArrowUp') touchDirs.up = false;
+  if (e.key === 'ArrowDown') touchDirs.down = false;
+  if (e.key === 'ArrowLeft') touchDirs.left = false;
+  if (e.key === 'ArrowRight') touchDirs.right = false;
+});
+
+// ============================================================
+//  CAMERA
 // ============================================================
 
 let isDragging = false;
@@ -765,7 +986,11 @@ function updateCameraPosition() {
   const y = Math.sin(cameraAngleY) * cameraDistance + 1;
   const z = Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
   camera.position.set(x, y, z);
-  camera.lookAt(0, 0.8, 0);
+  if (player3D) {
+    camera.lookAt(player3D.position.x, player3D.position.y + 0.8, player3D.position.z);
+  } else {
+    camera.lookAt(0, 0.8, 0);
+  }
 }
 
 // ============================================================
@@ -807,12 +1032,13 @@ function enterApp() {
 // ============================================================
 
 initTelegram();
+setupTouchControls();
 
 setTimeout(function() {
   document.getElementById('start-btn').style.display = 'block';
 }, 500);
 
-console.log('🎨 شخصيتي من الملصقات جاهزة!');
+console.log('🎨 شخصيتي من الملصقات مع المشي جاهزة!');
 </script>
 </body>
 </html>
