@@ -3,21 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ناردو 3D — شخصيات ثلاثية الأبعاد</title>
+<title>ناردو 3D — شخصيتي ثلاثية الأبعاد</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.7.1/dist/jszip.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-/* ===== STYLES (مبسطة) ===== */
 :root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--info:#60a5fa;--accent:#00f2ff;--gltf:#ff6b6b}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none}
 
 #start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px}
 .start-logo{font-size:42px;font-weight:900;color:var(--gold);animation:float 3s ease-in-out infinite}
-.start-subtitle{font-size:15px;color:#666;text-align:center;max-width:350px;line-height:1.6}
+.start-subtitle{font-size:15px;color:#666;text-align:center;max-width:350px}
 .start-btn{border:2px solid var(--accent);color:var(--accent);padding:16px 50px;background:rgba(0,242,255,0.08);border-radius:60px;font-size:20px;cursor:pointer;transition:all .3s;font-weight:700;font-family:inherit}
 .start-btn:hover{transform:scale(1.05);background:var(--accent);color:#000;box-shadow:0 0 50px rgba(0,242,255,0.4)}
 .user-info{color:var(--accent);font-size:13px;background:rgba(0,0,0,0.6);padding:8px 24px;border-radius:30px}
@@ -36,8 +35,9 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .hp-fill{background:linear-gradient(90deg,#ef4444,#f87171)}
 .xp-fill{background:linear-gradient(90deg,#a855f7,#c084fc)}
 .level-badge{background:rgba(0,0,0,0.7);border:1px solid var(--gold);border-radius:20px;padding:3px 14px;font-size:12px;color:var(--gold);font-weight:700;pointer-events:none;z-index:100}
+.score-badge{background:rgba(0,0,0,0.7);border-radius:16px;padding:3px 12px;font-size:11px;color:#aaa;margin-top:2px;display:inline-block}
 
-/* D-Pad */
+/* Controls */
 .dpad{position:fixed;bottom:20px;left:16px;width:120px;height:120px;z-index:200}
 .dpad-btn{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .1s}
 .dpad-btn:active{background:rgba(0,242,255,0.12);border-color:var(--accent);color:var(--accent);transform:scale(0.88)}
@@ -65,7 +65,20 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .btn-red{background:var(--error);color:#fff}
 .tg-toggle{position:fixed;bottom:155px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none}
 
-.char-grid-panel{position:fixed;bottom:230px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:10px 12px;z-index:230;max-width:92%;width:360px;display:none;max-height:180px;overflow-y:auto}
+/* Player Skin Selector */
+.skin-selector{position:fixed;bottom:220px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:12px;z-index:230;display:none;backdrop-filter:blur(12px);min-width:200px}
+.skin-selector.show{display:block}
+.skin-selector h4{color:var(--gold);font-size:12px;margin-bottom:8px;text-align:center}
+.skin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px}
+.skin-option{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:6px;text-align:center;cursor:pointer;transition:.2s}
+.skin-option:hover{background:rgba(255,255,255,0.08);border-color:var(--gold)}
+.skin-option .preview{width:40px;height:40px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;font-size:20px;background:#0a0a1a;overflow:hidden}
+.skin-option .preview img{width:100%;height:100%;object-fit:cover}
+.skin-option .sname{font-size:9px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skin-option.active{border-color:var(--gold);background:rgba(255,215,0,0.05)}
+
+/* Character Grid */
+.char-grid-panel{position:fixed;bottom:280px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:10px 12px;z-index:230;max-width:92%;width:360px;display:none;max-height:160px;overflow-y:auto}
 .char-grid-panel.show{display:block}
 .char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
 .char-mini{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);border-radius:6px;padding:6px;text-align:center;cursor:pointer;transition:.2s}
@@ -73,7 +86,6 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .char-mini .avatar{width:32px;height:32px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden}
 .char-mini .avatar img{width:100%;height:100%;object-fit:cover}
 .char-mini .cname{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.char-mini.added{opacity:.4;cursor:default}
 
 .toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
 .toast{background:rgba(0,0,0,0.9);padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
@@ -92,10 +104,10 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 <!-- START -->
 <div id="start-screen">
   <div class="start-logo">🎮 ناردو 3D</div>
-  <div class="start-subtitle">شخصيات ثلاثية الأبعاد من القناة</div>
+  <div class="start-subtitle">شخصيتك ثلاثية الأبعاد<br>اختر مظهرك من القناة</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterGame()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v5.0 | 3D Characters</div>
+  <div class="version-tag">v6.0 | My 3D Character</div>
 </div>
 
 <!-- GAME -->
@@ -110,6 +122,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
       <div class="bar-track"><div class="bar-fill xp-fill" id="player-xp-bar" style="width:0%"></div></div>
     </div>
     <div class="level-badge" id="wave-badge">الموجة 1</div>
+    <div class="score-badge">⭐ <span id="score">0</span></div>
   </div>
 
   <!-- Minimap -->
@@ -141,16 +154,22 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
       <button class="btn btn-gltf" onclick="fetchGLTF()">🎨 GLTF</button>
       <button class="btn btn-red" onclick="toggleTG()">✖</button>
     </div>
-    <div class="row">
-      <button class="btn btn-green" onclick="addAllCharacters()">➕ إضافة الكل</button>
-    </div>
     <div style="font-size:10px;color:#888;" id="tg-status">⭕ غير متصل</div>
+  </div>
+
+  <!-- Skin Selector -->
+  <div class="skin-selector" id="skin-selector">
+    <h4>🎨 اختر شخصيتك</h4>
+    <div class="skin-grid" id="skin-grid"></div>
   </div>
 
   <!-- Characters Grid -->
   <div class="char-grid-panel" id="char-grid-panel">
     <div class="char-grid" id="char-grid"></div>
   </div>
+
+  <!-- Skin Toggle Button -->
+  <button class="minimap-btn" style="top:44px;right:10px;font-size:11px;width:auto;padding:0 8px;" onclick="toggleSkinSelector()">👤 شخصيتي</button>
 </div>
 
 <!-- TOAST -->
@@ -158,11 +177,11 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  ناردو 3D v5.0 — شخصيات ثلاثية الأبعاد
+//  ناردو 3D v6.0 — شخصيتي ثلاثية الأبعاد
 // ============================================================
 
 // ============================================================
-//  TELEGRAM INIT
+//  TELEGRAM
 // ============================================================
 
 const tg = window.Telegram?.WebApp;
@@ -189,14 +208,13 @@ function initTelegram() {
   }
 }
 
-// ============================================================
-//  TELEGRAM STATE
-// ============================================================
-
 let botToken = '', channelId = '', connected = false, lastUpdateId = 0;
 let fetchedCharacters = [];
 let loadedImages = {};
 let loadedModels = {};
+
+// Player skin
+let playerSkin = null; // { imageUrl, modelUrl, isGLTF, name }
 
 // ============================================================
 //  TELEGRAM FUNCTIONS
@@ -204,6 +222,63 @@ let loadedModels = {};
 
 function toggleTG() {
   document.getElementById('tg-dropdown').classList.toggle('show');
+}
+
+function toggleSkinSelector() {
+  document.getElementById('skin-selector').classList.toggle('show');
+  renderSkinSelector();
+}
+
+function renderSkinSelector() {
+  const grid = document.getElementById('skin-grid');
+  grid.innerHTML = '';
+
+  // Default option
+  const defaultOpt = document.createElement('div');
+  defaultOpt.className = 'skin-option' + (!playerSkin ? ' active' : '');
+  defaultOpt.innerHTML = `
+    <div class="preview" style="font-size:24px;">🧑</div>
+    <div class="sname">افتراضي</div>
+  `;
+  defaultOpt.onclick = function() { selectSkin(null); };
+  grid.appendChild(defaultOpt);
+
+  // Fetched characters
+  for (const char of fetchedCharacters) {
+    const opt = document.createElement('div');
+    opt.className = 'skin-option' + (playerSkin && playerSkin.id === char.id ? ' active' : '');
+    const avatar = char.isGLTF ? '🎨' : (char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '🖼️');
+    opt.innerHTML = `
+      <div class="preview">${avatar}</div>
+      <div class="sname">${char.name}</div>
+    `;
+    opt.onclick = function() { selectSkin(char); };
+    grid.appendChild(opt);
+  }
+}
+
+function selectSkin(char) {
+  if (char) {
+    playerSkin = {
+      id: char.id,
+      name: char.name,
+      imageUrl: char.imageUrl,
+      modelUrl: char.modelUrl,
+      isGLTF: char.isGLTF || false,
+      attack: char.attack || 80,
+      defense: char.defense || 70
+    };
+    showToast('✅ تم اختيار ' + char.name + ' كشخصيتك!', 'success');
+  } else {
+    playerSkin = null;
+    showToast('🧑 تم اختيار المظهر الافتراضي', 'info');
+  }
+
+  // Update player appearance in 3D
+  updatePlayer3DAppearance();
+
+  renderSkinSelector();
+  document.getElementById('skin-selector').classList.remove('show');
 }
 
 function setTGStatus(msg, type) {
@@ -275,7 +350,6 @@ async function fetchCharacters() {
         attack: atkMatch ? parseInt(atkMatch[1]) : Math.floor(Math.random() * 30) + 60,
         defense: defMatch ? parseInt(defMatch[1]) : Math.floor(Math.random() * 30) + 50,
         imageUrl: imageUrl,
-        added: false,
         isGLTF: false,
         modelUrl: null
       };
@@ -294,6 +368,7 @@ async function fetchCharacters() {
     if (newChars > 0) {
       setTGStatus('✅ جلب ' + newChars + ' شخصية!', 'success');
       showCharGrid();
+      renderSkinSelector();
     } else {
       setTGStatus('📭 لا توجد شخصيات جديدة', '');
     }
@@ -344,19 +419,20 @@ async function fetchGLTF() {
         attack: atkMatch ? parseInt(atkMatch[1]) : Math.floor(Math.random() * 30) + 70,
         defense: defMatch ? parseInt(defMatch[1]) : Math.floor(Math.random() * 30) + 60,
         imageUrl: null,
-        added: false,
         isGLTF: true,
         modelUrl: modelUrl
       };
 
       // Pre-load model
-      fetch(modelUrl).then(r => r.blob()).then(blob => {
+      try {
+        const r = await fetch(modelUrl);
+        const blob = await r.blob();
         const reader = new FileReader();
         reader.onload = function(e) {
           loadedModels[char.id] = e.target.result;
         };
         reader.readAsArrayBuffer(blob);
-      });
+      } catch(e) {}
 
       fetchedCharacters.push(char);
       newChars++;
@@ -365,6 +441,7 @@ async function fetchGLTF() {
     if (newChars > 0) {
       setTGStatus('✅ جلب ' + newChars + ' GLTF!', 'success');
       showCharGrid();
+      renderSkinSelector();
     } else {
       setTGStatus('📭 لا توجد نماذج جديدة', '');
     }
@@ -378,47 +455,29 @@ function showCharGrid() {
 
   for (const char of fetchedCharacters) {
     const div = document.createElement('div');
-    div.className = 'char-mini' + (char.added ? ' added' : '');
+    div.className = 'char-mini';
     let avatar = char.isGLTF ? '🎨' : (char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '🖼️');
     div.innerHTML = `
       <div class="avatar">${avatar}</div>
       <div class="cname">${char.name}</div>
       <div style="font-size:8px;color:#888;">⚔️${char.attack} 🛡️${char.defense}</div>
     `;
-    if (!char.added) {
-      div.onclick = function() { addCharacterToGame(char); };
-    }
+    div.onclick = function() {
+      // Add as skin or enemy - let's add as skin option
+      selectSkin(char);
+    };
     grid.appendChild(div);
   }
   panel.classList.add('show');
 }
 
-function addCharacterToGame(char) {
-  if (char.added) return;
-
-  // Create 3D character
-  create3DCharacter(char);
-
-  char.added = true;
-  showCharGrid();
-  showToast('✅ تم إضافة ' + char.name + ' (3D)', 'success');
-}
-
-function addAllCharacters() {
-  let added = 0;
-  for (const char of fetchedCharacters) {
-    if (!char.added) { addCharacterToGame(char); added++; }
-  }
-  showToast('✅ تم إضافة ' + added + ' شخصية ثلاثية الأبعاد!', 'success');
-}
-
 // ============================================================
-//  THREE.JS 3D CHARACTER SYSTEM
+//  THREE.JS 3D PLAYER
 // ============================================================
 
 let scene, camera, renderer;
-let threeCharacters = [];
-let mixer = null;
+let player3D = null; // Three.js group
+let playerMixer = null;
 let clock = new THREE.Clock();
 
 function initThreeJS() {
@@ -427,14 +486,12 @@ function initThreeJS() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x050510);
 
-  // Camera
   const aspect = window.innerWidth / window.innerHeight;
   camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 100);
-  camera.position.set(0, 3, 6);
+  camera.position.set(0, 4, 8);
   camera.lookAt(0, 0, 0);
 
-  // Renderer
-  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
@@ -459,7 +516,9 @@ function initThreeJS() {
   gridHelper.position.y = -0.5;
   scene.add(gridHelper);
 
-  // Handle resize
+  // Create default player
+  createDefaultPlayer();
+
   window.addEventListener('resize', function() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
@@ -469,117 +528,45 @@ function initThreeJS() {
   animateThree();
 }
 
-function animateThree() {
-  if (!renderer) return;
-  requestAnimationFrame(animateThree);
-
-  const delta = clock.getDelta();
-
-  // Update mixers
-  if (mixer) mixer.update(delta);
-
-  // Rotate characters
-  for (const tc of threeCharacters) {
-    if (tc.object) {
-      tc.object.rotation.y += delta * 0.5;
-    }
+function createDefaultPlayer() {
+  if (player3D) {
+    scene.remove(player3D);
+    player3D = null;
   }
 
-  renderer.render(scene, camera);
-}
-
-function create3DCharacter(char) {
-  let modelData = null;
-
-  if (char.isGLTF && char.modelUrl) {
-    // Use loaded model data or load now
-    if (loadedModels[char.id]) {
-      modelData = loadedModels[char.id];
-    } else {
-      // Load model
-      fetch(char.modelUrl).then(r => r.blob()).then(blob => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          loadedModels[char.id] = e.target.result;
-          create3DCharacter(char);
-        };
-        reader.readAsArrayBuffer(blob);
-      });
-      return;
-    }
-  }
-
-  // Create group for character
   const group = new THREE.Group();
 
-  if (modelData && char.isGLTF) {
-    // Load GLTF from data
-    const loader = new THREE.GLTFLoader();
-    loader.parse(modelData, '', function(gltf) {
-      const model = gltf.scene;
-      model.scale.set(0.5, 0.5, 0.5);
-      model.position.y = 0;
-      group.add(model);
-      if (gltf.animations && gltf.animations.length > 0) {
-        mixer = new THREE.AnimationMixer(model);
-        const action = mixer.clipAction(gltf.animations[0]);
-        action.play();
-      }
-    }, function(err) {
-      console.error('GLTF parse error:', err);
-      // Fallback to simple shape
-      createFallbackCharacter(group, char);
-    });
-  } else {
-    // Fallback: Create a 3D character from image or simple shape
-    createFallbackCharacter(group, char);
-  }
-
-  // Position character in 3D space (scattered around)
-  const angle = Math.random() * Math.PI * 2;
-  const radius = 1.5 + Math.random() * 2;
-  group.position.x = Math.cos(angle) * radius;
-  group.position.z = Math.sin(angle) * radius;
-  group.position.y = 0;
-
-  scene.add(group);
-
-  threeCharacters.push({
-    object: group,
-    char: char,
-    angle: angle,
-    radius: radius,
-    speed: 0.2 + Math.random() * 0.3
-  });
-
-  showToast('🎨 ' + char.name + ' ظهر في العالم 3D!', 'success');
-}
-
-function createFallbackCharacter(group, char) {
   // Body
-  const bodyGeo = new THREE.BoxGeometry(0.6, 0.8, 0.4);
+  const bodyGeo = new THREE.BoxGeometry(0.8, 1, 0.6);
   const bodyMat = new THREE.MeshStandardMaterial({
-    color: char.isGLTF ? 0xff6b6b : 0x00f2ff,
+    color: 0x00f2ff,
     roughness: 0.3,
     metalness: 0.7
   });
   const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = 0.4;
+  body.position.y = 0.5;
   body.castShadow = true;
   group.add(body);
 
   // Head
-  const headGeo = new THREE.SphereGeometry(0.25, 16, 16);
-  const headMat = new THREE.MeshStandardMaterial({
-    color: 0xf5d0b8,
-    roughness: 0.5
-  });
+  const headGeo = new THREE.SphereGeometry(0.3, 16, 16);
+  const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0b8, roughness: 0.5 });
   const head = new THREE.Mesh(headGeo, headMat);
-  head.position.y = 0.9;
+  head.position.y = 1.1;
   head.castShadow = true;
   group.add(head);
 
-  // Name label (using sprite)
+  // Eye
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x333 });
+  const eyeGeo = new THREE.SphereGeometry(0.05, 8, 8);
+  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+  eyeL.position.set(-0.12, 1.15, 0.28);
+  group.add(eyeL);
+  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+  eyeR.position.set(0.12, 1.15, 0.28);
+  group.add(eyeR);
+
+  // Name label
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 64;
@@ -587,20 +574,20 @@ function createFallbackCharacter(group, char) {
   ctx.fillStyle = 'rgba(0,0,0,0.6)';
   ctx.roundRect(10, 10, 236, 44, 10);
   ctx.fill();
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = '#00f2ff';
   ctx.font = 'bold 24px Cairo';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.fillText(char.name, 128, 38);
+  ctx.fillText('⚔️ البطل', 128, 38);
 
   const texture = new THREE.CanvasTexture(canvas);
   const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
   const sprite = new THREE.Sprite(spriteMat);
-  sprite.scale.set(1.2, 0.3, 1);
-  sprite.position.y = 1.4;
+  sprite.scale.set(1.5, 0.4, 1);
+  sprite.position.y = 1.8;
   group.add(sprite);
 
-  // HP bar above
+  // HP bar
   const barCanvas = document.createElement('canvas');
   barCanvas.width = 128;
   barCanvas.height = 16;
@@ -609,18 +596,127 @@ function createFallbackCharacter(group, char) {
   bctx.roundRect(0, 0, 128, 16, 4);
   bctx.fill();
   bctx.fillStyle = '#4ade80';
-  bctx.roundRect(2, 2, 124 * (char.attack / 100), 12, 2);
+  bctx.roundRect(2, 2, 124, 12, 2);
   bctx.fill();
   const barTexture = new THREE.CanvasTexture(barCanvas);
   const barMat = new THREE.SpriteMaterial({ map: barTexture, transparent: true });
   const barSprite = new THREE.Sprite(barMat);
-  barSprite.scale.set(0.8, 0.1, 1);
-  barSprite.position.y = 1.2;
+  barSprite.scale.set(1, 0.12, 1);
+  barSprite.position.y = 1.6;
   group.add(barSprite);
 
-  // If there's an image, put it on the body
-  if (char.imageUrl && loadedImages[char.id]) {
-    const img = loadedImages[char.id];
+  group.position.set(0, 0, 0);
+  scene.add(group);
+  player3D = group;
+}
+
+function updatePlayer3DAppearance() {
+  if (!playerSkin) {
+    // Reset to default
+    if (player3D) scene.remove(player3D);
+    createDefaultPlayer();
+    return;
+  }
+
+  // Remove old player
+  if (player3D) {
+    scene.remove(player3D);
+    player3D = null;
+  }
+
+  const group = new THREE.Group();
+
+  if (playerSkin.isGLTF && playerSkin.modelUrl && loadedModels[playerSkin.id]) {
+    // Load GLTF model for player
+    const loader = new THREE.GLTFLoader();
+    const modelData = loadedModels[playerSkin.id];
+    loader.parse(modelData, '', function(gltf) {
+      const model = gltf.scene;
+      model.scale.set(0.5, 0.5, 0.5);
+      model.position.y = 0;
+      model.rotation.y = -Math.PI / 2;
+      group.add(model);
+      if (gltf.animations && gltf.animations.length > 0) {
+        playerMixer = new THREE.AnimationMixer(model);
+        const action = playerMixer.clipAction(gltf.animations[0]);
+        action.play();
+      }
+    }, function(err) {
+      console.error('GLTF parse error:', err);
+      createFallbackPlayer(group);
+    });
+  } else if (playerSkin.imageUrl && loadedImages[playerSkin.id]) {
+    // Use image on body
+    createFallbackPlayer(group, playerSkin.imageUrl);
+  } else {
+    createFallbackPlayer(group);
+  }
+
+  // Name label
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.roundRect(10, 10, 236, 44, 10);
+  ctx.fill();
+  ctx.fillStyle = '#ffd700';
+  ctx.font = 'bold 24px Cairo';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(playerSkin.name || 'البطل', 128, 38);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+  const sprite = new THREE.Sprite(spriteMat);
+  sprite.scale.set(1.5, 0.4, 1);
+  sprite.position.y = 1.8;
+  group.add(sprite);
+
+  // HP bar
+  const barCanvas = document.createElement('canvas');
+  barCanvas.width = 128;
+  barCanvas.height = 16;
+  const bctx = barCanvas.getContext('2d');
+  bctx.fillStyle = '#333';
+  bctx.roundRect(0, 0, 128, 16, 4);
+  bctx.fill();
+  bctx.fillStyle = '#4ade80';
+  bctx.roundRect(2, 2, 124, 12, 2);
+  bctx.fill();
+  const barTexture = new THREE.CanvasTexture(barCanvas);
+  const barMat = new THREE.SpriteMaterial({ map: barTexture, transparent: true });
+  const barSprite = new THREE.Sprite(barMat);
+  barSprite.scale.set(1, 0.12, 1);
+  barSprite.position.y = 1.6;
+  group.add(barSprite);
+
+  group.position.set(0, 0, 0);
+  scene.add(group);
+  player3D = group;
+}
+
+function createFallbackPlayer(group, imageUrl) {
+  // Body with color
+  const color = imageUrl ? 0x00f2ff : 0x00f2ff;
+  const bodyGeo = new THREE.BoxGeometry(0.8, 1, 0.6);
+  const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3, metalness: 0.7 });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = 0.5;
+  body.castShadow = true;
+  group.add(body);
+
+  // Head
+  const headGeo = new THREE.SphereGeometry(0.3, 16, 16);
+  const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0b8, roughness: 0.5 });
+  const head = new THREE.Mesh(headGeo, headMat);
+  head.position.y = 1.1;
+  head.castShadow = true;
+  group.add(head);
+
+  // If image available, put on body
+  if (imageUrl && loadedImages[playerSkin.id]) {
+    const img = loadedImages[playerSkin.id];
     const imgCanvas = document.createElement('canvas');
     imgCanvas.width = 128;
     imgCanvas.height = 128;
@@ -630,10 +726,49 @@ function createFallbackCharacter(group, char) {
     body.material.map = imgTexture;
     body.material.needsUpdate = true;
   }
+
+  // Eye
+  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x333 });
+  const eyeGeo = new THREE.SphereGeometry(0.05, 8, 8);
+  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+  eyeL.position.set(-0.12, 1.15, 0.28);
+  group.add(eyeL);
+  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+  eyeR.position.set(0.12, 1.15, 0.28);
+  group.add(eyeR);
+}
+
+function animateThree() {
+  if (!renderer) return;
+  requestAnimationFrame(animateThree);
+
+  const delta = clock.getDelta();
+
+  if (playerMixer) playerMixer.update(delta);
+
+  // Rotate player slowly
+  if (player3D) {
+    player3D.rotation.y += delta * 0.3;
+  }
+
+  // Follow player position from 2D game
+  if (player3D) {
+    const px = (player.x - MAP_SIZE/2) * 0.8;
+    const pz = (player.y - MAP_SIZE/2) * 0.8;
+    player3D.position.x += (px - player3D.position.x) * 0.05;
+    player3D.position.z += (pz - player3D.position.z) * 0.05;
+
+    // Camera follows player
+    camera.position.x = player3D.position.x;
+    camera.position.z = player3D.position.z + 6;
+    camera.lookAt(player3D.position.x, 0, player3D.position.z);
+  }
+
+  renderer.render(scene, camera);
 }
 
 // ============================================================
-//  GAME ENGINE (2D Canvas - Raycasting)
+//  GAME ENGINE (2D)
 // ============================================================
 
 const canvas = document.getElementById('game-canvas');
@@ -879,7 +1014,7 @@ function updateWave(dt) {
 }
 
 // ============================================================
-//  RENDER (2D Raycasting)
+//  RENDER
 // ============================================================
 
 function castRay(rayAngle) {
@@ -1008,7 +1143,6 @@ function draw() {
       ctx.fill();
     }
 
-    // HP bar
     if (!e.dead) {
       const barW = size * 0.8, barH = size * 0.06, barY = -size * 0.7;
       ctx.fillStyle = 'rgba(0,0,0,0.6)';
@@ -1096,6 +1230,7 @@ function updateHUD() {
   document.getElementById('player-hp-bar').style.width = (player.hp / player.maxHp * 100) + '%';
   document.getElementById('player-xp-bar').style.width = (player.xp / player.maxXp * 100) + '%';
   document.getElementById('player-lvl').textContent = 'Lv.' + player.level;
+  document.getElementById('score').textContent = player.score;
 }
 
 // ============================================================
@@ -1232,7 +1367,6 @@ window.addEventListener('keydown', function(e) {
   keys[e.key.toLowerCase()] = true;
   if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); playerJump(); }
   if (e.key.toLowerCase() === 'e' || e.key === 'Enter') playerAttack();
-  if (e.key === 'Escape') { /* pause */ }
 });
 window.addEventListener('keyup', function(e) { keys[e.key.toLowerCase()] = false; });
 
@@ -1246,7 +1380,6 @@ function toggleMinimap() {
 }
 
 function gameOver() {
-  // Simple restart for now
   showToast('💀 انتهت المعركة!', 'error');
   restartGame();
 }
@@ -1305,7 +1438,7 @@ setTimeout(function() {
   document.getElementById('start-btn').style.display = 'block';
 }, 500);
 
-console.log('🎮 ناردو 3D v5.0 — شخصيات ثلاثية الأبعاد جاهزة!');
+console.log('🎮 ناردو 3D v6.0 — شخصيتي ثلاثية الأبعاد جاهزة!');
 </script>
 </body>
 </html>
