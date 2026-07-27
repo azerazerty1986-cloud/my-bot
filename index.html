@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ناردو 3D — دعم GLTF</title>
+<title>ناردو معركة — القناة + شخصيات</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -11,364 +11,266 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
 :root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--warning:#fbbf24;--info:#60a5fa;--purple:#8b5cf6;--legendary:#ff6b35;--gif-glow:#ff0080;--accent:#00f2ff;--xp:#a855f7;--video:#8b5cf6;--gltf:#ff6b6b}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:'Cairo','Segoe UI',system-ui,sans-serif;background:linear-gradient(135deg,#0a0a1a,#15152a);color:#fff;min-height:100vh;overflow-x:hidden}
-.container{max-width:1200px;margin:0 auto;padding:10px}
-
-/* Start Screen */
-#start-screen{position:fixed;inset:0;z-index:1000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:25px}
-.start-logo{font-size:48px;font-weight:900;color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,0.3);display:flex;align-items:center;gap:15px;animation:float 3s ease-in-out infinite}
-.start-subtitle{font-size:16px;color:#666;text-align:center;max-width:400px;line-height:1.6}
-.start-btn{border:2px solid var(--accent);color:var(--accent);padding:18px 60px;background:rgba(0,242,255,0.08);border-radius:60px;font-size:22px;cursor:pointer;transition:all .3s;font-weight:700;font-family:inherit;backdrop-filter:blur(10px)}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:none}
+body{font-family:'Cairo','Segoe UI',system-ui,sans-serif;background:#050510;color:#fff;min-height:100vh;overflow:hidden;user-select:none}
+#start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;transition:opacity .5s}
+.start-logo{font-size:42px;font-weight:900;color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,0.3);animation:float 3s ease-in-out infinite}
+.start-subtitle{font-size:15px;color:#666;text-align:center;max-width:350px;line-height:1.6}
+.start-btn{border:2px solid var(--accent);color:var(--accent);padding:16px 50px;background:rgba(0,242,255,0.08);border-radius:60px;font-size:20px;cursor:pointer;transition:all .3s;font-weight:700;font-family:inherit;backdrop-filter:blur(10px)}
 .start-btn:hover{transform:scale(1.05);background:var(--accent);color:#000;box-shadow:0 0 50px rgba(0,242,255,0.4)}
-.user-info{color:var(--accent);font-size:14px;background:rgba(0,0,0,0.6);padding:10px 30px;border-radius:30px;backdrop-filter:blur(5px)}
-.version-tag{position:absolute;bottom:20px;font-size:11px;color:#444}
-
-/* Main */
-#main-content{display:none;animation:fadeIn .5s}
-.btn{padding:10px 20px;border:none;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;transition:.25s;font-family:inherit;display:inline-flex;align-items:center;gap:6px;justify-content:center}
-.btn-gold{background:var(--gold);color:#111}.btn-gold:hover{transform:scale(1.03);box-shadow:0 0 20px rgba(255,215,0,0.3)}
-.btn-blue{background:var(--info);color:#fff}.btn-red{background:var(--error);color:#fff}
-.btn-green{background:var(--success);color:#111}.btn-legendary{background:var(--legendary);color:#fff}
-.btn-gif{background:var(--gif-glow);color:#fff}.btn-accent{background:var(--accent);color:#111}
-.btn-video{background:var(--video);color:#fff}.btn-gltf{background:var(--gltf);color:#fff;box-shadow:0 0 20px rgba(255,107,107,0.3)}
-.btn-gltf:hover{transform:scale(1.05);box-shadow:0 0 30px rgba(255,107,107,0.5)}
-.btn-sm{padding:6px 12px;font-size:11px}
-.btn:disabled{opacity:.4;cursor:not-allowed}
-input,select,textarea{padding:10px 14px;border-radius:10px;border:1px solid rgba(255,215,0,0.2);background:#0a0a1a;color:#fff;font-family:inherit;font-size:13px;width:100%}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--gold)}
-textarea{min-height:80px;resize:vertical}
-
-/* Top Bar */
-.top-bar{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px;padding:12px 16px;background:rgba(255,255,255,0.02);border-radius:14px;border:1px solid rgba(255,215,0,0.1)}
-.top-bar h1{font-size:18px;color:var(--gold)}
-.status-dot{width:10px;height:10px;border-radius:50%;background:var(--success);display:inline-block;margin-left:6px;box-shadow:0 0 10px var(--success)}
-.status-dot.offline{background:var(--error);box-shadow:0 0 10px var(--error);animation:pulse 1.5s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.user-info{color:var(--accent);font-size:13px;background:rgba(0,0,0,0.6);padding:8px 24px;border-radius:30px}
+.version-tag{position:absolute;bottom:15px;font-size:11px;color:#444}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
-
-/* Settings Panel */
-.settings-panel{background:linear-gradient(135deg,rgba(255,215,0,0.05),rgba(0,242,255,0.05));border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:20px;margin-bottom:15px}
-.settings-panel h3{color:var(--gold);font-size:15px;margin-bottom:15px;display:flex;align-items:center;gap:8px}
-.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:15px}
-@media(max-width:600px){.settings-grid{grid-template-columns:1fr}}
-.settings-status{display:flex;align-items:center;gap:10px;padding:10px 15px;background:rgba(0,0,0,0.3);border-radius:10px;margin-top:12px;font-size:13px}
-.settings-status.connected{border:1px solid rgba(74,222,128,0.3);color:var(--success)}
-.settings-status.error{border:1px solid rgba(248,113,113,0.3);color:var(--error)}
-.settings-actions{display:flex;gap:10px;flex-wrap:wrap}
-.settings-actions .btn{flex:1;min-width:120px}
-
-/* Fetch Controls */
-.fetch-controls{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:15px}
-.fetch-controls .btn{flex:1;min-width:130px;padding:14px 20px;font-size:14px}
-
-/* Preview */
-.preview-panel{background:rgba(255,255,255,0.02);border:1px solid rgba(255,215,0,0.1);border-radius:14px;padding:20px;margin-bottom:15px;display:none}
-.preview-panel.show{display:block;animation:slideUp .4s ease}
-.preview-panel h3{color:var(--gold);font-size:15px;margin-bottom:15px}
-.preview-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:15px}
-.preview-card{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:15px;transition:.3s;position:relative;overflow:hidden}
-.preview-card:hover{border-color:rgba(255,215,0,0.3);transform:translateY(-3px)}
-.preview-card .media-wrap{width:100%;height:160px;border-radius:10px;overflow:hidden;margin-bottom:12px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;position:relative}
-.preview-card .media-wrap img,.preview-card .media-wrap video{width:100%;height:100%;object-fit:cover}
-.preview-card .media-wrap .type-badge{position:absolute;top:8px;right:8px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px)}
-.preview-card .char-name{font-weight:700;font-size:14px;margin-bottom:4px;color:#fff}
-.preview-card .char-desc{font-size:12px;color:#888;margin-bottom:8px;line-height:1.4}
-.preview-card .char-stats{display:flex;gap:8px;flex-wrap:wrap;font-size:11px}
-.preview-card .char-stats span{padding:3px 8px;border-radius:6px;background:rgba(255,255,255,0.05)}
-.preview-card .char-actions{display:flex;gap:8px;margin-top:12px}
-.preview-card .char-actions .btn{flex:1;justify-content:center;padding:8px;font-size:12px}
-
-/* Character List */
-.char-list-panel{background:rgba(255,255,255,0.02);border:1px solid rgba(255,215,0,0.1);border-radius:14px;padding:20px;margin-bottom:15px}
-.char-list-panel h3{color:var(--gold);font-size:15px;margin-bottom:15px;display:flex;justify-content:space-between;align-items:center}
-.char-list-panel h3 .count{font-size:12px;color:#888;background:rgba(255,255,255,0.05);padding:4px 12px;border-radius:20px}
-.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
-.char-card{background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:12px;transition:.3s;cursor:pointer;position:relative}
-.char-card:hover{border-color:rgba(255,215,0,0.2);transform:translateY(-2px)}
-.char-card .card-media{width:100%;height:110px;border-radius:10px;overflow:hidden;margin-bottom:10px;background:#0a0a1a;position:relative}
-.char-card .card-media img,.char-card .card-media video{width:100%;height:100%;object-fit:cover}
-.char-card .card-name{font-weight:700;font-size:13px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.char-card .card-type{font-size:10px;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:6px}
-.char-card .card-stats{font-size:11px;color:#888;display:flex;gap:6px;flex-wrap:wrap}
-.char-card .delete-btn{position:absolute;top:6px;left:6px;width:24px;height:24px;border-radius:50%;background:rgba(248,113,113,0.8);border:none;color:#fff;cursor:pointer;display:none;align-items:center;justify-content:center;font-size:12px;z-index:2}
-.char-card:hover .delete-btn{display:flex}
-
-/* GLTF Viewer Modal */
-.gltf-modal{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.92);display:none;justify-content:center;align-items:center;backdrop-filter:blur(10px)}
-.gltf-modal.show{display:flex;animation:fadeIn .3s}
-.gltf-modal .close-btn{position:absolute;top:20px;right:30px;background:none;border:none;color:#fff;font-size:32px;cursor:pointer;z-index:10}
-.gltf-modal .close-btn:hover{color:var(--gold);transform:rotate(90deg)}
-.gltf-modal .viewer-container{width:90%;height:80vh;max-width:800px;background:#0a0a1a;border-radius:16px;overflow:hidden;position:relative;border:1px solid rgba(255,215,0,0.2)}
-.gltf-modal .viewer-container canvas{width:100% !important;height:100% !important}
-.gltf-modal .viewer-info{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.8);padding:10px 20px;border-radius:30px;font-size:13px;color:#fff;backdrop-filter:blur(4px);border:1px solid rgba(255,215,0,0.1)}
-.gltf-modal .viewer-info span{color:var(--gold)}
-
-/* Game Area */
-.game-area{display:flex;gap:12px;flex-wrap:wrap}
-.canvas-wrap{flex:2;min-width:300px;position:relative;border-radius:14px;overflow:hidden;border:1px solid rgba(255,215,0,0.15);background:#050510}
-#game-canvas{display:block;width:100%;height:420px}
-.overlay-ui{position:absolute;top:8px;left:8px;display:flex;flex-direction:column;gap:4px}
-.overlay-ui div{background:rgba(0,0,0,0.75);padding:4px 10px;border-radius:6px;font-size:11px;color:#888;backdrop-filter:blur(4px)}
-.overlay-ui span{color:#fff;font-weight:600}
-.controls-hint{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.75);padding:6px 14px;border-radius:8px;font-size:11px;color:#888;display:flex;gap:10px;flex-wrap:wrap;justify-content:center;backdrop-filter:blur(4px)}
-.side-panel{flex:1;min-width:240px;display:flex;flex-direction:column;gap:10px}
-.panel-box{border:1px solid rgba(255,215,0,0.12);border-radius:12px;padding:14px;background:rgba(255,255,255,0.02)}
-.panel-box h3{font-size:13px;font-weight:700;color:var(--gold);margin-bottom:10px}
-
-/* Stats */
-.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center}
-.stats-grid .stat-item .num{font-size:22px;font-weight:900}
-.stats-grid .stat-item .lbl{font-size:11px;color:#888}
-
-/* Modal */
-.modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.9);display:none;justify-content:center;align-items:center;backdrop-filter:blur(5px)}
-.modal-overlay.show{display:flex;animation:fadeIn .3s}
-.modal-box{background:linear-gradient(135deg,#0f0f2a,#1a1a3a);border:1px solid rgba(255,215,0,0.2);border-radius:16px;padding:24px;max-width:500px;width:90%;max-height:90vh;overflow-y:auto;position:relative}
-.modal-box .close-btn{position:absolute;top:10px;left:14px;background:none;border:none;color:#888;font-size:22px;cursor:pointer}
-.modal-box .close-btn:hover{color:var(--gold)}
-.modal-box h3{color:var(--gold);margin-bottom:16px;text-align:center}
-.form-group{margin-bottom:12px}
-.form-group label{display:block;font-size:12px;color:#888;margin-bottom:5px}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.modal-actions{display:flex;gap:10px;margin-top:20px}
-.modal-actions .btn{flex:1;justify-content:center}
-
-/* Toast */
-.toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:600;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.toast{background:rgba(0,0,0,0.9);backdrop-filter:blur(10px);color:#fff;padding:12px 24px;border-radius:30px;font-size:13px;border:1px solid rgba(255,255,255,0.1);animation:toastIn .3s,toastOut .3s 3.7s forwards;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
-.toast.success{border-color:var(--success);color:var(--success)}.toast.error{border-color:var(--error);color:var(--error)}.toast.info{border-color:var(--info);color:var(--info)}.toast.warning{border-color:var(--warning);color:var(--warning)}
-
-/* Minimap */
-#minimap-container{display:none;margin-top:10px;border:1px solid rgba(255,215,0,0.12);border-radius:10px;padding:10px;background:rgba(255,255,255,0.02)}
-#minimap{display:block;margin:0 auto;border-radius:6px}
-
+#game-container{position:fixed;inset:0;display:none;background:#050510}
+#game-canvas{display:block;width:100%;height:100%}
+.hud{position:fixed;top:0;left:0;right:0;padding:6px 10px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:100}
+.hud-left,.hud-right,.hud-center{display:flex;flex-direction:column;gap:3px}
+.hud-center{align-items:center;position:absolute;left:50%;transform:translateX(-50%);top:6px}
+.player-bar,.enemy-bar{background:rgba(0,0,0,0.8);border-radius:8px;padding:5px 10px;backdrop-filter:blur(10px);min-width:120px;border:1px solid rgba(255,255,255,0.06)}
+.player-bar{border-color:rgba(0,242,255,0.2)}
+.enemy-bar{border-color:rgba(255,107,107,0.2);display:none}
+.enemy-bar.show{display:block;animation:fadeIn .3s}
+.player-bar .label,.enemy-bar .label{font-size:9px;font-weight:700;margin-bottom:2px;display:flex;justify-content:space-between}
+.player-bar .label{color:var(--accent)}
+.enemy-bar .label{color:var(--gltf)}
+.bar-track{width:100%;height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;margin-bottom:2px}
+.bar-fill{height:100%;border-radius:3px;transition:width .25s}
+.hp-fill{background:linear-gradient(90deg,#ef4444,#f87171)}
+.mp-fill{background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+.xp-fill{background:linear-gradient(90deg,#a855f7,#c084fc)}
+.enemy-hp-fill{background:linear-gradient(90deg,#ef4444,#ff6b6b)}
+.score-badge{background:rgba(0,0,0,0.7);border-radius:16px;padding:3px 12px;font-size:11px;color:#aaa;margin-top:2px;display:inline-block}
+.level-badge{background:rgba(0,0,0,0.7);border:1px solid var(--gold);border-radius:20px;padding:3px 14px;font-size:12px;color:var(--gold);font-weight:700}
+.combo-display{position:fixed;top:65px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;z-index:150;display:none}
+.combo-count{font-size:38px;font-weight:900;color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.5)}
+.combo-label{font-size:12px;color:var(--error);font-weight:700}
+.kill-feed{position:fixed;top:50px;right:10px;display:flex;flex-direction:column;gap:3px;pointer-events:none;z-index:150;max-width:180px}
+.kill-msg{background:rgba(0,0,0,0.7);padding:3px 10px;border-radius:6px;font-size:11px;border-right:3px solid var(--gold);animation:slideInRight .3s}
+@keyframes slideInRight{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+.minimap-btn{position:fixed;top:6px;right:10px;width:30px;height:30px;border-radius:6px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.06);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:200;font-size:13px}
+#minimap-container{position:fixed;top:40px;right:10px;width:110px;height:110px;background:rgba(0,0,0,0.85);border:1px solid rgba(255,215,0,0.12);border-radius:6px;padding:3px;display:none;z-index:200}
+#minimap{display:block;width:100%;height:100%;border-radius:4px}
+.dpad{position:fixed;bottom:20px;left:16px;width:120px;height:120px;z-index:200}
+.dpad-btn{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .1s}
+.dpad-btn:active{background:rgba(0,242,255,0.12);border-color:var(--accent);color:var(--accent);transform:scale(0.88)}
+.dpad-up{top:0;left:40px}
+.dpad-down{bottom:0;left:40px}
+.dpad-left{top:40px;left:0}
+.dpad-right{top:40px;right:0}
+.action-btns{position:fixed;bottom:20px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;z-index:200}
+.action-btn{width:54px;height:54px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:all .1s;font-family:inherit;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)}
+.action-btn:active{transform:scale(0.86)}
+.btn-attack{border-color:var(--error);color:var(--error)}
+.btn-attack:active{background:rgba(248,113,113,0.12)}
+.btn-skill{border-color:var(--accent);color:var(--accent);width:46px;height:46px;font-size:16px;position:relative}
+.btn-skill:active{background:rgba(0,242,255,0.12)}
+.btn-skill:disabled{opacity:.3;cursor:not-allowed}
+.btn-jump{border-color:var(--gold);color:var(--gold);width:46px;height:46px;font-size:16px}
+.btn-jump:active{background:rgba(255,215,0,0.12)}
+.btn-block{border-color:var(--info);color:var(--info);width:40px;height:40px;font-size:14px}
+.btn-block:active{background:rgba(96,165,250,0.12)}
+.btn-block.active{background:rgba(96,165,250,0.15);border-color:#fff}
+.skill-cd{position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff}
+.pause-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:none;justify-content:center;align-items:center;z-index:500}
+.pause-overlay.show{display:flex}
+.pause-box{background:linear-gradient(135deg,#0f0f2a,#1a1a3a);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:20px;max-width:280px;width:90%;text-align:center}
+.pause-box h2{color:var(--gold);margin-bottom:14px}
+.pause-btn{width:100%;padding:10px;margin-bottom:6px;border-radius:8px;border:none;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:.2s}
+.pause-btn.resume{background:var(--accent);color:#000}
+.pause-btn.restart{background:var(--error);color:#fff}
+.pause-btn:hover{transform:scale(1.02)}
+.gameover-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);display:none;justify-content:center;align-items:center;z-index:600;flex-direction:column;gap:12px}
+.gameover-overlay.show{display:flex}
+.gameover-overlay h1{font-size:40px;color:var(--error);text-shadow:0 0 40px rgba(248,113,113,0.3)}
+.gameover-stats{display:flex;gap:12px}
+.gameover-stat{text-align:center}
+.gameover-stat .num{font-size:24px;font-weight:900;color:var(--gold)}
+.gameover-stat .lbl{font-size:10px;color:#888}
+.levelup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;justify-content:center;align-items:center;z-index:550;pointer-events:none}
+.levelup-overlay.show{display:flex}
+.levelup-text{font-size:48px;font-weight:900;color:var(--gold);text-shadow:0 0 60px rgba(255,215,0,0.4);animation:levelUpAnim 2s forwards}
+@keyframes levelUpAnim{0%{opacity:0;transform:scale(0.5)}20%{opacity:1;transform:scale(1.2)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.5)}}
+.damage-text{position:fixed;font-weight:900;font-size:20px;pointer-events:none;z-index:300;text-shadow:0 0 10px rgba(0,0,0,0.8);animation:damageFloat 1s forwards}
+.damage-text.crit{color:#ffd700;font-size:26px}
+@keyframes damageFloat{0%{opacity:1;transform:translateY(0) scale(1)}50%{opacity:1}100%{opacity:0;transform:translateY(-50px) scale(1.2)}}
+.hit-flash{position:fixed;inset:0;background:rgba(255,0,0,0.1);pointer-events:none;z-index:50;animation:flash .12s forwards}
+@keyframes flash{0%{opacity:1}100%{opacity:0}}
+.toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.toast{background:rgba(0,0,0,0.9);backdrop-filter:blur(10px);color:#fff;padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
+.toast.success{border-color:var(--success);color:var(--success)}
+.toast.error{border-color:var(--error);color:var(--error)}
+.toast.info{border-color:var(--info);color:var(--info)}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
-@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 
-@media(max-width:768px){.game-area{flex-direction:column}#game-canvas{height:300px}.preview-grid{grid-template-columns:1fr}.char-grid{grid-template-columns:repeat(2,1fr)}.fetch-controls .btn{min-width:100%}.settings-grid{grid-template-columns:1fr}.gltf-modal .viewer-container{width:95%;height:60vh}}
-@media(max-width:480px){#game-canvas{height:240px}.char-grid{grid-template-columns:1fr}.stats-grid{grid-template-columns:1fr 1fr}}
+/* ===== TELEGRAM MENU DROPDOWN ===== */
+.tg-dropdown{position:fixed;bottom:180px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:14px 18px;z-index:250;min-width:320px;max-width:92%;backdrop-filter:blur(12px);display:none;box-shadow:0 10px 40px rgba(0,0,0,0.8)}
+.tg-dropdown.show{display:block;animation:fadeIn .3s}
+.tg-dropdown .row{display:flex;gap:6px;margin-bottom:5px;flex-wrap:wrap}
+.tg-dropdown input{flex:1;padding:5px 10px;border-radius:6px;border:1px solid rgba(255,215,0,0.1);background:#0a0a1a;color:#fff;font-size:11px;font-family:inherit;min-width:60px}
+.tg-dropdown input::placeholder{color:#555}
+.tg-dropdown .btn{padding:5px 12px;border:none;border-radius:6px;font-weight:700;font-size:10px;cursor:pointer;font-family:inherit;transition:.2s}
+.tg-dropdown .btn:hover{transform:scale(1.04)}
+.btn-accent{background:var(--accent);color:#111}
+.btn-gold{background:var(--gold);color:#111}
+.btn-gltf{background:var(--gltf);color:#fff}
+.btn-green{background:var(--success);color:#111}
+.btn-red{background:var(--error);color:#fff}
+.btn-info{background:var(--info);color:#fff}
+.tg-dropdown .label{font-size:10px;color:#666;margin-bottom:2px}
+.tg-dropdown .status{font-size:10px;color:#888;margin-top:4px}
+.tg-dropdown .status.connected{color:var(--success)}
+.tg-dropdown .status.error{color:var(--error)}
+
+/* ===== CHARACTER GRID ===== */
+.char-grid-panel{position:fixed;bottom:250px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:12px 14px;z-index:230;max-width:92%;width:380px;display:none;max-height:200px;overflow-y:auto;backdrop-filter:blur(12px)}
+.char-grid-panel.show{display:block;animation:fadeIn .3s}
+.char-grid-panel h4{color:var(--gold);font-size:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
+.char-mini{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);border-radius:6px;padding:6px;text-align:center;cursor:pointer;transition:.2s}
+.char-mini:hover{background:rgba(255,255,255,0.06);border-color:var(--gold)}
+.char-mini .avatar{width:32px;height:32px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden}
+.char-mini .avatar img{width:100%;height:100%;object-fit:cover}
+.char-mini .cname{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.char-mini .cstats{font-size:8px;color:#888;display:flex;gap:3px;justify-content:center}
+.char-mini.added{opacity:.4;cursor:default}
+
+/* ===== TOGGLE TG BUTTON ===== */
+.tg-toggle{position:fixed;bottom:162px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none;backdrop-filter:blur(4px)}
+.tg-toggle:hover{color:var(--gold)}
 </style>
 </head>
 <body>
 
-<!-- ==================== START SCREEN ==================== -->
+<!-- START SCREEN -->
 <div id="start-screen">
-  <div class="start-logo">🎮 ناردو 3D</div>
-  <div class="start-subtitle">نظام جلب الشخصيات من Telegram<br>📸 صور • 🎬 GIF • 🎥 فيديو • 🎨 GLTF</div>
+  <div class="start-logo">⚔️ ناردو معركة</div>
+  <div class="start-subtitle">قاتل الأعداء • طور شخصيتك • اجلب الأبطال من القناة</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
-  <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول التطبيق</button>
-  <div class="version-tag">v3.0 | دعم GLTF + Three.js</div>
+  <button class="start-btn" id="start-btn" onclick="enterGame()" style="display:none;">🚀 ابدأ المعركة</button>
+  <div class="version-tag">v4.2 | قناة + شخصيات</div>
 </div>
 
-<!-- ==================== MAIN CONTENT ==================== -->
-<div class="container" id="main-content">
+<!-- GAME -->
+<div id="game-container">
+  <canvas id="game-canvas"></canvas>
 
-  <!-- Top Bar -->
-  <div class="top-bar">
-    <div style="display:flex;align-items:center;gap:10px;">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color:var(--gold);">
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-        <line x1="12" y1="22.08" x2="12" y2="12"/>
-      </svg>
-      <h1>ناردو 3D — جلب الشخصيات</h1>
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:#888;">
-      <span id="conn-dot" class="status-dot offline"></span>
-      <span id="conn-text">غير متصل</span>
-    </div>
-  </div>
-
-  <!-- ==================== TELEGRAM SETTINGS ==================== -->
-  <div class="settings-panel">
-    <h3>📡 إعدادات التلغرام</h3>
-    <div class="settings-grid">
-      <div>
-        <label style="font-size:12px;color:#888;display:block;margin-bottom:5px;">🤖 Bot Token</label>
-        <input type="text" id="bot-token" placeholder="123456:ABC-DEF...">
+  <!-- HUD -->
+  <div class="hud">
+    <div class="hud-left">
+      <div class="player-bar">
+        <div class="label"><span>⚔️ البطل</span><span id="player-lvl">Lv.1</span></div>
+        <div class="bar-track"><div class="bar-fill hp-fill" id="player-hp-bar" style="width:100%"></div></div>
+        <div class="bar-track"><div class="bar-fill mp-fill" id="player-mp-bar" style="width:100%"></div></div>
+        <div class="bar-track"><div class="bar-fill xp-fill" id="player-xp-bar" style="width:0%"></div></div>
       </div>
-      <div>
-        <label style="font-size:12px;color:#888;display:block;margin-bottom:5px;">💬 Chat/Channel ID</label>
-        <input type="text" id="chat-id" placeholder="-1001234567890">
-      </div>
+      <div class="score-badge">💀 <span id="kill-count">0</span> | ⭐ <span id="score">0</span></div>
     </div>
-    <div class="settings-actions">
-      <button class="btn btn-accent" onclick="testConnection()" id="btn-connect">🔗 اختبار الاتصال</button>
-      <button class="btn btn-green" onclick="saveTelegramConfig()" id="btn-save-settings">💾 حفظ الإعدادات</button>
-      <button class="btn btn-red btn-sm" onclick="clearTelegramConfig()">🗑️ مسح</button>
+    <div class="hud-center">
+      <div class="level-badge" id="wave-badge">الموجة 1</div>
     </div>
-    <div class="settings-status" id="conn-status">
-      <span id="conn-icon">⭕</span>
-      <span id="conn-msg">أدخل Bot Token و Chat ID ثم اضغط "اختبار الاتصال"</span>
-    </div>
-  </div>
-
-  <!-- ==================== FETCH CONTROLS ==================== -->
-  <div class="fetch-controls">
-    <button class="btn btn-gold" onclick="fetchFromChannel('all')" id="btn-fetch-all" disabled>📥 جلب الكل</button>
-    <button class="btn btn-blue" onclick="fetchFromChannel('photo')" id="btn-fetch-photo" disabled>🖼️ صور</button>
-    <button class="btn btn-gif" onclick="fetchFromChannel('animation')" id="btn-fetch-gif" disabled>🎬 GIF</button>
-    <button class="btn btn-video" onclick="fetchFromChannel('video')" id="btn-fetch-video" disabled>🎥 فيديو</button>
-    <button class="btn btn-gltf" onclick="fetchGLTFFromChannel()" id="btn-fetch-gltf" disabled>🎨 GLTF</button>
-  </div>
-
-  <!-- ==================== PREVIEW ==================== -->
-  <div class="preview-panel" id="preview-panel">
-    <h3>👁️ معاينة الشخصيات المجلوبة</h3>
-    <div class="preview-grid" id="preview-grid"></div>
-    <div style="display:flex;gap:10px;margin-top:15px;justify-content:center;flex-wrap:wrap;">
-      <button class="btn btn-green" onclick="addAllToGame()">✅ إضافة الكل للعبة</button>
-      <button class="btn btn-red" onclick="clearPreview()">❌ تجاهل الكل</button>
-    </div>
-  </div>
-
-  <!-- ==================== CHARACTER LIST ==================== -->
-  <div class="char-list-panel">
-    <h3>🎭 الشخصيات في اللعبة <span class="count" id="char-count">0 شخصية</span></h3>
-    <div class="char-grid" id="char-grid">
-      <div style="color:#888;text-align:center;padding:40px 0;grid-column:1/-1;">
-        <div style="font-size:40px;margin-bottom:10px;">🎭</div>
-        <div>لا توجد شخصيات بعد</div>
-        <div style="font-size:12px;margin-top:5px;">اتصل بالقناة ثم اضغط "جلب الكل"</div>
+    <div class="hud-right">
+      <div class="enemy-bar" id="enemy-bar">
+        <div class="label"><span id="enemy-name">العدو</span><span id="enemy-lvl">Lv.1</span></div>
+        <div class="bar-track"><div class="bar-fill hp-fill enemy-hp-fill" id="enemy-hp-bar" style="width:100%"></div></div>
       </div>
     </div>
   </div>
 
-  <!-- ==================== GAME AREA ==================== -->
-  <div class="game-area">
-    <div class="canvas-wrap">
-      <canvas id="game-canvas"></canvas>
-      <div class="overlay-ui">
-        <div>FPS: <span id="fps">60</span></div>
-        <div>👤 <span id="ingame-count">0</span> شخصية</div>
-        <div style="color:var(--gltf);">🎨 GLTF: <span id="gltf-count">0</span></div>
-        <div>📍 <span id="location-display">الساحة المركزية</span></div>
-      </div>
-      <div class="controls-hint">
-        <span>WASD للتحرك</span><span style="color:#444;">|</span>
-        <span>M للخريطة</span><span style="color:#444;">|</span>
-        <span>E للتفاعل</span><span style="color:#444;">|</span>
-        <span>Space للقفز</span><span style="color:#444;">|</span>
-        <span>انقر على شخصية GLTF لعرضها</span>
-      </div>
-    </div>
-    <div class="side-panel">
-      <div class="panel-box">
-        <h3>📊 الإحصائيات</h3>
-        <div class="stats-grid">
-          <div class="stat-item"><div class="num" style="color:var(--gold);" id="stat-total">0</div><div class="lbl">الكل</div></div>
-          <div class="stat-item"><div class="num" style="color:var(--info);" id="stat-photo">0</div><div class="lbl">صور</div></div>
-          <div class="stat-item"><div class="num" style="color:var(--gltf);" id="stat-gltf">0</div><div class="lbl">GLTF</div></div>
-        </div>
-      </div>
-      <div class="panel-box">
-        <h3>🎯 التعليمات</h3>
-        <div style="font-size:12px;color:#aaa;line-height:2;">
-          <div>1️⃣ أدخل <b>Bot Token</b> و <b>Chat ID</b></div>
-          <div>2️⃣ اضغط <b>"اختبار الاتصال"</b></div>
-          <div>3️⃣ اضغط <b>"جلب الكل"</b> أو <b>"GLTF"</b></div>
-          <div>4️⃣ راجع المعاينة ثم <b>"إضافة للعبة"</b></div>
-          <div>5️⃣ اضغط <b>E</b> للتفاعل مع الشخصيات</div>
-        </div>
-      </div>
-      <div class="panel-box">
-        <h3>📝 تنسيق GLTF</h3>
-        <div style="font-size:11px;color:#888;line-height:1.8;background:rgba(0,0,0,0.3);padding:10px;border-radius:8px;font-family:monospace;direction:ltr;text-align:left;">
-Name: شخصية<br>
-Desc: نموذج ثلاثي الأبعاد<br>
-Model: link.gltf / model.glb<br>
-Atk: 85<br>
-Def: 70
-        </div>
-      </div>
-    </div>
+  <!-- Combo -->
+  <div class="combo-display" id="combo-display">
+    <div class="combo-count" id="combo-count">0</div>
+    <div class="combo-label">COMBO!</div>
   </div>
+
+  <!-- Kill Feed -->
+  <div class="kill-feed" id="kill-feed"></div>
 
   <!-- Minimap -->
-  <div id="minimap-container">
-    <canvas id="minimap" width="200" height="200"></canvas>
+  <button class="minimap-btn" onclick="toggleMinimap()">🗺️</button>
+  <div id="minimap-container"><canvas id="minimap" width="110" height="110"></canvas></div>
+
+  <!-- TG Toggle Button -->
+  <button class="tg-toggle" id="tg-toggle" onclick="toggleTG()">📡 القناة</button>
+
+  <!-- TG Dropdown -->
+  <div class="tg-dropdown" id="tg-dropdown">
+    <div class="row">
+      <input type="text" id="bot-token" placeholder="Bot Token">
+      <input type="text" id="chat-id" placeholder="Channel ID">
+    </div>
+    <div class="row">
+      <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
+      <button class="btn btn-gold" onclick="fetchCharacters()">📥 صور</button>
+      <button class="btn btn-gltf" onclick="fetchGLTF()">🎨 GLTF</button>
+      <button class="btn btn-red" onclick="toggleTG()">✖</button>
+    </div>
+    <div class="row">
+      <button class="btn btn-green btn-sm" onclick="addAllCharacters()">➕ إضافة الكل</button>
+      <button class="btn btn-info btn-sm" onclick="showCharGrid()">📋 القائمة</button>
+    </div>
+    <div class="status" id="tg-status">⭕ غير متصل</div>
+  </div>
+
+  <!-- Character Grid -->
+  <div class="char-grid-panel" id="char-grid-panel">
+    <h4>🎭 الشخصيات <span style="font-size:10px;color:#888;" id="char-count-label">0</span></h4>
+    <div class="char-grid" id="char-grid"></div>
+  </div>
+
+  <!-- Controls -->
+  <div class="dpad" id="dpad">
+    <div class="dpad-btn dpad-up" data-dir="up">▲</div>
+    <div class="dpad-btn dpad-down" data-dir="down">▼</div>
+    <div class="dpad-btn dpad-left" data-dir="left">◀</div>
+    <div class="dpad-btn dpad-right" data-dir="right">▶</div>
+  </div>
+  <div class="action-btns">
+    <div style="display:flex;gap:6px;align-items:flex-end">
+      <button class="action-btn btn-block" id="btn-block" onclick="toggleBlock()">🛡️</button>
+      <button class="action-btn btn-skill" id="btn-skill" onclick="useSkill()">⚡</button>
+      <button class="action-btn btn-jump" id="btn-jump" onclick="playerJump()">⬆️</button>
+    </div>
+    <button class="action-btn btn-attack" id="btn-attack" onclick="playerAttack()">⚔️</button>
+  </div>
+
+  <!-- Pause -->
+  <button class="minimap-btn" style="top:6px;left:10px;right:auto;" onclick="togglePause()">⏸️</button>
+</div>
+
+<!-- PAUSE -->
+<div class="pause-overlay" id="pause-overlay" onclick="if(event.target===this)togglePause()">
+  <div class="pause-box">
+    <h2>⏸️ توقف</h2>
+    <button class="pause-btn resume" onclick="togglePause()">▶️ استئناف</button>
+    <button class="pause-btn restart" onclick="restartGame()">🔄 إعادة البدء</button>
   </div>
 </div>
 
-<!-- ==================== GLTF VIEWER MODAL ==================== -->
-<div class="gltf-modal" id="gltf-modal" onclick="closeGLTFModal(event)">
-  <button class="close-btn" onclick="closeGLTFModal()">×</button>
-  <div class="viewer-container" id="gltf-viewer" onclick="event.stopPropagation()">
-    <div id="gltf-loading" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);color:#fff;font-size:18px;z-index:5;">
-      <span>🔄 جاري تحميل النموذج...</span>
-    </div>
+<!-- GAME OVER -->
+<div class="gameover-overlay" id="gameover-overlay">
+  <h1>💀 انتهت المعركة</h1>
+  <div class="gameover-stats">
+    <div class="gameover-stat"><div class="num" id="go-kills">0</div><div class="lbl">القتلى</div></div>
+    <div class="gameover-stat"><div class="num" id="go-score">0</div><div class="lbl">النقاط</div></div>
+    <div class="gameover-stat"><div class="num" id="go-wave">0</div><div class="lbl">الموجة</div></div>
+    <div class="gameover-stat"><div class="num" id="go-lvl">0</div><div class="lbl">المستوى</div></div>
   </div>
-  <div class="viewer-info" id="gltf-info">
-    🎨 <span id="gltf-viewer-name">نموذج GLTF</span>
-  </div>
+  <button class="start-btn" onclick="restartGame()">🔄 إعادة المحاولة</button>
 </div>
 
-<!-- ==================== EDIT MODAL ==================== -->
-<div class="modal-overlay" id="edit-modal" onclick="closeModal(event,'edit-modal')">
-  <div class="modal-box" onclick="event.stopPropagation()">
-    <button class="close-btn" onclick="closeModal(null,'edit-modal')">×</button>
-    <h3>✏️ تعديل الشخصية</h3>
-    <input type="hidden" id="edit-index">
-    <div class="form-group">
-      <label>الاسم</label>
-      <input type="text" id="edit-name">
-    </div>
-    <div class="form-group">
-      <label>الوصف</label>
-      <textarea id="edit-desc"></textarea>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>⚔️ الهجوم (0-100)</label>
-        <input type="number" id="edit-atk" min="0" max="100">
-      </div>
-      <div class="form-group">
-        <label>🛡️ الدفاع (0-100)</label>
-        <input type="number" id="edit-def" min="0" max="100">
-      </div>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>⚡ الطاقة (0-100)</label>
-        <input type="number" id="edit-energy" min="0" max="100">
-      </div>
-      <div class="form-group">
-        <label>💨 السرعة (0-100)</label>
-        <input type="number" id="edit-speed" min="0" max="100">
-      </div>
-    </div>
-    <div class="form-group">
-      <label>🏷️ الفئة</label>
-      <input type="text" id="edit-class" placeholder="مثال: Ninja, Warrior, Mage">
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-green" onclick="saveEdit()">💾 حفظ</button>
-      <button class="btn btn-red" onclick="closeModal(null,'edit-modal')">❌ إلغاء</button>
-    </div>
-  </div>
+<!-- LEVEL UP -->
+<div class="levelup-overlay" id="levelup-overlay">
+  <div class="levelup-text">LEVEL UP!</div>
 </div>
 
-<!-- ==================== CHARACTER POPUP ==================== -->
-<div class="modal-overlay" id="popup-overlay" onclick="closeModal(event,'popup-overlay')">
-  <div class="modal-box" style="max-width:400px;text-align:center;" onclick="event.stopPropagation()">
-    <button class="close-btn" onclick="closeModal(null,'popup-overlay')">×</button>
-    <div id="popup-media" style="width:120px;height:120px;border-radius:50%;overflow:hidden;margin:0 auto 15px;border:3px solid var(--gold);"></div>
-    <h4 id="popup-title" style="font-size:20px;margin-bottom:8px;"></h4>
-    <div id="popup-type" style="font-size:12px;margin-bottom:12px;"></div>
-    <div id="popup-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:15px 0;"></div>
-    <div id="popup-desc" style="font-size:13px;color:#aaa;line-height:1.5;"></div>
-  </div>
-</div>
-
-<!-- ==================== TOAST ==================== -->
+<!-- TOAST -->
 <div class="toast-container" id="toast-container"></div>
 
 <script>
 // ============================================================
-//  ناردو 3D — نظام جلب الشخصيات مع دعم GLTF
+//  ناردو معركة v4.2 — قناة + شخصيات (مع الحفاظ على القتال)
 // ============================================================
 
 // ============================================================
@@ -384,127 +286,63 @@ function initTelegram() {
       tg.ready(); tg.expand();
       if (tg.initDataUnsafe?.user) {
         userData = tg.initDataUnsafe.user;
-        const name = userData.first_name || userData.username || 'مستخدم';
-        document.getElementById('userInfoDisplay').innerHTML = '👤 مرحباً ' + name;
-        tg.HapticFeedback?.notificationOccurred('success');
+        document.getElementById('userInfoDisplay').innerHTML = '👤 ' + (userData.first_name || 'بطل');
       } else {
-        userData = { id: Math.floor(Math.random()*100000), first_name: 'زائر' };
-        document.getElementById('userInfoDisplay').innerHTML = '👤 زائر | 🆔 ' + userData.id;
+        userData = { id: Math.floor(Math.random()*100000), first_name: 'بطل' };
+        document.getElementById('userInfoDisplay').innerHTML = '👤 بطل';
       }
     } else {
-      userData = { id: Math.floor(Math.random()*100000), first_name: 'زائر' };
-      document.getElementById('userInfoDisplay').innerHTML = '👤 زائر | 🆔 ' + userData.id;
+      userData = { id: Math.floor(Math.random()*100000), first_name: 'بطل' };
+      document.getElementById('userInfoDisplay').innerHTML = '👤 بطل';
     }
   } catch(e) {
-    userData = { id: Math.floor(Math.random()*100000), first_name: 'زائر' };
-    document.getElementById('userInfoDisplay').innerHTML = '👤 زائر | 🆔 ' + userData.id;
+    userData = { id: Math.floor(Math.random()*100000), first_name: 'بطل' };
+    document.getElementById('userInfoDisplay').innerHTML = '👤 بطل';
   }
 }
 
 // ============================================================
-//  STATE
+//  TELEGRAM STATE
 // ============================================================
 
 let botToken = '';
 let channelId = '';
 let connected = false;
 let lastUpdateId = 0;
-
-let characters = [];
-let previewChars = [];
+let fetchedCharacters = [];
 let loadedImages = {};
-let loadedGLTFModels = {};
-let particles = [];
-let map = [];
-const MAP_SIZE = 20;
-
-// Three.js state
-let gltfViewer = null;
-let gltfScene = null;
-let gltfCamera = null;
-let gltfRenderer = null;
-let gltfMixer = null;
-let gltfClock = new THREE.Clock();
-let gltfCurrentModel = null;
-
-let player = { x: 1.5, y: 1.5, angle: 0, speed: 0.04, rotSpeed: 0.035, jumping: false, jumpHeight: 0, jumpVelocity: 0 };
-let keys = {};
-let showMap = false;
-let nearCharacter = null;
-let time = 0;
-let lastTime = performance.now();
-let frameCount = 0;
-let fps = 60;
-let gameRunning = false;
-
-const locations = {
-  "1,1": { info: "🏛️ الساحة المركزية", desc: "قلب المدينة" },
-  "2,2": { info: "🌲 الغابة", desc: "أشجار كثيفة" },
-  "3,3": { info: "🏔️ الجبل", desc: "قمة شاهقة" },
-  "4,4": { info: "🏯 القلعة", desc: "قلعة قديمة" },
-  "5,5": { info: "🏖️ الشاطئ", desc: "رمال ذهبية" }
-};
 
 // ============================================================
-//  SETTINGS
+//  TELEGRAM FUNCTIONS
 // ============================================================
 
-function loadTelegramConfig() {
-  const savedToken = localStorage.getItem('nardo_bot_token');
-  const savedChat = localStorage.getItem('nardo_chat_id');
-  if (savedToken) document.getElementById('bot-token').value = savedToken;
-  if (savedChat) document.getElementById('chat-id').value = savedChat;
-
-  const savedChars = localStorage.getItem('nardo_characters');
-  if (savedChars) {
-    try {
-      const loaded = JSON.parse(savedChars);
-      for (let i = 0; i < loaded.length; i++) {
-        const char = loaded[i];
-        if (char.imageUrl) {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = function() { loadedImages[char.id] = img; };
-          img.src = char.imageUrl;
-        }
-        characters.push(char);
-      }
-      renderCharList();
-      updateStats();
-    } catch(e) {}
+function toggleTG() {
+  const dropdown = document.getElementById('tg-dropdown');
+  const toggle = document.getElementById('tg-toggle');
+  dropdown.classList.toggle('show');
+  if (dropdown.classList.contains('show')) {
+    toggle.textContent = '✖ إغلاق';
+  } else {
+    toggle.textContent = '📡 القناة';
   }
 }
 
-function saveTelegramConfig() {
-  botToken = document.getElementById('bot-token').value.trim();
-  channelId = document.getElementById('chat-id').value.trim();
-  localStorage.setItem('nardo_bot_token', botToken);
-  localStorage.setItem('nardo_chat_id', channelId);
-  showToast('💾 تم حفظ الإعدادات', 'success');
+function setTGStatus(msg, type) {
+  const el = document.getElementById('tg-status');
+  el.textContent = msg;
+  el.className = 'status ' + (type === 'success' ? 'connected' : type === 'error' ? 'error' : '');
 }
 
-function clearTelegramConfig() {
-  localStorage.removeItem('nardo_bot_token');
-  localStorage.removeItem('nardo_chat_id');
-  document.getElementById('bot-token').value = '';
-  document.getElementById('chat-id').value = '';
-  showToast('🗑️ تم مسح الإعدادات', 'info');
-}
-
-// ============================================================
-//  CONNECTION
-// ============================================================
-
-async function testConnection() {
+async function testTelegram() {
   botToken = document.getElementById('bot-token').value.trim();
   channelId = document.getElementById('chat-id').value.trim();
 
   if (!botToken || !channelId) {
-    setConnStatus('error', '❌ يرجى إدخال Bot Token و Chat ID');
+    setTGStatus('❌ يرجى إدخال البيانات', 'error');
     return;
   }
 
-  setConnStatus('info', '🔄 جاري الاختبار...');
+  setTGStatus('🔄 جاري الاختبار...', '');
 
   try {
     const res = await fetch('https://api.telegram.org/bot' + botToken + '/getMe');
@@ -512,376 +350,248 @@ async function testConnection() {
 
     if (data.ok) {
       connected = true;
-      setConnStatus('success', '✅ متصل بـ @' + data.result.username + ' | ID: ' + data.result.id);
-      document.getElementById('conn-dot').classList.remove('offline');
-      document.getElementById('conn-text').textContent = 'متصل';
-      enableFetchButtons(true);
+      setTGStatus('✅ متصل بـ @' + data.result.username, 'success');
+      localStorage.setItem('nardo_bot_token', botToken);
+      localStorage.setItem('nardo_chat_id', channelId);
       showToast('✅ تم الاتصال بنجاح!', 'success');
     } else {
-      setConnStatus('error', '❌ خطأ: ' + data.description);
-      enableFetchButtons(false);
+      setTGStatus('❌ ' + data.description, 'error');
     }
   } catch(e) {
-    setConnStatus('error', '❌ فشل الاتصال');
-    enableFetchButtons(false);
+    setTGStatus('❌ فشل الاتصال', 'error');
   }
 }
 
-function setConnStatus(type, msg) {
-  const el = document.getElementById('conn-status');
-  const icon = document.getElementById('conn-icon');
-  const txt = document.getElementById('conn-msg');
-  el.className = 'settings-status ' + (type === 'success' ? 'connected' : type === 'error' ? 'error' : '');
-  icon.textContent = type === 'success' ? '✅' : type === 'error' ? '❌' : '🔄';
-  txt.textContent = msg;
-}
+async function fetchCharacters() {
+  if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
 
-function enableFetchButtons(enable) {
-  ['btn-fetch-all','btn-fetch-photo','btn-fetch-gif','btn-fetch-video','btn-fetch-gltf'].forEach(function(id) {
-    document.getElementById(id).disabled = !enable;
-  });
-}
-
-// ============================================================
-//  CAPTION PARSER
-// ============================================================
-
-function parseCaption(caption) {
-  const result = {};
-  if (!caption) return result;
-
-  const lines = caption.split(/\r?\n/);
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i].trim();
-    if (!line) continue;
-
-    const match = line.match(/^([\w\u0600-\u06FF\s]+)[\s]*[:\-\=][\s]*(.+)$/);
-    if (!match) continue;
-
-    const field = match[1].trim().toLowerCase();
-    const value = match[2].trim();
-
-    if (/^(name|اسم|الاسم|nama|nombre|nom|nome|isim|ad)$/.test(field)) {
-      result.name = value;
-    }
-    else if (/^(desc|وصف|الوصف|description|bio|about|نبذة|تعريف|info)$/.test(field)) {
-      result.desc = value;
-    }
-    else if (/^(atk|هجوم|attack|att|power|قوة|ضرر|damage|offense|off)$/.test(field)) {
-      const num = parseInt(value);
-      if (!isNaN(num)) result.atk = Math.min(100, Math.max(0, num));
-    }
-    else if (/^(def|دفاع|defense|defence|shield|درع|protection|armor|resistance|res)$/.test(field)) {
-      const num = parseInt(value);
-      if (!isNaN(num)) result.def = Math.min(100, Math.max(0, num));
-    }
-    else if (/^(energy|طاقة|mp|mana|stamina|تحمل|power|qi|chi|ki|chakra)$/.test(field)) {
-      const num = parseInt(value);
-      if (!isNaN(num)) result.energy = Math.min(100, Math.max(0, num));
-    }
-    else if (/^(speed|سرعة|spd|velocity|agility|agi|quickness|fast|حركة|mobility)$/.test(field)) {
-      const num = parseInt(value);
-      if (!isNaN(num)) result.speed = Math.min(100, Math.max(0, num));
-    }
-    else if (/^(class|فئة|class|نوع|type|role|rank|tier|درجة|مستوى|job|profession|specialization|spec)$/.test(field)) {
-      result.class = value;
-    }
-    else if (/^(model|نموذج|gltf|glb|file|ملف|link|رابط|url|download|تحميل)$/.test(field)) {
-      // استخراج رابط النموذج
-      const urlMatch = value.match(/(https?:\/\/[^\s]+\.(gltf|glb|zip))/i);
-      if (urlMatch) result.modelUrl = urlMatch[1];
-    }
-  }
-
-  // البحث عن رابط في النص كامل
-  if (!result.modelUrl) {
-    const urlMatch = caption.match(/(https?:\/\/[^\s]+\.(gltf|glb|zip))/i);
-    if (urlMatch) result.modelUrl = urlMatch[1];
-  }
-
-  return result;
-}
-
-function generateName(mediaType) {
-  const prefixes = { photo: 'بطل', animation: 'محارب', video: 'أسطورة', gltf: 'نموذج' };
-  const prefix = prefixes[mediaType] || 'شخصية';
-  return prefix + ' #' + (characters.length + previewChars.length + 1);
-}
-
-function getDefaultDesc(mediaType) {
-  const descs = { photo: 'شخصية أنمي قوية', animation: 'شخصية متحركة GIF', video: 'شخصية فيديو أسطورية', gltf: 'نموذج ثلاثي الأبعاد' };
-  return descs[mediaType] || 'شخصية غامضة';
-}
-
-function getDefaultClass(mediaType) {
-  const classes = { photo: 'Anime Hero', animation: 'GIF Warrior', video: 'Video Legend', gltf: '3D Model' };
-  return classes[mediaType] || 'Unknown';
-}
-
-// ============================================================
-//  FETCH FROM CHANNEL
-// ============================================================
-
-async function fetchFromChannel(filterType) {
-  if (!connected) { showToast('❌ يرجى الاتصال أولاً', 'error'); return; }
-
-  showToast('📥 جاري جلب الشخصيات...', 'info');
-  previewChars = [];
+  setTGStatus('📥 جاري الجلب...', '');
 
   try {
-    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=100&offset=' + (lastUpdateId + 1));
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
     const data = await res.json();
 
-    if (!data.ok) { showToast('❌ خطأ: ' + data.description, 'error'); return; }
+    if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
 
-    let foundCount = 0;
-    const updates = data.result || [];
+    let newChars = 0;
 
-    for (let i = 0; i < updates.length; i++) {
-      const update = updates[i];
+    for (const update of data.result || []) {
       lastUpdateId = Math.max(lastUpdateId, update.update_id);
-
-      const msg = update.channel_post || update.message || update.edited_channel_post;
+      const msg = update.channel_post || update.message;
       if (!msg) continue;
 
-      let mediaType = null;
-      let fileId = null;
-      let fileUniqueId = null;
-      let thumbFileId = null;
-
-      // Detect media type
+      let fileId = null, imageUrl = '';
       if (msg.photo && msg.photo.length > 0) {
-        mediaType = 'photo';
-        const largest = msg.photo[msg.photo.length - 1];
-        fileId = largest.file_id;
-        fileUniqueId = largest.file_unique_id;
-      } else if (msg.animation) {
-        mediaType = 'animation';
-        fileId = msg.animation.file_id;
-        fileUniqueId = msg.animation.file_unique_id;
-        if (msg.animation.thumbnail) thumbFileId = msg.animation.thumbnail.file_id;
-      } else if (msg.video) {
-        mediaType = 'video';
-        fileId = msg.video.file_id;
-        fileUniqueId = msg.video.file_unique_id;
-        if (msg.video.thumbnail) thumbFileId = msg.video.thumbnail.file_id;
-      } else if (msg.document) {
-        const mime = msg.document.mime_type || '';
-        const fileName = msg.document.file_name || '';
-        if (mime === 'image/gif' || fileName.endsWith('.gif')) {
-          mediaType = 'animation';
-          fileId = msg.document.file_id;
-          fileUniqueId = msg.document.file_unique_id;
-        } else if (mime.startsWith('video/') || fileName.match(/\.(mp4|webm|mov|avi)$/i)) {
-          mediaType = 'video';
-          fileId = msg.document.file_id;
-          fileUniqueId = msg.document.file_unique_id;
-        } else if (mime.startsWith('image/') || fileName.match(/\.(png|jpg|jpeg|webp|bmp)$/i)) {
-          mediaType = 'photo';
-          fileId = msg.document.file_id;
-          fileUniqueId = msg.document.file_unique_id;
-        } else if (fileName.match(/\.(gltf|glb|zip)$/i)) {
-          mediaType = 'gltf';
-          fileId = msg.document.file_id;
-          fileUniqueId = msg.document.file_unique_id;
-        }
+        fileId = msg.photo[msg.photo.length - 1].file_id;
+      } else if (msg.document && msg.document.mime_type?.startsWith('image/')) {
+        fileId = msg.document.file_id;
       }
 
-      // Check if it's GLTF from text (link)
-      if (!mediaType && msg.text) {
-        const caption = msg.text;
-        const parsed = parseCaption(caption);
-        if (parsed.modelUrl) {
-          mediaType = 'gltf';
-          // No fileId, we'll use the URL directly
-        }
+      if (!fileId) continue;
+      if (fetchedCharacters.some(c => c.fileId === fileId)) continue;
+
+      const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+      const fileData = await fileRes.json();
+      if (fileData.ok && fileData.result.file_path) {
+        imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
       }
 
-      if (!mediaType) continue;
-      if (filterType !== 'all' && mediaType !== filterType) continue;
-
-      // Skip duplicates
-      const existing = characters.find(function(c) { return c.fileUniqueId === fileUniqueId; }) ||
-                       previewChars.find(function(c) { return c.fileUniqueId === fileUniqueId; });
-      if (existing && fileUniqueId) continue;
-
-      const caption = msg.caption || msg.text || '';
-      const parsed = parseCaption(caption);
-
-      let imageUrl = '';
-      let videoUrl = '';
-      let modelUrl = parsed.modelUrl || '';
-
-      // If it's a file, get the URL from Telegram
-      if (fileId) {
-        try {
-          const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
-          const fileData = await fileRes.json();
-          if (fileData.ok && fileData.result.file_path) {
-            const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
-            if (mediaType === 'video' || mediaType === 'animation') {
-              videoUrl = url;
-              if (thumbFileId) {
-                const thumbRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + thumbFileId);
-                const thumbData = await thumbRes.json();
-                if (thumbData.ok && thumbData.result.file_path) {
-                  imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + thumbData.result.file_path;
-                }
-              }
-            } else if (mediaType === 'gltf') {
-              modelUrl = url;
-            } else {
-              imageUrl = url;
-            }
-          }
-        } catch(e) {}
-      }
+      const caption = msg.caption || '';
+      const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+      const atkMatch = caption.match(/(?:هجوم|atk|Atk|attack)[\s:]*(\d+)/i);
+      const defMatch = caption.match(/(?:دفاع|def|Def|defense)[\s:]*(\d+)/i);
 
       const char = {
-        id: 'char_' + Date.now() + '_' + Math.floor(Math.random()*10000),
-        fileId: fileId || 'link_' + Date.now(),
-        fileUniqueId: fileUniqueId || 'link_' + Date.now(),
-        name: parsed.name || generateName(mediaType),
-        desc: parsed.desc || getDefaultDesc(mediaType),
-        attack: parsed.atk || Math.floor(Math.random() * 40) + 60,
-        defense: parsed.def || Math.floor(Math.random() * 40) + 60,
-        energy: parsed.energy || Math.floor(Math.random() * 30) + 70,
-        speed: parsed.speed || Math.floor(Math.random() * 30) + 70,
-        class: parsed.class || getDefaultClass(mediaType),
-        mediaType: mediaType,
+        id: 'char_' + fileId,
+        fileId: fileId,
+        name: nameMatch ? nameMatch[1].trim() : 'شخصية #' + (fetchedCharacters.length + 1),
+        attack: atkMatch ? parseInt(atkMatch[1]) : Math.floor(Math.random() * 30) + 60,
+        defense: defMatch ? parseInt(defMatch[1]) : Math.floor(Math.random() * 30) + 50,
         imageUrl: imageUrl,
-        videoUrl: videoUrl,
-        modelUrl: modelUrl,
-        date: new Date(msg.date * 1000).toISOString(),
-        messageId: msg.message_id,
-        caption: caption,
-        isGif: mediaType === 'animation',
-        isLegendary: false,
-        isGLTF: mediaType === 'gltf'
+        added: false,
+        isGLTF: false
       };
 
-      previewChars.push(char);
-      foundCount++;
+      fetchedCharacters.push(char);
+      newChars++;
+
+      if (imageUrl) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = function() { loadedImages[char.id] = img; };
+        img.src = imageUrl;
+      }
     }
 
-    if (foundCount > 0) {
-      showPreview();
-      showToast('✅ تم جلب ' + foundCount + ' شخصية!', 'success');
+    if (newChars > 0) {
+      setTGStatus('✅ جلب ' + newChars + ' شخصية!', 'success');
+      showCharGrid();
     } else {
-      showToast('📭 لا توجد شخصيات جديدة', 'info');
+      setTGStatus('📭 لا توجد شخصيات جديدة', '');
     }
   } catch(e) {
-    showToast('❌ خطأ: ' + e.message, 'error');
-    console.error(e);
+    setTGStatus('❌ خطأ', 'error');
   }
 }
 
-// ============================================================
-//  FETCH GLTF SPECIFICALLY
-// ============================================================
+async function fetchGLTF() {
+  if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
 
-async function fetchGLTFFromChannel() {
-  await fetchFromChannel('gltf');
-}
+  setTGStatus('🎨 جاري جلب GLTF...', '');
 
-// ============================================================
-//  PREVIEW SYSTEM
-// ============================================================
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
+    const data = await res.json();
 
-function showPreview() {
-  const panel = document.getElementById('preview-panel');
-  const grid = document.getElementById('preview-grid');
-  grid.innerHTML = '';
+    if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
 
-  if (previewChars.length === 0) {
-    panel.classList.remove('show');
-    return;
-  }
+    let newChars = 0;
 
-  for (let i = 0; i < previewChars.length; i++) {
-    const char = previewChars[i];
-    const card = document.createElement('div');
-    card.className = 'preview-card';
+    for (const update of data.result || []) {
+      lastUpdateId = Math.max(lastUpdateId, update.update_id);
+      const msg = update.channel_post || update.message;
+      if (!msg) continue;
 
-    let mediaHtml = '';
-    let typeLabel = '';
-    let typeColor = '';
+      let modelUrl = null;
 
-    if (char.mediaType === 'photo') {
-      mediaHtml = '<img src="' + (char.imageUrl || '') + '" alt="" onerror="this.parentElement.innerHTML=\'<div style=font-size:40px>🖼️</div>\'">';
-      typeLabel = '🖼️ صورة';
-      typeColor = 'var(--info)';
-    } else if (char.mediaType === 'animation') {
-      mediaHtml = char.imageUrl ? 
-        '<img src="' + char.imageUrl + '" alt="" onerror="this.parentElement.innerHTML=\'<div style=font-size:40px>🎬</div>\'">' :
-        '<div style="font-size:40px">🎬</div>';
-      typeLabel = '🎬 GIF';
-      typeColor = 'var(--gif-glow)';
-    } else if (char.mediaType === 'video') {
-      mediaHtml = char.videoUrl ?
-        '<video src="' + char.videoUrl + '" muted loop autoplay playsinline onerror="this.parentElement.innerHTML=\'<div style=font-size:40px>🎥</div>\'"></video>' :
-        '<div style="font-size:40px">🎥</div>';
-      typeLabel = '🎥 فيديو';
-      typeColor = 'var(--video)';
-    } else if (char.mediaType === 'gltf') {
-      mediaHtml = char.imageUrl ?
-        '<img src="' + char.imageUrl + '" alt="" onerror="this.parentElement.innerHTML=\'<div style=font-size:40px>🎨</div>\'">' :
-        '<div style="font-size:40px;display:flex;align-items:center;justify-content:center;height:100%;">🎨</div>';
-      typeLabel = '🎨 GLTF';
-      typeColor = 'var(--gltf)';
+      if (msg.document) {
+        const fn = msg.document.file_name || '';
+        if (fn.match(/\.(gltf|glb|zip)$/i)) {
+          const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + msg.document.file_id);
+          const fileData = await fileRes.json();
+          if (fileData.ok && fileData.result.file_path) {
+            modelUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+          }
+        }
+      }
+
+      if (!modelUrl && msg.text) {
+        const urlMatch = msg.text.match(/(https?:\/\/[^\s]+\.(gltf|glb|zip))/i);
+        if (urlMatch) modelUrl = urlMatch[1];
+      }
+
+      if (!modelUrl) continue;
+      if (fetchedCharacters.some(c => c.modelUrl === modelUrl)) continue;
+
+      const caption = msg.caption || msg.text || '';
+      const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+      const atkMatch = caption.match(/(?:هجوم|atk|Atk|attack)[\s:]*(\d+)/i);
+      const defMatch = caption.match(/(?:دفاع|def|Def|defense)[\s:]*(\d+)/i);
+
+      const char = {
+        id: 'gltf_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        name: nameMatch ? nameMatch[1].trim() : 'GLTF #' + (fetchedCharacters.length + 1),
+        attack: atkMatch ? parseInt(atkMatch[1]) : Math.floor(Math.random() * 30) + 70,
+        defense: defMatch ? parseInt(defMatch[1]) : Math.floor(Math.random() * 30) + 60,
+        modelUrl: modelUrl,
+        added: false,
+        isGLTF: true
+      };
+
+      fetchedCharacters.push(char);
+      newChars++;
     }
 
-    card.innerHTML = 
-      '<div class="media-wrap">' + mediaHtml + 
-      '<span class="type-badge" style="color:' + typeColor + '">' + typeLabel + '</span></div>' +
-      '<div class="char-name">' + char.name + '</div>' +
-      '<div class="char-desc">' + char.desc + '</div>' +
-      '<div class="char-stats">' +
-      '<span style="color:var(--error)">⚔️ ' + char.attack + '</span>' +
-      '<span style="color:var(--info)">🛡️ ' + char.defense + '</span>' +
-      '<span style="color:var(--accent)">⚡ ' + char.energy + '</span>' +
-      '<span style="color:var(--success)">💨 ' + char.speed + '</span>' +
-      '</div>' +
-      '<div class="char-actions">' +
-      (char.isGLTF ? '<button class="btn btn-gltf btn-sm" onclick="previewGLTF(' + i + ')">👁️ معاينة</button>' : '') +
-      '<button class="btn btn-green btn-sm" onclick="addToGame(' + i + ')">➕ إضافة</button>' +
-      '<button class="btn btn-blue btn-sm" onclick="editPreviewChar(' + i + ')">✏️ تعديل</button>' +
-      '<button class="btn btn-red btn-sm" onclick="removeFromPreview(' + i + ')">🗑️</button>' +
-      '</div>';
+    if (newChars > 0) {
+      setTGStatus('✅ جلب ' + newChars + ' GLTF!', 'success');
+      showCharGrid();
+    } else {
+      setTGStatus('📭 لا توجد نماذج جديدة', '');
+    }
+  } catch(e) {
+    setTGStatus('❌ خطأ', 'error');
+  }
+}
 
-    grid.appendChild(card);
+function showCharGrid() {
+  const panel = document.getElementById('char-grid-panel');
+  const grid = document.getElementById('char-grid');
+  const label = document.getElementById('char-count-label');
+
+  grid.innerHTML = '';
+  label.textContent = fetchedCharacters.length;
+
+  for (let i = 0; i < fetchedCharacters.length; i++) {
+    const char = fetchedCharacters[i];
+    const div = document.createElement('div');
+    div.className = 'char-mini' + (char.added ? ' added' : '');
+
+    let avatar = char.isGLTF ? '🎨' : (char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '🖼️');
+
+    div.innerHTML = `
+      <div class="avatar">${avatar}</div>
+      <div class="cname">${char.name}</div>
+      <div class="cstats">
+        <span style="color:var(--error)">⚔️${char.attack}</span>
+        <span style="color:var(--info)">🛡️${char.defense}</span>
+        ${char.isGLTF ? '<span style="color:var(--gltf)">🎨</span>' : ''}
+      </div>
+    `;
+
+    if (!char.added) {
+      div.onclick = function() { addCharacterToGame(char); };
+    }
+
+    grid.appendChild(div);
   }
 
   panel.classList.add('show');
+  document.getElementById('tg-toggle').textContent = '📋 القائمة';
 }
 
-function previewGLTF(index) {
-  const char = previewChars[index];
-  if (!char || !char.modelUrl) {
-    showToast('❌ لا يوجد رابط للنموذج', 'error');
+function addCharacterToGame(char) {
+  if (char.added) return;
+
+  const diffMult = diffMultipliers[difficulty] || 1;
+  const waveMult = 1 + (wave - 1) * 0.1;
+
+  // Add as enemy with character stats
+  const enemy = {
+    x: 0, y: 0,
+    type: char.isGLTF ? 'gltf_boss' : 'character',
+    hp: 50 * diffMult * waveMult + char.defense * 0.5,
+    maxHp: 50 * diffMult * waveMult + char.defense * 0.5,
+    atk: char.attack * diffMult * waveMult * 0.8,
+    speed: 0.025 + Math.random() * 0.01,
+    color: char.isGLTF ? '#ff6b6b' : '#00f2ff',
+    size: char.isGLTF ? 0.5 : 0.4,
+    xp: Math.floor(char.attack * 0.7 + char.defense * 0.3),
+    score: Math.floor(char.attack * 0.5 + char.defense * 0.3),
+    ranged: char.isGLTF || Math.random() > 0.7,
+    attackTimer: 0,
+    attackCooldown: 1.5 + Math.random(),
+    hitFlash: 0,
+    dead: false,
+    deadTimer: 0,
+    animFrame: 0,
+    id: 'char_' + Date.now() + '_' + Math.random(),
+    name: char.name,
+    isPlayerChar: true,
+    imageUrl: char.imageUrl,
+    modelUrl: char.modelUrl,
+    isGLTF: char.isGLTF
+  };
+
+  // Find spawn position
+  let ex, ey, attempts = 0;
+  do {
+    ex = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+    ey = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+    attempts++;
+  } while ((map[ey][ex] !== 0 || Math.hypot(ex - player.x, ey - player.y) < 8) && attempts < 50);
+
+  if (attempts >= 50) {
+    showToast('⚠️ لا يوجد مكان', 'warning');
     return;
   }
-  openGLTFViewer(char.modelUrl, char.name);
-}
 
-function addToGame(index) {
-  const char = previewChars[index];
-  if (!char) return;
+  enemy.x = ex + 0.5;
+  enemy.y = ey + 0.5;
 
-  let ax = 0, ay = 0, attempts = 0;
-  do {
-    ax = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
-    ay = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
-    attempts++;
-  } while ((map[ay][ax] !== 0 || characters.some(function(c) { return Math.abs(c.x - ax) < 2 && Math.abs(c.y - ay) < 2; })) && attempts < 50);
-
-  char.x = ax + 0.5;
-  char.y = ay + 0.5;
-  char.inGame = true;
-
-  characters.push(char);
-
+  enemies.push(enemy);
+  char.added = true;
+  showCharGrid();
+  
   if (char.imageUrl) {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -889,604 +599,66 @@ function addToGame(index) {
     img.src = char.imageUrl;
   }
 
-  createParticles(ax + 0.5, ay + 0.5, 30, char.isGLTF ? '#ff6b6b' : char.mediaType === 'photo' ? '#60a5fa' : char.mediaType === 'animation' ? '#ff0080' : '#8b5cf6');
-
-  previewChars.splice(index, 1);
-  showPreview();
-  renderCharList();
-  updateStats();
-  saveCharactersToStorage();
-
-  showToast('✅ تم إضافة ' + char.name + ' للعبة!', 'success');
+  showToast('✅ تم إضافة ' + char.name, 'success');
 }
 
-function addAllToGame() {
-  if (previewChars.length === 0) return;
+function addAllCharacters() {
   let added = 0;
-  for (let i = previewChars.length - 1; i >= 0; i--) {
-    addToGame(i);
-    added++;
+  for (let i = 0; i < fetchedCharacters.length; i++) {
+    if (!fetchedCharacters[i].added) {
+      addCharacterToGame(fetchedCharacters[i]);
+      added++;
+    }
   }
-  showToast('✅ تم إضافة ' + added + ' شخصية للعبة!', 'success');
-  document.getElementById('preview-panel').classList.remove('show');
-}
-
-function removeFromPreview(index) {
-  previewChars.splice(index, 1);
-  if (previewChars.length === 0) {
-    document.getElementById('preview-panel').classList.remove('show');
-  } else {
-    showPreview();
-  }
-}
-
-function clearPreview() {
-  previewChars = [];
-  document.getElementById('preview-panel').classList.remove('show');
-  showToast('🗑️ تم تجاهل المعاينة', 'info');
-}
-
-function editPreviewChar(index) {
-  const char = previewChars[index];
-  if (!char) return;
-  document.getElementById('edit-index').value = 'preview:' + index;
-  document.getElementById('edit-name').value = char.name;
-  document.getElementById('edit-desc').value = char.desc;
-  document.getElementById('edit-atk').value = char.attack;
-  document.getElementById('edit-def').value = char.defense;
-  document.getElementById('edit-energy').value = char.energy;
-  document.getElementById('edit-speed').value = char.speed;
-  document.getElementById('edit-class').value = char.class;
-  document.getElementById('edit-modal').classList.add('show');
+  showToast('✅ تم إضافة ' + added + ' شخصية!', 'success');
 }
 
 // ============================================================
-//  GLTF VIEWER
-// ============================================================
-
-function initGLTFViewer() {
-  const container = document.getElementById('gltf-viewer');
-  
-  // Create renderer
-  gltfRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-  gltfRenderer.setPixelRatio(window.devicePixelRatio);
-  gltfRenderer.setSize(container.clientWidth, container.clientHeight);
-  gltfRenderer.shadowMap.enabled = true;
-  gltfRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  container.appendChild(gltfRenderer.domElement);
-
-  // Create scene
-  gltfScene = new THREE.Scene();
-  
-  // Background gradient
-  const bgCanvas = document.createElement('canvas');
-  bgCanvas.width = 2;
-  bgCanvas.height = 512;
-  const bgCtx = bgCanvas.getContext('2d');
-  const grad = bgCtx.createLinearGradient(0, 0, 0, 512);
-  grad.addColorStop(0, '#0a0a2a');
-  grad.addColorStop(0.5, '#15152a');
-  grad.addColorStop(1, '#0a0a1a');
-  bgCtx.fillStyle = grad;
-  bgCtx.fillRect(0, 0, 2, 512);
-  const bgTexture = new THREE.CanvasTexture(bgCanvas);
-  gltfScene.background = bgTexture;
-
-  // Camera
-  gltfCamera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-  gltfCamera.position.set(3, 2, 5);
-  gltfCamera.lookAt(0, 0, 0);
-
-  // Lights
-  const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
-  gltfScene.add(ambientLight);
-
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-  dirLight.position.set(5, 10, 7);
-  dirLight.castShadow = true;
-  gltfScene.add(dirLight);
-
-  const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
-  fillLight.position.set(-5, 0, 5);
-  gltfScene.add(fillLight);
-
-  const backLight = new THREE.DirectionalLight(0x444466, 0.3);
-  backLight.position.set(0, 2, -10);
-  gltfScene.add(backLight);
-
-  // Grid helper
-  const gridHelper = new THREE.GridHelper(8, 20, 0x444466, 0x222244);
-  gridHelper.position.y = -0.8;
-  gltfScene.add(gridHelper);
-
-  // Auto-rotate flag
-  gltfScene.userData = { autoRotate: true };
-
-  // Handle resize
-  window.addEventListener('resize', function() {
-    if (gltfRenderer && gltfCamera) {
-      const container = document.getElementById('gltf-viewer');
-      gltfRenderer.setSize(container.clientWidth, container.clientHeight);
-      gltfCamera.aspect = container.clientWidth / container.clientHeight;
-      gltfCamera.updateProjectionMatrix();
-    }
-  });
-
-  // Animation loop
-  function animateGLTF() {
-    if (!gltfRenderer || !gltfScene) return;
-    requestAnimationFrame(animateGLTF);
-
-    const delta = gltfClock.getDelta();
-
-    if (gltfMixer) {
-      gltfMixer.update(delta);
-    }
-
-    if (gltfScene.userData.autoRotate && gltfCurrentModel) {
-      gltfCurrentModel.rotation.y += delta * 0.5;
-    }
-
-    gltfRenderer.render(gltfScene, gltfCamera);
-  }
-
-  animateGLTF();
-
-  // Mouse controls
-  let isDragging = false;
-  let previousMousePosition = { x: 0, y: 0 };
-
-  container.addEventListener('mousedown', function(e) {
-    isDragging = true;
-    previousMousePosition = { x: e.clientX, y: e.clientY };
-    gltfScene.userData.autoRotate = false;
-  });
-
-  window.addEventListener('mousemove', function(e) {
-    if (!isDragging || !gltfCurrentModel) return;
-    const deltaX = e.clientX - previousMousePosition.x;
-    const deltaY = e.clientY - previousMousePosition.y;
-    gltfCurrentModel.rotation.y += deltaX * 0.01;
-    gltfCurrentModel.rotation.x += deltaY * 0.01;
-    previousMousePosition = { x: e.clientX, y: e.clientY };
-  });
-
-  window.addEventListener('mouseup', function() {
-    isDragging = false;
-  });
-
-  // Touch controls
-  let touchStart = { x: 0, y: 0 };
-  container.addEventListener('touchstart', function(e) {
-    const touch = e.touches[0];
-    touchStart = { x: touch.clientX, y: touch.clientY };
-    gltfScene.userData.autoRotate = false;
-  }, { passive: true });
-
-  container.addEventListener('touchmove', function(e) {
-    e.preventDefault();
-    if (!gltfCurrentModel || !e.touches.length) return;
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - touchStart.x;
-    const deltaY = touch.clientY - touchStart.y;
-    gltfCurrentModel.rotation.y += deltaX * 0.01;
-    gltfCurrentModel.rotation.x += deltaY * 0.01;
-    touchStart = { x: touch.clientX, y: touch.clientY };
-  }, { passive: false });
-
-  container.addEventListener('touchend', function() {
-    // Resume auto-rotate after a delay
-    setTimeout(function() {
-      gltfScene.userData.autoRotate = true;
-    }, 3000);
-  }, { passive: true });
-
-  // Zoom with scroll
-  container.addEventListener('wheel', function(e) {
-    e.preventDefault();
-    if (!gltfCamera) return;
-    const zoom = e.deltaY > 0 ? 1.1 : 0.9;
-    const distance = gltfCamera.position.length();
-    if (distance * zoom > 1.5 && distance * zoom < 15) {
-      gltfCamera.position.multiplyScalar(zoom);
-      gltfCamera.lookAt(0, 0, 0);
-    }
-  }, { passive: false });
-
-  // Remove loading text
-  document.getElementById('gltf-loading').style.display = 'none';
-}
-
-function openGLTFViewer(modelUrl, name) {
-  const modal = document.getElementById('gltf-modal');
-  modal.classList.add('show');
-  document.getElementById('gltf-viewer-name').textContent = name || 'نموذج GLTF';
-
-  // Clear previous model
-  if (gltfCurrentModel) {
-    gltfScene.remove(gltfCurrentModel);
-    gltfCurrentModel = null;
-  }
-  if (gltfMixer) {
-    gltfMixer = null;
-  }
-
-  // Show loading
-  const loading = document.getElementById('gltf-loading');
-  loading.style.display = 'flex';
-  loading.innerHTML = '🔄 جاري تحميل النموذج...';
-
-  // Load model
-  loadGLTFModel(modelUrl);
-}
-
-function loadGLTFModel(url) {
-  // Check if it's a ZIP file
-  if (url.endsWith('.zip')) {
-    loadGLTFFromZip(url);
-    return;
-  }
-
-  const loader = new THREE.GLTFLoader();
-  loader.load(url, function(gltf) {
-    const model = gltf.scene;
-    
-    // Scale model appropriately
-    const box = new THREE.Box3().setFromObject(model);
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z);
-    if (maxDim > 3) {
-      const scale = 2.5 / maxDim;
-      model.scale.set(scale, scale, scale);
-    }
-
-    // Center model
-    const center = box.getCenter(new THREE.Vector3());
-    model.position.sub(center);
-    model.position.y += 0.5;
-
-    // Add to scene
-    gltfScene.add(model);
-    gltfCurrentModel = model;
-
-    // Animations
-    if (gltf.animations && gltf.animations.length > 0) {
-      gltfMixer = new THREE.AnimationMixer(model);
-      for (let i = 0; i < gltf.animations.length; i++) {
-        const action = gltfMixer.clipAction(gltf.animations[i]);
-        action.play();
-      }
-      showToast('🎬 تم تحميل النموذج مع ' + gltf.animations.length + ' حركات', 'success');
-    } else {
-      showToast('✅ تم تحميل النموذج بنجاح', 'success');
-    }
-
-    // Hide loading
-    document.getElementById('gltf-loading').style.display = 'none';
-
-    // Reset camera
-    gltfCamera.position.set(3, 2, 5);
-    gltfCamera.lookAt(0, 0, 0);
-    gltfScene.userData.autoRotate = true;
-
-  }, function(xhr) {
-    // Progress
-    const progress = Math.round((xhr.loaded / xhr.total) * 100);
-    const loading = document.getElementById('gltf-loading');
-    if (loading) {
-      loading.innerHTML = '🔄 جاري التحميل... ' + progress + '%';
-    }
-  }, function(error) {
-    console.error('GLTF Load Error:', error);
-    document.getElementById('gltf-loading').style.display = 'none';
-    showToast('❌ فشل تحميل النموذج', 'error');
-  });
-}
-
-async function loadGLTFFromZip(zipUrl) {
-  try {
-    const response = await fetch(zipUrl);
-    const blob = await response.blob();
-    const zip = await JSZip.loadAsync(blob);
-
-    // Find GLTF/GLB file
-    let gltfFile = null;
-    let gltfFileName = '';
-
-    for (const [name, file] of Object.entries(zip.files)) {
-      if (name.match(/\.(gltf|glb)$/i) && !file.dir) {
-        gltfFile = file;
-        gltfFileName = name;
-        break;
-      }
-    }
-
-    if (!gltfFile) {
-      showToast('❌ لا يوجد ملف GLTF في الحزمة', 'error');
-      document.getElementById('gltf-loading').style.display = 'none';
-      return;
-    }
-
-    // Extract GLTF data
-    const gltfData = await gltfFile.async('arraybuffer');
-    
-    // Check if it's GLB or GLTF
-    const isGLB = gltfFileName.endsWith('.glb');
-    
-    const loader = new THREE.GLTFLoader();
-    
-    if (isGLB) {
-      // GLB is binary, parse directly
-      const gltf = loader.parse(gltfData, '');
-      addGLTFModelToScene(gltf);
-    } else {
-      // GLTF is JSON with external resources - need to handle
-      // For simplicity, we'll try to parse as GLB first
-      try {
-        const gltf = loader.parse(gltfData, '');
-        addGLTFModelToScene(gltf);
-      } catch(e) {
-        // If fails, it might be JSON GLTF
-        const text = await gltfFile.async('string');
-        const json = JSON.parse(text);
-        
-        // Try to load with base URL        const url = URL.createObjectURL(new Blob([text], {type: 'application/json'}));
-        loader.load(url, function(gltf) {
-          addGLTFModelToScene(gltf);
-        }, undefined, function(err) {
-          showToast('❌ فشل تحميل GLTF من ZIP', 'error');
-          document.getElementById('gltf-loading').style.display = 'none';
-        });
-      }
-    }
-
-  } catch(e) {
-    console.error('ZIP Load Error:', e);
-    showToast('❌ فشل فك الضغط', 'error');
-    document.getElementById('gltf-loading').style.display = 'none';
-  }
-}
-
-function addGLTFModelToScene(gltf) {
-  const model = gltf.scene;
-  
-  // Scale
-  const box = new THREE.Box3().setFromObject(model);
-  const size = box.getSize(new THREE.Vector3());
-  const maxDim = Math.max(size.x, size.y, size.z);
-  if (maxDim > 3) {
-    const scale = 2.5 / maxDim;
-    model.scale.set(scale, scale, scale);
-  }
-
-  // Center
-  const center = box.getCenter(new THREE.Vector3());
-  model.position.sub(center);
-  model.position.y += 0.5;
-
-  gltfScene.add(model);
-  gltfCurrentModel = model;
-
-  if (gltf.animations && gltf.animations.length > 0) {
-    gltfMixer = new THREE.AnimationMixer(model);
-    for (let i = 0; i < gltf.animations.length; i++) {
-      const action = gltfMixer.clipAction(gltf.animations[i]);
-      action.play();
-    }
-    showToast('🎬 تم تحميل النموذج مع ' + gltf.animations.length + ' حركات', 'success');
-  } else {
-    showToast('✅ تم تحميل النموذج بنجاح', 'success');
-  }
-
-  document.getElementById('gltf-loading').style.display = 'none';
-  gltfCamera.position.set(3, 2, 5);
-  gltfCamera.lookAt(0, 0, 0);
-  gltfScene.userData.autoRotate = true;
-}
-
-function closeGLTFModal(e) {
-  if (e && e.target !== e.currentTarget) return;
-  document.getElementById('gltf-modal').classList.remove('show');
-  
-  // Reset auto-rotate
-  if (gltfScene) {
-    gltfScene.userData.autoRotate = true;
-  }
-}
-
-// ============================================================
-//  CHARACTER LIST
-// ============================================================
-
-function renderCharList() {
-  const grid = document.getElementById('char-grid');
-
-  if (characters.length === 0) {
-    grid.innerHTML = '<div style="color:#888;text-align:center;padding:40px 0;grid-column:1/-1;"><div style="font-size:40px;margin-bottom:10px;">🎭</div><div>لا توجد شخصيات بعد</div><div style="font-size:12px;margin-top:5px;">اتصل بالقناة ثم اضغط "جلب الكل"</div></div>';
-    document.getElementById('char-count').textContent = '0 شخصية';
-    return;
-  }
-
-  grid.innerHTML = '';
-
-  for (let i = 0; i < characters.length; i++) {
-    const char = characters[i];
-    const card = document.createElement('div');
-    card.className = 'char-card';
-
-    let mediaHtml = '';
-    if (char.mediaType === 'photo') {
-      mediaHtml = '<img src="' + (char.imageUrl || '') + '" alt="" onerror="this.style.display=\'none\';this.parentElement.innerHTML+=\'<div style=font-size:30px>🖼️</div>\'">';
-    } else if (char.mediaType === 'animation') {
-      mediaHtml = char.imageUrl ?
-        '<img src="' + char.imageUrl + '" alt="" onerror="this.style.display=\'none\';this.parentElement.innerHTML+=\'<div style=font-size:30px>🎬</div>\'">' :
-        '<div style="font-size:30px;display:flex;align-items:center;justify-content:center;height:100%;">🎬</div>';
-    } else if (char.mediaType === 'video') {
-      mediaHtml = char.videoUrl ?
-        '<video src="' + char.videoUrl + '" muted loop autoplay playsinline style="width:100%;height:100%;object-fit:cover;"></video><div class="play-icon">▶️</div>' :
-        '<div style="font-size:30px;display:flex;align-items:center;justify-content:center;height:100%;">🎥</div>';
-    } else if (char.mediaType === 'gltf') {
-      mediaHtml = char.imageUrl ?
-        '<img src="' + char.imageUrl + '" alt="" onerror="this.style.display=\'none\';this.parentElement.innerHTML+=\'<div style=font-size:30px>🎨</div>\'">' :
-        '<div style="font-size:30px;display:flex;align-items:center;justify-content:center;height:100%;">🎨</div>';
-    }
-
-    const typeColors = { photo: 'background:rgba(96,165,250,0.15);color:var(--info)', animation: 'background:rgba(255,0,128,0.15);color:var(--gif-glow)', video: 'background:rgba(139,92,246,0.15);color:var(--video)', gltf: 'background:rgba(255,107,107,0.15);color:var(--gltf)' };
-    const typeLabels = { photo: '🖼️ صورة', animation: '🎬 GIF', video: '🎥 فيديو', gltf: '🎨 GLTF' };
-
-    const isGLTF = char.mediaType === 'gltf';
-
-    card.innerHTML = 
-      '<button class="delete-btn" onclick="deleteChar(' + i + ',event)">×</button>' +
-      '<div class="card-media">' + mediaHtml + '</div>' +
-      '<div class="card-name">' + char.name + '</div>' +
-      '<span class="card-type" style="' + typeColors[char.mediaType] + '">' + typeLabels[char.mediaType] + '</span>' +
-      '<div class="card-stats">' +
-      '<span>⚔️' + char.attack + '</span>' +
-      '<span>🛡️' + char.defense + '</span>' +
-      '<span>⚡' + char.energy + '</span>' +
-      '</div>';
-
-    if (isGLTF && char.modelUrl) {
-      card.innerHTML += '<div style="margin-top:6px;"><button class="btn btn-gltf btn-sm" onclick="openGLTFViewer(\'' + char.modelUrl + '\', \'' + char.name + '\')">👁️ عرض 3D</button></div>';
-    }
-
-    card.onclick = function(e) { 
-      if (e.target.classList.contains('delete-btn')) return;
-      if (e.target.classList.contains('btn-gltf')) return;
-      showCharPopup(char); 
-    };
-    grid.appendChild(card);
-  }
-
-  document.getElementById('char-count').textContent = characters.length + ' شخصية';
-}
-
-function deleteChar(index, e) {
-  if (e) e.stopPropagation();
-  if (!confirm('هل أنت متأكد من حذف ' + characters[index].name + '؟')) return;
-  characters.splice(index, 1);
-  renderCharList();
-  updateStats();
-  saveCharactersToStorage();
-  showToast('🗑️ تم الحذف', 'info');
-}
-
-function updateStats() {
-  const total = characters.length;
-  const photos = characters.filter(function(c) { return c.mediaType === 'photo'; }).length;
-  const gifs = characters.filter(function(c) { return c.mediaType === 'animation'; }).length;
-  const videos = characters.filter(function(c) { return c.mediaType === 'video'; }).length;
-  const gltfs = characters.filter(function(c) { return c.mediaType === 'gltf'; }).length;
-
-  document.getElementById('stat-total').textContent = total;
-  document.getElementById('stat-photo').textContent = photos;
-  document.getElementById('stat-gif').textContent = gifs;
-  document.getElementById('stat-video').textContent = videos;
-  document.getElementById('stat-gltf').textContent = gltfs;
-  document.getElementById('ingame-count').textContent = total;
-  document.getElementById('gltf-count').textContent = gltfs;
-}
-
-function saveCharactersToStorage() {
-  localStorage.setItem('nardo_characters', JSON.stringify(characters));
-}
-
-// ============================================================
-//  EDIT MODAL
-// ============================================================
-
-function closeModal(e, id) {
-  if (e && e.target !== e.currentTarget) return;
-  document.getElementById(id).classList.remove('show');
-}
-
-function saveEdit() {
-  const indexStr = document.getElementById('edit-index').value;
-  const parts = indexStr.split(':');
-  const type = parts[0];
-  const index = parseInt(parts[1]);
-
-  const data = {
-    name: document.getElementById('edit-name').value || 'شخصية',
-    desc: document.getElementById('edit-desc').value || 'شخصية غامضة',
-    attack: parseInt(document.getElementById('edit-atk').value) || 50,
-    defense: parseInt(document.getElementById('edit-def').value) || 50,
-    energy: parseInt(document.getElementById('edit-energy').value) || 50,
-    speed: parseInt(document.getElementById('edit-speed').value) || 50,
-    class: document.getElementById('edit-class').value || 'Unknown'
-  };
-
-  if (type === 'preview' && previewChars[index]) {
-    for (let key in data) previewChars[index][key] = data[key];
-    showPreview();
-  } else if (type === 'game' && characters[index]) {
-    for (let key in data) characters[index][key] = data[key];
-    renderCharList();
-    saveCharactersToStorage();
-  }
-
-  closeModal(null, 'edit-modal');
-  showToast('💾 تم الحفظ', 'success');
-}
-
-// ============================================================
-//  CHARACTER POPUP
-// ============================================================
-
-function showCharPopup(char) {
-  const overlay = document.getElementById('popup-overlay');
-  const mediaDiv = document.getElementById('popup-media');
-
-  mediaDiv.innerHTML = '';
-  if (char.mediaType === 'photo' || char.mediaType === 'animation') {
-    const img = document.createElement('img');
-    img.src = char.imageUrl || '';
-    img.style.width = '100%';
-    img.style.height = '100%';
-    img.style.objectFit = 'cover';
-    mediaDiv.appendChild(img);
-  } else if (char.mediaType === 'video') {
-    const video = document.createElement('video');
-    video.src = char.videoUrl || '';
-    video.style.width = '100%';
-    video.style.height = '100%';
-    video.style.objectFit = 'cover';
-    video.muted = true;
-    video.loop = true;
-    video.autoplay = true;
-    video.playsInline = true;
-    mediaDiv.appendChild(video);
-  } else if (char.mediaType === 'gltf') {
-    const div = document.createElement('div');
-    div.style.cssText = 'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:60px;';
-    div.textContent = '🎨';
-    mediaDiv.appendChild(div);
-  }
-
-  const typeColors = { photo: 'var(--info)', animation: 'var(--gif-glow)', video: 'var(--video)', gltf: 'var(--gltf)' };
-  const typeLabels = { photo: '🖼️ صورة', animation: '🎬 GIF', video: '🎥 فيديو', gltf: '🎨 GLTF' };
-
-  document.getElementById('popup-title').textContent = char.name;
-  document.getElementById('popup-type').innerHTML = '<span style="padding:4px 12px;border-radius:20px;background:' + typeColors[char.mediaType] + '20;color:' + typeColors[char.mediaType] + ';font-size:12px;">' + typeLabels[char.mediaType] + ' • ' + char.class + '</span>';
-  document.getElementById('popup-stats').innerHTML = 
-    '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;"><span style="color:#888">⚔️ الهجوم</span><span style="color:var(--gold);font-weight:700">' + char.attack + '/100</span></div>' +
-    '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;"><span style="color:#888">🛡️ الدفاع</span><span style="color:var(--gold);font-weight:700">' + char.defense + '/100</span></div>' +
-    '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;"><span style="color:#888">⚡ الطاقة</span><span style="color:var(--gold);font-weight:700">' + char.energy + '/100</span></div>' +
-    '<div style="display:flex;justify-content:space-between;padding:8px 12px;background:rgba(255,255,255,0.04);border-radius:8px;"><span style="color:#888">💨 السرعة</span><span style="color:var(--gold);font-weight:700">' + char.speed + '/100</span></div>';
-  document.getElementById('popup-desc').textContent = char.desc;
-
-  overlay.classList.add('show');
-}
-
-// ============================================================
-//  GAME ENGINE (Canvas 2D)
+//  GAME STATE
 // ============================================================
 
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
-const minimapCanvas = document.getElementById('minimap');
-const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
+const MAP_SIZE = 24;
+
+let gameState = 'playing';
+let map = [];
+let time = 0;
+let lastTime = performance.now();
+
+// Player
+let player = {
+  x: 2.5, y: 2.5, angle: 0,
+  speed: 0.055, rotSpeed: 0.04,
+  jumping: false, jumpHeight: 0, jumpVelocity: 0,
+  hp: 100, maxHp: 100,
+  mp: 100, maxMp: 100,
+  xp: 0, maxXp: 100, level: 1,
+  attack: 25, defense: 10,
+  isBlocking: false,
+  isAttacking: false, attackTimer: 0, attackCooldown: 0,
+  skillCooldown: 0,
+  combo: 0, comboTimer: 0,
+  kills: 0, score: 0,
+  invincible: 0
+};
+
+let enemies = [];
+let wave = 1;
+let waveTimer = 0;
+let spawnTimer = 0;
+let particles = [];
+let damageTexts = [];
+let projectiles = [];
+let camera = { shake: 0 };
+let keys = {};
+let touchDirs = { up: false, down: false, left: false, right: false };
+let difficulty = 'normal';
+let diffMultipliers = { easy: 0.7, normal: 1, hard: 1.5 };
+
+// ============================================================
+//  MAP
+// ============================================================
 
 function generateMap() {
   map = [];
@@ -1494,19 +666,397 @@ function generateMap() {
     const row = [];
     for (let x = 0; x < MAP_SIZE; x++) {
       if (x === 0 || x === MAP_SIZE-1 || y === 0 || y === MAP_SIZE-1) row.push(1);
-      else if (Math.random() < 0.12 && !(x===1 && y===1)) row.push(Math.floor(Math.random()*3)+1);
+      else if (Math.random() < 0.1 && !(x <= 4 && y <= 4)) row.push(Math.floor(Math.random()*3)+1);
       else row.push(0);
     }
     map.push(row);
   }
-  map[1][1] = 0; map[1][2] = 0; map[2][1] = 0;
+  for (let y = 1; y <= 4; y++) {
+    for (let x = 1; x <= 4; x++) map[y][x] = 0;
+  }
 }
 
 function resize() {
-  const rect = canvas.parentElement.getBoundingClientRect();
-  canvas.width = rect.width;
-  canvas.height = rect.height;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 }
+
+// ============================================================
+//  ENEMIES & COMBAT
+// ============================================================
+
+function spawnEnemy() {
+  let ex, ey, attempts = 0;
+  do {
+    ex = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+    ey = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
+    attempts++;
+  } while ((map[ey][ex] !== 0 || Math.hypot(ex - player.x, ey - player.y) < 8) && attempts < 50);
+
+  if (attempts >= 50) return;
+
+  const types = ['goblin', 'orc', 'skeleton', 'dark_mage'];
+  const type = types[Math.floor(Math.random() * types.length)];
+  const diffMult = diffMultipliers[difficulty] || 1;
+  const waveMult = 1 + (wave - 1) * 0.15;
+
+  const baseStats = {
+    goblin: { hp: 40, atk: 10, spd: 0.035, color: '#4ade80', size: 0.4, xp: 15, score: 10 },
+    orc: { hp: 80, atk: 20, spd: 0.02, color: '#ef4444', size: 0.55, xp: 30, score: 25 },
+    skeleton: { hp: 50, atk: 15, spd: 0.03, color: '#e5e7eb', size: 0.45, xp: 20, score: 15 },
+    dark_mage: { hp: 35, atk: 25, spd: 0.025, color: '#a855f7', size: 0.4, xp: 35, score: 30, ranged: true }
+  };
+
+  const stats = baseStats[type];
+
+  enemies.push({
+    x: ex + 0.5, y: ey + 0.5,
+    type: type,
+    hp: stats.hp * waveMult * diffMult,
+    maxHp: stats.hp * waveMult * diffMult,
+    atk: stats.atk * waveMult * diffMult,
+    speed: stats.spd,
+    color: stats.color,
+    size: stats.size,
+    xp: stats.xp,
+    score: stats.score,
+    ranged: stats.ranged || false,
+    attackTimer: 0,
+    attackCooldown: 1.5 + Math.random(),
+    hitFlash: 0,
+    dead: false,
+    deadTimer: 0,
+    animFrame: 0,
+    id: 'enemy_' + Date.now() + '_' + Math.random(),
+    name: type
+  });
+}
+
+function updateEnemies(dt) {
+  for (let i = enemies.length - 1; i >= 0; i--) {
+    const e = enemies[i];
+    if (e.dead) {
+      e.deadTimer += dt;
+      if (e.deadTimer > 1.5) { enemies.splice(i, 1); }
+      continue;
+    }
+
+    e.animFrame += dt * 3;
+    e.hitFlash = Math.max(0, e.hitFlash - dt * 5);
+
+    const dx = player.x - e.x;
+    const dy = player.y - e.y;
+    const dist = Math.hypot(dx, dy);
+
+    e.attackTimer -= dt;
+    if (dist < (e.ranged ? 6 : 1.2) && e.attackTimer <= 0) {
+      e.attackTimer = e.attackCooldown;
+      if (e.ranged && dist > 1.5) {
+        const angle = Math.atan2(dy, dx);
+        projectiles.push({
+          x: e.x, y: e.y,
+          vx: Math.cos(angle) * 3, vy: Math.sin(angle) * 3,
+          damage: e.atk,
+          color: e.color,
+          life: 2,
+          owner: 'enemy'
+        });
+      } else if (dist < 1.2) {
+        damagePlayer(e.atk);
+        camera.shake = 8;
+        createParticles(player.x, player.y, 8, '#ff4444');
+      }
+    }
+
+    if (dist > (e.ranged ? 4 : 0.8)) {
+      const moveX = (dx / dist) * e.speed;
+      const moveY = (dy / dist) * e.speed;
+      const nx = e.x + moveX;
+      const ny = e.y + moveY;
+      if (map[Math.floor(ny)] && map[Math.floor(ny)][Math.floor(e.x)] === 0) e.y = ny;
+      if (map[Math.floor(e.y)] && map[Math.floor(e.y)][Math.floor(nx)] === 0) e.x = nx;
+    }
+  }
+}
+
+function damageEnemy(enemy, damage, isCrit) {
+  if (enemy.dead) return;
+  const actualDamage = Math.floor(damage * (1 + Math.random() * 0.3));
+  enemy.hp -= actualDamage;
+  enemy.hitFlash = 1;
+
+  damageTexts.push({
+    x: enemy.x, y: enemy.y - 0.5,
+    text: actualDamage.toString(),
+    color: isCrit ? '#ffd700' : '#fff',
+    isCrit: isCrit,
+    life: 1
+  });
+
+  createParticles(enemy.x, enemy.y, 10, enemy.color);
+  camera.shake = isCrit ? 12 : 6;
+
+  if (enemy.hp <= 0) {
+    enemy.dead = true;
+    player.kills++;
+    player.score += enemy.score || 10;
+    gainXp(enemy.xp || 20);
+    createParticles(enemy.x, enemy.y, 25, enemy.color);
+    addKillFeed(enemy.name || enemy.type);
+  }
+}
+
+function damagePlayer(amount) {
+  if (player.invincible > 0) return;
+  let actual = amount;
+  if (player.isBlocking) {
+    actual = amount * 0.25;
+    createParticles(player.x, player.y, 5, '#60a5fa');
+  }
+  actual = Math.max(1, actual - player.defense * 0.5);
+  player.hp -= actual;
+  player.invincible = 0.4;
+
+  const flash = document.createElement('div');
+  flash.className = 'hit-flash';
+  document.body.appendChild(flash);
+  setTimeout(function() { flash.remove(); }, 150);
+
+  if (player.hp <= 0) {
+    player.hp = 0;
+    gameOver();
+  }
+}
+
+// ============================================================
+//  PLAYER COMBAT
+// ============================================================
+
+function playerAttack() {
+  if (player.isAttacking || player.attackCooldown > 0 || gameState !== 'playing') return;
+
+  player.isAttacking = true;
+  player.attackTimer = 0.25;
+  player.attackCooldown = 0.4;
+
+  const attackRange = 2.5;
+  const attackAngle = Math.PI / 3;
+  let hitSomething = false;
+
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    if (e.dead) continue;
+
+    const dx = e.x - player.x;
+    const dy = e.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx);
+    let angleDiff = angle - player.angle;
+    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+
+    if (dist < attackRange && Math.abs(angleDiff) < attackAngle) {
+      const isCrit = Math.random() < 0.15;
+      const critMult = isCrit ? 2 : 1;
+      const dmg = player.attack * critMult;
+      damageEnemy(e, dmg, isCrit);
+      hitSomething = true;
+
+      player.combo++;
+      player.comboTimer = 2;
+      updateComboDisplay();
+    }
+  }
+
+  createParticles(player.x + Math.cos(player.angle) * 1.2, player.y + Math.sin(player.angle) * 1.2, 6, '#00f2ff');
+
+  if (!hitSomething) {
+    player.combo = 0;
+    updateComboDisplay();
+  }
+}
+
+function useSkill() {
+  if (player.skillCooldown > 0 || player.mp < 30 || gameState !== 'playing') return;
+
+  player.mp -= 30;
+  player.skillCooldown = 5;
+
+  const aoeRange = 4;
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    if (e.dead) continue;
+    const dist = Math.hypot(e.x - player.x, e.y - player.y);
+    if (dist < aoeRange) {
+      damageEnemy(e, player.attack * 2.5, true);
+    }
+  }
+
+  for (let a = 0; a < Math.PI * 2; a += 0.3) {
+    createParticles(player.x + Math.cos(a) * 2, player.y + Math.sin(a) * 2, 2, '#00f2ff');
+  }
+  camera.shake = 15;
+  showToast('⚡ ضربة البرق!', 'info');
+}
+
+function toggleBlock() {
+  player.isBlocking = !player.isBlocking;
+  const btn = document.getElementById('btn-block');
+  if (player.isBlocking) {
+    btn.classList.add('active');
+    player.speed = 0.025;
+  } else {
+    btn.classList.remove('active');
+    player.speed = 0.055;
+  }
+}
+
+function playerJump() {
+  if (!player.jumping && gameState === 'playing') {
+    player.jumping = true;
+    player.jumpVelocity = 0.1;
+  }
+}
+
+function gainXp(amount) {
+  player.xp += amount;
+  if (player.xp >= player.maxXp) {
+    player.xp -= player.maxXp;
+    player.level++;
+    player.maxXp = Math.floor(player.maxXp * 1.3);
+    player.maxHp += 15;
+    player.hp = player.maxHp;
+    player.maxMp += 10;
+    player.mp = player.maxMp;
+    player.attack += 5;
+    player.defense += 3;
+
+    const overlay = document.getElementById('levelup-overlay');
+    overlay.classList.add('show');
+    setTimeout(function() { overlay.classList.remove('show'); }, 2000);
+    showToast('🎉 مستوى جديد! Lv.' + player.level, 'success');
+  }
+}
+
+// ============================================================
+//  PARTICLES
+// ============================================================
+
+function createParticles(x, y, count, color) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = Math.random() * 0.08 + 0.02;
+    particles.push({
+      x: x, y: y,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed - 0.03,
+      life: 1,
+      decay: 0.02 + Math.random() * 0.02,
+      size: 2 + Math.random() * 4,
+      color: color,
+      gravity: 0.001
+    });
+  }
+}
+
+function updateParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += p.gravity;
+    p.life -= p.decay;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+function updateDamageTexts(dt) {
+  for (let i = damageTexts.length - 1; i >= 0; i--) {
+    const d = damageTexts[i];
+    d.y -= dt * 0.5;
+    d.life -= dt;
+    if (d.life <= 0) damageTexts.splice(i, 1);
+  }
+}
+
+// ============================================================
+//  WAVES
+// ============================================================
+
+function updateWave(dt) {
+  waveTimer += dt;
+  spawnTimer -= dt;
+
+  const maxEnemies = 3 + wave * 2;
+  const livingEnemies = enemies.filter(e => !e.dead).length;
+  
+  if (livingEnemies < maxEnemies && spawnTimer <= 0) {
+    spawnEnemy();
+    spawnTimer = 2 / (diffMultipliers[difficulty] || 1);
+  }
+
+  if (livingEnemies === 0 && enemies.length > 0 && waveTimer > 5) {
+    wave++;
+    waveTimer = 0;
+    spawnTimer = 1;
+    document.getElementById('wave-badge').textContent = 'الموجة ' + wave;
+    showToast('🌊 الموجة ' + wave + '!', 'warning');
+    player.hp = Math.min(player.maxHp, player.hp + 15);
+    player.mp = Math.min(player.maxMp, player.mp + 20);
+  }
+}
+
+// ============================================================
+//  UPDATE
+// ============================================================
+
+function updatePlayer(dt) {
+  if (player.jumping) {
+    player.jumpHeight += player.jumpVelocity;
+    player.jumpVelocity -= 0.004;
+    if (player.jumpHeight <= 0) {
+      player.jumpHeight = 0;
+      player.jumping = false;
+    }
+  }
+
+  player.attackCooldown = Math.max(0, player.attackCooldown - dt);
+  player.skillCooldown = Math.max(0, player.skillCooldown - dt);
+  player.invincible = Math.max(0, player.invincible - dt);
+  player.comboTimer = Math.max(0, player.comboTimer - dt);
+  if (player.comboTimer <= 0) {
+    player.combo = 0;
+    updateComboDisplay();
+  }
+
+  player.mp = Math.min(player.maxMp, player.mp + dt * 3);
+
+  let moveX = 0, moveY = 0;
+  const speed = player.speed * (1 + player.jumpHeight * 0.3);
+
+  if (keys['w'] || keys['arrowup'] || touchDirs.up) {
+    moveX += Math.cos(player.angle) * speed;
+    moveY += Math.sin(player.angle) * speed;
+  }
+  if (keys['s'] || keys['arrowdown'] || touchDirs.down) {
+    moveX -= Math.cos(player.angle) * speed;
+    moveY -= Math.sin(player.angle) * speed;
+  }
+  if (keys['a'] || keys['arrowleft'] || touchDirs.left) player.angle -= player.rotSpeed;
+  if (keys['d'] || keys['arrowright'] || touchDirs.right) player.angle += player.rotSpeed;
+
+  const newX = player.x + moveX;
+  const newY = player.y + moveY;
+  if (map[Math.floor(newY)] && map[Math.floor(newY)][Math.floor(player.x)] === 0) player.y = newY;
+  if (map[Math.floor(player.y)] && map[Math.floor(player.y)][Math.floor(newX)] === 0) player.x = newX;
+
+  camera.shake *= 0.9;
+  if (camera.shake < 0.5) camera.shake = 0;
+}
+
+// ============================================================
+//  RENDER
+// ============================================================
 
 function castRay(rayAngle) {
   let rayX = Math.cos(rayAngle), rayY = Math.sin(rayAngle);
@@ -1521,45 +1071,49 @@ function castRay(rayAngle) {
   else { stepY = 1; sideDistY = (mapY + 1 - player.y) * deltaDistY; }
 
   let hit = 0, side = 0, dist = 0, wallType = 0;
-  while (hit === 0 && dist < 25) {
+  while (hit === 0 && dist < 30) {
     if (sideDistX < sideDistY) {
       sideDistX += deltaDistX; mapX += stepX; side = 0;
     } else {
       sideDistY += deltaDistY; mapY += stepY; side = 1;
     }
     if (mapX < 0 || mapX >= MAP_SIZE || mapY < 0 || mapY >= MAP_SIZE) {
-      hit = 1; dist = 25;
+      hit = 1; dist = 30;
     } else if (map[mapY][mapX] !== 0) {
       hit = 1;
       wallType = map[mapY][mapX];
       dist = side === 0 ? (mapX - player.x + (1-stepX)/2) / rayX : (mapY - player.y + (1-stepY)/2) / rayY;
     }
   }
-  if (hit === 0) dist = 25;
   return { dist: Math.abs(dist), side, wallType };
 }
 
 function draw() {
-  time += 0.016;
   const w = canvas.width;
   const h = canvas.height;
   const fov = Math.PI / 3;
 
+  const shakeX = (Math.random() - 0.5) * camera.shake;
+  const shakeY = (Math.random() - 0.5) * camera.shake;
+
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+
   // Sky
   const skyGrad = ctx.createLinearGradient(0, 0, 0, h/2);
-  skyGrad.addColorStop(0, '#050510');
-  skyGrad.addColorStop(0.5, '#0a0a20');
-  skyGrad.addColorStop(1, '#151530');
+  skyGrad.addColorStop(0, '#02020a');
+  skyGrad.addColorStop(0.5, '#0a0a1a');
+  skyGrad.addColorStop(1, '#12122a');
   ctx.fillStyle = skyGrad;
-  ctx.fillRect(0, 0, w, h/2);
+  ctx.fillRect(-10, -10, w+20, h/2+10);
 
   // Stars
   ctx.fillStyle = '#fff';
-  for (let i = 0; i < 50; i++) {
-    const sx = (i * 137.5) % w;
-    const sy = (i * 73.3) % (h/2);
-    const brightness = 0.3 + Math.sin(time * 0.5 + i) * 0.3;
-    ctx.globalAlpha = brightness;
+  for (let i = 0; i < 60; i++) {
+    const sx = ((i * 137.5) % w);
+    const sy = ((i * 73.3) % (h/2));
+    const b = 0.3 + Math.sin(time * 0.5 + i) * 0.3;
+    ctx.globalAlpha = b;
     ctx.fillRect(sx, sy, 1.5, 1.5);
   }
   ctx.globalAlpha = 1;
@@ -1569,10 +1123,10 @@ function draw() {
   floorGrad.addColorStop(0, '#0a0a15');
   floorGrad.addColorStop(1, '#151520');
   ctx.fillStyle = floorGrad;
-  ctx.fillRect(0, h/2, w, h/2);
+  ctx.fillRect(-10, h/2, w+20, h/2+10);
 
   // Walls
-  const stripWidth = Math.max(2, Math.floor(w / 200));
+  const stripWidth = Math.max(2, Math.floor(w / 160));
   for (let x = 0; x < w; x += stripWidth) {
     const rayAngle = player.angle - fov/2 + (x/w) * fov;
     const hit = castRay(rayAngle);
@@ -1582,469 +1136,631 @@ function draw() {
     const wallH = Math.min(h, h / dist * 0.8);
     const wallTop = Math.max(0, (h - wallH) / 2);
     const wallBot = Math.min(h, (h + wallH) / 2);
-    const fog = Math.min(1, dist * 0.05);
+    const fog = Math.min(1, dist * 0.04);
 
-    const colors = { 1: [42,42,58], 2: [58,38,38], 3: [38,48,58] };
+    const colors = { 1: [35,35,55], 2: [55,30,30], 3: [30,45,55] };
     const c = colors[hit.wallType] || colors[1];
-    const shade = hit.side === 0 ? 1 : 0.7;
+    const shade = hit.side === 0 ? 1 : 0.65;
     const f = 1 - fog;
 
-    ctx.fillStyle = 'rgb(' + Math.floor(c[0]*shade*f+10*(1-f)) + ',' + 
-                              Math.floor(c[1]*shade*f+10*(1-f)) + ',' + 
-                              Math.floor(c[2]*shade*f+16*(1-f)) + ')';
+    ctx.fillStyle = 'rgb(' + Math.floor(c[0]*shade*f+8*(1-f)) + ',' + 
+                              Math.floor(c[1]*shade*f+8*(1-f)) + ',' + 
+                              Math.floor(c[2]*shade*f+12*(1-f)) + ')';
     ctx.fillRect(x, wallTop, stripWidth + 1, wallBot - wallTop);
   }
 
-  // Draw characters
-  nearCharacter = null;
-  let nearDist = Infinity;
+  // Draw enemies
+  const enemyList = enemies.map(function(e, i) {
+    const dx = e.x - player.x;
+    const dy = e.y - player.y;
+    return { e: e, dist: dx*dx + dy*dy };
+  }).sort(function(a, b) { return b.dist - a.dist; });
 
-  for (let i = 0; i < characters.length; i++) {
-    const char = characters[i];
-    if (!char.x || !char.y) continue;
-    const dx = char.x - player.x;
-    const dy = char.y - player.y;
-    const dist = Math.sqrt(dx*dx + dy*dy);
-
-    if (dist < 2.5 && dist < nearDist) { nearDist = dist; nearCharacter = char; }
-    if (dist > 25) continue;
-
-    const angle = Math.atan2(dy, dx) - player.angle;
-    let a = angle;
-    while (a > Math.PI) a -= Math.PI * 2;
-    while (a < -Math.PI) a += Math.PI * 2;
-
-    if (Math.abs(a) < fov / 2) {
-      const screenX = w / 2 + a / (fov / 2) * (w / 2);
-      const size = Math.min(220, h / dist * 0.9);
-      const fog = Math.min(1, dist * 0.06);
-      ctx.save();
-      ctx.globalAlpha = 1 - fog;
-      
-      if (char.isGLTF) {
-        drawGLTFCharacter(screenX, h/2, size, char);
-      } else {
-        draw2DCharacter(screenX, h/2, size, char);
-      }
-      
-      ctx.restore();
-    }
+  for (let i = 0; i < enemyList.length; i++) {
+    drawEnemy(enemyList[i].e, fov, w, h);
   }
 
-  drawParticles();
-
-  // Hint
-  if (nearCharacter) {
-    const typeEmoji = nearCharacter.isGLTF ? '🎨' : 
-                      nearCharacter.mediaType === 'photo' ? '🖼️' : 
-                      nearCharacter.mediaType === 'animation' ? '🎬' : '🎥';
-    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-    const text = typeEmoji + ' اضغط E لفتح ' + nearCharacter.name;
-    const tw = ctx.measureText(text).width + 40;
-    ctx.fillRect(w/2 - tw/2, h - 50, tw, 30);
-    ctx.fillStyle = nearCharacter.isGLTF ? '#ff6b6b' : 
-                    nearCharacter.mediaType === 'photo' ? '#60a5fa' : 
-                    nearCharacter.mediaType === 'animation' ? '#ff0080' : '#8b5cf6';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, w/2, h - 35);
+  // Projectiles
+  for (let i = 0; i < projectiles.length; i++) {
+    drawProjectile(projectiles[i], fov, w, h);
   }
-
-  // Location
-  const loc = getLocationData(player.x, player.y);
-  document.getElementById('location-display').textContent = loc.info;
-
-  frameCount++;
-  const now = performance.now();
-  if (now - lastTime > 1000) {
-    fps = frameCount;
-    frameCount = 0;
-    lastTime = now;
-    document.getElementById('fps').textContent = fps;
-  }
-}
-
-function draw2DCharacter(screenX, charY, size, char) {
-  const floatOffset = Math.sin(time * 1.2 + char.x * 2.5) * 6;
-  const yPos = charY + floatOffset;
-
-  ctx.save();
-  ctx.translate(screenX, yPos);
-
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
-  ctx.beginPath();
-  ctx.ellipse(0, size * 0.5, size * 0.35, size * 0.08, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Glow
-  const glowColors = { photo: 'rgba(96,165,250,', animation: 'rgba(255,0,128,', video: 'rgba(139,92,246,' };
-  const glowColor = glowColors[char.mediaType] || 'rgba(0,242,255,';
-  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.3);
-  glow.addColorStop(0, glowColor + '0.3)');
-  glow.addColorStop(0.5, glowColor + '0.1)');
-  glow.addColorStop(1, glowColor + '0)');
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(0, 0, size * 1.3, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Body
-  const bodyColors = { photo: ['#4a7aca','#3a6aba','#2a5aaa','#1a4a9a'], animation: ['#ff4d8a','#ff0080','#cc0066','#99004d'], video: ['#7c5cf6','#6b4cf5','#5a3ce4','#492cd3'] };
-  const bc = bodyColors[char.mediaType] || bodyColors.photo;
-  const bodyGrad = ctx.createRadialGradient(-size * 0.1, -size * 0.2, 0, 0, 0, size * 0.5);
-  bodyGrad.addColorStop(0, bc[0]);
-  bodyGrad.addColorStop(0.4, bc[1]);
-  bodyGrad.addColorStop(0.8, bc[2]);
-  bodyGrad.addColorStop(1, bc[3]);
-  ctx.fillStyle = bodyGrad;
-  ctx.shadowColor = glowColor + '0.4)';
-  ctx.shadowBlur = 30;
-  ctx.beginPath();
-  ctx.ellipse(0, size * 0.05, size * 0.4, size * 0.45, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  // Head
-  ctx.fillStyle = '#c8d8e8';
-  ctx.beginPath();
-  ctx.arc(0, -size * 0.25, size * 0.25, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Image
-  const img = loadedImages[char.id];
-  if (img && img.complete) {
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(0, -size * 0.25, size * 0.22, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.drawImage(img, -size * 0.22, -size * 0.47, size * 0.44, size * 0.44);
-    ctx.restore();
-  }
-
-  // Border ring
-  const ringColors = { photo: '#60a5fa', animation: '#ff0080', video: '#8b5cf6' };
-  ctx.strokeStyle = ringColors[char.mediaType] || '#00f2ff';
-  ctx.lineWidth = 3;
-  ctx.globalAlpha = Math.sin(time * 2 + char.x) * 0.1 + 0.9;
-  ctx.beginPath();
-  ctx.arc(0, 0, size * 0.48, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-
-  // Name
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = 8;
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(-size * 0.35, -size * 0.58 - size * 0.08, size * 0.7, size * 0.16);
-  ctx.shadowBlur = 0;
-
-  ctx.fillStyle = '#fff';
-  ctx.font = 'bold ' + Math.floor(size * 0.1) + 'px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(char.name.substring(0, 12), 0, -size * 0.58 + 2);
-
-  // HP bar
-  const barY = size * 0.45;
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(-size * 0.3, barY, size * 0.6, size * 0.05);
-  const hpGrad = ctx.createLinearGradient(-size * 0.3, 0, size * 0.3, 0);
-  hpGrad.addColorStop(0, '#4ade80');
-  hpGrad.addColorStop(1, '#22c55e');
-  ctx.fillStyle = hpGrad;
-  ctx.fillRect(-size * 0.3, barY, size * 0.6 * (char.attack / 100), size * 0.05);
-
-  // Type badge
-  const typeLabels = { photo: '🖼️', animation: '🎬', video: '🎥' };
-  ctx.fillStyle = ringColors[char.mediaType];
-  ctx.font = 'bold ' + Math.floor(size * 0.06) + 'px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = 6;
-  ctx.fillText(typeLabels[char.mediaType] + ' ' + char.mediaType.toUpperCase(), 0, size * 0.65);
-  ctx.shadowBlur = 0;
-
-  ctx.restore();
 
   // Particles
-  if ((char.mediaType === 'animation' || char.mediaType === 'video') && Math.random() < 0.1) {
-    const angle = Math.random() * Math.PI * 2;
-    const dist = size * 0.6 + Math.random() * size * 0.3;
-    const pcolors = { animation: ['#ff0080', '#ff6b9d', '#ff4d8a'], video: ['#8b5cf6', '#a78bfa', '#c4b5fd'] };
-    const pc = pcolors[char.mediaType] || pcolors.animation;
-    createParticles((screenX + Math.cos(angle) * dist) / 20, (yPos + Math.sin(angle) * dist) / 20, 1, pc[Math.floor(Math.random() * pc.length)]);
-  }
+  drawParticles(fov, w, h);
+
+  // Damage texts
+  drawDamageTexts(fov, w, h);
+
+  // Weapon
+  drawPlayerWeapon(w, h);
+
+  ctx.restore();
+  updateHUD();
 }
 
-function drawGLTFCharacter(screenX, charY, size, char) {
-  const floatOffset = Math.sin(time * 1.2 + char.x * 2.5) * 6;
-  const yPos = charY + floatOffset;
+function drawEnemy(e, fov, w, h) {
+  if (e.dead && e.deadTimer > 1) return;
+
+  const dx = e.x - player.x;
+  const dy = e.y - player.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist > 28) return;
+
+  const angle = Math.atan2(dy, dx) - player.angle;
+  let a = angle;
+  while (a > Math.PI) a -= Math.PI * 2;
+  while (a < -Math.PI) a += Math.PI * 2;
+
+  if (Math.abs(a) > fov / 2 + 0.3) return;
+
+  const screenX = w / 2 + a / (fov / 2) * (w / 2);
+  const size = Math.min(200, h / dist * 0.7) * (e.size || 0.4);
+  const alpha = e.dead ? Math.max(0, 1 - e.deadTimer) : 1;
 
   ctx.save();
-  ctx.translate(screenX, yPos);
+  ctx.globalAlpha = alpha;
+  ctx.translate(screenX, h/2 + Math.sin(e.animFrame || 0) * 4);
 
   // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath();
-  ctx.ellipse(0, size * 0.5, size * 0.35, size * 0.08, 0, 0, Math.PI * 2);
+  ctx.ellipse(0, size * 0.55, size * 0.4, size * 0.1, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Glow - GLTF special color
+  if (e.hitFlash > 0) {
+    ctx.fillStyle = 'rgba(255,255,255,' + (e.hitFlash * 0.5) + ')';
+    ctx.fillRect(-size, -size, size * 2, size * 2);
+  }
+
+  // Glow
   const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.5);
-  glow.addColorStop(0, 'rgba(255,107,107,0.3)');
-  glow.addColorStop(0.5, 'rgba(255,107,107,0.1)');
-  glow.addColorStop(1, 'rgba(255,107,107,0)');
+  glow.addColorStop(0, e.color + '44');
+  glow.addColorStop(1, e.color + '00');
   ctx.fillStyle = glow;
   ctx.beginPath();
   ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2);
   ctx.fill();
 
-  // 3D Box icon
-  const boxSize = size * 0.35;
-  const offsetY = -size * 0.1;
-  
-  // Draw 3D box
-  ctx.shadowColor = 'rgba(255,107,107,0.4)';
-  ctx.shadowBlur = 30;
-  
-  // Top face
-  ctx.fillStyle = '#ff6b6b';
-  ctx.beginPath();
-  ctx.moveTo(0, offsetY - boxSize * 0.7);
-  ctx.lineTo(boxSize * 0.5, offsetY - boxSize * 0.4);
-  ctx.lineTo(0, offsetY - boxSize * 0.1);
-  ctx.lineTo(-boxSize * 0.5, offsetY - boxSize * 0.4);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Front face
-  ctx.fillStyle = '#e05555';
-  ctx.beginPath();
-  ctx.moveTo(0, offsetY - boxSize * 0.1);
-  ctx.lineTo(boxSize * 0.5, offsetY - boxSize * 0.4);
-  ctx.lineTo(boxSize * 0.5, offsetY + boxSize * 0.1);
-  ctx.lineTo(0, offsetY + boxSize * 0.4);
-  ctx.closePath();
-  ctx.fill();
-  
-  // Side face
-  ctx.fillStyle = '#cc4444';
-  ctx.beginPath();
-  ctx.moveTo(0, offsetY - boxSize * 0.1);
-  ctx.lineTo(0, offsetY + boxSize * 0.4);
-  ctx.lineTo(-boxSize * 0.5, offsetY + boxSize * 0.1);
-  ctx.lineTo(-boxSize * 0.5, offsetY - boxSize * 0.4);
-  ctx.closePath();
-  ctx.fill();
-  
-  ctx.shadowBlur = 0;
+  // Body
+  ctx.fillStyle = e.color;
+  ctx.shadowColor = e.color;
+  ctx.shadowBlur = 20;
 
-  // GLTF badge
-  ctx.fillStyle = '#ff6b6b';
-  ctx.font = 'bold ' + Math.floor(size * 0.06) + 'px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'top';
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = 6;
-  ctx.fillText('🎨 3D', 0, size * 0.7);
-  ctx.shadowBlur = 0;
+  if (e.isPlayerChar) {
+    // Player character with image
+    ctx.beginPath();
+    ctx.ellipse(0, size * 0.05, size * 0.35, size * 0.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, -size * 0.3, size * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    
+    const img = loadedImages[e.id] || loadedImages[e.id?.replace('char_', '')];
+    if (img && img.complete) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(0, -size * 0.3, size * 0.22, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(img, -size * 0.22, -size * 0.52, size * 0.44, size * 0.44);
+      ctx.restore();
+    }
+  } else if (e.type === 'goblin') {
+    ctx.beginPath();
+    ctx.ellipse(0, size * 0.1, size * 0.35, size * 0.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, -size * 0.3, size * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.shadowBlur = 0;
+    ctx.beginPath();
+    ctx.arc(-size * 0.1, -size * 0.35, size * 0.06, 0, Math.PI * 2);
+    ctx.arc(size * 0.1, -size * 0.35, size * 0.06, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (e.type === 'orc') {
+    ctx.beginPath();
+    ctx.ellipse(0, size * 0.05, size * 0.4, size * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, -size * 0.35, size * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ccc';
+    ctx.beginPath();
+    ctx.moveTo(-size * 0.2, -size * 0.5);
+    ctx.lineTo(-size * 0.35, -size * 0.75);
+    ctx.lineTo(-size * 0.1, -size * 0.55);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(size * 0.2, -size * 0.5);
+    ctx.lineTo(size * 0.35, -size * 0.75);
+    ctx.lineTo(size * 0.1, -size * 0.55);
+    ctx.fill();
+  } else if (e.type === 'skeleton') {
+    ctx.fillStyle = '#d1d5db';
+    ctx.beginPath();
+    ctx.ellipse(0, size * 0.1, size * 0.3, size * 0.45, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, -size * 0.3, size * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#000';
+    ctx.beginPath();
+    ctx.arc(-size * 0.08, -size * 0.32, size * 0.05, 0, Math.PI * 2);
+    ctx.arc(size * 0.08, -size * 0.32, size * 0.05, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.ellipse(0, size * 0.1, size * 0.3, size * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(0, -size * 0.3, size * 0.22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#1f1f3f';
+    ctx.beginPath();
+    ctx.moveTo(0, -size * 0.6);
+    ctx.quadraticCurveTo(size * 0.35, -size * 0.2, size * 0.25, size * 0.1);
+    ctx.quadraticCurveTo(0, -size * 0.1, -size * 0.25, size * 0.1);
+    ctx.quadraticCurveTo(-size * 0.35, -size * 0.2, 0, -size * 0.6);
+    ctx.fill();
+  }
 
-  // Name
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = 8;
-  ctx.fillStyle = 'rgba(0,0,0,0.6)';
-  ctx.fillRect(-size * 0.35, -size * 0.58 - size * 0.08, size * 0.7, size * 0.16);
   ctx.shadowBlur = 0;
-
-  ctx.fillStyle = '#ff6b6b';
-  ctx.font = 'bold ' + Math.floor(size * 0.1) + 'px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(char.name.substring(0, 12), 0, -size * 0.58 + 2);
 
   // HP bar
-  const barY = size * 0.45;
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
-  ctx.fillRect(-size * 0.3, barY, size * 0.6, size * 0.05);
-  const hpGrad = ctx.createLinearGradient(-size * 0.3, 0, size * 0.3, 0);
-  hpGrad.addColorStop(0, '#ff6b6b');
-  hpGrad.addColorStop(1, '#ff4444');
-  ctx.fillStyle = hpGrad;
-  ctx.fillRect(-size * 0.3, barY, size * 0.6 * (char.attack / 100), size * 0.05);
-
-  // View button
-  if (char.modelUrl) {
-    ctx.fillStyle = 'rgba(255,107,107,0.2)';
-    const btnWidth = size * 0.5;
-    const btnHeight = size * 0.1;
-    const btnX = -btnWidth / 2;
-    const btnY = size * 0.85;
-    ctx.fillRect(btnX, btnY, btnWidth, btnHeight);
-    ctx.strokeStyle = '#ff6b6b';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(btnX, btnY, btnWidth, btnHeight);
-    
-    ctx.fillStyle = '#ff6b6b';
-    ctx.font = 'bold ' + Math.floor(size * 0.05) + 'px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('👁️ عرض 3D', 0, btnY + btnHeight / 2);
+  if (!e.dead) {
+    const barW = size * 0.8;
+    const barH = size * 0.06;
+    const barY = -size * 0.7;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(-barW/2, barY, barW, barH);
+    ctx.fillStyle = e.hp > e.maxHp * 0.5 ? '#4ade80' : e.hp > e.maxHp * 0.25 ? '#fbbf24' : '#ef4444';
+    ctx.fillRect(-barW/2, barY, barW * (e.hp / e.maxHp), barH);
   }
+
+  // Name
+  const displayName = e.name || e.type || 'عدو';
+  ctx.fillStyle = e.isPlayerChar ? '#00f2ff' : '#fff';
+  ctx.font = 'bold ' + Math.floor(size * 0.12) + 'px Cairo';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = 'rgba(0,0,0,0.8)';
+  ctx.shadowBlur = 6;
+  ctx.fillText(displayName.toUpperCase(), 0, -size * 0.75);
+  ctx.shadowBlur = 0;
 
   ctx.restore();
 }
 
-function createParticles(x, y, count, color) {
-  for (let i = 0; i < count; i++) {
-    const angle = Math.random() * Math.PI * 2;
-    const speed = Math.random() * 0.03 + 0.01;
-    particles.push({
-      x: x * 20, y: y * 20,
-      vx: Math.cos(angle) * speed,
-      vy: Math.sin(angle) * speed - 0.01,
-      life: 1, decay: 0.005 + Math.random() * 0.01,
-      size: 2 + Math.random() * 4,
-      color: color || '#ffd700'
-    });
+function drawProjectile(p, fov, w, h) {
+  const dx = p.x - player.x;
+  const dy = p.y - player.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist > 25) return;
+
+  const angle = Math.atan2(dy, dx) - player.angle;
+  let a = angle;
+  while (a > Math.PI) a -= Math.PI * 2;
+  while (a < -Math.PI) a += Math.PI * 2;
+  if (Math.abs(a) > fov / 2) return;
+
+  const screenX = w / 2 + a / (fov / 2) * (w / 2);
+  const size = Math.min(60, h / dist * 0.3);
+
+  ctx.save();
+  ctx.globalAlpha = 0.9;
+  ctx.fillStyle = p.color;
+  ctx.shadowColor = p.color;
+  ctx.shadowBlur = 15;
+  ctx.beginPath();
+  ctx.arc(screenX, h/2, size * 0.15, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+function drawDamageTexts(fov, w, h) {
+  for (let i = 0; i < damageTexts.length; i++) {
+    const d = damageTexts[i];
+    const dx = d.x - player.x;
+    const dy = d.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 20) continue;
+    const angle = Math.atan2(dy, dx) - player.angle;
+    let a = angle;
+    while (a > Math.PI) a -= Math.PI * 2;
+    while (a < -Math.PI) a += Math.PI * 2;
+    if (Math.abs(a) > fov / 2) continue;
+
+    const screenX = w / 2 + a / (fov / 2) * (w / 2);
+    const screenY = h/2 - (d.y - player.y) * (h / dist) * 0.5;
+
+    const el = document.querySelector('.damage-text[data-id="' + i + '"]');
+    if (!el) {
+      const div = document.createElement('div');
+      div.className = 'damage-text' + (d.isCrit ? ' crit' : '');
+      div.setAttribute('data-id', i);
+      div.textContent = d.text;
+      div.style.left = screenX + 'px';
+      div.style.top = screenY + 'px';
+      div.style.color = d.color;
+      document.body.appendChild(div);
+      setTimeout(function() { div.remove(); }, 1000);
+    }
   }
 }
 
-function updateParticles() {
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    p.x += p.vx; p.y += p.vy;
-    p.vy += 0.0005;
-    p.life -= p.decay;
-    if (p.life <= 0) particles.splice(i, 1);
-  }
-}
-
-function drawParticles() {
+function drawParticles(fov, w, h) {
   for (let i = 0; i < particles.length; i++) {
     const p = particles[i];
+    const dx = p.x - player.x;
+    const dy = p.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 20) continue;
+    const angle = Math.atan2(dy, dx) - player.angle;
+    let a = angle;
+    while (a > Math.PI) a -= Math.PI * 2;
+    while (a < -Math.PI) a += Math.PI * 2;
+    if (Math.abs(a) > fov / 2) continue;
+
+    const screenX = w / 2 + a / (fov / 2) * (w / 2);
+    const screenY = h/2 - (p.y - player.y) * (h / dist) * 0.5;
+
     ctx.globalAlpha = p.life;
     ctx.fillStyle = p.color;
     ctx.shadowColor = p.color;
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 8;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+    ctx.arc(screenX, screenY, p.size * p.life, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.globalAlpha = 1;
   ctx.shadowBlur = 0;
 }
 
+function drawPlayerWeapon(w, h) {
+  if (!player.isAttacking) return;
+
+  const centerX = w / 2;
+  const centerY = h / 2 + 80;
+  const progress = (0.25 - player.attackTimer) / 0.25;
+
+  ctx.save();
+  ctx.translate(centerX, centerY);
+
+  const swingAngle = -Math.PI / 2 + progress * Math.PI;
+  ctx.rotate(swingAngle);
+  ctx.shadowColor = '#00f2ff';
+  ctx.shadowBlur = 20;
+  ctx.strokeStyle = '#00f2ff';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(60, -10);
+  ctx.lineTo(70, 0);
+  ctx.lineTo(60, 10);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.fillStyle = 'rgba(0,242,255,0.3)';
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function updateHUD() {
+  document.getElementById('player-hp-bar').style.width = (player.hp / player.maxHp * 100) + '%';
+  document.getElementById('player-mp-bar').style.width = (player.mp / player.maxMp * 100) + '%';
+  document.getElementById('player-xp-bar').style.width = (player.xp / player.maxXp * 100) + '%';
+  document.getElementById('player-lvl').textContent = 'Lv.' + player.level;
+  document.getElementById('kill-count').textContent = player.kills;
+  document.getElementById('score').textContent = player.score;
+
+  const skillBtn = document.getElementById('btn-skill');
+  if (player.skillCooldown > 0) {
+    skillBtn.disabled = true;
+    const cd = Math.ceil(player.skillCooldown);
+    if (!skillBtn.querySelector('.skill-cd')) {
+      const cdDiv = document.createElement('div');
+      cdDiv.className = 'skill-cd';
+      cdDiv.textContent = cd;
+      skillBtn.appendChild(cdDiv);
+    } else {
+      skillBtn.querySelector('.skill-cd').textContent = cd;
+    }
+  } else {
+    skillBtn.disabled = false;
+    const cd = skillBtn.querySelector('.skill-cd');
+    if (cd) cd.remove();
+  }
+
+  let closest = null, closestDist = 4;
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    if (e.dead) continue;
+    const d = Math.hypot(e.x - player.x, e.y - player.y);
+    if (d < closestDist) { closestDist = d; closest = e; }
+  }
+
+  const enemyBar = document.getElementById('enemy-bar');
+  if (closest) {
+    enemyBar.classList.add('show');
+    document.getElementById('enemy-name').textContent = closest.name || closest.type || 'عدو';
+    document.getElementById('enemy-lvl').textContent = 'Lv.' + wave;
+    document.getElementById('enemy-hp-bar').style.width = (closest.hp / closest.maxHp * 100) + '%';
+  } else {
+    enemyBar.classList.remove('show');
+  }
+}
+
+function updateComboDisplay() {
+  const display = document.getElementById('combo-display');
+  if (player.combo >= 3) {
+    display.style.display = 'block';
+    document.getElementById('combo-count').textContent = player.combo + 'x';
+  } else {
+    display.style.display = 'none';
+  }
+}
+
+function addKillFeed(name) {
+  const feed = document.getElementById('kill-feed');
+  const names = { goblin: 'غوبلين', orc: 'أورك', skeleton: 'هيكل عظمي', dark_mage: 'ساحر' };
+  const msg = document.createElement('div');
+  msg.className = 'kill-msg';
+  msg.textContent = '💀 قتلت ' + (names[name] || name);
+  feed.appendChild(msg);
+  setTimeout(function() { msg.remove(); }, 3000);
+  if (feed.children.length > 5) feed.removeChild(feed.firstChild);
+}
+
+// ============================================================
+//  GAME LOOP
+// ============================================================
+
+function gameLoop() {
+  if (gameState === 'gameover') {
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  if (gameState === 'paused') {
+    draw();
+    requestAnimationFrame(gameLoop);
+    return;
+  }
+
+  const now = performance.now();
+  const dt = Math.min((now - lastTime) / 1000, 0.05);
+  lastTime = now;
+  time += dt;
+
+  updatePlayer(dt);
+  updateEnemies(dt);
+
+  // Update projectiles
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+    p.life -= dt;
+    if (map[Math.floor(p.y)] && map[Math.floor(p.y)][Math.floor(p.x)] !== 0) {
+      createParticles(p.x, p.y, 5, p.color);
+      projectiles.splice(i, 1);
+      continue;
+    }
+    if (p.owner === 'enemy') {
+      const dist = Math.hypot(p.x - player.x, p.y - player.y);
+      if (dist < 0.6) {
+        damagePlayer(p.damage);
+        createParticles(p.x, p.y, 8, p.color);
+        projectiles.splice(i, 1);
+        continue;
+      }
+    }
+    if (p.life <= 0) projectiles.splice(i, 1);
+  }
+
+  updateParticles(dt);
+  updateDamageTexts(dt);
+  updateWave(dt);
+
+  if (player.isAttacking) {
+    player.attackTimer -= dt;
+    if (player.attackTimer <= 0) player.isAttacking = false;
+  }
+
+  draw();
+  requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+//  CONTROLS
+// ============================================================
+
+function setupTouchControls() {
+  const dpadBtns = document.querySelectorAll('.dpad-btn');
+  dpadBtns.forEach(function(btn) {
+    const dir = btn.getAttribute('data-dir');
+
+    btn.addEventListener('touchstart', function(e) {
+      e.preventDefault();
+      touchDirs[dir] = true;
+      btn.style.background = 'rgba(0,242,255,0.12)';
+      btn.style.borderColor = 'var(--accent)';
+    }, { passive: false });
+
+    btn.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      touchDirs[dir] = false;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    }, { passive: false });
+
+    btn.addEventListener('touchcancel', function(e) {
+      touchDirs[dir] = false;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    });
+
+    btn.addEventListener('mousedown', function(e) { touchDirs[dir] = true; });
+    btn.addEventListener('mouseup', function(e) { touchDirs[dir] = false; });
+    btn.addEventListener('mouseleave', function(e) { touchDirs[dir] = false; });
+  });
+}
+
+window.addEventListener('keydown', function(e) {
+  keys[e.key.toLowerCase()] = true;
+  if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); playerJump(); }
+  if (e.key.toLowerCase() === 'e' || e.key === 'Enter') playerAttack();
+  if (e.key.toLowerCase() === 'q') useSkill();
+  if (e.key.toLowerCase() === 'shift') toggleBlock();
+  if (e.key === 'Escape') togglePause();
+  if (e.key.toLowerCase() === 'm') toggleMinimap();
+});
+
+window.addEventListener('keyup', function(e) {
+  keys[e.key.toLowerCase()] = false;
+});
+
+// ============================================================
+//  GAME FLOW
+// ============================================================
+
+function enterGame() {
+  document.getElementById('start-screen').style.opacity = '0';
+  setTimeout(function() {
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('game-container').style.display = 'block';
+    document.getElementById('tg-toggle').style.display = 'block';
+    resize();
+    generateMap();
+    resetGame();
+    gameState = 'playing';
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+  }, 500);
+
+  const savedToken = localStorage.getItem('nardo_bot_token');
+  const savedChat = localStorage.getItem('nardo_chat_id');
+  if (savedToken) document.getElementById('bot-token').value = savedToken;
+  if (savedChat) document.getElementById('chat-id').value = savedChat;
+
+  if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+}
+
+function resetGame() {
+  player = {
+    x: 2.5, y: 2.5, angle: 0,
+    speed: 0.055, rotSpeed: 0.04,
+    jumping: false, jumpHeight: 0, jumpVelocity: 0,
+    hp: 100, maxHp: 100,
+    mp: 100, maxMp: 100,
+    xp: 0, maxXp: 100, level: 1,
+    attack: 25, defense: 10,
+    isBlocking: false,
+    isAttacking: false, attackTimer: 0, attackCooldown: 0,
+    skillCooldown: 0,
+    combo: 0, comboTimer: 0,
+    kills: 0, score: 0,
+    invincible: 0
+  };
+  enemies = [];
+  projectiles = [];
+  particles = [];
+  damageTexts = [];
+  wave = 1;
+  waveTimer = 0;
+  spawnTimer = 1;
+  gameState = 'playing';
+
+  document.getElementById('wave-badge').textContent = 'الموجة 1';
+  document.getElementById('gameover-overlay').classList.remove('show');
+  document.getElementById('pause-overlay').classList.remove('show');
+  document.getElementById('kill-feed').innerHTML = '';
+}
+
+function restartGame() {
+  resetGame();
+  generateMap();
+}
+
+function gameOver() {
+  gameState = 'gameover';
+  document.getElementById('go-kills').textContent = player.kills;
+  document.getElementById('go-score').textContent = player.score;
+  document.getElementById('go-wave').textContent = wave;
+  document.getElementById('go-lvl').textContent = player.level;
+  document.getElementById('gameover-overlay').classList.add('show');
+  if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+}
+
+function togglePause() {
+  if (gameState === 'gameover') return;
+  if (gameState === 'playing') {
+    gameState = 'paused';
+    document.getElementById('pause-overlay').classList.add('show');
+  } else if (gameState === 'paused') {
+    gameState = 'playing';
+    document.getElementById('pause-overlay').classList.remove('show');
+    lastTime = performance.now();
+  }
+}
+
+function toggleMinimap() {
+  const el = document.getElementById('minimap-container');
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+
+// ============================================================
+//  MINIMAP
+// ============================================================
+
 function drawMinimap() {
-  if (!minimapCtx) return;
-  const s = minimapCanvas.width / MAP_SIZE;
-  minimapCtx.fillStyle = '#0a0a1a';
-  minimapCtx.fillRect(0, 0, 200, 200);
+  const mCanvas = document.getElementById('minimap');
+  if (!mCanvas) return;
+  const mCtx = mCanvas.getContext('2d');
+  const s = mCanvas.width / MAP_SIZE;
+
+  mCtx.fillStyle = '#0a0a1a';
+  mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
 
   for (let y = 0; y < MAP_SIZE; y++) {
     for (let x = 0; x < MAP_SIZE; x++) {
       if (map[y][x] !== 0) {
         const colors = { 1: '#333', 2: '#442222', 3: '#222244' };
-        minimapCtx.fillStyle = colors[map[y][x]] || '#333';
-        minimapCtx.fillRect(x * s, y * s, s, s);
+        mCtx.fillStyle = colors[map[y][x]] || '#333';
+        mCtx.fillRect(x * s, y * s, s, s);
       }
     }
   }
 
-  for (let i = 0; i < characters.length; i++) {
-    const char = characters[i];
-    if (char.x && char.y) {
-      const colors = { photo: '#60a5fa', animation: '#ff0080', video: '#8b5cf6', gltf: '#ff6b6b' };
-      minimapCtx.fillStyle = colors[char.mediaType] || '#4ade80';
-      minimapCtx.beginPath();
-      minimapCtx.arc(char.x * s, char.y * s, 4, 0, Math.PI * 2);
-      minimapCtx.fill();
-    }
+  for (let i = 0; i < enemies.length; i++) {
+    const e = enemies[i];
+    if (e.dead) continue;
+    mCtx.fillStyle = e.color || '#ff4444';
+    mCtx.beginPath();
+    mCtx.arc(e.x * s, e.y * s, 3, 0, Math.PI * 2);
+    mCtx.fill();
   }
 
-  minimapCtx.fillStyle = '#4ade80';
-  minimapCtx.beginPath();
-  minimapCtx.arc(player.x * s, player.y * s, 3, 0, Math.PI * 2);
-  minimapCtx.fill();
-  minimapCtx.strokeStyle = '#4ade80';
-  minimapCtx.beginPath();
-  minimapCtx.moveTo(player.x * s, player.y * s);
-  minimapCtx.lineTo((player.x + Math.cos(player.angle) * 0.8) * s, (player.y + Math.sin(player.angle) * 0.8) * s);
-  minimapCtx.stroke();
+  mCtx.fillStyle = '#00f2ff';
+  mCtx.beginPath();
+  mCtx.arc(player.x * s, player.y * s, 3, 0, Math.PI * 2);
+  mCtx.fill();
+  mCtx.strokeStyle = '#00f2ff';
+  mCtx.beginPath();
+  mCtx.moveTo(player.x * s, player.y * s);
+  mCtx.lineTo((player.x + Math.cos(player.angle) * 0.6) * s, (player.y + Math.sin(player.angle) * 0.6) * s);
+  mCtx.stroke();
 }
 
-function update() {
-  if (player.jumping) {
-    player.jumpHeight += player.jumpVelocity;
-    player.jumpVelocity -= 0.002;
-    if (player.jumpHeight <= 0) {
-      player.jumpHeight = 0;
-      player.jumping = false;
-      player.jumpVelocity = 0;
-    }
+setInterval(function() {
+  if (document.getElementById('minimap-container').style.display === 'block') {
+    drawMinimap();
   }
-
-  let moveX = 0, moveY = 0;
-  const speed = player.speed * (1 + player.jumpHeight * 0.1);
-
-  if (keys['w'] || keys['arrowup']) {
-    moveX += Math.cos(player.angle) * speed;
-    moveY += Math.sin(player.angle) * speed;
-  }
-  if (keys['s'] || keys['arrowdown']) {
-    moveX -= Math.cos(player.angle) * speed;
-    moveY -= Math.sin(player.angle) * speed;
-  }
-  if (keys['a'] || keys['arrowleft']) player.angle -= player.rotSpeed;
-  if (keys['d'] || keys['arrowright']) player.angle += player.rotSpeed;
-
-  const newX = player.x + moveX;
-  const newY = player.y + moveY;
-  if (map[Math.floor(newY)] && map[Math.floor(newY)][Math.floor(player.x)] === 0) player.y = newY;
-  if (map[Math.floor(player.y)] && map[Math.floor(player.y)][Math.floor(newX)] === 0) player.x = newX;
-}
-
-function loop() {
-  if (!gameRunning) return;
-  update();
-  updateParticles();
-  draw();
-  if (showMap) drawMinimap();
-  requestAnimationFrame(loop);
-}
+}, 300);
 
 // ============================================================
-//  INPUTS & UTILITIES
+//  TOAST
 // ============================================================
-
-function setupInputs() {
-  window.addEventListener('keydown', function(e) {
-    keys[e.key.toLowerCase()] = true;
-    if (e.key.toLowerCase() === 'm') {
-      showMap = !showMap;
-      document.getElementById('minimap-container').style.display = showMap ? 'block' : 'none';
-    }
-    if (e.key.toLowerCase() === 'e') {
-      if (nearCharacter) showCharPopup(nearCharacter);
-    }
-    if (e.key === ' ' || e.key === 'Spacebar') {
-      e.preventDefault();
-      if (!player.jumping) { player.jumping = true; player.jumpVelocity = 0.08; }
-    }
-  });
-
-  window.addEventListener('keyup', function(e) {
-    keys[e.key.toLowerCase()] = false;
-  });
-}
-
-function getLocationData(x, y) {
-  const key = Math.floor(x) + ',' + Math.floor(y);
-  if (locations[key]) return locations[key];
-  return { info: '📍 منطقة ' + Math.floor(x) + ',' + Math.floor(y), desc: 'منطقة استكشافية' };
-}
 
 function showToast(message, type) {
   const container = document.getElementById('toast-container');
@@ -2052,36 +1768,7 @@ function showToast(message, type) {
   toast.className = 'toast ' + type;
   toast.textContent = message;
   container.appendChild(toast);
-  setTimeout(function() { toast.remove(); }, 4000);
-}
-
-// ============================================================
-//  ENTER APP
-// ============================================================
-
-function enterApp() {
-  const startScreen = document.getElementById('start-screen');
-  startScreen.style.opacity = '0';
-  setTimeout(function() {
-    startScreen.style.display = 'none';
-    document.getElementById('main-content').style.display = 'block';
-    gameRunning = true;
-    loop();
-  }, 500);
-
-  // Init GLTF viewer
-  setTimeout(function() {
-    initGLTFViewer();
-  }, 1000);
-
-  // Auto-connect if config exists
-  setTimeout(function() {
-    if (document.getElementById('bot-token').value && document.getElementById('chat-id').value) {
-      testConnection();
-    }
-  }, 1000);
-
-  if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+  setTimeout(function() { toast.remove(); }, 3000);
 }
 
 // ============================================================
@@ -2089,22 +1776,15 @@ function enterApp() {
 // ============================================================
 
 initTelegram();
-generateMap();
+setupTouchControls();
 resize();
 window.addEventListener('resize', resize);
-setupInputs();
-loadTelegramConfig();
 
-// Show start button
 setTimeout(function() {
   document.getElementById('start-btn').style.display = 'block';
-  document.getElementById('userInfoDisplay').innerHTML = document.getElementById('userInfoDisplay').innerHTML.replace('🔄 جاري التحميل...', '✅ جاهز!');
 }, 500);
 
-console.log('🎮 ناردو 3D — دعم GLTF جاهز!');
+console.log('⚔️ ناردو معركة v4.2 — جاهزة!');
 </script>
 </body>
 </html>
-
-
-  
