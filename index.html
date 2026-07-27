@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>شخصيتي في الوسط — كاميرا تابعة</title>
+<title>إيموجي 3D — شخصيتي المتحركة</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -97,11 +97,11 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <!-- START -->
 <div id="start-screen">
-  <div class="start-logo">🎮 شخصيتي في الوسط</div>
-  <div class="start-subtitle">كاميرا تابعة • الخريطة تتحرك</div>
+  <div class="start-logo">🎨 إيموجي 3D</div>
+  <div class="start-subtitle">جلب الإيموجي من القناة • تحريك مثل بوبجي</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v13.0 | Follow Camera</div>
+  <div class="version-tag">v14.0 | Emoji 3D + Walking</div>
 </div>
 
 <!-- GAME -->
@@ -110,7 +110,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
   <div class="hud">
     <div class="player-bar">
-      <div class="label"><span>🎯 شخصيتي</span><span id="char-name">جاري التحميل...</span></div>
+      <div class="label"><span>😊 شخصيتي</span><span id="char-name">جاري التحميل...</span></div>
     </div>
   </div>
 
@@ -138,15 +138,14 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     </div>
     <div class="row">
       <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
-      <button class="btn btn-purple" onclick="fetchStickersAuto()">🎨 جلب تلقائي</button>
-      <button class="btn btn-gold" onclick="fetchImages()">🖼️ صور</button>
+      <button class="btn btn-purple" onclick="fetchEmojisFromChannel()">😊 جلب إيموجي</button>
       <button class="btn btn-red" onclick="toggleTG()">✖</button>
     </div>
     <div style="font-size:10px;color:#888;" id="tg-status">⭕ غير متصل</div>
   </div>
 
   <div class="skin-selector" id="skin-selector">
-    <h4>🎨 اختر شخصيتك</h4>
+    <h4>😊 اختر الإيموجي</h4>
     <div class="skin-grid" id="skin-grid"></div>
   </div>
 
@@ -154,14 +153,14 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     <div class="char-grid" id="char-grid"></div>
   </div>
 
-  <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">👤 شخصيتي</button>
+  <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">😊 شخصيتي</button>
 </div>
 
 <div class="toast-container" id="toast-container"></div>
 
 <script>
 // ============================================================
-//  شخصيتي في الوسط v13.0 — Follow Camera
+//  إيموجي 3D v14.0 — جلب الإيموجي من القناة وتحريكه
 // ============================================================
 
 // ============================================================
@@ -193,7 +192,7 @@ function initTelegram() {
 }
 
 let botToken = '', channelId = '', connected = false, lastUpdateId = 0;
-let fetchedCharacters = [];
+let fetchedEmojis = [];
 let loadedImages = {};
 let playerSkin = null;
 let autoSelectDone = false;
@@ -219,14 +218,14 @@ function renderSkinSelector() {
   defaultOpt.onclick = function() { selectSkin(null); };
   grid.appendChild(defaultOpt);
 
-  for (const char of fetchedCharacters) {
+  for (const char of fetchedEmojis) {
     const opt = document.createElement('div');
     opt.className = 'skin-option' + (playerSkin && playerSkin.id === char.id ? ' active' : '');
-    const avatar = char.isSticker ? '🎨' : (char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '🖼️');
+    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '😊';
     opt.innerHTML = `
       <div class="preview">${avatar}</div>
       <div class="sname">${char.name}</div>
-      <div style="font-size:7px;color:#888;">${char.isSticker ? '📌 ملصق' : '🖼️ صورة'}</div>
+      <div style="font-size:7px;color:#888;">${char.isEmoji ? '😊 إيموجي' : '🖼️ صورة'}</div>
     `;
     opt.onclick = function() { selectSkin(char); };
     grid.appendChild(opt);
@@ -239,9 +238,9 @@ function selectSkin(char) {
       id: char.id,
       name: char.name,
       imageUrl: char.imageUrl,
-      isSticker: char.isSticker || false
+      isEmoji: char.isEmoji || false
     };
-    document.getElementById('char-name').textContent = char.name + (char.isSticker ? ' 📌' : '');
+    document.getElementById('char-name').textContent = char.name + ' 😊';
     showToast('✅ تم اختيار ' + char.name, 'success');
   } else {
     playerSkin = null;
@@ -279,36 +278,40 @@ async function testTelegram() {
   } catch(e) { setTGStatus('❌ فشل الاتصال', 'error'); }
 }
 
-function autoSelectFirstSticker() {
+function autoSelectFirstEmoji() {
     if (autoSelectDone) return;
-    const stickers = fetchedCharacters.filter(c => c.isSticker);
-    if (stickers.length > 0) {
-        const firstSticker = stickers[0];
-        showToast('🎨 تم اختيار الملصق تلقائياً: ' + firstSticker.name, 'success');
-        selectSkin(firstSticker);
+    const emojis = fetchedEmojis.filter(c => c.isEmoji);
+    if (emojis.length > 0) {
+        const first = emojis[0];
+        showToast('😊 تم اختيار الإيموجي تلقائياً: ' + first.name, 'success');
+        selectSkin(first);
         autoSelectDone = true;
         return true;
     }
-    if (fetchedCharacters.length > 0) {
-        const firstChar = fetchedCharacters[0];
-        showToast('🖼️ تم اختيار الصورة تلقائياً: ' + firstChar.name, 'success');
-        selectSkin(firstChar);
+    if (fetchedEmojis.length > 0) {
+        const first = fetchedEmojis[0];
+        showToast('🖼️ تم اختيار الصورة تلقائياً: ' + first.name, 'success');
+        selectSkin(first);
         autoSelectDone = true;
         return true;
     }
     return false;
 }
 
-async function fetchStickersAuto() {
+// ============================================================
+//  جلب الإيموجي من القناة (الميزة الرئيسية)
+// ============================================================
+
+async function fetchEmojisFromChannel() {
   if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
-  setTGStatus('🎨 جاري جلب الملصقات...', '');
+  setTGStatus('😊 جاري جلب الإيموجي...', '');
 
   try {
     const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
     const data = await res.json();
     if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
 
-    let newChars = 0;
+    let newItems = 0;
 
     for (const update of data.result || []) {
       lastUpdateId = Math.max(lastUpdateId, update.update_id);
@@ -317,6 +320,7 @@ async function fetchStickersAuto() {
 
       let fileId = null, imageUrl = '';
 
+      // البحث عن الإيموجي (ملصق)
       if (msg.sticker) {
         fileId = msg.sticker.file_id;
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
@@ -326,6 +330,7 @@ async function fetchStickersAuto() {
         }
       }
 
+      // البحث عن الصور
       if (!fileId && msg.photo && msg.photo.length > 0) {
         fileId = msg.photo[msg.photo.length - 1].file_id;
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
@@ -336,43 +341,45 @@ async function fetchStickersAuto() {
       }
 
       if (!fileId) continue;
-      if (fetchedCharacters.some(c => c.fileId === fileId)) continue;
+      if (fetchedEmojis.some(c => c.fileId === fileId)) continue;
 
       const caption = msg.caption || '';
       const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
 
-      const isSticker = !!msg.sticker;
+      const isEmoji = !!msg.sticker;
       const char = {
-        id: (isSticker ? 'sticker_' : 'image_') + fileId,
+        id: (isEmoji ? 'emoji_' : 'image_') + fileId,
         fileId: fileId,
-        name: nameMatch ? nameMatch[1].trim() : (isSticker ? 'ملصق #' : 'صورة #') + (fetchedCharacters.length + 1),
+        name: nameMatch ? nameMatch[1].trim() : (isEmoji ? 'إيموجي #' : 'صورة #') + (fetchedEmojis.length + 1),
         imageUrl: imageUrl,
-        isSticker: isSticker
+        isEmoji: isEmoji
       };
 
-      fetchedCharacters.push(char);
-      newChars++;
+      fetchedEmojis.push(char);
+      newItems++;
 
       if (imageUrl) {
         const img = new Image();
         img.crossOrigin = 'anonymous';
         img.onload = function() { 
           loadedImages[char.id] = img;
-          if (isSticker && !autoSelectDone && fetchedCharacters.length === 1) {
-            setTimeout(autoSelectFirstSticker, 300);
+          // إذا كان إيموجي ولم يتم الاختيار بعد
+          if (isEmoji && !autoSelectDone && fetchedEmojis.length === 1) {
+            setTimeout(autoSelectFirstEmoji, 500);
           }
         };
         img.src = imageUrl;
       }
     }
 
-    if (newChars > 0) {
-      setTGStatus('✅ جلب ' + newChars + ' عنصر!', 'success');
+    if (newItems > 0) {
+      setTGStatus('✅ جلب ' + newItems + ' عنصر!', 'success');
       showCharGrid();
       renderSkinSelector();
-      showToast('🎨 تم جلب ' + newChars + ' عنصر!', 'success');
+      showToast('😊 تم جلب ' + newItems + ' إيموجي/صورة!', 'success');
+      
       if (!autoSelectDone) {
-        setTimeout(autoSelectFirstSticker, 500);
+        setTimeout(autoSelectFirstEmoji, 800);
       }
     } else {
       setTGStatus('📭 لا توجد عناصر جديدة', '');
@@ -383,86 +390,19 @@ async function fetchStickersAuto() {
   }
 }
 
-async function fetchImages() {
-  if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
-  setTGStatus('🖼️ جاري جلب الصور...', '');
-
-  try {
-    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
-    const data = await res.json();
-    if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
-
-    let newChars = 0;
-
-    for (const update of data.result || []) {
-      lastUpdateId = Math.max(lastUpdateId, update.update_id);
-      const msg = update.channel_post || update.message;
-      if (!msg) continue;
-
-      let fileId = null, imageUrl = '';
-
-      if (msg.photo && msg.photo.length > 0) {
-        fileId = msg.photo[msg.photo.length - 1].file_id;
-      } else if (msg.document && msg.document.mime_type?.startsWith('image/')) {
-        fileId = msg.document.file_id;
-      }
-
-      if (!fileId) continue;
-      if (fetchedCharacters.some(c => c.fileId === fileId)) continue;
-
-      const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
-      const fileData = await fileRes.json();
-      if (fileData.ok && fileData.result.file_path) {
-        imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
-      }
-
-      const caption = msg.caption || '';
-      const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
-
-      const char = {
-        id: 'image_' + fileId,
-        fileId: fileId,
-        name: nameMatch ? nameMatch[1].trim() : 'صورة #' + (fetchedCharacters.length + 1),
-        imageUrl: imageUrl,
-        isSticker: false
-      };
-
-      fetchedCharacters.push(char);
-      newChars++;
-
-      if (imageUrl) {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        img.onload = function() { loadedImages[char.id] = img; };
-        img.src = imageUrl;
-      }
-    }
-
-    if (newChars > 0) {
-      setTGStatus('✅ جلب ' + newChars + ' صورة!', 'success');
-      showCharGrid();
-      renderSkinSelector();
-    } else {
-      setTGStatus('📭 لا توجد صور جديدة', '');
-    }
-  } catch(e) {
-    setTGStatus('❌ خطأ', 'error');
-  }
-}
-
 function showCharGrid() {
   const panel = document.getElementById('char-grid-panel');
   const grid = document.getElementById('char-grid');
   grid.innerHTML = '';
 
-  for (const char of fetchedCharacters) {
+  for (const char of fetchedEmojis) {
     const div = document.createElement('div');
     div.className = 'char-mini';
-    const avatar = char.isSticker ? '🎨' : (char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '🖼️');
+    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '😊';
     div.innerHTML = `
       <div class="avatar">${avatar}</div>
       <div class="cname">${char.name}</div>
-      <div style="font-size:7px;color:#888;">${char.isSticker ? '📌 ملصق' : '🖼️ صورة'}</div>
+      <div style="font-size:7px;color:#888;">${char.isEmoji ? '😊 إيموجي' : '🖼️ صورة'}</div>
     `;
     div.onclick = function() { selectSkin(char); };
     grid.appendChild(div);
@@ -471,16 +411,16 @@ function showCharGrid() {
 }
 
 // ============================================================
-//  THREE.JS 3D VIEWER — FOLLOW CAMERA
+//  THREE.JS 3D VIEWER مع تكبير الإيموجي وتحريك
 // ============================================================
 
 let scene, camera, renderer;
 let player3D = null;
 let clock = new THREE.Clock();
-let autoRotate = false; // إيقاف الدوران التلقائي (للكاميرا التابعة)
+let autoRotate = false;
 let autoRun = false;
 let runSpeed = 2.5;
-let moveSpeed = 0.06; // زيادة السرعة قليلاً
+let moveSpeed = 0.06;
 let runTime = 0;
 let limbRefs = {};
 let playerState = 'idle';
@@ -491,7 +431,7 @@ let cameraAngleX = 0.3;
 let cameraAngleY = 0.3;
 let cameraDistance = 4.5;
 let targetCameraPosition = new THREE.Vector3();
-let cameraSmoothness = 0.08; // سرعة تتبع الكاميرا
+let cameraSmoothness = 0.08;
 
 // عالم اللعبة
 let worldGroup = null;
@@ -542,10 +482,10 @@ function initThreeJS() {
   rimLight.position.set(0, 3, -15);
   scene.add(rimLight);
 
-  // إنشاء عالم اللعبة (خريطة)
+  // إنشاء العالم (خريطة مع أعمدة)
   createWorld();
 
-  // إنشاء الشخصية
+  // إنشاء الشخصية الافتراضية
   createDefaultPlayer();
 
   window.addEventListener('resize', function() {
@@ -562,7 +502,6 @@ function initThreeJS() {
 // ============================================================
 
 function createWorld() {
-  // إزالة العالم القديم
   if (worldGroup) {
     scene.remove(worldGroup);
     worldGroup = null;
@@ -589,12 +528,11 @@ function createWorld() {
   gridHelper.position.y = 0;
   worldGroup.add(gridHelper);
 
-  // أعمدة أو أشياء في الخريطة (لإظهار الحركة)
+  // أعمدة ملونة
   const colors = [0x4444ff, 0xff4444, 0x44ff44, 0xffff44, 0xff44ff, 0x44ffff];
   for (let i = 0; i < 40; i++) {
     const x = (Math.random() - 0.5) * (groundSize - 4);
     const z = (Math.random() - 0.5) * (groundSize - 4);
-    // تجنب مكان البداية
     if (Math.abs(x) < 2 && Math.abs(z) < 2) continue;
     
     const height = 0.3 + Math.random() * 1.2;
@@ -612,7 +550,7 @@ function createWorld() {
     worldGroup.add(box);
   }
 
-  // أعمدة أكبر (معالم)
+  // أعمدة كبيرة (معالم)
   const landmarkPositions = [
     [-8, -8], [8, -8], [-8, 8], [8, 8],
     [-6, 6], [6, -6], [-6, -6], [6, 6]
@@ -631,7 +569,6 @@ function createWorld() {
     pillar.receiveShadow = true;
     worldGroup.add(pillar);
     
-    // إضاءة على العمود
     const lightMat = new THREE.MeshStandardMaterial({
       color: 0x6666ff,
       emissive: 0x4444ff,
@@ -644,6 +581,10 @@ function createWorld() {
     worldGroup.add(light);
   }
 }
+
+// ============================================================
+//  الشخصية الافتراضية
+// ============================================================
 
 function createDefaultPlayer() {
   if (player3D) {
@@ -749,194 +690,241 @@ function createDefaultPlayer() {
   player3D = group;
 }
 
-function updatePlayer3D() {
-  if (!player3D) return;
+// ============================================================
+//  تكبير الإيموجي وتحويله إلى نسيج
+// ============================================================
 
-  while (player3D.children.length > 0) {
-    const child = player3D.children[0];
-    player3D.remove(child);
-    if (child.geometry) child.geometry.dispose();
-    if (child.material) child.material.dispose();
-  }
-
-  if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
-    const img = loadedImages[playerSkin.id];
-    const isSticker = playerSkin.isSticker || false;
-
-    // Body with image
-    const bodyMat = new THREE.MeshStandardMaterial({
-      color: isSticker ? 0x8b5cf6 : 0x00f2ff,
-      roughness: 0.3,
-      metalness: 0.5,
-      transparent: true,
-      opacity: 1
-    });
-    const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.5), bodyMat);
-    body.position.y = 0.45;
-    body.castShadow = true;
-    player3D.add(body);
-    limbRefs.body = body;
-
-    // Apply image texture
-    try {
-      const imgCanvas = document.createElement('canvas');
-      const size = isSticker ? 256 : 128;
-      imgCanvas.width = size;
-      imgCanvas.height = size;
-      const ictx = imgCanvas.getContext('2d');
-      
-      if (isSticker) {
-        ictx.clearRect(0, 0, size, size);
-        ictx.drawImage(img, 0, 0, size, size);
-      } else {
-        ictx.drawImage(img, 0, 0, size, size);
-      }
-      
-      const imgTexture = new THREE.CanvasTexture(imgCanvas);
-      imgTexture.needsUpdate = true;
-      body.material.map = imgTexture;
-      body.material.needsUpdate = true;
-      
-      if (isSticker) {
-        const borderMat = new THREE.MeshStandardMaterial({
-          color: 0x8b5cf6,
-          transparent: true,
-          opacity: 0.2,
-          wireframe: true
-        });
-        const border = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.95, 0.55), borderMat);
-        border.position.y = 0.45;
-        player3D.add(border);
-      }
-      
-    } catch(e) {
-      console.warn('فشل تطبيق الصورة:', e);
-    }
-
-    // Head
-    const headColor = isSticker ? 0x8b5cf6 : 0xf5d0b8;
-    const headMat = new THREE.MeshStandardMaterial({
-      color: headColor,
-      roughness: 0.3,
-      metalness: 0.2,
-      emissive: isSticker ? 0x3b1f6e : 0x000000,
-      emissiveIntensity: isSticker ? 0.3 : 0
-    });
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 12), headMat);
-    head.position.y = 1.0;
-    head.castShadow = true;
-    player3D.add(head);
-    limbRefs.head = head;
-
-    // Eyes
-    const eyeColor = isSticker ? 0xffd700 : 0x333;
-    const eyeMat = new THREE.MeshStandardMaterial({
-      color: eyeColor,
-      emissive: isSticker ? 0xffd700 : 0x000000,
-      emissiveIntensity: isSticker ? 0.8 : 0
-    });
-    const eyeGeo = new THREE.SphereGeometry(0.06, 8, 8);
-    const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeL.position.set(-0.12, 1.05, 0.26);
-    player3D.add(eyeL);
-    const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-    eyeR.position.set(0.12, 1.05, 0.26);
-    player3D.add(eyeR);
-    limbRefs.eyeL = eyeL;
-    limbRefs.eyeR = eyeR;
-
-    // Arms
-    const armColor = isSticker ? 0x7c4df6 : 0x00d4ff;
-    const armGroupL = new THREE.Group();
-    armGroupL.position.set(-0.42, 0.75, 0);
-    const armMat = new THREE.MeshStandardMaterial({ color: armColor, roughness: 0.4, metalness: 0.5 });
-    const armGeo = new THREE.BoxGeometry(0.15, 0.6, 0.15);
-    const armL = new THREE.Mesh(armGeo, armMat);
-    armL.position.y = -0.3;
-    armL.castShadow = true;
-    armGroupL.add(armL);
-    player3D.add(armGroupL);
-    limbRefs.armL = armGroupL;
-
-    const armGroupR = new THREE.Group();
-    armGroupR.position.set(0.42, 0.75, 0);
-    const armR = new THREE.Mesh(armGeo, armMat);
-    armR.position.y = -0.3;
-    armR.castShadow = true;
-    armGroupR.add(armR);
-    player3D.add(armGroupR);
-    limbRefs.armR = armGroupR;
-
-    // Legs
-    const legColor = isSticker ? 0x2d1b4e : 0x003366;
-    const legGroupL = new THREE.Group();
-    legGroupL.position.set(-0.18, 0.0, 0);
-    const legMat = new THREE.MeshStandardMaterial({ color: legColor, roughness: 0.6, metalness: 0.3 });
-    const legGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2);
-    const legL = new THREE.Mesh(legGeo, legMat);
-    legL.position.y = -0.2;
-    legL.castShadow = true;
-    legGroupL.add(legL);
-    player3D.add(legGroupL);
-    limbRefs.legL = legGroupL;
-
-    const legGroupR = new THREE.Group();
-    legGroupR.position.set(0.18, 0.0, 0);
-    const legR = new THREE.Mesh(legGeo, legMat);
-    legR.position.y = -0.2;
-    legR.castShadow = true;
-    legGroupR.add(legR);
-    player3D.add(legGroupR);
-    limbRefs.legR = legGroupR;
-
-    // Shadow
-    const circleGeo = new THREE.RingGeometry(0.5, 0.8, 32);
-    const circleMat = new THREE.MeshBasicMaterial({
-      color: isSticker ? 0x443366 : 0x333366,
-      transparent: true,
-      opacity: 0.3,
-      side: THREE.DoubleSide
-    });
-    const circle = new THREE.Mesh(circleGeo, circleMat);
-    circle.rotation.x = -Math.PI / 2;
-    circle.position.y = 0.01;
-    player3D.add(circle);
-    limbRefs.shadow = circle;
-
-    // Name
-    if (isSticker && playerSkin.name) {
-      const nameCanvas = document.createElement('canvas');
-      nameCanvas.width = 256;
-      nameCanvas.height = 64;
-      const nctx = nameCanvas.getContext('2d');
-      nctx.fillStyle = 'rgba(139,92,246,0.2)';
-      nctx.roundRect(10, 10, 236, 44, 10);
-      nctx.fill();
-      nctx.strokeStyle = '#8b5cf6';
-      nctx.lineWidth = 1;
-      nctx.roundRect(10, 10, 236, 44, 10);
-      nctx.stroke();
-      nctx.fillStyle = '#c084fc';
-      nctx.font = 'bold 22px Cairo';
-      nctx.textAlign = 'center';
-      nctx.textBaseline = 'middle';
-      nctx.fillText(playerSkin.name, 128, 38);
-      
-      const nameTexture = new THREE.CanvasTexture(nameCanvas);
-      const nameMat = new THREE.SpriteMaterial({ map: nameTexture, transparent: true });
-      const nameSprite = new THREE.Sprite(nameMat);
-      nameSprite.scale.set(1.5, 0.4, 1);
-      nameSprite.position.y = 1.6;
-      player3D.add(nameSprite);
-    }
-
-  } else {
-    createDefaultPlayer();
-  }
+function createEmojiTexture(imageUrl, callback) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    
+    img.onload = function() {
+        // Canvas بحجم كبير لتكبير الإيموجي
+        const canvas = document.createElement('canvas');
+        const size = 512; // حجم كبير لجودة عالية
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        
+        // خلفية شفافة
+        ctx.clearRect(0, 0, size, size);
+        
+        // حساب حجم الإيموجي (تكبير 2x - يغطي 85% من المساحة)
+        const imgSize = size * 0.85;
+        const offset = (size - imgSize) / 2;
+        
+        // رسم الإيموجي مكبراً
+        ctx.drawImage(img, offset, offset, imgSize, imgSize);
+        
+        // إضافة تأثير إضاءة خفيف
+        const gradient = ctx.createRadialGradient(
+            size/2, size/2, 0,
+            size/2, size/2, size/2
+        );
+        gradient.addColorStop(0, 'rgba(255,255,255,0.08)');
+        gradient.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, size, size);
+        
+        // إنشاء النسيج
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        texture.minFilter = THREE.LinearFilter;
+        texture.magFilter = THREE.LinearFilter;
+        
+        callback(texture);
+    };
+    
+    img.onerror = function() {
+        // في حال فشل التحميل، استخدم إيموجي افتراضي
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#8b5cf6';
+        ctx.fillRect(0, 0, 128, 128);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 80px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('😊', 64, 72);
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.needsUpdate = true;
+        callback(texture);
+    };
+    
+    img.src = imageUrl;
 }
 
 // ============================================================
-//  حركة الشخصية والكاميرا التابعة
+//  تحديث الشخصية بالإيموجي المكبر
+// ============================================================
+
+function updatePlayer3D() {
+    if (!player3D) return;
+
+    // مسح الأجزاء القديمة
+    while (player3D.children.length > 0) {
+        const child = player3D.children[0];
+        player3D.remove(child);
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+    }
+
+    if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
+        const img = loadedImages[playerSkin.id];
+        const isEmoji = playerSkin.isEmoji || false;
+        
+        // إنشاء نسيج الإيموجي المكبر
+        createEmojiTexture(playerSkin.imageUrl, function(texture) {
+            // 1. الجسم مع الإيموجي المكبر
+            const bodyMat = new THREE.MeshStandardMaterial({
+                map: texture,
+                roughness: 0.3,
+                metalness: 0.1,
+                transparent: true,
+                side: THREE.DoubleSide
+            });
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.3), bodyMat);
+            body.position.y = 0.5;
+            body.castShadow = true;
+            player3D.add(body);
+            limbRefs.body = body;
+            
+            // 2. إطار حول الإيموجي (لإبرازه)
+            const borderMat = new THREE.MeshStandardMaterial({
+                color: 0x8b5cf6,
+                transparent: true,
+                opacity: 0.2,
+                wireframe: true
+            });
+            const border = new THREE.Mesh(new THREE.BoxGeometry(0.85, 1.05, 0.35), borderMat);
+            border.position.y = 0.5;
+            player3D.add(border);
+            
+            // 3. رأس (صغير) مع لون مميز
+            const headMat = new THREE.MeshStandardMaterial({
+                color: 0x8b5cf6,
+                roughness: 0.3,
+                metalness: 0.2,
+                emissive: 0x3b1f6e,
+                emissiveIntensity: 0.2
+            });
+            const head = new THREE.Mesh(new THREE.SphereGeometry(0.2, 12, 12), headMat);
+            head.position.y = 1.1;
+            head.castShadow = true;
+            player3D.add(head);
+            limbRefs.head = head;
+            
+            // 4. عيون متوهجة
+            const eyeMat = new THREE.MeshStandardMaterial({
+                color: 0xffd700,
+                emissive: 0xffd700,
+                emissiveIntensity: 0.8
+            });
+            const eyeGeo = new THREE.SphereGeometry(0.04, 8, 8);
+            const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeL.position.set(-0.08, 1.12, 0.18);
+            player3D.add(eyeL);
+            const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
+            eyeR.position.set(0.08, 1.12, 0.18);
+            player3D.add(eyeR);
+            limbRefs.eyeL = eyeL;
+            limbRefs.eyeR = eyeR;
+            
+            // 5. الأطراف
+            const armMat = new THREE.MeshStandardMaterial({ color: 0x7c4df6, roughness: 0.4 });
+            const armGeo = new THREE.BoxGeometry(0.12, 0.5, 0.12);
+            
+            const armGroupL = new THREE.Group();
+            armGroupL.position.set(-0.46, 0.7, 0);
+            const armL = new THREE.Mesh(armGeo, armMat);
+            armL.position.y = -0.25;
+            armL.castShadow = true;
+            armGroupL.add(armL);
+            player3D.add(armGroupL);
+            limbRefs.armL = armGroupL;
+            
+            const armGroupR = new THREE.Group();
+            armGroupR.position.set(0.46, 0.7, 0);
+            const armR = new THREE.Mesh(armGeo, armMat);
+            armR.position.y = -0.25;
+            armR.castShadow = true;
+            armGroupR.add(armR);
+            player3D.add(armGroupR);
+            limbRefs.armR = armGroupR;
+            
+            // 6. الأرجل
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x2d1b4e, roughness: 0.6 });
+            const legGeo = new THREE.BoxGeometry(0.18, 0.35, 0.18);
+            
+            const legGroupL = new THREE.Group();
+            legGroupL.position.set(-0.16, 0.0, 0);
+            const legL = new THREE.Mesh(legGeo, legMat);
+            legL.position.y = -0.175;
+            legL.castShadow = true;
+            legGroupL.add(legL);
+            player3D.add(legGroupL);
+            limbRefs.legL = legGroupL;
+            
+            const legGroupR = new THREE.Group();
+            legGroupR.position.set(0.16, 0.0, 0);
+            const legR = new THREE.Mesh(legGeo, legMat);
+            legR.position.y = -0.175;
+            legR.castShadow = true;
+            legGroupR.add(legR);
+            player3D.add(legGroupR);
+            limbRefs.legR = legGroupR;
+            
+            // 7. الظل
+            const circleGeo = new THREE.RingGeometry(0.4, 0.7, 32);
+            const circleMat = new THREE.MeshBasicMaterial({
+                color: 0x333366,
+                transparent: true,
+                opacity: 0.3,
+                side: THREE.DoubleSide
+            });
+            const circle = new THREE.Mesh(circleGeo, circleMat);
+            circle.rotation.x = -Math.PI / 2;
+            circle.position.y = 0.01;
+            player3D.add(circle);
+            limbRefs.shadow = circle;
+            
+            // 8. اسم الإيموجي
+            if (isEmoji && playerSkin.name) {
+                const nameCanvas = document.createElement('canvas');
+                nameCanvas.width = 256;
+                nameCanvas.height = 64;
+                const nctx = nameCanvas.getContext('2d');
+                nctx.fillStyle = 'rgba(139,92,246,0.2)';
+                nctx.roundRect(10, 10, 236, 44, 10);
+                nctx.fill();
+                nctx.strokeStyle = '#8b5cf6';
+                nctx.lineWidth = 1;
+                nctx.roundRect(10, 10, 236, 44, 10);
+                nctx.stroke();
+                nctx.fillStyle = '#c084fc';
+                nctx.font = 'bold 22px Cairo';
+                nctx.textAlign = 'center';
+                nctx.textBaseline = 'middle';
+                nctx.fillText(playerSkin.name, 128, 38);
+                
+                const nameTexture = new THREE.CanvasTexture(nameCanvas);
+                const nameMat = new THREE.SpriteMaterial({ map: nameTexture, transparent: true });
+                const nameSprite = new THREE.Sprite(nameMat);
+                nameSprite.scale.set(1.5, 0.4, 1);
+                nameSprite.position.y = 1.6;
+                player3D.add(nameSprite);
+            }
+        });
+        
+    } else {
+        createDefaultPlayer();
+    }
+}
+
+// ============================================================
+//  حركة الشخصية مثل بوبجي
 // ============================================================
 
 function updateAnimationState() {
@@ -967,12 +955,11 @@ function animateLimbs(delta) {
     limbRefs.legL.rotation.x = legAngle;
     limbRefs.legR.rotation.x = -legAngle;
 
-    if (limbRefs.body) limbRefs.body.position.y = 0.45 + bobbing;
-    if (limbRefs.head) limbRefs.head.position.y = 1.0 + bobbing;
+    if (limbRefs.body) limbRefs.body.position.y = 0.5 + bobbing;
+    if (limbRefs.head) limbRefs.head.position.y = 1.1 + bobbing;
 
     // تحريك الشخصية
     if (player3D) {
-      const speed = moveSpeed * (touchDirs.up || autoRun ? 1 : 0);
       if (touchDirs.up || autoRun) {
         player3D.position.x += Math.sin(player3D.rotation.y) * moveSpeed;
         player3D.position.z += Math.cos(player3D.rotation.y) * moveSpeed;
@@ -998,8 +985,8 @@ function animateLimbs(delta) {
     limbRefs.armR.rotation.x += (-breath - limbRefs.armR.rotation.x) * 0.1;
     limbRefs.legL.rotation.x *= 0.9;
     limbRefs.legR.rotation.x *= 0.9;
-    if (limbRefs.body) limbRefs.body.position.y += (0.45 - limbRefs.body.position.y) * 0.1;
-    if (limbRefs.head) limbRefs.head.position.y += (1.0 - limbRefs.head.position.y) * 0.1;
+    if (limbRefs.body) limbRefs.body.position.y += (0.5 - limbRefs.body.position.y) * 0.1;
+    if (limbRefs.head) limbRefs.head.position.y += (1.1 - limbRefs.head.position.y) * 0.1;
   }
 
   if (limbRefs.shadow && player3D) {
@@ -1019,26 +1006,22 @@ function handleMovementInput() {
 }
 
 // ============================================================
-//  تحديث الكاميرا التابعة
+//  الكاميرا التابعة (مثل بوبجي)
 // ============================================================
 
 function updateFollowCamera() {
   if (!player3D) return;
 
-  // حساب موقع الكاميرا بالنسبة للشخصية
   const targetX = player3D.position.x;
   const targetY = player3D.position.y + 1.2;
   const targetZ = player3D.position.z;
 
-  // حساب الزوايا
   const x = Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
   const y = Math.sin(cameraAngleY) * cameraDistance + 0.5;
   const z = Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * cameraDistance;
 
-  // موقع الكاميرا المستهدف
   targetCameraPosition.set(targetX + x, targetY + y, targetZ + z);
 
-  // تحريك الكاميرا بسلاسة
   camera.position.lerp(targetCameraPosition, cameraSmoothness);
   camera.lookAt(targetX, targetY, targetZ);
 }
@@ -1051,19 +1034,16 @@ function animateThree() {
 
   handleMovementInput();
   animateLimbs(delta);
-
-  // تحديث الكاميرا التابعة
   updateFollowCamera();
 
   renderer.render(scene, camera);
 }
 
 // ============================================================
-//  التحكم بالكاميرا
+//  التحكم
 // ============================================================
 
 function toggleRotate() {
-  // لا نحتاج دوران تلقائي مع الكاميرا التابعة
   showToast('🔄 الكاميرا تتبع الشخصية', 'info');
 }
 
@@ -1117,7 +1097,7 @@ function setupTouchControls() {
   });
 }
 
-// تحريك الكاميرا بالسحب (لمسة واحدة)
+// تحريك الكاميرا بالسحب
 let isDragging = false;
 let prevMouseX = 0, prevMouseY = 0;
 
@@ -1190,9 +1170,9 @@ function enterApp() {
     
     setTimeout(function() {
       if (connected) {
-        fetchStickersAuto();
+        fetchEmojisFromChannel();
       } else {
-        showToast('📡 اضغط "اتصال" ثم "جلب تلقائي"', 'info');
+        showToast('📡 اضغط "اتصال" ثم "😊 جلب إيموجي"', 'info');
       }
     }, 1500);
     
@@ -1223,7 +1203,7 @@ setTimeout(function() {
   document.getElementById('start-btn').style.display = 'block';
 }, 500);
 
-console.log('🎮 شخصيتي في الوسط — كاميرا تابعة جاهزة!');
+console.log('😊 إيموجي 3D — جاهز مع تكبير وتحريك مثل بوبجي!');
 </script>
 </body>
 </html>
