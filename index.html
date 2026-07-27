@@ -3,54 +3,41 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ناردو معركة — القناة + شخصيات</title>
+<title>ناردو 3D — شخصيات ثلاثية الأبعاد</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.7.1/dist/jszip.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--warning:#fbbf24;--info:#60a5fa;--purple:#8b5cf6;--legendary:#ff6b35;--gif-glow:#ff0080;--accent:#00f2ff;--xp:#a855f7;--video:#8b5cf6;--gltf:#ff6b6b}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;touch-action:none}
-body{font-family:'Cairo','Segoe UI',system-ui,sans-serif;background:#050510;color:#fff;min-height:100vh;overflow:hidden;user-select:none}
-#start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px;transition:opacity .5s}
-.start-logo{font-size:42px;font-weight:900;color:var(--gold);text-shadow:0 0 40px rgba(255,215,0,0.3);animation:float 3s ease-in-out infinite}
+/* ===== STYLES (مبسطة) ===== */
+:root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--info:#60a5fa;--accent:#00f2ff;--gltf:#ff6b6b}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none}
+
+#start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px}
+.start-logo{font-size:42px;font-weight:900;color:var(--gold);animation:float 3s ease-in-out infinite}
 .start-subtitle{font-size:15px;color:#666;text-align:center;max-width:350px;line-height:1.6}
-.start-btn{border:2px solid var(--accent);color:var(--accent);padding:16px 50px;background:rgba(0,242,255,0.08);border-radius:60px;font-size:20px;cursor:pointer;transition:all .3s;font-weight:700;font-family:inherit;backdrop-filter:blur(10px)}
+.start-btn{border:2px solid var(--accent);color:var(--accent);padding:16px 50px;background:rgba(0,242,255,0.08);border-radius:60px;font-size:20px;cursor:pointer;transition:all .3s;font-weight:700;font-family:inherit}
 .start-btn:hover{transform:scale(1.05);background:var(--accent);color:#000;box-shadow:0 0 50px rgba(0,242,255,0.4)}
 .user-info{color:var(--accent);font-size:13px;background:rgba(0,0,0,0.6);padding:8px 24px;border-radius:30px}
 .version-tag{position:absolute;bottom:15px;font-size:11px;color:#444}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
 #game-container{position:fixed;inset:0;display:none;background:#050510}
 #game-canvas{display:block;width:100%;height:100%}
+
+/* HUD */
 .hud{position:fixed;top:0;left:0;right:0;padding:6px 10px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:100}
-.hud-left,.hud-right,.hud-center{display:flex;flex-direction:column;gap:3px}
-.hud-center{align-items:center;position:absolute;left:50%;transform:translateX(-50%);top:6px}
-.player-bar,.enemy-bar{background:rgba(0,0,0,0.8);border-radius:8px;padding:5px 10px;backdrop-filter:blur(10px);min-width:120px;border:1px solid rgba(255,255,255,0.06)}
-.player-bar{border-color:rgba(0,242,255,0.2)}
-.enemy-bar{border-color:rgba(255,107,107,0.2);display:none}
-.enemy-bar.show{display:block;animation:fadeIn .3s}
-.player-bar .label,.enemy-bar .label{font-size:9px;font-weight:700;margin-bottom:2px;display:flex;justify-content:space-between}
-.player-bar .label{color:var(--accent)}
-.enemy-bar .label{color:var(--gltf)}
+.player-bar{background:rgba(0,0,0,0.8);border-radius:8px;padding:5px 10px;backdrop-filter:blur(10px);min-width:120px;border:1px solid rgba(0,242,255,0.2)}
+.player-bar .label{font-size:9px;font-weight:700;color:var(--accent);display:flex;justify-content:space-between;margin-bottom:2px}
 .bar-track{width:100%;height:5px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;margin-bottom:2px}
 .bar-fill{height:100%;border-radius:3px;transition:width .25s}
 .hp-fill{background:linear-gradient(90deg,#ef4444,#f87171)}
-.mp-fill{background:linear-gradient(90deg,#3b82f6,#60a5fa)}
 .xp-fill{background:linear-gradient(90deg,#a855f7,#c084fc)}
-.enemy-hp-fill{background:linear-gradient(90deg,#ef4444,#ff6b6b)}
-.score-badge{background:rgba(0,0,0,0.7);border-radius:16px;padding:3px 12px;font-size:11px;color:#aaa;margin-top:2px;display:inline-block}
-.level-badge{background:rgba(0,0,0,0.7);border:1px solid var(--gold);border-radius:20px;padding:3px 14px;font-size:12px;color:var(--gold);font-weight:700}
-.combo-display{position:fixed;top:65px;left:50%;transform:translateX(-50%);text-align:center;pointer-events:none;z-index:150;display:none}
-.combo-count{font-size:38px;font-weight:900;color:var(--gold);text-shadow:0 0 20px rgba(255,215,0,0.5)}
-.combo-label{font-size:12px;color:var(--error);font-weight:700}
-.kill-feed{position:fixed;top:50px;right:10px;display:flex;flex-direction:column;gap:3px;pointer-events:none;z-index:150;max-width:180px}
-.kill-msg{background:rgba(0,0,0,0.7);padding:3px 10px;border-radius:6px;font-size:11px;border-right:3px solid var(--gold);animation:slideInRight .3s}
-@keyframes slideInRight{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
-.minimap-btn{position:fixed;top:6px;right:10px;width:30px;height:30px;border-radius:6px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.06);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:200;font-size:13px}
-#minimap-container{position:fixed;top:40px;right:10px;width:110px;height:110px;background:rgba(0,0,0,0.85);border:1px solid rgba(255,215,0,0.12);border-radius:6px;padding:3px;display:none;z-index:200}
-#minimap{display:block;width:100%;height:100%;border-radius:4px}
+.level-badge{background:rgba(0,0,0,0.7);border:1px solid var(--gold);border-radius:20px;padding:3px 14px;font-size:12px;color:var(--gold);font-weight:700;pointer-events:none;z-index:100}
+
+/* D-Pad */
 .dpad{position:fixed;bottom:20px;left:16px;width:120px;height:120px;z-index:200}
 .dpad-btn{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .1s}
 .dpad-btn:active{background:rgba(0,242,255,0.12);border-color:var(--accent);color:var(--accent);transform:scale(0.88)}
@@ -58,98 +45,57 @@ body{font-family:'Cairo','Segoe UI',system-ui,sans-serif;background:#050510;colo
 .dpad-down{bottom:0;left:40px}
 .dpad-left{top:40px;left:0}
 .dpad-right{top:40px;right:0}
+
 .action-btns{position:fixed;bottom:20px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;z-index:200}
-.action-btn{width:54px;height:54px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;transition:all .1s;font-family:inherit;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)}
+.action-btn{width:54px;height:54px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)}
 .action-btn:active{transform:scale(0.86)}
 .btn-attack{border-color:var(--error);color:var(--error)}
-.btn-attack:active{background:rgba(248,113,113,0.12)}
-.btn-skill{border-color:var(--accent);color:var(--accent);width:46px;height:46px;font-size:16px;position:relative}
-.btn-skill:active{background:rgba(0,242,255,0.12)}
-.btn-skill:disabled{opacity:.3;cursor:not-allowed}
 .btn-jump{border-color:var(--gold);color:var(--gold);width:46px;height:46px;font-size:16px}
-.btn-jump:active{background:rgba(255,215,0,0.12)}
-.btn-block{border-color:var(--info);color:var(--info);width:40px;height:40px;font-size:14px}
-.btn-block:active{background:rgba(96,165,250,0.12)}
-.btn-block.active{background:rgba(96,165,250,0.15);border-color:#fff}
-.skill-cd{position:absolute;inset:0;border-radius:50%;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff}
-.pause-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.8);display:none;justify-content:center;align-items:center;z-index:500}
-.pause-overlay.show{display:flex}
-.pause-box{background:linear-gradient(135deg,#0f0f2a,#1a1a3a);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:20px;max-width:280px;width:90%;text-align:center}
-.pause-box h2{color:var(--gold);margin-bottom:14px}
-.pause-btn{width:100%;padding:10px;margin-bottom:6px;border-radius:8px;border:none;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:.2s}
-.pause-btn.resume{background:var(--accent);color:#000}
-.pause-btn.restart{background:var(--error);color:#fff}
-.pause-btn:hover{transform:scale(1.02)}
-.gameover-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.92);display:none;justify-content:center;align-items:center;z-index:600;flex-direction:column;gap:12px}
-.gameover-overlay.show{display:flex}
-.gameover-overlay h1{font-size:40px;color:var(--error);text-shadow:0 0 40px rgba(248,113,113,0.3)}
-.gameover-stats{display:flex;gap:12px}
-.gameover-stat{text-align:center}
-.gameover-stat .num{font-size:24px;font-weight:900;color:var(--gold)}
-.gameover-stat .lbl{font-size:10px;color:#888}
-.levelup-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.5);display:none;justify-content:center;align-items:center;z-index:550;pointer-events:none}
-.levelup-overlay.show{display:flex}
-.levelup-text{font-size:48px;font-weight:900;color:var(--gold);text-shadow:0 0 60px rgba(255,215,0,0.4);animation:levelUpAnim 2s forwards}
-@keyframes levelUpAnim{0%{opacity:0;transform:scale(0.5)}20%{opacity:1;transform:scale(1.2)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.5)}}
-.damage-text{position:fixed;font-weight:900;font-size:20px;pointer-events:none;z-index:300;text-shadow:0 0 10px rgba(0,0,0,0.8);animation:damageFloat 1s forwards}
-.damage-text.crit{color:#ffd700;font-size:26px}
-@keyframes damageFloat{0%{opacity:1;transform:translateY(0) scale(1)}50%{opacity:1}100%{opacity:0;transform:translateY(-50px) scale(1.2)}}
-.hit-flash{position:fixed;inset:0;background:rgba(255,0,0,0.1);pointer-events:none;z-index:50;animation:flash .12s forwards}
-@keyframes flash{0%{opacity:1}100%{opacity:0}}
-.toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
-.toast{background:rgba(0,0,0,0.9);backdrop-filter:blur(10px);color:#fff;padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
-.toast.success{border-color:var(--success);color:var(--success)}
-.toast.error{border-color:var(--error);color:var(--error)}
-.toast.info{border-color:var(--info);color:var(--info)}
-@keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
-@keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
 
-/* ===== TELEGRAM MENU DROPDOWN ===== */
-.tg-dropdown{position:fixed;bottom:180px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:14px 18px;z-index:250;min-width:320px;max-width:92%;backdrop-filter:blur(12px);display:none;box-shadow:0 10px 40px rgba(0,0,0,0.8)}
-.tg-dropdown.show{display:block;animation:fadeIn .3s}
-.tg-dropdown .row{display:flex;gap:6px;margin-bottom:5px;flex-wrap:wrap}
+/* TG Dropdown */
+.tg-dropdown{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;z-index:250;min-width:300px;max-width:92%;display:none;backdrop-filter:blur(12px)}
+.tg-dropdown.show{display:block}
+.tg-dropdown .row{display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap}
 .tg-dropdown input{flex:1;padding:5px 10px;border-radius:6px;border:1px solid rgba(255,215,0,0.1);background:#0a0a1a;color:#fff;font-size:11px;font-family:inherit;min-width:60px}
-.tg-dropdown input::placeholder{color:#555}
-.tg-dropdown .btn{padding:5px 12px;border:none;border-radius:6px;font-weight:700;font-size:10px;cursor:pointer;font-family:inherit;transition:.2s}
-.tg-dropdown .btn:hover{transform:scale(1.04)}
+.tg-dropdown .btn{padding:5px 12px;border:none;border-radius:6px;font-weight:700;font-size:10px;cursor:pointer;font-family:inherit}
 .btn-accent{background:var(--accent);color:#111}
 .btn-gold{background:var(--gold);color:#111}
 .btn-gltf{background:var(--gltf);color:#fff}
 .btn-green{background:var(--success);color:#111}
 .btn-red{background:var(--error);color:#fff}
-.btn-info{background:var(--info);color:#fff}
-.tg-dropdown .label{font-size:10px;color:#666;margin-bottom:2px}
-.tg-dropdown .status{font-size:10px;color:#888;margin-top:4px}
-.tg-dropdown .status.connected{color:var(--success)}
-.tg-dropdown .status.error{color:var(--error)}
+.tg-toggle{position:fixed;bottom:155px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none}
 
-/* ===== CHARACTER GRID ===== */
-.char-grid-panel{position:fixed;bottom:250px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:12px 14px;z-index:230;max-width:92%;width:380px;display:none;max-height:200px;overflow-y:auto;backdrop-filter:blur(12px)}
-.char-grid-panel.show{display:block;animation:fadeIn .3s}
-.char-grid-panel h4{color:var(--gold);font-size:12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center}
+.char-grid-panel{position:fixed;bottom:230px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:10px 12px;z-index:230;max-width:92%;width:360px;display:none;max-height:180px;overflow-y:auto}
+.char-grid-panel.show{display:block}
 .char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:6px}
 .char-mini{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.04);border-radius:6px;padding:6px;text-align:center;cursor:pointer;transition:.2s}
 .char-mini:hover{background:rgba(255,255,255,0.06);border-color:var(--gold)}
 .char-mini .avatar{width:32px;height:32px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:16px;overflow:hidden}
 .char-mini .avatar img{width:100%;height:100%;object-fit:cover}
 .char-mini .cname{font-size:10px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.char-mini .cstats{font-size:8px;color:#888;display:flex;gap:3px;justify-content:center}
 .char-mini.added{opacity:.4;cursor:default}
 
-/* ===== TOGGLE TG BUTTON ===== */
-.tg-toggle{position:fixed;bottom:162px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none;backdrop-filter:blur(4px)}
-.tg-toggle:hover{color:var(--gold)}
+.toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.toast{background:rgba(0,0,0,0.9);padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
+.toast.success{border-color:var(--success);color:var(--success)}
+.toast.error{border-color:var(--error);color:var(--error)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
+
+.minimap-btn{position:fixed;top:6px;right:10px;width:30px;height:30px;border-radius:6px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.06);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:200;font-size:13px}
+#minimap-container{position:fixed;top:40px;right:10px;width:110px;height:110px;background:rgba(0,0,0,0.85);border:1px solid rgba(255,215,0,0.12);border-radius:6px;padding:3px;display:none;z-index:200}
+#minimap{display:block;width:100%;height:100%;border-radius:4px}
 </style>
 </head>
 <body>
 
-<!-- START SCREEN -->
+<!-- START -->
 <div id="start-screen">
-  <div class="start-logo">⚔️ ناردو معركة</div>
-  <div class="start-subtitle">قاتل الأعداء • طور شخصيتك • اجلب الأبطال من القناة</div>
+  <div class="start-logo">🎮 ناردو 3D</div>
+  <div class="start-subtitle">شخصيات ثلاثية الأبعاد من القناة</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
-  <button class="start-btn" id="start-btn" onclick="enterGame()" style="display:none;">🚀 ابدأ المعركة</button>
-  <div class="version-tag">v4.2 | قناة + شخصيات</div>
+  <button class="start-btn" id="start-btn" onclick="enterGame()" style="display:none;">🚀 دخول</button>
+  <div class="version-tag">v5.0 | 3D Characters</div>
 </div>
 
 <!-- GAME -->
@@ -158,43 +104,32 @@ body{font-family:'Cairo','Segoe UI',system-ui,sans-serif;background:#050510;colo
 
   <!-- HUD -->
   <div class="hud">
-    <div class="hud-left">
-      <div class="player-bar">
-        <div class="label"><span>⚔️ البطل</span><span id="player-lvl">Lv.1</span></div>
-        <div class="bar-track"><div class="bar-fill hp-fill" id="player-hp-bar" style="width:100%"></div></div>
-        <div class="bar-track"><div class="bar-fill mp-fill" id="player-mp-bar" style="width:100%"></div></div>
-        <div class="bar-track"><div class="bar-fill xp-fill" id="player-xp-bar" style="width:0%"></div></div>
-      </div>
-      <div class="score-badge">💀 <span id="kill-count">0</span> | ⭐ <span id="score">0</span></div>
+    <div class="player-bar">
+      <div class="label"><span>⚔️ البطل</span><span id="player-lvl">Lv.1</span></div>
+      <div class="bar-track"><div class="bar-fill hp-fill" id="player-hp-bar" style="width:100%"></div></div>
+      <div class="bar-track"><div class="bar-fill xp-fill" id="player-xp-bar" style="width:0%"></div></div>
     </div>
-    <div class="hud-center">
-      <div class="level-badge" id="wave-badge">الموجة 1</div>
-    </div>
-    <div class="hud-right">
-      <div class="enemy-bar" id="enemy-bar">
-        <div class="label"><span id="enemy-name">العدو</span><span id="enemy-lvl">Lv.1</span></div>
-        <div class="bar-track"><div class="bar-fill hp-fill enemy-hp-fill" id="enemy-hp-bar" style="width:100%"></div></div>
-      </div>
-    </div>
+    <div class="level-badge" id="wave-badge">الموجة 1</div>
   </div>
-
-  <!-- Combo -->
-  <div class="combo-display" id="combo-display">
-    <div class="combo-count" id="combo-count">0</div>
-    <div class="combo-label">COMBO!</div>
-  </div>
-
-  <!-- Kill Feed -->
-  <div class="kill-feed" id="kill-feed"></div>
 
   <!-- Minimap -->
   <button class="minimap-btn" onclick="toggleMinimap()">🗺️</button>
   <div id="minimap-container"><canvas id="minimap" width="110" height="110"></canvas></div>
 
-  <!-- TG Toggle Button -->
-  <button class="tg-toggle" id="tg-toggle" onclick="toggleTG()">📡 القناة</button>
+  <!-- Controls -->
+  <div class="dpad" id="dpad">
+    <div class="dpad-btn dpad-up" data-dir="up">▲</div>
+    <div class="dpad-btn dpad-down" data-dir="down">▼</div>
+    <div class="dpad-btn dpad-left" data-dir="left">◀</div>
+    <div class="dpad-btn dpad-right" data-dir="right">▶</div>
+  </div>
+  <div class="action-btns">
+    <button class="action-btn btn-jump" onclick="playerJump()">⬆️</button>
+    <button class="action-btn btn-attack" onclick="playerAttack()">⚔️</button>
+  </div>
 
-  <!-- TG Dropdown -->
+  <!-- TG -->
+  <button class="tg-toggle" id="tg-toggle" onclick="toggleTG()">📡 القناة</button>
   <div class="tg-dropdown" id="tg-dropdown">
     <div class="row">
       <input type="text" id="bot-token" placeholder="Bot Token">
@@ -207,62 +142,15 @@ body{font-family:'Cairo','Segoe UI',system-ui,sans-serif;background:#050510;colo
       <button class="btn btn-red" onclick="toggleTG()">✖</button>
     </div>
     <div class="row">
-      <button class="btn btn-green btn-sm" onclick="addAllCharacters()">➕ إضافة الكل</button>
-      <button class="btn btn-info btn-sm" onclick="showCharGrid()">📋 القائمة</button>
+      <button class="btn btn-green" onclick="addAllCharacters()">➕ إضافة الكل</button>
     </div>
-    <div class="status" id="tg-status">⭕ غير متصل</div>
+    <div style="font-size:10px;color:#888;" id="tg-status">⭕ غير متصل</div>
   </div>
 
-  <!-- Character Grid -->
+  <!-- Characters Grid -->
   <div class="char-grid-panel" id="char-grid-panel">
-    <h4>🎭 الشخصيات <span style="font-size:10px;color:#888;" id="char-count-label">0</span></h4>
     <div class="char-grid" id="char-grid"></div>
   </div>
-
-  <!-- Controls -->
-  <div class="dpad" id="dpad">
-    <div class="dpad-btn dpad-up" data-dir="up">▲</div>
-    <div class="dpad-btn dpad-down" data-dir="down">▼</div>
-    <div class="dpad-btn dpad-left" data-dir="left">◀</div>
-    <div class="dpad-btn dpad-right" data-dir="right">▶</div>
-  </div>
-  <div class="action-btns">
-    <div style="display:flex;gap:6px;align-items:flex-end">
-      <button class="action-btn btn-block" id="btn-block" onclick="toggleBlock()">🛡️</button>
-      <button class="action-btn btn-skill" id="btn-skill" onclick="useSkill()">⚡</button>
-      <button class="action-btn btn-jump" id="btn-jump" onclick="playerJump()">⬆️</button>
-    </div>
-    <button class="action-btn btn-attack" id="btn-attack" onclick="playerAttack()">⚔️</button>
-  </div>
-
-  <!-- Pause -->
-  <button class="minimap-btn" style="top:6px;left:10px;right:auto;" onclick="togglePause()">⏸️</button>
-</div>
-
-<!-- PAUSE -->
-<div class="pause-overlay" id="pause-overlay" onclick="if(event.target===this)togglePause()">
-  <div class="pause-box">
-    <h2>⏸️ توقف</h2>
-    <button class="pause-btn resume" onclick="togglePause()">▶️ استئناف</button>
-    <button class="pause-btn restart" onclick="restartGame()">🔄 إعادة البدء</button>
-  </div>
-</div>
-
-<!-- GAME OVER -->
-<div class="gameover-overlay" id="gameover-overlay">
-  <h1>💀 انتهت المعركة</h1>
-  <div class="gameover-stats">
-    <div class="gameover-stat"><div class="num" id="go-kills">0</div><div class="lbl">القتلى</div></div>
-    <div class="gameover-stat"><div class="num" id="go-score">0</div><div class="lbl">النقاط</div></div>
-    <div class="gameover-stat"><div class="num" id="go-wave">0</div><div class="lbl">الموجة</div></div>
-    <div class="gameover-stat"><div class="num" id="go-lvl">0</div><div class="lbl">المستوى</div></div>
-  </div>
-  <button class="start-btn" onclick="restartGame()">🔄 إعادة المحاولة</button>
-</div>
-
-<!-- LEVEL UP -->
-<div class="levelup-overlay" id="levelup-overlay">
-  <div class="levelup-text">LEVEL UP!</div>
 </div>
 
 <!-- TOAST -->
@@ -270,7 +158,7 @@ body{font-family:'Cairo','Segoe UI',system-ui,sans-serif;background:#050510;colo
 
 <script>
 // ============================================================
-//  ناردو معركة v4.2 — قناة + شخصيات (مع الحفاظ على القتال)
+//  ناردو 3D v5.0 — شخصيات ثلاثية الأبعاد
 // ============================================================
 
 // ============================================================
@@ -305,76 +193,56 @@ function initTelegram() {
 //  TELEGRAM STATE
 // ============================================================
 
-let botToken = '';
-let channelId = '';
-let connected = false;
-let lastUpdateId = 0;
+let botToken = '', channelId = '', connected = false, lastUpdateId = 0;
 let fetchedCharacters = [];
 let loadedImages = {};
+let loadedModels = {};
 
 // ============================================================
 //  TELEGRAM FUNCTIONS
 // ============================================================
 
 function toggleTG() {
-  const dropdown = document.getElementById('tg-dropdown');
-  const toggle = document.getElementById('tg-toggle');
-  dropdown.classList.toggle('show');
-  if (dropdown.classList.contains('show')) {
-    toggle.textContent = '✖ إغلاق';
-  } else {
-    toggle.textContent = '📡 القناة';
-  }
+  document.getElementById('tg-dropdown').classList.toggle('show');
 }
 
 function setTGStatus(msg, type) {
   const el = document.getElementById('tg-status');
   el.textContent = msg;
-  el.className = 'status ' + (type === 'success' ? 'connected' : type === 'error' ? 'error' : '');
+  el.style.color = type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : '#888';
 }
 
 async function testTelegram() {
   botToken = document.getElementById('bot-token').value.trim();
   channelId = document.getElementById('chat-id').value.trim();
+  if (!botToken || !channelId) { setTGStatus('❌ ادخل البيانات', 'error'); return; }
 
-  if (!botToken || !channelId) {
-    setTGStatus('❌ يرجى إدخال البيانات', 'error');
-    return;
-  }
-
-  setTGStatus('🔄 جاري الاختبار...', '');
-
+  setTGStatus('🔄 جاري...', '');
   try {
     const res = await fetch('https://api.telegram.org/bot' + botToken + '/getMe');
     const data = await res.json();
-
     if (data.ok) {
       connected = true;
       setTGStatus('✅ متصل بـ @' + data.result.username, 'success');
       localStorage.setItem('nardo_bot_token', botToken);
       localStorage.setItem('nardo_chat_id', channelId);
-      showToast('✅ تم الاتصال بنجاح!', 'success');
+      showToast('✅ تم الاتصال!', 'success');
     } else {
       setTGStatus('❌ ' + data.description, 'error');
     }
-  } catch(e) {
-    setTGStatus('❌ فشل الاتصال', 'error');
-  }
+  } catch(e) { setTGStatus('❌ فشل الاتصال', 'error'); }
 }
 
 async function fetchCharacters() {
   if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
-
   setTGStatus('📥 جاري الجلب...', '');
 
   try {
     const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
     const data = await res.json();
-
     if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
 
     let newChars = 0;
-
     for (const update of data.result || []) {
       lastUpdateId = Math.max(lastUpdateId, update.update_id);
       const msg = update.channel_post || update.message;
@@ -386,7 +254,6 @@ async function fetchCharacters() {
       } else if (msg.document && msg.document.mime_type?.startsWith('image/')) {
         fileId = msg.document.file_id;
       }
-
       if (!fileId) continue;
       if (fetchedCharacters.some(c => c.fileId === fileId)) continue;
 
@@ -409,7 +276,8 @@ async function fetchCharacters() {
         defense: defMatch ? parseInt(defMatch[1]) : Math.floor(Math.random() * 30) + 50,
         imageUrl: imageUrl,
         added: false,
-        isGLTF: false
+        isGLTF: false,
+        modelUrl: null
       };
 
       fetchedCharacters.push(char);
@@ -429,31 +297,25 @@ async function fetchCharacters() {
     } else {
       setTGStatus('📭 لا توجد شخصيات جديدة', '');
     }
-  } catch(e) {
-    setTGStatus('❌ خطأ', 'error');
-  }
+  } catch(e) { setTGStatus('❌ خطأ', 'error'); }
 }
 
 async function fetchGLTF() {
   if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
-
   setTGStatus('🎨 جاري جلب GLTF...', '');
 
   try {
     const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
     const data = await res.json();
-
     if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
 
     let newChars = 0;
-
     for (const update of data.result || []) {
       lastUpdateId = Math.max(lastUpdateId, update.update_id);
       const msg = update.channel_post || update.message;
       if (!msg) continue;
 
       let modelUrl = null;
-
       if (msg.document) {
         const fn = msg.document.file_name || '';
         if (fn.match(/\.(gltf|glb|zip)$/i)) {
@@ -464,12 +326,10 @@ async function fetchGLTF() {
           }
         }
       }
-
       if (!modelUrl && msg.text) {
         const urlMatch = msg.text.match(/(https?:\/\/[^\s]+\.(gltf|glb|zip))/i);
         if (urlMatch) modelUrl = urlMatch[1];
       }
-
       if (!modelUrl) continue;
       if (fetchedCharacters.some(c => c.modelUrl === modelUrl)) continue;
 
@@ -483,10 +343,20 @@ async function fetchGLTF() {
         name: nameMatch ? nameMatch[1].trim() : 'GLTF #' + (fetchedCharacters.length + 1),
         attack: atkMatch ? parseInt(atkMatch[1]) : Math.floor(Math.random() * 30) + 70,
         defense: defMatch ? parseInt(defMatch[1]) : Math.floor(Math.random() * 30) + 60,
-        modelUrl: modelUrl,
+        imageUrl: null,
         added: false,
-        isGLTF: true
+        isGLTF: true,
+        modelUrl: modelUrl
       };
+
+      // Pre-load model
+      fetch(modelUrl).then(r => r.blob()).then(blob => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          loadedModels[char.id] = e.target.result;
+        };
+        reader.readAsArrayBuffer(blob);
+      });
 
       fetchedCharacters.push(char);
       newChars++;
@@ -498,163 +368,302 @@ async function fetchGLTF() {
     } else {
       setTGStatus('📭 لا توجد نماذج جديدة', '');
     }
-  } catch(e) {
-    setTGStatus('❌ خطأ', 'error');
-  }
+  } catch(e) { setTGStatus('❌ خطأ', 'error'); }
 }
 
 function showCharGrid() {
   const panel = document.getElementById('char-grid-panel');
   const grid = document.getElementById('char-grid');
-  const label = document.getElementById('char-count-label');
-
   grid.innerHTML = '';
-  label.textContent = fetchedCharacters.length;
 
-  for (let i = 0; i < fetchedCharacters.length; i++) {
-    const char = fetchedCharacters[i];
+  for (const char of fetchedCharacters) {
     const div = document.createElement('div');
     div.className = 'char-mini' + (char.added ? ' added' : '');
-
     let avatar = char.isGLTF ? '🎨' : (char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '🖼️');
-
     div.innerHTML = `
       <div class="avatar">${avatar}</div>
       <div class="cname">${char.name}</div>
-      <div class="cstats">
-        <span style="color:var(--error)">⚔️${char.attack}</span>
-        <span style="color:var(--info)">🛡️${char.defense}</span>
-        ${char.isGLTF ? '<span style="color:var(--gltf)">🎨</span>' : ''}
-      </div>
+      <div style="font-size:8px;color:#888;">⚔️${char.attack} 🛡️${char.defense}</div>
     `;
-
     if (!char.added) {
       div.onclick = function() { addCharacterToGame(char); };
     }
-
     grid.appendChild(div);
   }
-
   panel.classList.add('show');
-  document.getElementById('tg-toggle').textContent = '📋 القائمة';
 }
 
 function addCharacterToGame(char) {
   if (char.added) return;
 
-  const diffMult = diffMultipliers[difficulty] || 1;
-  const waveMult = 1 + (wave - 1) * 0.1;
+  // Create 3D character
+  create3DCharacter(char);
 
-  // Add as enemy with character stats
-  const enemy = {
-    x: 0, y: 0,
-    type: char.isGLTF ? 'gltf_boss' : 'character',
-    hp: 50 * diffMult * waveMult + char.defense * 0.5,
-    maxHp: 50 * diffMult * waveMult + char.defense * 0.5,
-    atk: char.attack * diffMult * waveMult * 0.8,
-    speed: 0.025 + Math.random() * 0.01,
-    color: char.isGLTF ? '#ff6b6b' : '#00f2ff',
-    size: char.isGLTF ? 0.5 : 0.4,
-    xp: Math.floor(char.attack * 0.7 + char.defense * 0.3),
-    score: Math.floor(char.attack * 0.5 + char.defense * 0.3),
-    ranged: char.isGLTF || Math.random() > 0.7,
-    attackTimer: 0,
-    attackCooldown: 1.5 + Math.random(),
-    hitFlash: 0,
-    dead: false,
-    deadTimer: 0,
-    animFrame: 0,
-    id: 'char_' + Date.now() + '_' + Math.random(),
-    name: char.name,
-    isPlayerChar: true,
-    imageUrl: char.imageUrl,
-    modelUrl: char.modelUrl,
-    isGLTF: char.isGLTF
-  };
-
-  // Find spawn position
-  let ex, ey, attempts = 0;
-  do {
-    ex = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
-    ey = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
-    attempts++;
-  } while ((map[ey][ex] !== 0 || Math.hypot(ex - player.x, ey - player.y) < 8) && attempts < 50);
-
-  if (attempts >= 50) {
-    showToast('⚠️ لا يوجد مكان', 'warning');
-    return;
-  }
-
-  enemy.x = ex + 0.5;
-  enemy.y = ey + 0.5;
-
-  enemies.push(enemy);
   char.added = true;
   showCharGrid();
-  
-  if (char.imageUrl) {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = function() { loadedImages[char.id] = img; };
-    img.src = char.imageUrl;
-  }
-
-  showToast('✅ تم إضافة ' + char.name, 'success');
+  showToast('✅ تم إضافة ' + char.name + ' (3D)', 'success');
 }
 
 function addAllCharacters() {
   let added = 0;
-  for (let i = 0; i < fetchedCharacters.length; i++) {
-    if (!fetchedCharacters[i].added) {
-      addCharacterToGame(fetchedCharacters[i]);
-      added++;
-    }
+  for (const char of fetchedCharacters) {
+    if (!char.added) { addCharacterToGame(char); added++; }
   }
-  showToast('✅ تم إضافة ' + added + ' شخصية!', 'success');
+  showToast('✅ تم إضافة ' + added + ' شخصية ثلاثية الأبعاد!', 'success');
 }
 
 // ============================================================
-//  GAME STATE
+//  THREE.JS 3D CHARACTER SYSTEM
+// ============================================================
+
+let scene, camera, renderer;
+let threeCharacters = [];
+let mixer = null;
+let clock = new THREE.Clock();
+
+function initThreeJS() {
+  const container = document.getElementById('game-container');
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x050510);
+
+  // Camera
+  const aspect = window.innerWidth / window.innerHeight;
+  camera = new THREE.PerspectiveCamera(60, aspect, 0.1, 100);
+  camera.position.set(0, 3, 6);
+  camera.lookAt(0, 0, 0);
+
+  // Renderer
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  container.appendChild(renderer.domElement);
+
+  // Lights
+  const ambient = new THREE.AmbientLight(0x404060, 0.6);
+  scene.add(ambient);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+  dirLight.position.set(5, 10, 7);
+  dirLight.castShadow = true;
+  scene.add(dirLight);
+
+  const fillLight = new THREE.DirectionalLight(0x8888ff, 0.4);
+  fillLight.position.set(-5, 0, 5);
+  scene.add(fillLight);
+
+  // Ground Grid
+  const gridHelper = new THREE.GridHelper(10, 20, 0x444466, 0x222244);
+  gridHelper.position.y = -0.5;
+  scene.add(gridHelper);
+
+  // Handle resize
+  window.addEventListener('resize', function() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
+
+  animateThree();
+}
+
+function animateThree() {
+  if (!renderer) return;
+  requestAnimationFrame(animateThree);
+
+  const delta = clock.getDelta();
+
+  // Update mixers
+  if (mixer) mixer.update(delta);
+
+  // Rotate characters
+  for (const tc of threeCharacters) {
+    if (tc.object) {
+      tc.object.rotation.y += delta * 0.5;
+    }
+  }
+
+  renderer.render(scene, camera);
+}
+
+function create3DCharacter(char) {
+  let modelData = null;
+
+  if (char.isGLTF && char.modelUrl) {
+    // Use loaded model data or load now
+    if (loadedModels[char.id]) {
+      modelData = loadedModels[char.id];
+    } else {
+      // Load model
+      fetch(char.modelUrl).then(r => r.blob()).then(blob => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          loadedModels[char.id] = e.target.result;
+          create3DCharacter(char);
+        };
+        reader.readAsArrayBuffer(blob);
+      });
+      return;
+    }
+  }
+
+  // Create group for character
+  const group = new THREE.Group();
+
+  if (modelData && char.isGLTF) {
+    // Load GLTF from data
+    const loader = new THREE.GLTFLoader();
+    loader.parse(modelData, '', function(gltf) {
+      const model = gltf.scene;
+      model.scale.set(0.5, 0.5, 0.5);
+      model.position.y = 0;
+      group.add(model);
+      if (gltf.animations && gltf.animations.length > 0) {
+        mixer = new THREE.AnimationMixer(model);
+        const action = mixer.clipAction(gltf.animations[0]);
+        action.play();
+      }
+    }, function(err) {
+      console.error('GLTF parse error:', err);
+      // Fallback to simple shape
+      createFallbackCharacter(group, char);
+    });
+  } else {
+    // Fallback: Create a 3D character from image or simple shape
+    createFallbackCharacter(group, char);
+  }
+
+  // Position character in 3D space (scattered around)
+  const angle = Math.random() * Math.PI * 2;
+  const radius = 1.5 + Math.random() * 2;
+  group.position.x = Math.cos(angle) * radius;
+  group.position.z = Math.sin(angle) * radius;
+  group.position.y = 0;
+
+  scene.add(group);
+
+  threeCharacters.push({
+    object: group,
+    char: char,
+    angle: angle,
+    radius: radius,
+    speed: 0.2 + Math.random() * 0.3
+  });
+
+  showToast('🎨 ' + char.name + ' ظهر في العالم 3D!', 'success');
+}
+
+function createFallbackCharacter(group, char) {
+  // Body
+  const bodyGeo = new THREE.BoxGeometry(0.6, 0.8, 0.4);
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: char.isGLTF ? 0xff6b6b : 0x00f2ff,
+    roughness: 0.3,
+    metalness: 0.7
+  });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = 0.4;
+  body.castShadow = true;
+  group.add(body);
+
+  // Head
+  const headGeo = new THREE.SphereGeometry(0.25, 16, 16);
+  const headMat = new THREE.MeshStandardMaterial({
+    color: 0xf5d0b8,
+    roughness: 0.5
+  });
+  const head = new THREE.Mesh(headGeo, headMat);
+  head.position.y = 0.9;
+  head.castShadow = true;
+  group.add(head);
+
+  // Name label (using sprite)
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 64;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.roundRect(10, 10, 236, 44, 10);
+  ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 24px Cairo';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(char.name, 128, 38);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  const spriteMat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+  const sprite = new THREE.Sprite(spriteMat);
+  sprite.scale.set(1.2, 0.3, 1);
+  sprite.position.y = 1.4;
+  group.add(sprite);
+
+  // HP bar above
+  const barCanvas = document.createElement('canvas');
+  barCanvas.width = 128;
+  barCanvas.height = 16;
+  const bctx = barCanvas.getContext('2d');
+  bctx.fillStyle = '#333';
+  bctx.roundRect(0, 0, 128, 16, 4);
+  bctx.fill();
+  bctx.fillStyle = '#4ade80';
+  bctx.roundRect(2, 2, 124 * (char.attack / 100), 12, 2);
+  bctx.fill();
+  const barTexture = new THREE.CanvasTexture(barCanvas);
+  const barMat = new THREE.SpriteMaterial({ map: barTexture, transparent: true });
+  const barSprite = new THREE.Sprite(barMat);
+  barSprite.scale.set(0.8, 0.1, 1);
+  barSprite.position.y = 1.2;
+  group.add(barSprite);
+
+  // If there's an image, put it on the body
+  if (char.imageUrl && loadedImages[char.id]) {
+    const img = loadedImages[char.id];
+    const imgCanvas = document.createElement('canvas');
+    imgCanvas.width = 128;
+    imgCanvas.height = 128;
+    const ictx = imgCanvas.getContext('2d');
+    ictx.drawImage(img, 0, 0, 128, 128);
+    const imgTexture = new THREE.CanvasTexture(imgCanvas);
+    body.material.map = imgTexture;
+    body.material.needsUpdate = true;
+  }
+}
+
+// ============================================================
+//  GAME ENGINE (2D Canvas - Raycasting)
 // ============================================================
 
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
-const MAP_SIZE = 24;
+const minimapCanvas = document.getElementById('minimap');
+const minimapCtx = minimapCanvas ? minimapCanvas.getContext('2d') : null;
 
 let gameState = 'playing';
 let map = [];
+const MAP_SIZE = 20;
 let time = 0;
 let lastTime = performance.now();
 
-// Player
 let player = {
   x: 2.5, y: 2.5, angle: 0,
-  speed: 0.055, rotSpeed: 0.04,
+  speed: 0.05, rotSpeed: 0.04,
   jumping: false, jumpHeight: 0, jumpVelocity: 0,
   hp: 100, maxHp: 100,
-  mp: 100, maxMp: 100,
   xp: 0, maxXp: 100, level: 1,
   attack: 25, defense: 10,
-  isBlocking: false,
   isAttacking: false, attackTimer: 0, attackCooldown: 0,
-  skillCooldown: 0,
-  combo: 0, comboTimer: 0,
-  kills: 0, score: 0,
-  invincible: 0
+  kills: 0, score: 0
 };
 
 let enemies = [];
-let wave = 1;
-let waveTimer = 0;
-let spawnTimer = 0;
 let particles = [];
 let damageTexts = [];
-let projectiles = [];
-let camera = { shake: 0 };
+let wave = 1, waveTimer = 0, spawnTimer = 0;
 let keys = {};
 let touchDirs = { up: false, down: false, left: false, right: false };
-let difficulty = 'normal';
-let diffMultipliers = { easy: 0.7, normal: 1, hard: 1.5 };
 
 // ============================================================
 //  MAP
@@ -682,7 +691,7 @@ function resize() {
 }
 
 // ============================================================
-//  ENEMIES & COMBAT
+//  ENEMIES
 // ============================================================
 
 function spawnEnemy() {
@@ -691,88 +700,56 @@ function spawnEnemy() {
     ex = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
     ey = Math.floor(Math.random() * (MAP_SIZE - 2)) + 1;
     attempts++;
-  } while ((map[ey][ex] !== 0 || Math.hypot(ex - player.x, ey - player.y) < 8) && attempts < 50);
-
+  } while ((map[ey][ex] !== 0 || Math.hypot(ex - player.x, ey - player.y) < 6) && attempts < 50);
   if (attempts >= 50) return;
 
-  const types = ['goblin', 'orc', 'skeleton', 'dark_mage'];
+  const types = ['goblin', 'orc', 'skeleton'];
   const type = types[Math.floor(Math.random() * types.length)];
-  const diffMult = diffMultipliers[difficulty] || 1;
-  const waveMult = 1 + (wave - 1) * 0.15;
-
-  const baseStats = {
-    goblin: { hp: 40, atk: 10, spd: 0.035, color: '#4ade80', size: 0.4, xp: 15, score: 10 },
+  const stats = {
+    goblin: { hp: 40, atk: 10, spd: 0.03, color: '#4ade80', size: 0.4, xp: 15, score: 10 },
     orc: { hp: 80, atk: 20, spd: 0.02, color: '#ef4444', size: 0.55, xp: 30, score: 25 },
-    skeleton: { hp: 50, atk: 15, spd: 0.03, color: '#e5e7eb', size: 0.45, xp: 20, score: 15 },
-    dark_mage: { hp: 35, atk: 25, spd: 0.025, color: '#a855f7', size: 0.4, xp: 35, score: 30, ranged: true }
+    skeleton: { hp: 50, atk: 15, spd: 0.025, color: '#e5e7eb', size: 0.45, xp: 20, score: 15 }
   };
-
-  const stats = baseStats[type];
+  const s = stats[type];
 
   enemies.push({
     x: ex + 0.5, y: ey + 0.5,
     type: type,
-    hp: stats.hp * waveMult * diffMult,
-    maxHp: stats.hp * waveMult * diffMult,
-    atk: stats.atk * waveMult * diffMult,
-    speed: stats.spd,
-    color: stats.color,
-    size: stats.size,
-    xp: stats.xp,
-    score: stats.score,
-    ranged: stats.ranged || false,
-    attackTimer: 0,
-    attackCooldown: 1.5 + Math.random(),
-    hitFlash: 0,
-    dead: false,
-    deadTimer: 0,
-    animFrame: 0,
-    id: 'enemy_' + Date.now() + '_' + Math.random(),
-    name: type
+    hp: s.hp * (1 + (wave-1)*0.15),
+    maxHp: s.hp * (1 + (wave-1)*0.15),
+    atk: s.atk * (1 + (wave-1)*0.1),
+    speed: s.spd,
+    color: s.color,
+    size: s.size,
+    xp: s.xp,
+    score: s.score,
+    attackTimer: 0, attackCooldown: 1.5 + Math.random(),
+    hitFlash: 0, dead: false, deadTimer: 0, animFrame: 0,
+    id: 'enemy_' + Date.now()
   });
 }
 
 function updateEnemies(dt) {
   for (let i = enemies.length - 1; i >= 0; i--) {
     const e = enemies[i];
-    if (e.dead) {
-      e.deadTimer += dt;
-      if (e.deadTimer > 1.5) { enemies.splice(i, 1); }
-      continue;
-    }
+    if (e.dead) { e.deadTimer += dt; if (e.deadTimer > 1.5) enemies.splice(i, 1); continue; }
 
     e.animFrame += dt * 3;
     e.hitFlash = Math.max(0, e.hitFlash - dt * 5);
 
-    const dx = player.x - e.x;
-    const dy = player.y - e.y;
+    const dx = player.x - e.x, dy = player.y - e.y;
     const dist = Math.hypot(dx, dy);
 
     e.attackTimer -= dt;
-    if (dist < (e.ranged ? 6 : 1.2) && e.attackTimer <= 0) {
+    if (dist < 1.2 && e.attackTimer <= 0) {
       e.attackTimer = e.attackCooldown;
-      if (e.ranged && dist > 1.5) {
-        const angle = Math.atan2(dy, dx);
-        projectiles.push({
-          x: e.x, y: e.y,
-          vx: Math.cos(angle) * 3, vy: Math.sin(angle) * 3,
-          damage: e.atk,
-          color: e.color,
-          life: 2,
-          owner: 'enemy'
-        });
-      } else if (dist < 1.2) {
-        damagePlayer(e.atk);
-        camera.shake = 8;
-        createParticles(player.x, player.y, 8, '#ff4444');
-      }
+      damagePlayer(e.atk);
     }
 
-    if (dist > (e.ranged ? 4 : 0.8)) {
+    if (dist > 0.8) {
       const moveX = (dx / dist) * e.speed;
       const moveY = (dy / dist) * e.speed;
-      const nx = e.x + moveX;
-      const ny = e.y + moveY;
+      const nx = e.x + moveX, ny = e.y + moveY;
       if (map[Math.floor(ny)] && map[Math.floor(ny)][Math.floor(e.x)] === 0) e.y = ny;
       if (map[Math.floor(e.y)] && map[Math.floor(e.y)][Math.floor(nx)] === 0) e.x = nx;
     }
@@ -781,20 +758,18 @@ function updateEnemies(dt) {
 
 function damageEnemy(enemy, damage, isCrit) {
   if (enemy.dead) return;
-  const actualDamage = Math.floor(damage * (1 + Math.random() * 0.3));
-  enemy.hp -= actualDamage;
+  const actual = Math.floor(damage * (1 + Math.random() * 0.3));
+  enemy.hp -= actual;
   enemy.hitFlash = 1;
 
   damageTexts.push({
     x: enemy.x, y: enemy.y - 0.5,
-    text: actualDamage.toString(),
+    text: actual.toString(),
     color: isCrit ? '#ffd700' : '#fff',
-    isCrit: isCrit,
     life: 1
   });
 
   createParticles(enemy.x, enemy.y, 10, enemy.color);
-  camera.shake = isCrit ? 12 : 6;
 
   if (enemy.hp <= 0) {
     enemy.dead = true;
@@ -802,120 +777,40 @@ function damageEnemy(enemy, damage, isCrit) {
     player.score += enemy.score || 10;
     gainXp(enemy.xp || 20);
     createParticles(enemy.x, enemy.y, 25, enemy.color);
-    addKillFeed(enemy.name || enemy.type);
   }
 }
 
 function damagePlayer(amount) {
-  if (player.invincible > 0) return;
-  let actual = amount;
-  if (player.isBlocking) {
-    actual = amount * 0.25;
-    createParticles(player.x, player.y, 5, '#60a5fa');
-  }
-  actual = Math.max(1, actual - player.defense * 0.5);
+  const actual = Math.max(1, amount - player.defense * 0.3);
   player.hp -= actual;
-  player.invincible = 0.4;
-
-  const flash = document.createElement('div');
-  flash.className = 'hit-flash';
-  document.body.appendChild(flash);
-  setTimeout(function() { flash.remove(); }, 150);
-
-  if (player.hp <= 0) {
-    player.hp = 0;
-    gameOver();
-  }
+  if (player.hp <= 0) { player.hp = 0; gameOver(); }
 }
 
-// ============================================================
-//  PLAYER COMBAT
-// ============================================================
-
 function playerAttack() {
-  if (player.isAttacking || player.attackCooldown > 0 || gameState !== 'playing') return;
-
+  if (player.isAttacking || player.attackCooldown > 0) return;
   player.isAttacking = true;
   player.attackTimer = 0.25;
   player.attackCooldown = 0.4;
 
-  const attackRange = 2.5;
-  const attackAngle = Math.PI / 3;
-  let hitSomething = false;
-
-  for (let i = 0; i < enemies.length; i++) {
-    const e = enemies[i];
+  const range = 2.5, angle = Math.PI / 3;
+  for (const e of enemies) {
     if (e.dead) continue;
-
-    const dx = e.x - player.x;
-    const dy = e.y - player.y;
+    const dx = e.x - player.x, dy = e.y - player.y;
     const dist = Math.hypot(dx, dy);
-    const angle = Math.atan2(dy, dx);
-    let angleDiff = angle - player.angle;
-    while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-    while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-
-    if (dist < attackRange && Math.abs(angleDiff) < attackAngle) {
+    const a = Math.atan2(dy, dx);
+    let diff = a - player.angle;
+    while (diff > Math.PI) diff -= Math.PI * 2;
+    while (diff < -Math.PI) diff += Math.PI * 2;
+    if (dist < range && Math.abs(diff) < angle) {
       const isCrit = Math.random() < 0.15;
-      const critMult = isCrit ? 2 : 1;
-      const dmg = player.attack * critMult;
-      damageEnemy(e, dmg, isCrit);
-      hitSomething = true;
-
-      player.combo++;
-      player.comboTimer = 2;
-      updateComboDisplay();
+      damageEnemy(e, player.attack * (isCrit ? 2 : 1), isCrit);
     }
   }
-
-  createParticles(player.x + Math.cos(player.angle) * 1.2, player.y + Math.sin(player.angle) * 1.2, 6, '#00f2ff');
-
-  if (!hitSomething) {
-    player.combo = 0;
-    updateComboDisplay();
-  }
-}
-
-function useSkill() {
-  if (player.skillCooldown > 0 || player.mp < 30 || gameState !== 'playing') return;
-
-  player.mp -= 30;
-  player.skillCooldown = 5;
-
-  const aoeRange = 4;
-  for (let i = 0; i < enemies.length; i++) {
-    const e = enemies[i];
-    if (e.dead) continue;
-    const dist = Math.hypot(e.x - player.x, e.y - player.y);
-    if (dist < aoeRange) {
-      damageEnemy(e, player.attack * 2.5, true);
-    }
-  }
-
-  for (let a = 0; a < Math.PI * 2; a += 0.3) {
-    createParticles(player.x + Math.cos(a) * 2, player.y + Math.sin(a) * 2, 2, '#00f2ff');
-  }
-  camera.shake = 15;
-  showToast('⚡ ضربة البرق!', 'info');
-}
-
-function toggleBlock() {
-  player.isBlocking = !player.isBlocking;
-  const btn = document.getElementById('btn-block');
-  if (player.isBlocking) {
-    btn.classList.add('active');
-    player.speed = 0.025;
-  } else {
-    btn.classList.remove('active');
-    player.speed = 0.055;
-  }
+  createParticles(player.x + Math.cos(player.angle)*1.2, player.y + Math.sin(player.angle)*1.2, 6, '#00f2ff');
 }
 
 function playerJump() {
-  if (!player.jumping && gameState === 'playing') {
-    player.jumping = true;
-    player.jumpVelocity = 0.1;
-  }
+  if (!player.jumping) { player.jumping = true; player.jumpVelocity = 0.1; }
 }
 
 function gainXp(amount) {
@@ -926,14 +821,8 @@ function gainXp(amount) {
     player.maxXp = Math.floor(player.maxXp * 1.3);
     player.maxHp += 15;
     player.hp = player.maxHp;
-    player.maxMp += 10;
-    player.mp = player.maxMp;
     player.attack += 5;
     player.defense += 3;
-
-    const overlay = document.getElementById('levelup-overlay');
-    overlay.classList.add('show');
-    setTimeout(function() { overlay.classList.remove('show'); }, 2000);
     showToast('🎉 مستوى جديد! Lv.' + player.level, 'success');
   }
 }
@@ -950,11 +839,9 @@ function createParticles(x, y, count, color) {
       x: x, y: y,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed - 0.03,
-      life: 1,
-      decay: 0.02 + Math.random() * 0.02,
+      life: 1, decay: 0.02 + Math.random() * 0.02,
       size: 2 + Math.random() * 4,
-      color: color,
-      gravity: 0.001
+      color: color, gravity: 0.001
     });
   }
 }
@@ -962,20 +849,9 @@ function createParticles(x, y, count, color) {
 function updateParticles(dt) {
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vy += p.gravity;
+    p.x += p.vx; p.y += p.vy; p.vy += p.gravity;
     p.life -= p.decay;
     if (p.life <= 0) particles.splice(i, 1);
-  }
-}
-
-function updateDamageTexts(dt) {
-  for (let i = damageTexts.length - 1; i >= 0; i--) {
-    const d = damageTexts[i];
-    d.y -= dt * 0.5;
-    d.life -= dt;
-    if (d.life <= 0) damageTexts.splice(i, 1);
   }
 }
 
@@ -986,76 +862,24 @@ function updateDamageTexts(dt) {
 function updateWave(dt) {
   waveTimer += dt;
   spawnTimer -= dt;
-
   const maxEnemies = 3 + wave * 2;
-  const livingEnemies = enemies.filter(e => !e.dead).length;
-  
-  if (livingEnemies < maxEnemies && spawnTimer <= 0) {
+  const living = enemies.filter(e => !e.dead).length;
+  if (living < maxEnemies && spawnTimer <= 0) {
     spawnEnemy();
-    spawnTimer = 2 / (diffMultipliers[difficulty] || 1);
+    spawnTimer = 2;
   }
-
-  if (livingEnemies === 0 && enemies.length > 0 && waveTimer > 5) {
+  if (living === 0 && enemies.length > 0 && waveTimer > 5) {
     wave++;
     waveTimer = 0;
     spawnTimer = 1;
     document.getElementById('wave-badge').textContent = 'الموجة ' + wave;
     showToast('🌊 الموجة ' + wave + '!', 'warning');
     player.hp = Math.min(player.maxHp, player.hp + 15);
-    player.mp = Math.min(player.maxMp, player.mp + 20);
   }
 }
 
 // ============================================================
-//  UPDATE
-// ============================================================
-
-function updatePlayer(dt) {
-  if (player.jumping) {
-    player.jumpHeight += player.jumpVelocity;
-    player.jumpVelocity -= 0.004;
-    if (player.jumpHeight <= 0) {
-      player.jumpHeight = 0;
-      player.jumping = false;
-    }
-  }
-
-  player.attackCooldown = Math.max(0, player.attackCooldown - dt);
-  player.skillCooldown = Math.max(0, player.skillCooldown - dt);
-  player.invincible = Math.max(0, player.invincible - dt);
-  player.comboTimer = Math.max(0, player.comboTimer - dt);
-  if (player.comboTimer <= 0) {
-    player.combo = 0;
-    updateComboDisplay();
-  }
-
-  player.mp = Math.min(player.maxMp, player.mp + dt * 3);
-
-  let moveX = 0, moveY = 0;
-  const speed = player.speed * (1 + player.jumpHeight * 0.3);
-
-  if (keys['w'] || keys['arrowup'] || touchDirs.up) {
-    moveX += Math.cos(player.angle) * speed;
-    moveY += Math.sin(player.angle) * speed;
-  }
-  if (keys['s'] || keys['arrowdown'] || touchDirs.down) {
-    moveX -= Math.cos(player.angle) * speed;
-    moveY -= Math.sin(player.angle) * speed;
-  }
-  if (keys['a'] || keys['arrowleft'] || touchDirs.left) player.angle -= player.rotSpeed;
-  if (keys['d'] || keys['arrowright'] || touchDirs.right) player.angle += player.rotSpeed;
-
-  const newX = player.x + moveX;
-  const newY = player.y + moveY;
-  if (map[Math.floor(newY)] && map[Math.floor(newY)][Math.floor(player.x)] === 0) player.y = newY;
-  if (map[Math.floor(player.y)] && map[Math.floor(player.y)][Math.floor(newX)] === 0) player.x = newX;
-
-  camera.shake *= 0.9;
-  if (camera.shake < 0.5) camera.shake = 0;
-}
-
-// ============================================================
-//  RENDER
+//  RENDER (2D Raycasting)
 // ============================================================
 
 function castRay(rayAngle) {
@@ -1064,7 +888,6 @@ function castRay(rayAngle) {
   let deltaDistX = Math.abs(1 / (rayX || 0.001));
   let deltaDistY = Math.abs(1 / (rayY || 0.001));
   let stepX, stepY, sideDistX, sideDistY;
-
   if (rayX < 0) { stepX = -1; sideDistX = (player.x - mapX) * deltaDistX; }
   else { stepX = 1; sideDistX = (mapX + 1 - player.x) * deltaDistX; }
   if (rayY < 0) { stepY = -1; sideDistY = (player.y - mapY) * deltaDistY; }
@@ -1089,15 +912,7 @@ function castRay(rayAngle) {
 }
 
 function draw() {
-  const w = canvas.width;
-  const h = canvas.height;
-  const fov = Math.PI / 3;
-
-  const shakeX = (Math.random() - 0.5) * camera.shake;
-  const shakeY = (Math.random() - 0.5) * camera.shake;
-
-  ctx.save();
-  ctx.translate(shakeX, shakeY);
+  const w = canvas.width, h = canvas.height, fov = Math.PI / 3;
 
   // Sky
   const skyGrad = ctx.createLinearGradient(0, 0, 0, h/2);
@@ -1105,13 +920,12 @@ function draw() {
   skyGrad.addColorStop(0.5, '#0a0a1a');
   skyGrad.addColorStop(1, '#12122a');
   ctx.fillStyle = skyGrad;
-  ctx.fillRect(-10, -10, w+20, h/2+10);
+  ctx.fillRect(0, 0, w, h/2);
 
   // Stars
   ctx.fillStyle = '#fff';
   for (let i = 0; i < 60; i++) {
-    const sx = ((i * 137.5) % w);
-    const sy = ((i * 73.3) % (h/2));
+    const sx = (i * 137.5) % w, sy = (i * 73.3) % (h/2);
     const b = 0.3 + Math.sin(time * 0.5 + i) * 0.3;
     ctx.globalAlpha = b;
     ctx.fillRect(sx, sy, 1.5, 1.5);
@@ -1123,7 +937,7 @@ function draw() {
   floorGrad.addColorStop(0, '#0a0a15');
   floorGrad.addColorStop(1, '#151520');
   ctx.fillStyle = floorGrad;
-  ctx.fillRect(-10, h/2, w+20, h/2+10);
+  ctx.fillRect(0, h/2, w, h/2);
 
   // Walls
   const stripWidth = Math.max(2, Math.floor(w / 160));
@@ -1132,17 +946,14 @@ function draw() {
     const hit = castRay(rayAngle);
     let dist = hit.dist * Math.cos(rayAngle - player.angle);
     if (dist < 0.1) dist = 0.1;
-
     const wallH = Math.min(h, h / dist * 0.8);
     const wallTop = Math.max(0, (h - wallH) / 2);
     const wallBot = Math.min(h, (h + wallH) / 2);
     const fog = Math.min(1, dist * 0.04);
-
     const colors = { 1: [35,35,55], 2: [55,30,30], 3: [30,45,55] };
     const c = colors[hit.wallType] || colors[1];
     const shade = hit.side === 0 ? 1 : 0.65;
     const f = 1 - fog;
-
     ctx.fillStyle = 'rgb(' + Math.floor(c[0]*shade*f+8*(1-f)) + ',' + 
                               Math.floor(c[1]*shade*f+8*(1-f)) + ',' + 
                               Math.floor(c[2]*shade*f+12*(1-f)) + ')';
@@ -1150,249 +961,76 @@ function draw() {
   }
 
   // Draw enemies
-  const enemyList = enemies.map(function(e, i) {
-    const dx = e.x - player.x;
-    const dy = e.y - player.y;
-    return { e: e, dist: dx*dx + dy*dy };
-  }).sort(function(a, b) { return b.dist - a.dist; });
+  for (const e of enemies) {
+    if (e.dead && e.deadTimer > 1) continue;
+    const dx = e.x - player.x, dy = e.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 28) continue;
+    const angle = Math.atan2(dy, dx) - player.angle;
+    let a = angle;
+    while (a > Math.PI) a -= Math.PI * 2;
+    while (a < -Math.PI) a += Math.PI * 2;
+    if (Math.abs(a) > fov / 2 + 0.3) continue;
+    const screenX = w / 2 + a / (fov / 2) * (w / 2);
+    const size = Math.min(200, h / dist * 0.7) * (e.size || 0.4);
+    const alpha = e.dead ? Math.max(0, 1 - e.deadTimer) : 1;
 
-  for (let i = 0; i < enemyList.length; i++) {
-    drawEnemy(enemyList[i].e, fov, w, h);
-  }
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(screenX, h/2 + Math.sin(e.animFrame) * 4);
 
-  // Projectiles
-  for (let i = 0; i < projectiles.length; i++) {
-    drawProjectile(projectiles[i], fov, w, h);
-  }
-
-  // Particles
-  drawParticles(fov, w, h);
-
-  // Damage texts
-  drawDamageTexts(fov, w, h);
-
-  // Weapon
-  drawPlayerWeapon(w, h);
-
-  ctx.restore();
-  updateHUD();
-}
-
-function drawEnemy(e, fov, w, h) {
-  if (e.dead && e.deadTimer > 1) return;
-
-  const dx = e.x - player.x;
-  const dy = e.y - player.y;
-  const dist = Math.hypot(dx, dy);
-  if (dist > 28) return;
-
-  const angle = Math.atan2(dy, dx) - player.angle;
-  let a = angle;
-  while (a > Math.PI) a -= Math.PI * 2;
-  while (a < -Math.PI) a += Math.PI * 2;
-
-  if (Math.abs(a) > fov / 2 + 0.3) return;
-
-  const screenX = w / 2 + a / (fov / 2) * (w / 2);
-  const size = Math.min(200, h / dist * 0.7) * (e.size || 0.4);
-  const alpha = e.dead ? Math.max(0, 1 - e.deadTimer) : 1;
-
-  ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.translate(screenX, h/2 + Math.sin(e.animFrame || 0) * 4);
-
-  // Shadow
-  ctx.fillStyle = 'rgba(0,0,0,0.3)';
-  ctx.beginPath();
-  ctx.ellipse(0, size * 0.55, size * 0.4, size * 0.1, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  if (e.hitFlash > 0) {
-    ctx.fillStyle = 'rgba(255,255,255,' + (e.hitFlash * 0.5) + ')';
-    ctx.fillRect(-size, -size, size * 2, size * 2);
-  }
-
-  // Glow
-  const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, size * 1.5);
-  glow.addColorStop(0, e.color + '44');
-  glow.addColorStop(1, e.color + '00');
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Body
-  ctx.fillStyle = e.color;
-  ctx.shadowColor = e.color;
-  ctx.shadowBlur = 20;
-
-  if (e.isPlayerChar) {
-    // Player character with image
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath();
-    ctx.ellipse(0, size * 0.05, size * 0.35, size * 0.45, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, size * 0.55, size * 0.4, size * 0.1, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.beginPath();
-    ctx.arc(0, -size * 0.3, size * 0.25, 0, Math.PI * 2);
-    ctx.fill();
-    
-    const img = loadedImages[e.id] || loadedImages[e.id?.replace('char_', '')];
-    if (img && img.complete) {
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(0, -size * 0.3, size * 0.22, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.drawImage(img, -size * 0.22, -size * 0.52, size * 0.44, size * 0.44);
-      ctx.restore();
+
+    if (e.hitFlash > 0) {
+      ctx.fillStyle = 'rgba(255,255,255,' + (e.hitFlash * 0.5) + ')';
+      ctx.fillRect(-size, -size, size * 2, size * 2);
     }
-  } else if (e.type === 'goblin') {
+
+    ctx.fillStyle = e.color;
+    ctx.shadowColor = e.color;
+    ctx.shadowBlur = 20;
     ctx.beginPath();
     ctx.ellipse(0, size * 0.1, size * 0.35, size * 0.45, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.beginPath();
     ctx.arc(0, -size * 0.3, size * 0.25, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#fff';
     ctx.shadowBlur = 0;
-    ctx.beginPath();
-    ctx.arc(-size * 0.1, -size * 0.35, size * 0.06, 0, Math.PI * 2);
-    ctx.arc(size * 0.1, -size * 0.35, size * 0.06, 0, Math.PI * 2);
-    ctx.fill();
-  } else if (e.type === 'orc') {
-    ctx.beginPath();
-    ctx.ellipse(0, size * 0.05, size * 0.4, size * 0.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(0, -size * 0.35, size * 0.3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ccc';
-    ctx.beginPath();
-    ctx.moveTo(-size * 0.2, -size * 0.5);
-    ctx.lineTo(-size * 0.35, -size * 0.75);
-    ctx.lineTo(-size * 0.1, -size * 0.55);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(size * 0.2, -size * 0.5);
-    ctx.lineTo(size * 0.35, -size * 0.75);
-    ctx.lineTo(size * 0.1, -size * 0.55);
-    ctx.fill();
-  } else if (e.type === 'skeleton') {
-    ctx.fillStyle = '#d1d5db';
-    ctx.beginPath();
-    ctx.ellipse(0, size * 0.1, size * 0.3, size * 0.45, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(0, -size * 0.3, size * 0.22, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.arc(-size * 0.08, -size * 0.32, size * 0.05, 0, Math.PI * 2);
-    ctx.arc(size * 0.08, -size * 0.32, size * 0.05, 0, Math.PI * 2);
-    ctx.fill();
-  } else {
-    ctx.beginPath();
-    ctx.ellipse(0, size * 0.1, size * 0.3, size * 0.4, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(0, -size * 0.3, size * 0.22, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#1f1f3f';
-    ctx.beginPath();
-    ctx.moveTo(0, -size * 0.6);
-    ctx.quadraticCurveTo(size * 0.35, -size * 0.2, size * 0.25, size * 0.1);
-    ctx.quadraticCurveTo(0, -size * 0.1, -size * 0.25, size * 0.1);
-    ctx.quadraticCurveTo(-size * 0.35, -size * 0.2, 0, -size * 0.6);
-    ctx.fill();
-  }
 
-  ctx.shadowBlur = 0;
-
-  // HP bar
-  if (!e.dead) {
-    const barW = size * 0.8;
-    const barH = size * 0.06;
-    const barY = -size * 0.7;
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(-barW/2, barY, barW, barH);
-    ctx.fillStyle = e.hp > e.maxHp * 0.5 ? '#4ade80' : e.hp > e.maxHp * 0.25 ? '#fbbf24' : '#ef4444';
-    ctx.fillRect(-barW/2, barY, barW * (e.hp / e.maxHp), barH);
-  }
-
-  // Name
-  const displayName = e.name || e.type || 'عدو';
-  ctx.fillStyle = e.isPlayerChar ? '#00f2ff' : '#fff';
-  ctx.font = 'bold ' + Math.floor(size * 0.12) + 'px Cairo';
-  ctx.textAlign = 'center';
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = 6;
-  ctx.fillText(displayName.toUpperCase(), 0, -size * 0.75);
-  ctx.shadowBlur = 0;
-
-  ctx.restore();
-}
-
-function drawProjectile(p, fov, w, h) {
-  const dx = p.x - player.x;
-  const dy = p.y - player.y;
-  const dist = Math.hypot(dx, dy);
-  if (dist > 25) return;
-
-  const angle = Math.atan2(dy, dx) - player.angle;
-  let a = angle;
-  while (a > Math.PI) a -= Math.PI * 2;
-  while (a < -Math.PI) a += Math.PI * 2;
-  if (Math.abs(a) > fov / 2) return;
-
-  const screenX = w / 2 + a / (fov / 2) * (w / 2);
-  const size = Math.min(60, h / dist * 0.3);
-
-  ctx.save();
-  ctx.globalAlpha = 0.9;
-  ctx.fillStyle = p.color;
-  ctx.shadowColor = p.color;
-  ctx.shadowBlur = 15;
-  ctx.beginPath();
-  ctx.arc(screenX, h/2, size * 0.15, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.restore();
-}
-
-function drawDamageTexts(fov, w, h) {
-  for (let i = 0; i < damageTexts.length; i++) {
-    const d = damageTexts[i];
-    const dx = d.x - player.x;
-    const dy = d.y - player.y;
-    const dist = Math.hypot(dx, dy);
-    if (dist > 20) continue;
-    const angle = Math.atan2(dy, dx) - player.angle;
-    let a = angle;
-    while (a > Math.PI) a -= Math.PI * 2;
-    while (a < -Math.PI) a += Math.PI * 2;
-    if (Math.abs(a) > fov / 2) continue;
-
-    const screenX = w / 2 + a / (fov / 2) * (w / 2);
-    const screenY = h/2 - (d.y - player.y) * (h / dist) * 0.5;
-
-    const el = document.querySelector('.damage-text[data-id="' + i + '"]');
-    if (!el) {
-      const div = document.createElement('div');
-      div.className = 'damage-text' + (d.isCrit ? ' crit' : '');
-      div.setAttribute('data-id', i);
-      div.textContent = d.text;
-      div.style.left = screenX + 'px';
-      div.style.top = screenY + 'px';
-      div.style.color = d.color;
-      document.body.appendChild(div);
-      setTimeout(function() { div.remove(); }, 1000);
+    if (e.type === 'goblin') {
+      ctx.fillStyle = '#fff';
+      ctx.beginPath();
+      ctx.arc(-size * 0.1, -size * 0.35, size * 0.06, 0, Math.PI * 2);
+      ctx.arc(size * 0.1, -size * 0.35, size * 0.06, 0, Math.PI * 2);
+      ctx.fill();
     }
-  }
-}
 
-function drawParticles(fov, w, h) {
-  for (let i = 0; i < particles.length; i++) {
-    const p = particles[i];
-    const dx = p.x - player.x;
-    const dy = p.y - player.y;
+    // HP bar
+    if (!e.dead) {
+      const barW = size * 0.8, barH = size * 0.06, barY = -size * 0.7;
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fillRect(-barW/2, barY, barW, barH);
+      ctx.fillStyle = e.hp > e.maxHp * 0.5 ? '#4ade80' : e.hp > e.maxHp * 0.25 ? '#fbbf24' : '#ef4444';
+      ctx.fillRect(-barW/2, barY, barW * (e.hp / e.maxHp), barH);
+    }
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold ' + Math.floor(size * 0.12) + 'px Cairo';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 6;
+    ctx.fillText(e.type.toUpperCase(), 0, -size * 0.75);
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
+  }
+
+  // Particles
+  for (const p of particles) {
+    const dx = p.x - player.x, dy = p.y - player.y;
     const dist = Math.hypot(dx, dy);
     if (dist > 20) continue;
     const angle = Math.atan2(dy, dx) - player.angle;
@@ -1400,10 +1038,8 @@ function drawParticles(fov, w, h) {
     while (a > Math.PI) a -= Math.PI * 2;
     while (a < -Math.PI) a += Math.PI * 2;
     if (Math.abs(a) > fov / 2) continue;
-
     const screenX = w / 2 + a / (fov / 2) * (w / 2);
     const screenY = h/2 - (p.y - player.y) * (h / dist) * 0.5;
-
     ctx.globalAlpha = p.life;
     ctx.fillStyle = p.color;
     ctx.shadowColor = p.color;
@@ -1414,101 +1050,91 @@ function drawParticles(fov, w, h) {
   }
   ctx.globalAlpha = 1;
   ctx.shadowBlur = 0;
-}
 
-function drawPlayerWeapon(w, h) {
-  if (!player.isAttacking) return;
+  // Damage texts
+  for (let i = 0; i < damageTexts.length; i++) {
+    const d = damageTexts[i];
+    const dx = d.x - player.x, dy = d.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist > 20) continue;
+    const angle = Math.atan2(dy, dx) - player.angle;
+    let a = angle;
+    while (a > Math.PI) a -= Math.PI * 2;
+    while (a < -Math.PI) a += Math.PI * 2;
+    if (Math.abs(a) > fov / 2) continue;
+    const screenX = w / 2 + a / (fov / 2) * (w / 2);
+    const screenY = h/2 - (d.y - player.y) * (h / dist) * 0.5;
+    ctx.fillStyle = d.color;
+    ctx.font = 'bold 24px Cairo';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 8;
+    ctx.globalAlpha = d.life;
+    ctx.fillText(d.text, screenX, screenY);
+    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0;
+  }
 
-  const centerX = w / 2;
-  const centerY = h / 2 + 80;
-  const progress = (0.25 - player.attackTimer) / 0.25;
+  // Location
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(10, 10, 120, 25);
+  ctx.fillStyle = '#ffd700';
+  ctx.font = 'bold 12px Cairo';
+  ctx.textAlign = 'left';
+  ctx.fillText('⭐ ' + player.score + ' pts', 18, 28);
 
-  ctx.save();
-  ctx.translate(centerX, centerY);
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(10, 38, 120, 18);
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px Cairo';
+  ctx.fillText('💀 ' + player.kills + ' kills', 18, 52);
 
-  const swingAngle = -Math.PI / 2 + progress * Math.PI;
-  ctx.rotate(swingAngle);
-  ctx.shadowColor = '#00f2ff';
-  ctx.shadowBlur = 20;
-  ctx.strokeStyle = '#00f2ff';
-  ctx.lineWidth = 4;
-  ctx.beginPath();
-  ctx.moveTo(0, 0);
-  ctx.lineTo(60, -10);
-  ctx.lineTo(70, 0);
-  ctx.lineTo(60, 10);
-  ctx.closePath();
-  ctx.stroke();
-  ctx.fillStyle = 'rgba(0,242,255,0.3)';
-  ctx.fill();
-
-  ctx.restore();
+  updateHUD();
 }
 
 function updateHUD() {
   document.getElementById('player-hp-bar').style.width = (player.hp / player.maxHp * 100) + '%';
-  document.getElementById('player-mp-bar').style.width = (player.mp / player.maxMp * 100) + '%';
   document.getElementById('player-xp-bar').style.width = (player.xp / player.maxXp * 100) + '%';
   document.getElementById('player-lvl').textContent = 'Lv.' + player.level;
-  document.getElementById('kill-count').textContent = player.kills;
-  document.getElementById('score').textContent = player.score;
+}
 
-  const skillBtn = document.getElementById('btn-skill');
-  if (player.skillCooldown > 0) {
-    skillBtn.disabled = true;
-    const cd = Math.ceil(player.skillCooldown);
-    if (!skillBtn.querySelector('.skill-cd')) {
-      const cdDiv = document.createElement('div');
-      cdDiv.className = 'skill-cd';
-      cdDiv.textContent = cd;
-      skillBtn.appendChild(cdDiv);
-    } else {
-      skillBtn.querySelector('.skill-cd').textContent = cd;
+// ============================================================
+//  MINIMAP
+// ============================================================
+
+function drawMinimap() {
+  if (!minimapCtx) return;
+  const s = minimapCanvas.width / MAP_SIZE;
+  minimapCtx.fillStyle = '#0a0a1a';
+  minimapCtx.fillRect(0, 0, 110, 110);
+
+  for (let y = 0; y < MAP_SIZE; y++) {
+    for (let x = 0; x < MAP_SIZE; x++) {
+      if (map[y][x] !== 0) {
+        const colors = { 1: '#333', 2: '#442222', 3: '#222244' };
+        minimapCtx.fillStyle = colors[map[y][x]] || '#333';
+        minimapCtx.fillRect(x * s, y * s, s, s);
+      }
     }
-  } else {
-    skillBtn.disabled = false;
-    const cd = skillBtn.querySelector('.skill-cd');
-    if (cd) cd.remove();
   }
 
-  let closest = null, closestDist = 4;
-  for (let i = 0; i < enemies.length; i++) {
-    const e = enemies[i];
+  for (const e of enemies) {
     if (e.dead) continue;
-    const d = Math.hypot(e.x - player.x, e.y - player.y);
-    if (d < closestDist) { closestDist = d; closest = e; }
+    minimapCtx.fillStyle = e.color || '#ff4444';
+    minimapCtx.beginPath();
+    minimapCtx.arc(e.x * s, e.y * s, 3, 0, Math.PI * 2);
+    minimapCtx.fill();
   }
 
-  const enemyBar = document.getElementById('enemy-bar');
-  if (closest) {
-    enemyBar.classList.add('show');
-    document.getElementById('enemy-name').textContent = closest.name || closest.type || 'عدو';
-    document.getElementById('enemy-lvl').textContent = 'Lv.' + wave;
-    document.getElementById('enemy-hp-bar').style.width = (closest.hp / closest.maxHp * 100) + '%';
-  } else {
-    enemyBar.classList.remove('show');
-  }
-}
-
-function updateComboDisplay() {
-  const display = document.getElementById('combo-display');
-  if (player.combo >= 3) {
-    display.style.display = 'block';
-    document.getElementById('combo-count').textContent = player.combo + 'x';
-  } else {
-    display.style.display = 'none';
-  }
-}
-
-function addKillFeed(name) {
-  const feed = document.getElementById('kill-feed');
-  const names = { goblin: 'غوبلين', orc: 'أورك', skeleton: 'هيكل عظمي', dark_mage: 'ساحر' };
-  const msg = document.createElement('div');
-  msg.className = 'kill-msg';
-  msg.textContent = '💀 قتلت ' + (names[name] || name);
-  feed.appendChild(msg);
-  setTimeout(function() { msg.remove(); }, 3000);
-  if (feed.children.length > 5) feed.removeChild(feed.firstChild);
+  minimapCtx.fillStyle = '#00f2ff';
+  minimapCtx.beginPath();
+  minimapCtx.arc(player.x * s, player.y * s, 3, 0, Math.PI * 2);
+  minimapCtx.fill();
+  minimapCtx.strokeStyle = '#00f2ff';
+  minimapCtx.beginPath();
+  minimapCtx.moveTo(player.x * s, player.y * s);
+  minimapCtx.lineTo((player.x + Math.cos(player.angle) * 0.6) * s, (player.y + Math.sin(player.angle) * 0.6) * s);
+  minimapCtx.stroke();
 }
 
 // ============================================================
@@ -1516,58 +1142,59 @@ function addKillFeed(name) {
 // ============================================================
 
 function gameLoop() {
-  if (gameState === 'gameover') {
-    requestAnimationFrame(gameLoop);
-    return;
-  }
-
-  if (gameState === 'paused') {
-    draw();
-    requestAnimationFrame(gameLoop);
-    return;
-  }
-
   const now = performance.now();
   const dt = Math.min((now - lastTime) / 1000, 0.05);
   lastTime = now;
   time += dt;
 
-  updatePlayer(dt);
-  updateEnemies(dt);
-
-  // Update projectiles
-  for (let i = projectiles.length - 1; i >= 0; i--) {
-    const p = projectiles[i];
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-    p.life -= dt;
-    if (map[Math.floor(p.y)] && map[Math.floor(p.y)][Math.floor(p.x)] !== 0) {
-      createParticles(p.x, p.y, 5, p.color);
-      projectiles.splice(i, 1);
-      continue;
-    }
-    if (p.owner === 'enemy') {
-      const dist = Math.hypot(p.x - player.x, p.y - player.y);
-      if (dist < 0.6) {
-        damagePlayer(p.damage);
-        createParticles(p.x, p.y, 8, p.color);
-        projectiles.splice(i, 1);
-        continue;
-      }
-    }
-    if (p.life <= 0) projectiles.splice(i, 1);
+  // Update player
+  if (player.jumping) {
+    player.jumpHeight += player.jumpVelocity;
+    player.jumpVelocity -= 0.004;
+    if (player.jumpHeight <= 0) { player.jumpHeight = 0; player.jumping = false; }
   }
 
-  updateParticles(dt);
-  updateDamageTexts(dt);
-  updateWave(dt);
+  player.attackCooldown = Math.max(0, player.attackCooldown - dt);
+
+  let moveX = 0, moveY = 0;
+  const speed = player.speed * (1 + player.jumpHeight * 0.3);
+  if (keys['w'] || keys['arrowup'] || touchDirs.up) {
+    moveX += Math.cos(player.angle) * speed;
+    moveY += Math.sin(player.angle) * speed;
+  }
+  if (keys['s'] || keys['arrowdown'] || touchDirs.down) {
+    moveX -= Math.cos(player.angle) * speed;
+    moveY -= Math.sin(player.angle) * speed;
+  }
+  if (keys['a'] || keys['arrowleft'] || touchDirs.left) player.angle -= player.rotSpeed;
+  if (keys['d'] || keys['arrowright'] || touchDirs.right) player.angle += player.rotSpeed;
+
+  const newX = player.x + moveX, newY = player.y + moveY;
+  if (map[Math.floor(newY)] && map[Math.floor(newY)][Math.floor(player.x)] === 0) player.y = newY;
+  if (map[Math.floor(player.y)] && map[Math.floor(player.y)][Math.floor(newX)] === 0) player.x = newX;
 
   if (player.isAttacking) {
     player.attackTimer -= dt;
     if (player.attackTimer <= 0) player.isAttacking = false;
   }
 
+  // Update game
+  updateEnemies(dt);
+  updateParticles(dt);
+  updateWave(dt);
+
+  // Update damage texts
+  for (let i = damageTexts.length - 1; i >= 0; i--) {
+    damageTexts[i].life -= dt;
+    if (damageTexts[i].life <= 0) damageTexts.splice(i, 1);
+  }
+
   draw();
+
+  if (document.getElementById('minimap-container').style.display === 'block') {
+    drawMinimap();
+  }
+
   requestAnimationFrame(gameLoop);
 }
 
@@ -1576,33 +1203,28 @@ function gameLoop() {
 // ============================================================
 
 function setupTouchControls() {
-  const dpadBtns = document.querySelectorAll('.dpad-btn');
-  dpadBtns.forEach(function(btn) {
+  document.querySelectorAll('.dpad-btn').forEach(function(btn) {
     const dir = btn.getAttribute('data-dir');
-
     btn.addEventListener('touchstart', function(e) {
       e.preventDefault();
       touchDirs[dir] = true;
       btn.style.background = 'rgba(0,242,255,0.12)';
       btn.style.borderColor = 'var(--accent)';
     }, { passive: false });
-
     btn.addEventListener('touchend', function(e) {
       e.preventDefault();
       touchDirs[dir] = false;
       btn.style.background = '';
       btn.style.borderColor = '';
     }, { passive: false });
-
-    btn.addEventListener('touchcancel', function(e) {
+    btn.addEventListener('touchcancel', function() {
       touchDirs[dir] = false;
       btn.style.background = '';
       btn.style.borderColor = '';
     });
-
-    btn.addEventListener('mousedown', function(e) { touchDirs[dir] = true; });
-    btn.addEventListener('mouseup', function(e) { touchDirs[dir] = false; });
-    btn.addEventListener('mouseleave', function(e) { touchDirs[dir] = false; });
+    btn.addEventListener('mousedown', function() { touchDirs[dir] = true; });
+    btn.addEventListener('mouseup', function() { touchDirs[dir] = false; });
+    btn.addEventListener('mouseleave', function() { touchDirs[dir] = false; });
   });
 }
 
@@ -1610,19 +1232,46 @@ window.addEventListener('keydown', function(e) {
   keys[e.key.toLowerCase()] = true;
   if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); playerJump(); }
   if (e.key.toLowerCase() === 'e' || e.key === 'Enter') playerAttack();
-  if (e.key.toLowerCase() === 'q') useSkill();
-  if (e.key.toLowerCase() === 'shift') toggleBlock();
-  if (e.key === 'Escape') togglePause();
-  if (e.key.toLowerCase() === 'm') toggleMinimap();
+  if (e.key === 'Escape') { /* pause */ }
 });
-
-window.addEventListener('keyup', function(e) {
-  keys[e.key.toLowerCase()] = false;
-});
+window.addEventListener('keyup', function(e) { keys[e.key.toLowerCase()] = false; });
 
 // ============================================================
 //  GAME FLOW
 // ============================================================
+
+function toggleMinimap() {
+  const el = document.getElementById('minimap-container');
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+
+function gameOver() {
+  // Simple restart for now
+  showToast('💀 انتهت المعركة!', 'error');
+  restartGame();
+}
+
+function restartGame() {
+  player.hp = player.maxHp;
+  player.x = 2.5; player.y = 2.5;
+  enemies = [];
+  particles = [];
+  damageTexts = [];
+  wave = 1;
+  waveTimer = 0;
+  spawnTimer = 1;
+  document.getElementById('wave-badge').textContent = 'الموجة 1';
+  showToast('🔄 تم إعادة البدء', 'info');
+}
+
+function showToast(message, type) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(function() { toast.remove(); }, 3000);
+}
 
 function enterGame() {
   document.getElementById('start-screen').style.opacity = '0';
@@ -1632,143 +1281,15 @@ function enterGame() {
     document.getElementById('tg-toggle').style.display = 'block';
     resize();
     generateMap();
-    resetGame();
-    gameState = 'playing';
-    lastTime = performance.now();
-    requestAnimationFrame(gameLoop);
+    initThreeJS();
+    gameLoop();
   }, 500);
 
   const savedToken = localStorage.getItem('nardo_bot_token');
   const savedChat = localStorage.getItem('nardo_chat_id');
   if (savedToken) document.getElementById('bot-token').value = savedToken;
   if (savedChat) document.getElementById('chat-id').value = savedChat;
-
   if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-}
-
-function resetGame() {
-  player = {
-    x: 2.5, y: 2.5, angle: 0,
-    speed: 0.055, rotSpeed: 0.04,
-    jumping: false, jumpHeight: 0, jumpVelocity: 0,
-    hp: 100, maxHp: 100,
-    mp: 100, maxMp: 100,
-    xp: 0, maxXp: 100, level: 1,
-    attack: 25, defense: 10,
-    isBlocking: false,
-    isAttacking: false, attackTimer: 0, attackCooldown: 0,
-    skillCooldown: 0,
-    combo: 0, comboTimer: 0,
-    kills: 0, score: 0,
-    invincible: 0
-  };
-  enemies = [];
-  projectiles = [];
-  particles = [];
-  damageTexts = [];
-  wave = 1;
-  waveTimer = 0;
-  spawnTimer = 1;
-  gameState = 'playing';
-
-  document.getElementById('wave-badge').textContent = 'الموجة 1';
-  document.getElementById('gameover-overlay').classList.remove('show');
-  document.getElementById('pause-overlay').classList.remove('show');
-  document.getElementById('kill-feed').innerHTML = '';
-}
-
-function restartGame() {
-  resetGame();
-  generateMap();
-}
-
-function gameOver() {
-  gameState = 'gameover';
-  document.getElementById('go-kills').textContent = player.kills;
-  document.getElementById('go-score').textContent = player.score;
-  document.getElementById('go-wave').textContent = wave;
-  document.getElementById('go-lvl').textContent = player.level;
-  document.getElementById('gameover-overlay').classList.add('show');
-  if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
-}
-
-function togglePause() {
-  if (gameState === 'gameover') return;
-  if (gameState === 'playing') {
-    gameState = 'paused';
-    document.getElementById('pause-overlay').classList.add('show');
-  } else if (gameState === 'paused') {
-    gameState = 'playing';
-    document.getElementById('pause-overlay').classList.remove('show');
-    lastTime = performance.now();
-  }
-}
-
-function toggleMinimap() {
-  const el = document.getElementById('minimap-container');
-  el.style.display = el.style.display === 'block' ? 'none' : 'block';
-}
-
-// ============================================================
-//  MINIMAP
-// ============================================================
-
-function drawMinimap() {
-  const mCanvas = document.getElementById('minimap');
-  if (!mCanvas) return;
-  const mCtx = mCanvas.getContext('2d');
-  const s = mCanvas.width / MAP_SIZE;
-
-  mCtx.fillStyle = '#0a0a1a';
-  mCtx.fillRect(0, 0, mCanvas.width, mCanvas.height);
-
-  for (let y = 0; y < MAP_SIZE; y++) {
-    for (let x = 0; x < MAP_SIZE; x++) {
-      if (map[y][x] !== 0) {
-        const colors = { 1: '#333', 2: '#442222', 3: '#222244' };
-        mCtx.fillStyle = colors[map[y][x]] || '#333';
-        mCtx.fillRect(x * s, y * s, s, s);
-      }
-    }
-  }
-
-  for (let i = 0; i < enemies.length; i++) {
-    const e = enemies[i];
-    if (e.dead) continue;
-    mCtx.fillStyle = e.color || '#ff4444';
-    mCtx.beginPath();
-    mCtx.arc(e.x * s, e.y * s, 3, 0, Math.PI * 2);
-    mCtx.fill();
-  }
-
-  mCtx.fillStyle = '#00f2ff';
-  mCtx.beginPath();
-  mCtx.arc(player.x * s, player.y * s, 3, 0, Math.PI * 2);
-  mCtx.fill();
-  mCtx.strokeStyle = '#00f2ff';
-  mCtx.beginPath();
-  mCtx.moveTo(player.x * s, player.y * s);
-  mCtx.lineTo((player.x + Math.cos(player.angle) * 0.6) * s, (player.y + Math.sin(player.angle) * 0.6) * s);
-  mCtx.stroke();
-}
-
-setInterval(function() {
-  if (document.getElementById('minimap-container').style.display === 'block') {
-    drawMinimap();
-  }
-}, 300);
-
-// ============================================================
-//  TOAST
-// ============================================================
-
-function showToast(message, type) {
-  const container = document.getElementById('toast-container');
-  const toast = document.createElement('div');
-  toast.className = 'toast ' + type;
-  toast.textContent = message;
-  container.appendChild(toast);
-  setTimeout(function() { toast.remove(); }, 3000);
 }
 
 // ============================================================
@@ -1784,7 +1305,8 @@ setTimeout(function() {
   document.getElementById('start-btn').style.display = 'block';
 }, 500);
 
-console.log('⚔️ ناردو معركة v4.2 — جاهزة!');
+console.log('🎮 ناردو 3D v5.0 — شخصيات ثلاثية الأبعاد جاهزة!');
 </script>
 </body>
 </html>
+
