@@ -3,17 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>عارض شخصيتي 3D</title>
+<title>عارض شخصيتي - بوبجي</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.7.1/dist/jszip.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
+/* نفس الستايلات السابقة مع تعديلات بسيطة */
 :root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--info:#60a5fa;--accent:#00f2ff;--gltf:#ff6b6b}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none}
-
 #start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px}
 .start-logo{font-size:42px;font-weight:900;color:var(--gold);animation:float 3s ease-in-out infinite}
 .start-subtitle{font-size:15px;color:#666;text-align:center;max-width:350px}
@@ -22,16 +22,11 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .user-info{color:var(--accent);font-size:13px;background:rgba(0,0,0,0.6);padding:8px 24px;border-radius:30px}
 .version-tag{position:absolute;bottom:15px;font-size:11px;color:#444}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-
 #game-container{position:fixed;inset:0;display:none;background:#050510}
 #game-canvas{display:block;width:100%;height:100%}
-
-/* HUD */
 .hud{position:fixed;top:0;left:0;right:0;padding:6px 10px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:100}
 .player-bar{background:rgba(0,0,0,0.8);border-radius:8px;padding:5px 10px;backdrop-filter:blur(10px);min-width:120px;border:1px solid rgba(0,242,255,0.2)}
 .player-bar .label{font-size:9px;font-weight:700;color:var(--accent);display:flex;justify-content:space-between;margin-bottom:2px}
-
-/* Controls */
 .dpad{position:fixed;bottom:20px;left:16px;width:120px;height:120px;z-index:200}
 .dpad-btn{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .1s}
 .dpad-btn:active{background:rgba(0,242,255,0.12);border-color:var(--accent);color:var(--accent);transform:scale(0.88)}
@@ -39,14 +34,11 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .dpad-down{bottom:0;left:40px}
 .dpad-left{top:40px;left:0}
 .dpad-right{top:40px;right:0}
-
 .action-btns{position:fixed;bottom:20px;right:16px;display:flex;flex-direction:column;align-items:flex-end;gap:6px;z-index:200}
 .action-btn{width:54px;height:54px;border-radius:50%;border:2px solid;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px)}
 .action-btn:active{transform:scale(0.86)}
 .btn-rotate{border-color:var(--gold);color:var(--gold)}
 .btn-zoom{border-color:var(--accent);color:var(--accent);width:46px;height:46px;font-size:16px}
-
-/* TG Dropdown */
 .tg-dropdown{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:12px 16px;z-index:250;min-width:300px;max-width:92%;display:none;backdrop-filter:blur(12px)}
 .tg-dropdown.show{display:block}
 .tg-dropdown .row{display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap}
@@ -58,8 +50,6 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .btn-green{background:var(--success);color:#111}
 .btn-red{background:var(--error);color:#fff}
 .tg-toggle{position:fixed;bottom:155px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none}
-
-/* Skin Selector */
 .skin-selector{position:fixed;bottom:220px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:12px;z-index:230;display:none;backdrop-filter:blur(12px);min-width:200px;max-height:200px;overflow-y:auto}
 .skin-selector.show{display:block}
 .skin-selector h4{color:var(--gold);font-size:12px;margin-bottom:8px;text-align:center}
@@ -70,8 +60,6 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .skin-option .preview img{width:100%;height:100%;object-fit:cover}
 .skin-option .sname{font-size:8px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .skin-option.active{border-color:var(--gold);background:rgba(255,215,0,0.05)}
-
-/* Character Grid */
 .char-grid-panel{position:fixed;bottom:280px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:10px 12px;z-index:230;max-width:92%;width:360px;display:none;max-height:160px;overflow-y:auto}
 .char-grid-panel.show{display:block}
 .char-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px}
@@ -80,14 +68,12 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .char-mini .avatar{width:28px;height:28px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
 .char-mini .avatar img{width:100%;height:100%;object-fit:cover}
 .char-mini .cname{font-size:9px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-
 .toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
 .toast{background:rgba(0,0,0,0.9);padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
 .toast.success{border-color:var(--success);color:var(--success)}
 .toast.error{border-color:var(--error);color:var(--error)}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
-
 .skin-toggle{position:fixed;top:10px;right:60px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;cursor:pointer;display:none}
 .skin-toggle:hover{color:var(--gold)}
 </style>
@@ -96,25 +82,23 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <!-- START -->
 <div id="start-screen">
-  <div class="start-logo">🎮 عارض شخصيتي</div>
-  <div class="start-subtitle">شخصيتك ثلاثية الأبعاد من القناة</div>
+  <div class="start-logo">🎯 بوبجي 3D</div>
+  <div class="start-subtitle">شخصيتك ثلاثية الأبعاد من PUBG</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v8.0 | My 3D Character</div>
+  <div class="version-tag">v9.0 | PUBG Character</div>
 </div>
 
 <!-- GAME -->
 <div id="game-container">
   <div id="game-canvas"></div>
 
-  <!-- HUD -->
   <div class="hud">
     <div class="player-bar">
-      <div class="label"><span>👤 شخصيتي</span><span id="char-name">افتراضي</span></div>
+      <div class="label"><span>🎯 شخصيتي</span><span id="char-name">بوبجي جندي</span></div>
     </div>
   </div>
 
-  <!-- Controls -->
   <div class="dpad" id="dpad">
     <div class="dpad-btn dpad-up" data-dir="up">▲</div>
     <div class="dpad-btn dpad-down" data-dir="down">▼</div>
@@ -126,7 +110,6 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     <button class="action-btn btn-zoom" onclick="resetCamera()">📷</button>
   </div>
 
-  <!-- TG -->
   <button class="tg-toggle" id="tg-toggle" onclick="toggleTG()">📡 القناة</button>
   <div class="tg-dropdown" id="tg-dropdown">
     <div class="row">
@@ -142,27 +125,23 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     <div style="font-size:10px;color:#888;" id="tg-status">⭕ غير متصل</div>
   </div>
 
-  <!-- Skin Selector -->
   <div class="skin-selector" id="skin-selector">
     <h4>🎨 اختر شخصيتك</h4>
     <div class="skin-grid" id="skin-grid"></div>
   </div>
 
-  <!-- Characters Grid -->
   <div class="char-grid-panel" id="char-grid-panel">
     <div class="char-grid" id="char-grid"></div>
   </div>
 
-  <!-- Skin Toggle -->
   <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">👤 شخصيتي</button>
 </div>
 
-<!-- TOAST -->
 <div class="toast-container" id="toast-container"></div>
 
 <script>
 // ============================================================
-//  عارض شخصيتي 3D v8.0
+//  عارض شخصيتي - بوبجي
 // ============================================================
 
 // ============================================================
@@ -216,7 +195,7 @@ function renderSkinSelector() {
 
   const defaultOpt = document.createElement('div');
   defaultOpt.className = 'skin-option' + (!playerSkin ? ' active' : '');
-  defaultOpt.innerHTML = `<div class="preview" style="font-size:20px;">🧑</div><div class="sname">افتراضي</div>`;
+  defaultOpt.innerHTML = `<div class="preview" style="font-size:20px;">🎯</div><div class="sname">بوبجي</div>`;
   defaultOpt.onclick = function() { selectSkin(null); };
   grid.appendChild(defaultOpt);
 
@@ -243,8 +222,8 @@ function selectSkin(char) {
     showToast('✅ تم اختيار ' + char.name, 'success');
   } else {
     playerSkin = null;
-    document.getElementById('char-name').textContent = 'افتراضي';
-    showToast('🧑 المظهر الافتراضي', 'info');
+    document.getElementById('char-name').textContent = 'بوبجي جندي';
+    showToast('🎯 الشخصية الافتراضية (بوبجي)', 'info');
   }
   updatePlayer3D();
   renderSkinSelector();
@@ -487,25 +466,11 @@ function initThreeJS() {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // Grid
   const gridHelper = new THREE.GridHelper(6, 20, 0x333366, 0x222244);
   gridHelper.position.y = 0;
   scene.add(gridHelper);
 
-  // Circle shadow
-  const circleGeo = new THREE.RingGeometry(0.5, 0.8, 32);
-  const circleMat = new THREE.MeshBasicMaterial({
-    color: 0x333366,
-    transparent: true,
-    opacity: 0.3,
-    side: THREE.DoubleSide
-  });
-  const circle = new THREE.Mesh(circleGeo, circleMat);
-  circle.rotation.x = -Math.PI / 2;
-  circle.position.y = 0.01;
-  scene.add(circle);
-
-  // Create default player
+  // Create default PUBG character
   createDefaultPlayer();
 
   window.addEventListener('resize', function() {
@@ -517,6 +482,10 @@ function initThreeJS() {
   animateThree();
 }
 
+// ============================================================
+//  شخصية بوبجي الجميلة
+// ============================================================
+
 function createDefaultPlayer() {
   if (player3D) {
     scene.remove(player3D);
@@ -525,68 +494,118 @@ function createDefaultPlayer() {
 
   const group = new THREE.Group();
 
-  // Body
+  // ===== جسم بوبجي =====
+  
+  // الجذع (سترة عسكرية)
   const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0x00f2ff,
-    roughness: 0.3,
-    metalness: 0.7,
-    emissive: 0x002244,
-    emissiveIntensity: 0.1
+    color: 0x2d4a2d,
+    roughness: 0.6,
+    metalness: 0.3
   });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.5), bodyMat);
-  body.position.y = 0.45;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.8, 0.5), bodyMat);
+  body.position.y = 0.5;
   body.castShadow = true;
   group.add(body);
 
-  // Head
-  const headMat = new THREE.MeshStandardMaterial({
-    color: 0xf5d0b8,
-    roughness: 0.5,
-    emissive: 0x221111,
-    emissiveIntensity: 0.05
+  // حزام الخصر
+  const beltMat = new THREE.MeshStandardMaterial({ color: 0x3d2b1f, roughness: 0.8 });
+  const belt = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.08, 0.55), beltMat);
+  belt.position.y = 0.15;
+  group.add(belt);
+
+  // الرأس (خوذة)
+  const helmetMat = new THREE.MeshStandardMaterial({
+    color: 0x2d4a2d,
+    roughness: 0.4,
+    metalness: 0.6
   });
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), headMat);
-  head.position.y = 1.0;
-  head.castShadow = true;
-  group.add(head);
+  const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.28, 16, 16), helmetMat);
+  helmet.position.y = 1.0;
+  helmet.scale.set(1, 0.9, 1);
+  helmet.castShadow = true;
+  group.add(helmet);
 
-  // Eyes
-  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x333, emissive: 0x004488, emissiveIntensity: 0.2 });
-  const eyeGeo = new THREE.SphereGeometry(0.05, 8, 8);
-  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeL.position.set(-0.1, 1.05, 0.26);
-  group.add(eyeL);
-  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeR.position.set(0.1, 1.05, 0.26);
-  group.add(eyeR);
+  // واقي الوجه (زجاج الخوذة)
+  const visorMat = new THREE.MeshStandardMaterial({
+    color: 0x1a3a5a,
+    roughness: 0.1,
+    metalness: 0.9,
+    transparent: true,
+    opacity: 0.5
+  });
+  const visor = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), visorMat);
+  visor.position.set(0, 0.95, 0.22);
+  visor.scale.set(0.8, 0.6, 0.3);
+  group.add(visor);
 
-  // Arm left
-  const armMat = new THREE.MeshStandardMaterial({ color: 0x00d4ff, roughness: 0.4, metalness: 0.5 });
-  const armGeo = new THREE.BoxGeometry(0.15, 0.6, 0.15);
+  // الذراع الأيسر
+  const armMat = new THREE.MeshStandardMaterial({ color: 0x3d6b3d, roughness: 0.7 });
+  const armGeo = new THREE.BoxGeometry(0.12, 0.55, 0.12);
   const armL = new THREE.Mesh(armGeo, armMat);
-  armL.position.set(-0.42, 0.4, 0);
+  armL.position.set(-0.4, 0.45, 0);
+  armL.rotation.z = 0.2;
   armL.castShadow = true;
   group.add(armL);
 
-  // Arm right
+  // الذراع الأيمن
   const armR = new THREE.Mesh(armGeo, armMat);
-  armR.position.set(0.42, 0.4, 0);
+  armR.position.set(0.4, 0.45, 0);
+  armR.rotation.z = -0.2;
   armR.castShadow = true;
   group.add(armR);
 
-  // Leg left
-  const legMat = new THREE.MeshStandardMaterial({ color: 0x003366, roughness: 0.6, metalness: 0.3 });
-  const legGeo = new THREE.BoxGeometry(0.2, 0.4, 0.2);
+  // السلاح (بندقية)
+  const gunMat = new THREE.MeshStandardMaterial({
+    color: 0x222222,
+    roughness: 0.3,
+    metalness: 0.8
+  });
+  const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.04, 0.6), gunMat);
+  gunBody.position.set(0.52, 0.4, 0.3);
+  gunBody.rotation.x = -0.3;
+  group.add(gunBody);
+
+  const gunStock = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.04, 0.15), gunMat);
+  gunStock.position.set(0.52, 0.4, 0.55);
+  group.add(gunStock);
+
+  // الرجل اليسرى
+  const legMat = new THREE.MeshStandardMaterial({ color: 0x1a3a1a, roughness: 0.8 });
+  const legGeo = new THREE.BoxGeometry(0.18, 0.4, 0.18);
   const legL = new THREE.Mesh(legGeo, legMat);
   legL.position.set(-0.18, 0.2, 0);
   legL.castShadow = true;
   group.add(legL);
 
-  // Leg right
+  // الرجل اليمنى
   const legR = new THREE.Mesh(legGeo, legMat);
   legR.position.set(0.18, 0.2, 0);
   legR.castShadow = true;
   group.add(legR);
+
+  // حذاء
+  const bootMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
+  const bootGeo = new THREE.BoxGeometry(0.2, 0.08, 0.3);
+  const bootL = new THREE.Mesh(bootGeo, bootMat);
+  bootL.position.set(-0.18, 0.02, 0.04);
+  group.add(bootL);
+  const bootR = new THREE.Mesh(bootGeo, bootMat);
+  bootR.position.set(0.18, 0.02, 0.04);
+  group.add(bootR);
+
+  // حقيبة الظهر
+  const bagMat = new THREE.MeshStandardMaterial({ color: 0x1a2a1a, roughness: 0.9 });
+  const bag = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.35, 0.15), bagMat);
+  bag.position.set(0, 0.45, -0.32);
+  group.add(bag);
+
+  // وشاح الرقبة
+  const scarfMat = new THREE.MeshStandardMaterial({ color: 0x4a6a3a, roughness: 0.8 });
+  const scarf = new THREE.Mesh(new THREE.TorusGeometry(0.25, 0.04, 8, 16), scarfMat);
+  scarf.position.set(0, 0.72, 0);
+  scarf.rotation.x = Math.PI / 2;
+  scarf.scale.set(1, 1, 0.5);
+  group.add(scarf);
 
   group.position.set(0, 0, 0);
   scene.add(group);
@@ -596,7 +615,6 @@ function createDefaultPlayer() {
 function updatePlayer3D() {
   if (!player3D) return;
 
-  // Clear old model
   while (player3D.children.length > 0) {
     const child = player3D.children[0];
     player3D.remove(child);
@@ -605,7 +623,6 @@ function updatePlayer3D() {
   }
 
   if (playerSkin && playerSkin.isGLTF && playerSkin.modelUrl && loadedModels[playerSkin.id]) {
-    // Load GLTF model
     const loader = new THREE.GLTFLoader();
     const modelData = loadedModels[playerSkin.id];
     loader.parse(modelData, '', function(gltf) {
@@ -620,7 +637,6 @@ function updatePlayer3D() {
         action.play();
       }
     }, function(err) {
-      console.error('GLTF parse error:', err);
       createDefaultPlayerBody();
     });
   } else if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
@@ -631,26 +647,18 @@ function updatePlayer3D() {
 }
 
 function createDefaultPlayerBody(imageUrl) {
-  // Body
-  const color = imageUrl ? 0x00f2ff : 0x00f2ff;
+  // جذع
   const bodyMat = new THREE.MeshStandardMaterial({
-    color: color,
-    roughness: 0.3,
-    metalness: 0.7
+    color: imageUrl ? 0x2d4a2d : 0x2d4a2d,
+    roughness: 0.6,
+    metalness: 0.3
   });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.9, 0.5), bodyMat);
-  body.position.y = 0.45;
+  const body = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.8, 0.5), bodyMat);
+  body.position.y = 0.5;
   body.castShadow = true;
   player3D.add(body);
 
-  // Head
-  const headMat = new THREE.MeshStandardMaterial({ color: 0xf5d0b8, roughness: 0.5 });
-  const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 12), headMat);
-  head.position.y = 1.0;
-  head.castShadow = true;
-  player3D.add(head);
-
-  // If image available
+  // إذا كانت هناك صورة
   if (imageUrl && loadedImages[playerSkin.id]) {
     const img = loadedImages[playerSkin.id];
     const imgCanvas = document.createElement('canvas');
@@ -663,15 +671,30 @@ function createDefaultPlayerBody(imageUrl) {
     body.material.needsUpdate = true;
   }
 
-  // Eyes
-  const eyeMat = new THREE.MeshStandardMaterial({ color: 0x333 });
-  const eyeGeo = new THREE.SphereGeometry(0.05, 6, 6);
-  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeL.position.set(-0.1, 1.05, 0.26);
-  player3D.add(eyeL);
-  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeR.position.set(0.1, 1.05, 0.26);
-  player3D.add(eyeR);
+  // خوذة
+  const helmetMat = new THREE.MeshStandardMaterial({
+    color: 0x2d4a2d,
+    roughness: 0.4,
+    metalness: 0.6
+  });
+  const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.28, 12, 12), helmetMat);
+  helmet.position.y = 1.0;
+  helmet.scale.set(1, 0.9, 1);
+  helmet.castShadow = true;
+  player3D.add(helmet);
+
+  // واقي الوجه
+  const visorMat = new THREE.MeshStandardMaterial({
+    color: 0x1a3a5a,
+    roughness: 0.1,
+    metalness: 0.9,
+    transparent: true,
+    opacity: 0.5
+  });
+  const visor = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), visorMat);
+  visor.position.set(0, 0.95, 0.22);
+  visor.scale.set(0.8, 0.6, 0.3);
+  player3D.add(visor);
 }
 
 function animateThree() {
@@ -729,24 +752,8 @@ function setupTouchControls() {
   });
 }
 
-// Keyboard controls
-document.addEventListener('keydown', function(e) {
-  if (e.key === 'ArrowUp') touchDirs.up = true;
-  if (e.key === 'ArrowDown') touchDirs.down = true;
-  if (e.key === 'ArrowLeft') touchDirs.left = true;
-  if (e.key === 'ArrowRight') touchDirs.right = true;
-  if (e.key === 'r' || e.key === 'R') toggleRotate();
-  if (e.key === 'c' || e.key === 'C') resetCamera();
-});
-document.addEventListener('keyup', function(e) {
-  if (e.key === 'ArrowUp') touchDirs.up = false;
-  if (e.key === 'ArrowDown') touchDirs.down = false;
-  if (e.key === 'ArrowLeft') touchDirs.left = false;
-  if (e.key === 'ArrowRight') touchDirs.right = false;
-});
-
 // ============================================================
-//  CAMERA ROTATION WITH TOUCH
+//  CAMERA CONTROLS
 // ============================================================
 
 let isDragging = false;
@@ -774,29 +781,6 @@ document.addEventListener('mousemove', function(e) {
 
 document.addEventListener('mouseup', function() { isDragging = false; });
 
-// Touch drag
-let touchStartX = 0, touchStartY = 0;
-document.addEventListener('touchstart', function(e) {
-  if (e.touches.length === 1) {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-  }
-}, { passive: true });
-
-document.addEventListener('touchmove', function(e) {
-  if (e.touches.length === 1) {
-    const dx = e.touches[0].clientX - touchStartX;
-    const dy = e.touches[0].clientY - touchStartY;
-    cameraAngleX += dx * 0.01;
-    cameraAngleY += dy * 0.01;
-    cameraAngleY = Math.max(-1.2, Math.min(1.2, cameraAngleY));
-    updateCameraPosition();
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-  }
-}, { passive: true });
-
-// Zoom with wheel
 document.addEventListener('wheel', function(e) {
   cameraDistance += e.deltaY * 0.002;
   cameraDistance = Math.max(1.5, Math.min(8, cameraDistance));
@@ -856,7 +840,7 @@ setTimeout(function() {
   document.getElementById('start-btn').style.display = 'block';
 }, 500);
 
-console.log('🎮 عارض شخصيتي 3D جاهز!');
+console.log('🎯 بوبجي 3D جاهز!');
 </script>
 </body>
 </html>
