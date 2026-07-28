@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🎬 عالم فيديو 360 - أرضية + سماء + جوانب</title>
+<title>🎬 عالم فيديو 360°</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -16,14 +16,16 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
   background:linear-gradient(135deg,#0a0a2a,#000);
   display:flex; flex-direction:column; justify-content:center; align-items:center; gap:20px;
 }
-.start-logo { font-size:42px; font-weight:900; color:#ffd700; }
+.start-logo { font-size:42px; font-weight:900; color:#ffd700; animation:float 3s ease-in-out infinite; }
+.start-subtitle { font-size:15px; color:#666; text-align:center; max-width:380px; line-height:1.6; }
 .start-btn {
   border:2px solid #00f2ff; color:#00f2ff; padding:16px 50px;
   background:rgba(0,242,255,0.08); border-radius:60px; font-size:20px;
   cursor:pointer; transition:all .3s; font-weight:700; font-family:inherit;
 }
-.start-btn:hover { transform:scale(1.05); background:#00f2ff; color:#000; }
+.start-btn:hover { transform:scale(1.05); background:#00f2ff; color:#000; box-shadow:0 0 50px rgba(0,242,255,0.4); }
 .version-tag { position:absolute; bottom:15px; font-size:11px; color:#444; }
+@keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
 
 #game-container { position:fixed; inset:0; display:none; background:#0a0a1a; }
 #game-canvas { display:block; width:100%; height:100%; }
@@ -67,20 +69,6 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 }
 #controls button:hover { background:rgba(139,92,246,0.3); border-color:#8b5cf6; }
 
-#minimap-frame {
-  position:fixed; top:50px; left:10px;
-  width:120px; height:120px;
-  border:2px solid #ffd700; border-radius:12px;
-  overflow:hidden; pointer-events:none; z-index:90;
-  background:rgba(5,5,16,0.6);
-  display:none;
-}
-#minimap-label {
-  position:fixed; top:52px; left:12px; z-index:91;
-  font-size:8px; color:#ffd700; background:rgba(0,0,0,0.6);
-  padding:1px 6px; border-radius:4px; pointer-events:none; display:none;
-}
-
 .toast-container {
   position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
   z-index:700; display:flex; flex-direction:column; gap:5px; pointer-events:none;
@@ -104,8 +92,7 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
   background:rgba(0,0,0,0.7); padding:4px 16px;
   border-radius:12px; font-size:10px; color:#4ade80;
   z-index:95; border:1px solid rgba(74,222,128,0.2);
-  display:none;
-  text-align:center;
+  display:none; text-align:center;
 }
 </style>
 </head>
@@ -113,29 +100,28 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 
 <!-- شاشة البداية -->
 <div id="start-screen">
-  <div class="start-logo">🌍 عالم فيديو 360</div>
+  <div class="start-logo">🌍 عالم 360°</div>
+  <div class="start-subtitle">قبة فيديو 360 درجة · تحرك بحرية</div>
   <button class="start-btn" onclick="enterApp()">🚀 دخول</button>
-  <div class="version-tag">v49.0 | عالم متكامل</div>
+  <div class="version-tag">v50.0 | 360° Dome</div>
 </div>
 
 <!-- اللعبة -->
 <div id="game-container">
   <canvas id="game-canvas"></canvas>
 
-  <div id="minimap-frame"></div>
-  <div id="minimap-label">🗺️</div>
-
-  <div id="status-bar">🌍 جاري تحميل العالم...</div>
+  <div id="status-bar">🌍 جاري تحميل العالم 360°...</div>
 
   <div class="hud">
-    <div class="title">🌍 عالم 360</div>
+    <div class="title">🌍 360°</div>
     <div class="info" id="char-name">جاري التحميل...</div>
   </div>
 
   <div id="controls">
-    <button onclick="loadTestWorld()">🧪 عالم تجريبي</button>
-    <button onclick="document.getElementById('local-video-input').click()">📁 رفع فيديوهات</button>
-    <button onclick="resetCamera()">🔄 إعادة الكاميرا</button>
+    <button onclick="loadTestWorld()">🧪 عالم 360 تجريبي</button>
+    <button onclick="document.getElementById('local-video-input').click()">📁 رفع فيديو 360</button>
+    <button onclick="toggleMouseControl()">🖱️ تحكم بالماوس</button>
+    <button onclick="resetCamera()">🔄 إعادة</button>
   </div>
 
   <div class="dpad" id="dpad">
@@ -145,14 +131,14 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
     <div class="dpad-btn dpad-right" data-dir="right">▶</div>
   </div>
 
-  <input type="file" id="local-video-input" accept="video/*,.webm,.mp4,.mov" multiple onchange="handleLocalVideos(event)">
+  <input type="file" id="local-video-input" accept="video/*,.webm,.mp4,.mov" onchange="handleLocalVideo(event)">
 </div>
 
 <div class="toast-container" id="toast-container"></div>
 
 <script>
 // ============================================================
-//  🌍 عالم فيديو 360 - أرضية + سماء + جوانب
+//  🌍 قبة فيديو 360 درجة
 // ============================================================
 
 // ============================================================
@@ -160,15 +146,14 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 // ============================================================
 
 let scene, camera, renderer;
-let playerGroup;
-let worldMeshes = {};
-let videoElements = {};
-let videoTextures = {};
-let isWorldReady = false;
+let sphereMesh, playerGroup, playerLight;
+let videoElement = null, videoTexture = null;
+let isReady = false;
+let mouseControl = false;
 
-const WORLD_SIZE = 30;
 const PLAYER_SPEED = 0.08;
 let touchDirs = { up: false, down: false, left: false, right: false };
+let mouseX = 0, mouseY = 0;
 
 function initThree() {
   const canvas = document.getElementById('game-canvas');
@@ -176,404 +161,310 @@ function initThree() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a1a);
 
-  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 2, 5);
-  camera.lookAt(0, 0, 0);
+  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 1.6, 0.1);
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.2;
 
-  // إضاءة
-  const ambient = new THREE.AmbientLight(0x8b5cf6, 0.6);
-  scene.add(ambient);
-
-  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-  dirLight.position.set(5, 10, 5);
-  scene.add(dirLight);
-
-  // لاعب
+  // لاعب (كرة صغيرة للإشارة)
   playerGroup = new THREE.Group();
   scene.add(playerGroup);
 
-  // كرة
-  const bodyGeo = new THREE.SphereGeometry(0.4, 16, 16);
-  const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0x8b5cf6, emissive: 0x6d28d9, emissiveIntensity: 0.3
-  });
-  const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = 0.4;
-  playerGroup.add(body);
+  // كرة صغيرة تحت اللاعب
+  const dotGeo = new THREE.SphereGeometry(0.1, 8, 8);
+  const dotMat = new THREE.MeshBasicMaterial({ color: 0x8b5cf6 });
+  const dot = new THREE.Mesh(dotGeo, dotMat);
+  dot.position.y = 0.05;
+  playerGroup.add(dot);
 
-  // تاج
-  const crownGeo = new THREE.ConeGeometry(0.2, 0.25, 6);
-  const crownMat = new THREE.MeshStandardMaterial({
-    color: 0xffd700, emissive: 0xffa500, emissiveIntensity: 0.2, metalness: 0.9
-  });
-  const crown = new THREE.Mesh(crownGeo, crownMat);
-  crown.position.y = 0.8;
-  playerGroup.add(crown);
-
-  // توهج
-  const glowGeo = new THREE.PlaneGeometry(1.5, 1.5);
-  const glowMat = new THREE.MeshBasicMaterial({
-    color: 0x8b5cf6, transparent: true, opacity: 0.1
-  });
-  const glow = new THREE.Mesh(glowGeo, glowMat);
-  glow.rotation.x = -Math.PI / 2;
-  glow.position.y = 0.02;
-  playerGroup.add(glow);
+  // نقطة ضوئية صغيرة
+  playerLight = new THREE.PointLight(0x8b5cf6, 0.5, 2);
+  playerLight.position.y = 0.1;
+  playerGroup.add(playerLight);
 
   playerGroup.position.set(0, 0, 0);
 
-  setupMinimap();
-  animate();
+  // تحكم بالماوس
+  setupMouseControls();
 
-  document.getElementById('status-bar').style.display = 'block';
-  document.getElementById('status-bar').textContent = '🌍 انتظر تحميل العالم...';
+  animate();
 }
 
 // ============================================================
-//  2. بناء العالم من الفيديو (قبة 360)
+//  2. قبة 360 درجة (Sphere)
 // ============================================================
 
-function buildWorldFromVideos(videos) {
-  // تنظيف العالم القديم
-  Object.values(worldMeshes).forEach(mesh => {
-    if (mesh.parent) mesh.parent.remove(mesh);
-    if (mesh.material) {
-      if (mesh.material.map) mesh.material.map.dispose();
-      mesh.material.dispose();
+function createDome(texture) {
+  // تنظيف القبة القديمة
+  if (sphereMesh) {
+    if (sphereMesh.material) {
+      if (sphereMesh.material.map) sphereMesh.material.map.dispose();
+      sphereMesh.material.dispose();
     }
-    if (mesh.geometry) mesh.geometry.dispose();
+    if (sphereMesh.geometry) sphereMesh.geometry.dispose();
+    scene.remove(sphereMesh);
+  }
+
+  // إنشاء كرة كبيرة (قبة 360)
+  const geometry = new THREE.SphereGeometry(30, 64, 64);
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    side: THREE.BackSide, // نعرض من الداخل
+    transparent: true
   });
-  worldMeshes = {};
 
-  const half = WORLD_SIZE / 2;
+  sphereMesh = new THREE.Mesh(geometry, material);
+  sphereMesh.position.set(0, 0, 0);
+  scene.add(sphereMesh);
 
-  // ===== 1. الأرضية (Floor) =====
-  if (videos.floor) {
-    const floorMat = new THREE.MeshStandardMaterial({
-      map: videos.floor,
-      side: THREE.DoubleSide,
-      roughness: 0.3,
-      metalness: 0.1
-    });
-    const floor = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE), floorMat);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -0.1;
-    floor.receiveShadow = true;
-    scene.add(floor);
-    worldMeshes.floor = floor;
-  }
-
-  // ===== 2. السماء (Sky) =====
-  if (videos.sky) {
-    const skyMat = new THREE.MeshStandardMaterial({
-      map: videos.sky,
-      side: THREE.DoubleSide,
-      roughness: 0.1,
-      metalness: 0.0,
-      transparent: true,
-      opacity: 0.9
-    });
-    const sky = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE * 1.2, WORLD_SIZE * 0.8), skyMat);
-    sky.position.set(0, half * 0.7, -half * 0.3);
-    scene.add(sky);
-    worldMeshes.sky = sky;
-  }
-
-  // ===== 3. الجانب الأيمن =====
-  if (videos.right) {
-    const rightMat = new THREE.MeshStandardMaterial({
-      map: videos.right,
-      side: THREE.DoubleSide,
-      roughness: 0.4,
-      metalness: 0.1
-    });
-    const right = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE * 0.8, WORLD_SIZE * 0.7), rightMat);
-    right.position.set(half * 0.9, half * 0.2, 0);
-    right.rotation.y = -Math.PI / 2;
-    scene.add(right);
-    worldMeshes.right = right;
-  }
-
-  // ===== 4. الجانب الأيسر =====
-  if (videos.left) {
-    const leftMat = new THREE.MeshStandardMaterial({
-      map: videos.left,
-      side: THREE.DoubleSide,
-      roughness: 0.4,
-      metalness: 0.1
-    });
-    const left = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE * 0.8, WORLD_SIZE * 0.7), leftMat);
-    left.position.set(-half * 0.9, half * 0.2, 0);
-    left.rotation.y = Math.PI / 2;
-    scene.add(left);
-    worldMeshes.left = left;
-  }
-
-  // ===== 5. الجانب الأمامي =====
-  if (videos.front) {
-    const frontMat = new THREE.MeshStandardMaterial({
-      map: videos.front,
-      side: THREE.DoubleSide,
-      roughness: 0.4,
-      metalness: 0.1
-    });
-    const front = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE * 0.8, WORLD_SIZE * 0.7), frontMat);
-    front.position.set(0, half * 0.2, -half * 0.9);
-    scene.add(front);
-    worldMeshes.front = front;
-  }
-
-  // ===== 6. الجانب الخلفي =====
-  if (videos.back) {
-    const backMat = new THREE.MeshStandardMaterial({
-      map: videos.back,
-      side: THREE.DoubleSide,
-      roughness: 0.4,
-      metalness: 0.1
-    });
-    const back = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE * 0.8, WORLD_SIZE * 0.7), backMat);
-    back.position.set(0, half * 0.2, half * 0.9);
-    back.rotation.y = Math.PI;
-    scene.add(back);
-    worldMeshes.back = back;
-  }
-
-  // إزالة الشبكة
+  // إزالة الشبكة إن وجدت
   scene.children.forEach(child => {
     if (child.name === 'gridHelper') scene.remove(child);
   });
 
-  isWorldReady = true;
+  isReady = true;
   document.getElementById('status-bar').style.display = 'none';
-  document.getElementById('char-name').textContent = '🌍 عالم جاهز!';
-  showToast('✅ العالم جاهز! تحرك بحرية', 'success');
+  document.getElementById('char-name').textContent = '🌍 عالم 360 جاهز!';
+  showToast('✅ عالم 360° جاهز! تحرك بحرية', 'success');
 }
 
 // ============================================================
-//  3. تحميل الفيديوهات وإنشاء Textures
+//  3. تحميل فيديو 360
 // ============================================================
 
-function createVideoTexture(src) {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement('video');
-    video.muted = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.crossOrigin = 'anonymous';
-    video.src = src;
+function loadVideo360(src, name) {
+  showToast('📥 جاري تحميل فيديو 360...', 'info');
+  document.getElementById('status-bar').style.display = 'block';
+  document.getElementById('status-bar').textContent = '📥 تحميل فيديو 360...';
 
-    video.onloadeddata = function() {
-      video.play().catch(() => {});
-      const texture = new THREE.VideoTexture(video);
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-      resolve({ video, texture });
-    };
-
-    video.onerror = function() {
-      reject(new Error('فشل تحميل الفيديو'));
-    };
-
-    video.load();
-  });
-}
-
-// ============================================================
-//  4. تحميل عالم كامل
-// ============================================================
-
-async function loadWorld(videoSources) {
-  try {
-    document.getElementById('status-bar').style.display = 'block';
-    document.getElementById('status-bar').textContent = '📥 جاري تحميل الفيديوهات...';
-
-    const textures = {};
-
-    // تحميل كل فيديو
-    for (const [key, src] of Object.entries(videoSources)) {
-      if (!src) continue;
-      document.getElementById('status-bar').textContent = `📥 تحميل: ${key}...`;
-      const result = await createVideoTexture(src);
-      textures[key] = result.texture;
-      videoElements[key] = result.video;
-      videoTextures[key] = result.texture;
-    }
-
-    // بناء العالم
-    buildWorldFromVideos(textures);
-    document.getElementById('status-bar').style.display = 'none';
-
-  } catch (err) {
-    console.error(err);
-    document.getElementById('status-bar').textContent = '❌ فشل التحميل';
-    showToast('❌ ' + err.message, 'error');
+  // تنظيف الفيديو القديم
+  if (videoElement) {
+    try { videoElement.pause(); } catch(e) {}
+    videoElement = null;
   }
+  if (videoTexture) {
+    try { videoTexture.dispose(); } catch(e) {}
+    videoTexture = null;
+  }
+
+  videoElement = document.createElement('video');
+  videoElement.muted = true;
+  videoElement.loop = true;
+  videoElement.playsInline = true;
+  videoElement.preload = 'auto';
+  videoElement.crossOrigin = 'anonymous';
+  videoElement.src = src;
+
+  videoElement.onloadeddata = function() {
+    videoElement.play().catch(() => {});
+    videoTexture = new THREE.VideoTexture(videoElement);
+    videoTexture.minFilter = THREE.LinearFilter;
+    videoTexture.magFilter = THREE.LinearFilter;
+    videoTexture.format = THREE.RGBAFormat;
+
+    createDome(videoTexture);
+    document.getElementById('char-name').textContent = '🎬 ' + (name || 'فيديو 360');
+  };
+
+  videoElement.onerror = function() {
+    showToast('❌ فشل تحميل الفيديو', 'error');
+    document.getElementById('status-bar').style.display = 'none';
+  };
+
+  videoElement.load();
 }
 
 // ============================================================
-//  5. عالم تجريبي (فيديوهات وهمية)
+//  4. عالم 360 تجريبي
 // ============================================================
 
 function loadTestWorld() {
-  // إنشاء فيديوهات وهمية لكل اتجاه
-  const videos = {};
+  showToast('🌍 جاري إنشاء عالم 360...', 'info');
+  document.getElementById('status-bar').style.display = 'block';
+  document.getElementById('status-bar').textContent = '🎨 إنشاء عالم 360...';
 
-  const directions = ['floor', 'sky', 'right', 'left', 'front', 'back'];
-  const patterns = [
-    { name: 'floor', colors: ['#0a2e0a', '#1a4a1a'], pattern: 'grid' },
-    { name: 'sky', colors: ['#0a0a3e', '#1a1a6a'], pattern: 'stars' },
-    { name: 'right', colors: ['#2a1a2a', '#4a3a4a'], pattern: 'stripes' },
-    { name: 'left', colors: ['#1a2a3a', '#3a4a5a'], pattern: 'waves' },
-    { name: 'front', colors: ['#3a2a1a', '#5a4a3a'], pattern: 'circles' },
-    { name: 'back', colors: ['#2a0a1a', '#4a1a3a'], pattern: 'dots' }
-  ];
+  // إنشاء Canvas فيديو 360
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
 
-  patterns.forEach((p, i) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 512;
-    const ctx = canvas.getContext('2d');
-    let frame = 0;
+  let frame = 0;
 
-    function draw() {
-      frame++;
-      ctx.clearRect(0, 0, 512, 512);
+  function draw() {
+    frame++;
+    ctx.clearRect(0, 0, 1024, 512);
 
-      const grad = ctx.createLinearGradient(0, 0, 512, 512);
-      grad.addColorStop(0, p.colors[0]);
-      grad.addColorStop(1, p.colors[1]);
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, 512, 512);
+    // سماء متحركة
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, 512);
+    skyGrad.addColorStop(0, `hsl(${200 + frame * 0.1 % 360}, 80%, 30%)`);
+    skyGrad.addColorStop(0.5, `hsl(${220 + frame * 0.05 % 360}, 70%, 20%)`);
+    skyGrad.addColorStop(1, `hsl(${240 + frame * 0.02 % 360}, 60%, 15%)`);
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, 1024, 512);
 
-      // نمط حسب النوع
-      switch(p.pattern) {
-        case 'grid':
-          ctx.strokeStyle = `rgba(255,255,255,0.1)`;
-          ctx.lineWidth = 1;
-          for (let i = 0; i < 512; i += 30) {
-            const offset = (frame * 0.2) % 30;
-            ctx.beginPath(); ctx.moveTo(i + offset, 0); ctx.lineTo(i + offset, 512); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(0, i + offset); ctx.lineTo(512, i + offset); ctx.stroke();
-          }
-          break;
-        case 'stars':
-          for (let i = 0; i < 80; i++) {
-            const x = (i * 17 + frame * 0.5) % 512;
-            const y = (i * 13 + frame * 0.3) % 512;
-            const size = 1 + Math.sin(frame * 0.05 + i) * 2;
-            ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.sin(frame * 0.03 + i) * 0.2})`;
-            ctx.beginPath();
-            ctx.arc(x, y, size, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          break;
-        case 'stripes':
-          for (let i = 0; i < 15; i++) {
-            const x = (i * 40 + frame * 0.5) % 560 - 20;
-            ctx.fillStyle = `hsla(${i * 30 + frame * 0.3}, 80%, 50%, 0.15)`;
-            ctx.fillRect(x, 0, 20, 512);
-          }
-          break;
-        case 'waves':
-          ctx.strokeStyle = `rgba(255,255,255,0.1)`;
-          ctx.lineWidth = 2;
-          for (let y = 0; y < 512; y += 20) {
-            const offset = Math.sin(y * 0.05 + frame * 0.04) * 30;
-            ctx.beginPath();
-            ctx.moveTo(0, y + offset);
-            for (let x = 0; x < 512; x += 5) {
-              const wave = Math.sin(x * 0.05 + y * 0.02 + frame * 0.03) * 20;
-              ctx.lineTo(x, y + wave + offset);
-            }
-            ctx.stroke();
-          }
-          break;
-        case 'circles':
-          for (let i = 0; i < 30; i++) {
-            const x = 256 + Math.sin(i * 1.7 + frame * 0.02) * 200;
-            const y = 256 + Math.cos(i * 2.3 + frame * 0.015) * 200;
-            const r = 10 + Math.sin(frame * 0.03 + i) * 5;
-            ctx.fillStyle = `hsla(${i * 20 + frame % 360}, 80%, 60%, 0.15)`;
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          break;
-        case 'dots':
-          for (let i = 0; i < 40; i++) {
-            const x = (i * 19 + frame * 0.3) % 512;
-            const y = (i * 23 + frame * 0.2) % 512;
-            ctx.fillStyle = `hsla(${i * 15 + frame % 360}, 80%, 60%, 0.2)`;
-            ctx.beginPath();
-            ctx.arc(x, y, 3 + Math.sin(frame * 0.02 + i) * 2, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          break;
-      }
+    // أرضية
+    const groundY = 400;
+    const groundGrad = ctx.createLinearGradient(0, groundY, 0, 512);
+    groundGrad.addColorStop(0, `hsl(${120 + frame * 0.05 % 360}, 70%, 25%)`);
+    groundGrad.addColorStop(0.3, `hsl(${110 + frame * 0.03 % 360}, 60%, 20%)`);
+    groundGrad.addColorStop(1, `hsl(${100 + frame * 0.02 % 360}, 50%, 15%)`);
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(0, groundY, 1024, 512 - groundY);
 
-      requestAnimationFrame(draw);
+    // خط الأفق
+    ctx.strokeStyle = `rgba(139,92,246,0.2)`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, groundY);
+    ctx.lineTo(1024, groundY);
+    ctx.stroke();
+
+    // غيوم متحركة
+    for (let i = 0; i < 8; i++) {
+      const x = (i * 150 + frame * 0.5) % 1100 - 50;
+      const y = 50 + Math.sin(i * 1.3 + frame * 0.01) * 30;
+      const w = 80 + Math.sin(i * 0.7) * 30;
+      const h = 20 + Math.sin(i * 0.5) * 8;
+      ctx.fillStyle = `rgba(255,255,255,${0.05 + Math.sin(frame * 0.01 + i) * 0.02})`;
+      ctx.beginPath();
+      ctx.ellipse(x, y, w, h, 0, 0, Math.PI * 2);
+      ctx.fill();
     }
-    draw();
 
-    const stream = canvas.captureStream(30);
-    const video = document.createElement('video');
-    video.muted = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.srcObject = stream;
-    video.onloadeddata = function() {
-      video.play().catch(() => {});
-    };
-    video.load();
+    // أشجار على الأفق
+    for (let i = 0; i < 20; i++) {
+      const x = (i * 55 + frame * 0.2) % 1100 - 50;
+      const h = 20 + Math.sin(i * 0.7 + frame * 0.01) * 10;
+      ctx.fillStyle = `hsl(${120 + Math.sin(i * 0.5) * 20}, 60%, ${20 + Math.sin(i + frame * 0.02) * 5}%)`;
+      ctx.fillRect(x, groundY - h, 4, h);
+      // تاج الشجرة
+      ctx.beginPath();
+      ctx.arc(x + 2, groundY - h - 5, 8 + Math.sin(i + frame * 0.02) * 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
-    // تخزين الفيديو مؤقتاً
+    // نجوم متلألئة في السماء
+    for (let i = 0; i < 40; i++) {
+      const x = (i * 37 + frame * 0.1) % 1024;
+      const y = (i * 53 + frame * 0.05) % 350;
+      const size = 1 + Math.sin(frame * 0.03 + i * 2) * 1.5;
+      ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.sin(frame * 0.02 + i) * 0.2})`;
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // نقاط ضوئية متحركة (أضواء)
+    for (let i = 0; i < 6; i++) {
+      const x = 200 + i * 120 + Math.sin(frame * 0.02 + i * 1.2) * 30;
+      const y = groundY - 10 + Math.sin(frame * 0.03 + i * 0.8) * 5;
+      const r = 3 + Math.sin(frame * 0.04 + i) * 2;
+      ctx.fillStyle = `hsla(${i * 60 + frame % 360}, 100%, 60%, 0.3)`;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  // تحويل Canvas إلى فيديو
+  const stream = canvas.captureStream(30);
+  const video = document.createElement('video');
+  video.muted = true;
+  video.loop = true;
+  video.playsInline = true;
+  video.srcObject = stream;
+
+  video.onloadeddata = function() {
+    video.play().catch(() => {});
     const url = URL.createObjectURL(stream);
-    videos[p.name] = url;
-    videoElements[p.name] = video;
-  });
-
-  // انتظر قليلاً ثم قم بتحميل العالم
-  setTimeout(() => {
-    const sources = {};
-    Object.keys(videos).forEach(key => {
-      sources[key] = videos[key];
-    });
-    loadWorld(sources);
-  }, 500);
+    loadVideo360(url, 'عالم 360 تجريبي');
+    document.getElementById('status-bar').style.display = 'none';
+  };
+  video.load();
 }
 
 // ============================================================
-//  6. رفع فيديوهات محلية
+//  5. رفع فيديو 360 محلي
 // ============================================================
 
-function handleLocalVideos(event) {
-  const files = event.target.files;
-  if (files.length === 0) return;
-
-  const sources = {};
-  const names = ['floor', 'sky', 'right', 'left', 'front', 'back'];
-  let index = 0;
-
-  for (const file of files) {
-    if (index >= names.length) break;
-    if (!file.type.startsWith('video/')) continue;
-    const url = URL.createObjectURL(file);
-    const key = names[index];
-    sources[key] = url;
-    index++;
-    showToast(`📁 تم رفع: ${key} (${file.name})`, 'info');
+function handleLocalVideo(event) {
+  const file = event.target.files[0];
+  if (!file || !file.type.startsWith('video/')) {
+    showToast('❌ ملف غير صالح', 'error');
+    return;
   }
-
-  if (Object.keys(sources).length > 0) {
-    loadWorld(sources);
-  } else {
-    showToast('❌ لم يتم رفع أي فيديو صالح', 'error');
-  }
+  const blobUrl = URL.createObjectURL(file);
+  loadVideo360(blobUrl, file.name.replace(/\.[^/.]+$/, '') || 'فيديو 360');
   event.target.value = '';
+}
+
+// ============================================================
+//  6. تحكم بالماوس (360)
+// ============================================================
+
+function setupMouseControls() {
+  const canvas = document.getElementById('game-canvas');
+
+  canvas.addEventListener('mousedown', (e) => {
+    mouseControl = true;
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!mouseControl) return;
+    const dx = e.clientX - mouseX;
+    const dy = e.clientY - mouseY;
+    mouseX = e.clientX;
+    mouseY = e.clientY;
+
+    // تدوير القبة (وليس الكاميرا)
+    if (sphereMesh) {
+      sphereMesh.rotation.y += dx * 0.005;
+      sphereMesh.rotation.x += dy * 0.005;
+      sphereMesh.rotation.x = Math.max(-0.5, Math.min(0.5, sphereMesh.rotation.x));
+    }
+  });
+
+  document.addEventListener('mouseup', () => {
+    mouseControl = false;
+  });
+
+  // تحكم باللمس للسحب (360)
+  let touchStartX = 0, touchStartY = 0;
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+  });
+
+  canvas.addEventListener('touchmove', (e) => {
+    if (e.touches.length !== 1) return;
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+
+    if (sphereMesh) {
+      sphereMesh.rotation.y += dx * 0.005;
+      sphereMesh.rotation.x += dy * 0.005;
+      sphereMesh.rotation.x = Math.max(-0.5, Math.min(0.5, sphereMesh.rotation.x));
+    }
+  });
+}
+
+function toggleMouseControl() {
+  mouseControl = !mouseControl;
+  showToast(mouseControl ? '🖱️ تحكم بالماوس مفعل' : '🖱️ تحكم بالماوس معطل', 'info');
 }
 
 // ============================================================
@@ -589,96 +480,42 @@ function updatePlayer() {
 
   const newX = playerGroup.position.x + dx;
   const newZ = playerGroup.position.z + dz;
-  const limit = WORLD_SIZE / 2 - 1;
+  const limit = 4;
 
   playerGroup.position.x = Math.max(-limit, Math.min(limit, newX));
   playerGroup.position.z = Math.max(-limit, Math.min(limit, newZ));
 
-  // تدوير الشخصية
-  if (dx !== 0 || dz !== 0) {
-    playerGroup.rotation.y = Math.atan2(dx, dz);
-  }
-
   // تحديث سرعة الفيديو
   const speed = Math.sqrt(dx*dx + dz*dz);
-  Object.values(videoElements).forEach(video => {
-    if (video) {
-      const videoSpeed = 0.3 + speed * 2;
-      video.playbackRate = Math.min(videoSpeed, 3);
-    }
-  });
+  if (videoElement && isReady) {
+    const videoSpeed = 0.3 + speed * 2;
+    videoElement.playbackRate = Math.min(videoSpeed, 3);
+  }
 }
 
 // ============================================================
-//  8. خريطة مصغرة
-// ============================================================
-
-let minimapCtx;
-
-function setupMinimap() {
-  const minimapFrame = document.getElementById('minimap-frame');
-  const canvas = document.createElement('canvas');
-  canvas.width = 120; canvas.height = 120;
-  minimapFrame.appendChild(canvas);
-  minimapCtx = canvas.getContext('2d');
-}
-
-function updateMinimap() {
-  if (!minimapCtx) return;
-  const ctx = minimapCtx;
-  const w = 120, h = 120;
-
-  ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = 'rgba(10,10,26,0.9)';
-  ctx.fillRect(0, 0, w, h);
-
-  // محيط العالم
-  const scale = w / WORLD_SIZE;
-  ctx.strokeStyle = 'rgba(255,215,0,0.2)';
-  ctx.lineWidth = 1;
-  ctx.strokeRect(0, 0, w, h);
-
-  // اللاعب
-  const px = (playerGroup.position.x + WORLD_SIZE/2) * scale;
-  const py = (playerGroup.position.z + WORLD_SIZE/2) * scale;
-
-  ctx.fillStyle = '#8b5cf6';
-  ctx.shadowColor = '#8b5cf6';
-  ctx.shadowBlur = 6;
-  ctx.beginPath();
-  ctx.arc(px, py, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  // اتجاه اللاعب
-  const angle = playerGroup.rotation.y;
-  ctx.strokeStyle = '#ffd700';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(px, py);
-  ctx.lineTo(px + Math.sin(angle) * 10, py - Math.cos(angle) * 10);
-  ctx.stroke();
-}
-
-// ============================================================
-//  9. كاميرا تتبع اللاعب
+//  8. الكاميرا
 // ============================================================
 
 function updateCamera() {
   const target = playerGroup.position.clone();
   camera.position.x += (target.x - camera.position.x) * 0.05;
-  camera.position.z += (target.z + 4 - camera.position.z) * 0.05;
-  camera.position.y += (2.5 - camera.position.y) * 0.05;
+  camera.position.z += (target.z + 0.1 - camera.position.z) * 0.05;
+  camera.position.y += (1.6 - camera.position.y) * 0.05;
   camera.lookAt(target.x, 0.5, target.z);
 }
 
 function resetCamera() {
-  camera.position.set(0, 2.5, 5);
-  camera.lookAt(0, 0, 0);
+  camera.position.set(0, 1.6, 0.1);
+  camera.lookAt(0, 0.5, 0);
+  if (sphereMesh) {
+    sphereMesh.rotation.set(0, 0, 0);
+  }
+  playerGroup.position.set(0, 0, 0);
 }
 
 // ============================================================
-//  10. حلقة الرسم
+//  9. حلقة الرسم
 // ============================================================
 
 function animate() {
@@ -686,18 +523,16 @@ function animate() {
 
   updatePlayer();
   updateCamera();
-  updateMinimap();
 
-  // تحديث textures
-  Object.values(videoTextures).forEach(texture => {
-    if (texture) texture.needsUpdate = true;
-  });
+  if (videoTexture && isReady) {
+    videoTexture.needsUpdate = true;
+  }
 
   renderer.render(scene, camera);
 }
 
 // ============================================================
-//  11. تحكم
+//  10. تحكم
 // ============================================================
 
 function setupTouchControls() {
@@ -746,14 +581,13 @@ function showToast(message, type) {
 }
 
 // ============================================================
-//  12. الدخول
+//  11. الدخول
 // ============================================================
 
 function enterApp() {
   document.getElementById('start-screen').style.display = 'none';
   document.getElementById('game-container').style.display = 'block';
-  document.getElementById('minimap-frame').style.display = 'block';
-  document.getElementById('minimap-label').style.display = 'block';
+  document.getElementById('status-bar').style.display = 'block';
 
   initThree();
 
@@ -765,26 +599,26 @@ function enterApp() {
     }
   });
 
-  showToast('🌍 اضغط "عالم تجريبي" أو ارفع فيديوهات', 'info');
+  showToast('🌍 اضغط "عالم 360 تجريبي" أو ارفع فيديو', 'info');
 }
 
 // ============================================================
-//  13. بدء التشغيل
+//  12. بدء التشغيل
 // ============================================================
 
 setupTouchControls();
 
-console.log('🌍 v49.0 — عالم فيديو 360 متكامل');
+console.log('🌍 v50.0 — قبة فيديو 360 درجة');
 console.log('📌 المميزات:');
-console.log('  ✅ أرضية فيديو');
-console.log('  ✅ سماء فيديو');
-console.log('  ✅ جوانب فيديو (يمين، يسار، أمام، خلف)');
+console.log('  ✅ قبة 360 درجة (كرة عملاقة)');
+console.log('  ✅ فيديو يحيط بالمستخدم من كل الاتجاهات');
+console.log('  ✅ تحكم بالماوس لتدوير المنظر');
 console.log('  ✅ شخصية تتحرك');
 console.log('  ✅ سرعة الفيديو تتغير مع الحركة');
-console.log('  ✅ خريطة مصغرة');
-console.log('  ✅ رفع فيديوهات محلية');
-console.log('  ✅ عالم تجريبي');
+console.log('  ✅ رفع فيديو 360 محلي');
+console.log('  ✅ عالم 360 تجريبي');
 </script>
 </body>
 </html>
+
 
