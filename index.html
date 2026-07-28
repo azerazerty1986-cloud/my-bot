@@ -104,10 +104,10 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <div id="start-screen">
   <div class="start-logo">🎬 WebM في 3D</div>
-  <div class="start-subtitle">فيديو متحرك على خريطة ثلاثية الأبعاد</div>
+  <div class="start-subtitle">تحميل عبر Blob • حجم كبير</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v33.0 | WebM + حجم كبير</div>
+  <div class="version-tag">v34.0 | Blob Fix</div>
 </div>
 
 <div id="game-container">
@@ -155,7 +155,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  WebM في 3D - مع حجم كبير
+//  WebM في 3D - مع Blob
 // ============================================================
 
 const tg = window.Telegram?.WebApp;
@@ -379,10 +379,10 @@ function animate() {
 }
 
 // ============================================================
-//  عرض WebM مع حجم كبير 🔥
+//  عرض WebM مع Blob 🔥
 // ============================================================
 
-function showWebM(url, name) {
+async function showWebM(url, name) {
   // تنظيف
   if (currentSticker) {
     playerGroup.remove(currentSticker);
@@ -396,48 +396,101 @@ function showWebM(url, name) {
     videoTexture = null;
   }
 
-  videoElement = document.createElement('video');
-  videoElement.muted = true;
-  videoElement.loop = true;
-  videoElement.playsInline = true;
-  videoElement.preload = 'auto';
-  videoElement.crossOrigin = 'anonymous';
-  videoElement.src = url;
+  try {
+    setTGStatus('📥 جاري تحميل الفيديو...', '');
+    showToast('📥 جاري تحميل الفيديو...', 'info');
 
-  videoElement.onloadeddata = function() {
-    videoElement.play().catch(err => console.warn('play error', err));
-    
-    videoTexture = new THREE.VideoTexture(videoElement);
-    videoTexture.minFilter = THREE.LinearFilter;
-    videoTexture.magFilter = THREE.LinearFilter;
-    videoTexture.format = THREE.RGBAFormat;
-    
-    const material = new THREE.SpriteMaterial({ 
-      map: videoTexture, 
-      transparent: true,
-      depthTest: true,
-      depthWrite: false
-    });
-    const sprite = new THREE.Sprite(material);
-    
-    // 🔥🔥🔥 الحجم الكبير 🔥🔥🔥
-    sprite.scale.set(6.5, 6.5, 1);  // حجم كبير
-    sprite.position.y = 2.8;        // ارتفاع مناسب
-    
-    playerGroup.add(sprite);
-    currentSticker = sprite;
-    
-    document.getElementById('char-name').textContent = '🎬 ' + name + ' (كبير)';
-    showToast('✅ WebM جاهز بحجم كبير!', 'success');
-    console.log('✅ WebM عرض بحجم 6.5');
-  };
+    // 1. جلب الملف كـ Blob
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('فشل جلب الملف: ' + response.status);
+    }
 
-  videoElement.onerror = function(e) {
-    console.error('❌ خطأ في الفيديو:', e);
-    showToast('❌ فشل تحميل الفيديو', 'error');
-  };
+    const blob = await response.blob();
+    
+    // التحقق من نوع الملف
+    if (!blob.type.includes('video')) {
+      throw new Error('الملف ليس فيديو: ' + blob.type);
+    }
 
-  videoElement.load();
+    // 2. إنشاء URL محلي
+    const blobUrl = URL.createObjectURL(blob);
+    console.log('✅ تم تحميل الفيديو كـ Blob:', blobUrl);
+
+    // 3. إنشاء عنصر الفيديو
+    videoElement = document.createElement('video');
+    videoElement.muted = true;
+    videoElement.loop = true;
+    videoElement.playsInline = true;
+    videoElement.preload = 'auto';
+    videoElement.src = blobUrl;
+
+    // 4. عند تحميل الفيديو
+    videoElement.onloadeddata = function() {
+      console.log('✅ onloadeddata - الفيديو جاهز');
+      
+      videoElement.play().catch(err => {
+        console.warn('⚠️ play error:', err);
+      });
+      
+      // إنشاء الـ VideoTexture
+      videoTexture = new THREE.VideoTexture(videoElement);
+      videoTexture.minFilter = THREE.LinearFilter;
+      videoTexture.magFilter = THREE.LinearFilter;
+      videoTexture.format = THREE.RGBAFormat;
+      
+      // إنشاء الـ Sprite
+      const material = new THREE.SpriteMaterial({ 
+        map: videoTexture, 
+        transparent: true,
+        depthTest: true,
+        depthWrite: false
+      });
+      const sprite = new THREE.Sprite(material);
+      
+      // حجم كبير
+      sprite.scale.set(7, 7, 1);
+      sprite.position.y = 3.0;
+      
+      playerGroup.add(sprite);
+      currentSticker = sprite;
+      
+      document.getElementById('char-name').textContent = '🎬 ' + name + ' (Blob)';
+      setTGStatus('✅ WebM جاهز!', 'success');
+      showToast('✅ WebM جاهز للعرض!', 'success');
+      console.log('✅ Sprite تم إضافته إلى المشهد');
+    };
+
+    // 5. عند حدوث خطأ
+    videoElement.onerror = function(e) {
+      console.error('❌ خطأ في الفيديو:', e);
+      console.error('❌ videoElement.error:', videoElement.error);
+      
+      let errorMsg = 'فشل تحميل الفيديو';
+      if (videoElement.error) {
+        switch(videoElement.error.code) {
+          case 1: errorMsg = 'تم إلغاء التحميل'; break;
+          case 2: errorMsg = 'خطأ في الشبكة'; break;
+          case 3: errorMsg = 'فشل فك التشفير'; break;
+          case 4: errorMsg = 'تنسيق غير مدعوم'; break;
+        }
+      }
+      
+      showToast('❌ ' + errorMsg, 'error');
+      setTGStatus('❌ ' + errorMsg, 'error');
+      
+      // تحرير الـ URL
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+    };
+
+    // 6. بدء التحميل
+    videoElement.load();
+
+  } catch (err) {
+    console.error('❌ showWebM error:', err);
+    showToast('❌ ' + (err.message || 'خطأ في التحميل'), 'error');
+    setTGStatus('❌ فشل التحميل', 'error');
+  }
 }
 
 // ============================================================
@@ -471,9 +524,8 @@ async function fetchWebM() {
           const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
           const charName = nameMatch ? nameMatch[1].trim() : 'ملصق WebM';
           
-          showWebM(url, charName);
+          await showWebM(url, charName);
           setTGStatus('✅ تم جلب WebM!', 'success');
-          showToast('🎬 WebM جاهز: ' + charName, 'success');
           return;
         }
       }
@@ -740,7 +792,7 @@ setTimeout(() => {
   document.getElementById('start-btn').style.display = 'block';
 }, 400);
 
-console.log('🎬 v33.0 — WebM بحجم كبير');
+console.log('🎬 v34.0 — WebM مع Blob');
 </script>
 </body>
 </html>
