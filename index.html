@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ملصق متحرك 3D + خريطة</title>
+    <title>ملصق متحرك 3D</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
-    <!-- Three.js CDN -->
+    <!-- Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     
     <!-- Lottie و pako -->
@@ -15,11 +15,7 @@
     
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Cairo', sans-serif;
             background: #050510;
@@ -83,13 +79,8 @@
             color: #444;
         }
         @keyframes float {
-            0%,
-            100% {
-                transform: translateY(0);
-            }
-            50% {
-                transform: translateY(-10px);
-            }
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
         }
 
         #game-container {
@@ -104,6 +95,7 @@
             height: 100%;
         }
 
+        /* Minimap */
         #minimap-container {
             position: fixed;
             bottom: 20px;
@@ -177,22 +169,10 @@
             color: #8b5cf6;
             transform: scale(0.88);
         }
-        .dpad-up {
-            top: 0;
-            left: 40px;
-        }
-        .dpad-down {
-            bottom: 0;
-            left: 40px;
-        }
-        .dpad-left {
-            top: 40px;
-            left: 0;
-        }
-        .dpad-right {
-            top: 40px;
-            right: 0;
-        }
+        .dpad-up { top: 0; left: 40px; }
+        .dpad-down { bottom: 0; left: 40px; }
+        .dpad-left { top: 40px; left: 0; }
+        .dpad-right { top: 40px; right: 0; }
 
         .tg-dropdown {
             position: fixed;
@@ -209,9 +189,7 @@
             display: none;
             backdrop-filter: blur(12px);
         }
-        .tg-dropdown.show {
-            display: block;
-        }
+        .tg-dropdown.show { display: block; }
         .tg-dropdown .row {
             display: flex;
             gap: 5px;
@@ -238,22 +216,11 @@
             cursor: pointer;
             font-family: inherit;
         }
-        .btn-accent {
-            background: #00f2ff;
-            color: #111;
-        }
-        .btn-purple {
-            background: #8b5cf6;
-            color: #fff;
-        }
-        .btn-gold {
-            background: #ffd700;
-            color: #111;
-        }
-        .btn-red {
-            background: #f87171;
-            color: #fff;
-        }
+        .btn-accent { background: #00f2ff; color: #111; }
+        .btn-purple { background: #8b5cf6; color: #fff; }
+        .btn-gold { background: #ffd700; color: #111; }
+        .btn-red { background: #f87171; color: #fff; }
+        
         .tg-toggle {
             position: fixed;
             bottom: 155px;
@@ -286,9 +253,7 @@
             max-height: 180px;
             overflow-y: auto;
         }
-        .skin-selector.show {
-            display: block;
-        }
+        .skin-selector.show { display: block; }
         .skin-selector h4 {
             color: #ffd700;
             font-size: 12px;
@@ -356,9 +321,7 @@
             cursor: pointer;
             display: none;
         }
-        .skin-toggle:hover {
-            color: #ffd700;
-        }
+        .skin-toggle:hover { color: #ffd700; }
 
         .toast-container {
             position: fixed;
@@ -379,41 +342,24 @@
             border: 1px solid rgba(255, 255, 255, 0.06);
             animation: toastIn .3s, toastOut .3s 2.7s forwards;
         }
-        .toast.success {
-            border-color: #4ade80;
-            color: #4ade80;
-        }
-        .toast.error {
-            border-color: #f87171;
-            color: #f87171;
-        }
+        .toast.success { border-color: #4ade80; color: #4ade80; }
+        .toast.error { border-color: #f87171; color: #f87171; }
         @keyframes toastIn {
-            from {
-                opacity: 0;
-                transform: translate(-50%, 20px);
-            }
-            to {
-                opacity: 1;
-                transform: translate(-50%, 0);
-            }
+            from { opacity: 0; transform: translate(-50%, 20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
         }
         @keyframes toastOut {
-            from {
-                opacity: 1;
-                transform: translate(-50%, 0);
-            }
-            to {
-                opacity: 0;
-                transform: translate(-50%, -20px);
-            }
+            from { opacity: 1; transform: translate(-50%, 0); }
+            to { opacity: 0; transform: translate(-50%, -20px); }
         }
 
+        /* Canvas مخفي لـ Lottie */
         #lottie-hidden {
             position: fixed;
             left: -9999px;
             top: -9999px;
-            width: 200px;
-            height: 200px;
+            width: 240px;
+            height: 240px;
             pointer-events: none;
             opacity: 0;
             z-index: -1;
@@ -424,15 +370,15 @@
 
     <div id="start-screen">
         <div class="start-logo">🎬 ملصق متحرك 3D</div>
-        <div class="start-subtitle">Three.js • كاميرتان • خريطة مصغرة</div>
+        <div class="start-subtitle">يدعم TGS و WebM • مع خريطة تصغير</div>
         <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
         <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-        <div class="version-tag">v30.0 | 3D + Minimap</div>
+        <div class="version-tag">v31.0 | 3D + TGS + WebM</div>
     </div>
 
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
-        <canvas id="lottie-hidden" width="200" height="200"></canvas>
+        <canvas id="lottie-hidden" width="240" height="240"></canvas>
 
         <div id="minimap-container">
             <canvas id="minimap-canvas" width="160" height="160"></canvas>
@@ -477,7 +423,7 @@
 
     <script>
         // ================================================================
-        //  محرك Three.js 3D + Minimap
+        //  التهيئة
         // ================================================================
 
         const tg = window.Telegram?.WebApp;
@@ -514,31 +460,59 @@
         let playerSkin = null;
         let autoSelectDone = false;
 
-        // Lottie
+        // ================================================================
+        //  Lottie (TGS)
+        // ================================================================
+
         let lottieAnimation = null;
         let lottieCanvas = document.getElementById('lottie-hidden');
         let animationLoaded = false;
 
-        // Video
+        function destroyLottie() {
+            if (lottieAnimation) {
+                try { lottieAnimation.destroy(); } catch (e) {}
+                lottieAnimation = null;
+            }
+            animationLoaded = false;
+        }
+
+        // ================================================================
+        //  Video (WebM)
+        // ================================================================
+
         let videoSticker = null;
         let videoReady = false;
 
-        // ========== Three.js ==========
+        function destroyVideo() {
+            if (videoSticker) {
+                try {
+                    videoSticker.pause();
+                    videoSticker.removeAttribute('src');
+                    videoSticker.load();
+                } catch (e) {}
+                videoSticker = null;
+            }
+            videoReady = false;
+        }
+
+        function destroyAllAnimated() {
+            destroyLottie();
+            destroyVideo();
+        }
+
+        // ================================================================
+        //  Three.js
+        // ================================================================
+
         let scene, camera, renderer;
         let minimapCtx, minimapCanvas;
         let playerGroup;
         let mapSize = 16;
         let tileSize = 2.5;
         let mapData = [];
-        let groundMeshes = [];
         let stickerMesh = null;
-
         let player = { x: 1.5, z: 1.5, speed: 0.06 };
         let touchDirs = { up: false, down: false, left: false, right: false };
-
-        // ================================================================
-        //  بناء الخريطة
-        // ================================================================
 
         function generateMap() {
             mapData = [];
@@ -554,10 +528,6 @@
             for (let z = 1; z <= 3; z++)
                 for (let x = 1; x <= 3; x++) mapData[z][x] = 0;
         }
-
-        // ================================================================
-        //  Three.js
-        // ================================================================
 
         function initThreeJS() {
             const canvas = document.getElementById('game-canvas');
@@ -609,9 +579,6 @@
         }
 
         function buildGround() {
-            groundMeshes.forEach(m => scene.remove(m));
-            groundMeshes = [];
-
             const geo = new THREE.BoxGeometry(tileSize * 0.98, 0.2, tileSize * 0.98);
 
             for (let z = 0; z < mapSize; z++) {
@@ -631,7 +598,6 @@
                     mesh.receiveShadow = true;
                     mesh.castShadow = true;
                     scene.add(mesh);
-                    groundMeshes.push(mesh);
 
                     if (isWall) {
                         const wallMat = new THREE.MeshStandardMaterial({
@@ -645,7 +611,6 @@
                         wallMesh.castShadow = true;
                         wallMesh.receiveShadow = true;
                         scene.add(wallMesh);
-                        groundMeshes.push(wallMesh);
                     }
                 }
             }
@@ -654,7 +619,6 @@
             const grid = new THREE.GridHelper(mapSize * tileSize, mapSize, 0x444477, 0x333355);
             grid.position.set((mapSize - 1) * tileSize / 2, -0.05, (mapSize - 1) * tileSize / 2);
             scene.add(grid);
-            groundMeshes.push(grid);
         }
 
         function createPlayer() {
@@ -707,7 +671,8 @@
         }
 
         // ================================================================
-        //  عرض الملصق في 3D (كـ Plane مع Texture)
+        //  عرض الملصق في 3D
+        //  🔥 هنا الحل: نستخدم VideoTexture و CanvasTexture
         // ================================================================
 
         function updateSticker() {
@@ -721,19 +686,24 @@
 
             // 1. فيديو WebM
             if (videoReady && videoSticker) {
+                // ✅ VideoTexture يعمل مباشرة مع Three.js
                 texture = new THREE.VideoTexture(videoSticker);
                 document.getElementById('char-name').textContent = '🎬 WebM';
+                console.log('✅ عرض فيديو WebM');
             }
             // 2. Lottie TGS
             else if (animationLoaded && lottieCanvas) {
+                // ✅ CanvasTexture من lottieCanvas
                 texture = new THREE.CanvasTexture(lottieCanvas);
                 document.getElementById('char-name').textContent = '🎬 TGS';
+                console.log('✅ عرض TGS');
             }
             // 3. ملصق ثابت
             else if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
                 const img = loadedImages[playerSkin.id];
                 texture = new THREE.CanvasTexture(img);
                 document.getElementById('char-name').textContent = playerSkin.name || 'ملصق';
+                console.log('✅ عرض ملصق ثابت');
             }
 
             if (texture) {
@@ -747,6 +717,8 @@
                 stickerMesh = new THREE.Mesh(geo, mat);
                 stickerMesh.position.set(0, 1.4, 0);
                 playerGroup.add(stickerMesh);
+            } else {
+                console.log('⚠️ لا يوجد ملصق للعرض');
             }
         }
 
@@ -781,7 +753,7 @@
         }
 
         // ================================================================
-        //  خريطة التصغير (Minimap)
+        //  خريطة التصغير
         // ================================================================
 
         function updateMinimap() {
@@ -829,7 +801,6 @@
             ctx.arc(px, py, 6, 0, Math.PI * 2);
             ctx.stroke();
 
-            // إطار
             ctx.strokeStyle = 'rgba(255,215,0,0.2)';
             ctx.lineWidth = 1;
             ctx.strokeRect(0, 0, w, h);
@@ -844,6 +815,8 @@
         //  الحلقة الرئيسية
         // ================================================================
 
+        let frameCount = 0;
+
         function animate() {
             requestAnimationFrame(animate);
 
@@ -856,7 +829,13 @@
             camera.position.z += (targetZ - camera.position.z) * 0.05;
             camera.lookAt(targetX, 0, targetZ);
 
-            updateSticker();
+            // تحديث الملصق كل 10 إطارات (لتوفير الأداء)
+            frameCount++;
+            if (frameCount % 10 === 0) {
+                updateSticker();
+            }
+
+            // تحديث خريطة التصغير
             updateMinimap();
 
             renderer.render(scene, camera);
@@ -938,7 +917,6 @@
         }
 
         function selectSkin(char) {
-            // إزالة الملصق القديم
             if (stickerMesh) {
                 playerGroup.remove(stickerMesh);
                 stickerMesh = null;
@@ -992,33 +970,8 @@
         }
 
         // ================================================================
-        //  جلب متحرك (TGS / WebM)
+        //  جلب متحرك (WebM / TGS)
         // ================================================================
-
-        function destroyLottie() {
-            if (lottieAnimation) {
-                try { lottieAnimation.destroy(); } catch (e) {}
-                lottieAnimation = null;
-            }
-            animationLoaded = false;
-        }
-
-        function destroyVideo() {
-            if (videoSticker) {
-                try {
-                    videoSticker.pause();
-                    videoSticker.removeAttribute('src');
-                    videoSticker.load();
-                } catch (e) {}
-                videoSticker = null;
-            }
-            videoReady = false;
-        }
-
-        function destroyAllAnimated() {
-            destroyLottie();
-            destroyVideo();
-        }
 
         async function fetchAnimatedOrVideo() {
             if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
@@ -1038,7 +991,7 @@
                     const sticker = msg.sticker;
                     const fileId = sticker.file_id;
 
-                    // WebM
+                    // ===== WebM =====
                     if (sticker.is_video) {
                         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' +
                             fileId);
@@ -1056,7 +1009,7 @@
                         }
                     }
 
-                    // TGS
+                    // ===== TGS =====
                     if (sticker.is_animated) {
                         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' +
                             fileId);
@@ -1083,6 +1036,10 @@
             }
         }
 
+        // ================================================================
+        //  عرض WebM
+        // ================================================================
+
         function showVideoSticker(url, name) {
             destroyAllAnimated();
             playerSkin = null;
@@ -1100,9 +1057,11 @@
                 document.getElementById('char-name').textContent = '🎬 ' + name;
                 showToast('✅ الفيديو جاهز للعرض', 'success');
                 updateSticker();
+                console.log('✅ WebM جاهز:', url);
             };
 
-            videoSticker.onerror = () => {
+            videoSticker.onerror = (e) => {
+                console.error('❌ خطأ في تحميل الفيديو:', e);
                 showToast('❌ فشل تحميل الفيديو', 'error');
                 setTGStatus('❌ فشل WebM', 'error');
                 videoReady = false;
@@ -1110,6 +1069,10 @@
 
             videoSticker.load();
         }
+
+        // ================================================================
+        //  عرض TGS (Lottie)
+        // ================================================================
 
         async function showTgsSticker(url, name) {
             destroyAllAnimated();
@@ -1140,18 +1103,21 @@
                     document.getElementById('char-name').textContent = '🎬 ' + name;
                     showToast('✅ TGS جاهز للعرض', 'success');
                     updateSticker();
+                    console.log('✅ TGS جاهز:', url);
                 });
 
+                // احتياطي
                 setTimeout(() => {
                     if (!animationLoaded) {
                         animationLoaded = true;
                         document.getElementById('char-name').textContent = '🎬 ' + name;
                         updateSticker();
+                        console.log('✅ TGS جاهز (بعد المهلة)');
                     }
                 }, 1500);
 
             } catch (err) {
-                console.error('TGS Error:', err);
+                console.error('❌ TGS Error:', err);
                 showToast('❌ فشل TGS: ' + (err.message || 'خطأ'), 'error');
                 setTGStatus('❌ فشل TGS', 'error');
             }
@@ -1327,7 +1293,8 @@
             document.getElementById('start-btn').style.display = 'block';
         }, 400);
 
-        console.log('🎬 v30.0 — 3D + Minimap');
+        console.log('🎬 v31.0 — 3D + TGS + WebM');
+        console.log('📌 انتظر حتى يتم تحميل Three.js ثم اضغط دخول');
     </script>
 </body>
 </html>
