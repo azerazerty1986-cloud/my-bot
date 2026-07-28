@@ -1,54 +1,123 @@
 <!DOCTYPE html>
-<html>
+<html dir="rtl" lang="ar">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🌍 أرضية واقعية 3D</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎬 شخصية + بيئة = عالم متكامل</title>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
 <style>
-body { margin:0; overflow:hidden; background:#000; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#050510; overflow:hidden; font-family:'Arial',sans-serif; }
+
 #info {
-  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-  color:#fff; font-family:Arial; background:rgba(0,0,0,0.7);
-  padding:10px 20px; border-radius:10px; z-index:10;
-  font-size:14px; text-align:center;
+    position:fixed; top:10px; left:50%; transform:translateX(-50%);
+    color:#fff; background:rgba(0,0,0,0.7); padding:6px 18px;
+    border-radius:20px; z-index:100; font-size:12px;
+    border:1px solid rgba(255,215,0,0.2);
+    text-align:center;
 }
+#info span { color:#ffd700; }
+
+#hud {
+    position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+    color:#aaa; font-size:12px; background:rgba(0,0,0,0.6);
+    padding:8px 20px; border-radius:15px; z-index:100;
+    text-align:center; min-width:200px;
+    border:1px solid rgba(255,255,255,0.05);
+}
+
+#controls {
+    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+    display:flex; gap:8px; z-index:100; flex-wrap:wrap; justify-content:center;
+}
+#controls button {
+    background:rgba(139,92,246,0.15); color:#fff; border:1px solid rgba(139,92,246,0.2);
+    padding:6px 14px; border-radius:15px; cursor:pointer; font-size:11px;
+    transition:all 0.3s; font-family:inherit;
+}
+#controls button:hover { background:rgba(139,92,246,0.3); border-color:#8b5cf6; }
+#controls button.active { background:#8b5cf6; color:#fff; border-color:#8b5cf6; }
+
+.dpad {
+    position:fixed; bottom:80px; left:20px;
+    width:100px; height:100px; z-index:200;
+}
+.dpad-btn {
+    position:absolute; width:32px; height:32px;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-size:14px; color:rgba(255,255,255,0.3);
+    cursor:pointer; transition:all .1s;
+}
+.dpad-btn:active {
+    background:rgba(139,92,246,0.2);
+    border-color:#8b5cf6; color:#8b5cf6;
+    transform:scale(0.85);
+}
+.dpad-up { top:0; left:34px; }
+.dpad-down { bottom:0; left:34px; }
+.dpad-left { top:34px; left:0; }
+.dpad-right { top:34px; right:0; }
 </style>
 </head>
 <body>
 
-<div id="info">🌍 أرضية واقعية متحركة</div>
+<div id="info">🎬 <span>شخصية + بيئة</span> · عالم متكامل من الفيديو</div>
+
+<div id="hud">
+    <div>🧑 الشخصية: <span id="charStatus">تتحرك</span></div>
+    <div>🌍 البيئة: <span id="envStatus">نشطة</span></div>
+</div>
+
+<div id="controls">
+    <button class="active" onclick="toggleCharacter()">🧑 إظهار/إخفاء الشخصية</button>
+    <button onclick="toggleEnvironment()">🌍 إظهار/إخفاء البيئة</button>
+    <button onclick="resetView()">🔄 إعادة الكاميرا</button>
+</div>
+
+<div class="dpad" id="dpad">
+    <div class="dpad-btn dpad-up" data-dir="up">▲</div>
+    <div class="dpad-btn dpad-down" data-dir="down">▼</div>
+    <div class="dpad-btn dpad-left" data-dir="left">◀</div>
+    <div class="dpad-btn dpad-right" data-dir="right">▶</div>
+</div>
+
 <canvas id="canvas"></canvas>
 
 <script>
 // ============================================================
-//  🌍 أرضية واقعية مع فيديو
+//  🎬 دمج شخصية فيديو مع بيئة فيديو
 // ============================================================
 
 const canvas = document.getElementById('canvas');
 
-// المشهد
+// ============================================================
+//  1. المشهد الأساسي
+// ============================================================
+
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x0a0a1a);
-scene.fog = new THREE.FogExp2(0x0a0a1a, 0.005);
+scene.fog = new THREE.Fog(0x0a0a1a, 20, 40);
 
-// الكاميرا
-const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 8, 10);
+const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 8, 12);
 camera.lookAt(0, 0, 0);
 
-// الـ Renderer
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-// إضاءة ديناميكية (تتحرك)
+// الإضاءة
 const ambient = new THREE.AmbientLight(0x8b5cf6, 0.4);
 scene.add(ambient);
 
-const mainLight = new THREE.DirectionalLight(0xffeedd, 0.9);
+const mainLight = new THREE.DirectionalLight(0xffeedd, 0.8);
 mainLight.position.set(10, 20, 10);
 mainLight.castShadow = true;
 scene.add(mainLight);
@@ -57,235 +126,459 @@ const fillLight = new THREE.DirectionalLight(0x4466ff, 0.3);
 fillLight.position.set(-10, 10, -10);
 scene.add(fillLight);
 
-// 🎬 إنشاء أرضية فيديو
-function createVideoFloor(url) {
-  const video = document.createElement('video');
-  video.muted = true;
-  video.loop = true;
-  video.playsInline = true;
-  video.crossOrigin = 'anonymous';
-  video.src = url;
-  video.preload = 'auto';
+// ============================================================
+//  2. 🌍 البيئة (أرضية فيديو)
+// ============================================================
 
-  video.onloadeddata = function() {
-    video.play().catch(() => {});
+let floorVideo = null;
+let floorTexture = null;
+let floorMesh = null;
+let environmentVisible = true;
+
+function createVideoEnvironment() {
+    // إنشاء Canvas فيديو وهمي للبيئة
+    const envCanvas = document.createElement('canvas');
+    envCanvas.width = 512;
+    envCanvas.height = 512;
+    const ctx = envCanvas.getContext('2d');
     
-    const texture = new THREE.VideoTexture(video);
-    texture.minFilter = THREE.LinearFilter;
-    texture.magFilter = THREE.LinearFilter;
-    texture.anisotropy = 16;
-
-    // 🔥 أرضية كبيرة تغطي كل شيء
-    const size = 30;
-    const geometry = new THREE.PlaneGeometry(size, size);
-    const material = new THREE.MeshStandardMaterial({
-      map: texture,
-      side: THREE.DoubleSide,
-      roughness: 0.3,
-      metalness: 0.1,
-      emissive: new THREE.Color(0x222244),
-      emissiveIntensity: 0.1
-    });
-
-    const floor = new THREE.Mesh(geometry, material);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = -0.1;
-    floor.receiveShadow = true;
-    scene.add(floor);
-
-    // 🌟 إضافة جسيمات متطايرة (للإحساس بالواقع)
-    createParticles();
-
-    // 🏗️ إضافة بعض الجدران الشفافة
-    createGlassWalls();
-
-    // 🔄 تحديث مستمر للكاميرا
-    animate(floor);
-  };
-
-  video.onerror = function() {
-    document.getElementById('info').innerHTML = '❌ فشل تحميل الفيديو، استخدم أرضية Canvas';
-    createCanvasFloor();
-  };
-
-  video.load();
-}
-
-// 🌟 جسيمات متطايرة (شبيهة بالغبار أو الأضواء)
-function createParticles() {
-  const count = 500;
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
-
-  for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 40;
-    positions[i * 3 + 1] = Math.random() * 15 + 1;
-    positions[i * 3 + 2] = (Math.random() - 0.5) * 40;
+    let frame = 0;
     
-    colors[i * 3] = 0.5 + Math.random() * 0.5;
-    colors[i * 3 + 1] = 0.3 + Math.random() * 0.4;
-    colors[i * 3 + 2] = 0.8 + Math.random() * 0.2;
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-  const material = new THREE.PointsMaterial({
-    size: 0.15,
-    vertexColors: true,
-    transparent: true,
-    opacity: 0.8,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false
-  });
-
-  const particles = new THREE.Points(geometry, material);
-  particles.position.y = 0;
-  scene.add(particles);
-
-  // تخزين للإشارة في animate
-  window.particles = particles;
-}
-
-// 🏗️ جدران شفافة
-function createGlassWalls() {
-  const wallMat = new THREE.MeshStandardMaterial({
-    color: 0x8b5cf6,
-    transparent: true,
-    opacity: 0.15,
-    roughness: 0.1,
-    metalness: 0.8,
-    side: THREE.DoubleSide
-  });
-
-  const size = 14;
-  const positions = [
-    [-size/2, 0, 0, 0.5, 3, size],
-    [size/2, 0, 0, 0.5, 3, size],
-    [0, 0, -size/2, size, 3, 0.5],
-    [0, 0, size/2, size, 3, 0.5]
-  ];
-
-  positions.forEach(([x, y, z, w, h, d]) => {
-    const geo = new THREE.BoxGeometry(w, h, d);
-    const wall = new THREE.Mesh(geo, wallMat);
-    wall.position.set(x, h/2, z);
-    scene.add(wall);
-  });
-}
-
-// 🎨 أرضية Canvas (بديل إذا فشل الفيديو)
-function createCanvasFloor() {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 1024;
-  const ctx = canvas.getContext('2d');
-
-  let frame = 0;
-
-  function animateCanvas() {
-    frame++;
-    // خلفية متحركة
-    const gradient = ctx.createRadialGradient(512, 512, 0, 512, 512, 512);
-    gradient.addColorStop(0, `hsl(${frame % 360}, 80%, 50%)`);
-    gradient.addColorStop(0.5, `hsl(${(frame + 120) % 360}, 70%, 30%)`);
-    gradient.addColorStop(1, `hsl(${(frame + 240) % 360}, 80%, 20%)`);
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, 1024, 1024);
-
-    // دوائر متحركة
-    for (let i = 0; i < 30; i++) {
-      const x = 512 + Math.sin(i * 1.7 + frame * 0.01) * 400;
-      const y = 512 + Math.cos(i * 2.3 + frame * 0.008) * 400;
-      const r = 20 + Math.sin(frame * 0.03 + i) * 10;
-      
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fillStyle = `hsla(${(i * 20 + frame) % 360}, 80%, 60%, 0.3)`;
-      ctx.fill();
+    function drawEnvironment() {
+        frame++;
+        ctx.clearRect(0, 0, 512, 512);
+        
+        // خلفية متحركة (غابة/طبيعة)
+        const grad = ctx.createRadialGradient(256, 256, 0, 256, 256, 256);
+        grad.addColorStop(0, `hsl(${frame * 0.2 % 360}, 70%, 45%)`);
+        grad.addColorStop(0.5, `hsl(${(frame * 0.2 + 120) % 360}, 60%, 30%)`);
+        grad.addColorStop(1, `hsl(${(frame * 0.2 + 240) % 360}, 50%, 20%)`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, 512, 512);
+        
+        // عشب متحرك (خطوط)
+        for (let i = 0; i < 30; i++) {
+            const x = (i * 20 + frame * 0.3) % 540 - 20;
+            const height = 10 + Math.sin(i + frame * 0.05) * 5;
+            ctx.fillStyle = `hsla(${i * 10 + 100}, 90%, ${40 + Math.sin(i + frame * 0.03) * 10}%, 0.15)`;
+            ctx.fillRect(x, 400, 8, height);
+        }
+        
+        // نقاط ضوئية (زهور/نجوم)
+        for (let i = 0; i < 20; i++) {
+            const x = (i * 30 + frame * 0.2) % 540 - 20;
+            const y = 300 + Math.sin(i * 1.5 + frame * 0.01) * 100;
+            const r = 3 + Math.sin(frame * 0.04 + i) * 2;
+            ctx.fillStyle = `hsla(${i * 20 + 50}, 100%, ${60 + Math.sin(frame * 0.03 + i) * 20}%, 0.2)`;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        
+        requestAnimationFrame(drawEnvironment);
     }
-
-    requestAnimationFrame(animateCanvas);
-  }
-  animateCanvas();
-
-  const texture = new THREE.CanvasTexture(canvas);
-  const floorMat = new THREE.MeshStandardMaterial({
-    map: texture,
-    side: THREE.DoubleSide
-  });
-  const floor = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), floorMat);
-  floor.rotation.x = -Math.PI / 2;
-  floor.position.y = -0.1;
-  scene.add(floor);
-
-  createParticles();
-  createGlassWalls();
-  animate(floor);
+    drawEnvironment();
+    
+    // تحويل Canvas إلى فيديو
+    const video = document.createElement('video');
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    const stream = envCanvas.captureStream(30);
+    video.srcObject = stream;
+    
+    video.onloadeddata = function() {
+        video.play().catch(() => {});
+        floorVideo = video;
+        
+        floorTexture = new THREE.VideoTexture(video);
+        floorTexture.minFilter = THREE.LinearFilter;
+        floorTexture.magFilter = THREE.LinearFilter;
+        floorTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+        
+        const geometry = new THREE.PlaneGeometry(24, 24);
+        const material = new THREE.MeshStandardMaterial({
+            map: floorTexture,
+            side: THREE.DoubleSide,
+            transparent: true,
+            roughness: 0.6,
+            metalness: 0.1
+        });
+        
+        floorMesh = new THREE.Mesh(geometry, material);
+        floorMesh.rotation.x = -Math.PI / 2;
+        floorMesh.position.y = -0.1;
+        floorMesh.receiveShadow = true;
+        scene.add(floorMesh);
+        
+        console.log('🌍 البيئة جاهزة');
+    };
+    
+    video.load();
 }
 
 // ============================================================
-//  حلقة الرسم (مع تأثيرات ديناميكية)
+//  3. 🧑 الشخصية (فيديو)
 // ============================================================
 
-function animate(floor) {
-  let time = 0;
+let characterVideo = null;
+let characterTexture = null;
+let characterSprite = null;
+let characterVisible = true;
+let characterGroup = new THREE.Group();
+scene.add(characterGroup);
 
-  function render() {
-    requestAnimationFrame(render);
-    time += 0.01;
-
-    // 🌟 تحريك الجسيمات
-    if (window.particles) {
-      const positions = window.particles.geometry.attributes.position.array;
-      for (let i = 0; i < positions.length; i += 3) {
-        positions[i + 1] += Math.sin(time + i) * 0.002;
-        positions[i] += Math.sin(time * 0.5 + i * 0.1) * 0.001;
-        positions[i + 2] += Math.cos(time * 0.3 + i * 0.1) * 0.001;
-      }
-      window.particles.geometry.attributes.position.needsUpdate = true;
+function createCharacterVideo() {
+    // إنشاء Canvas فيديو وهمي للشخصية
+    const charCanvas = document.createElement('canvas');
+    charCanvas.width = 256;
+    charCanvas.height = 256;
+    const ctx = charCanvas.getContext('2d');
+    
+    let frame = 0;
+    let characterX = 128;
+    let characterY = 128;
+    
+    function drawCharacter() {
+        frame++;
+        ctx.clearRect(0, 0, 256, 256);
+        
+        // خلفية شفافة (Alpha)
+        ctx.clearRect(0, 0, 256, 256);
+        
+        // جسم الشخصية (كرة متحركة)
+        const cx = 128 + Math.sin(frame * 0.02) * 30;
+        const cy = 128 + Math.sin(frame * 0.03) * 20;
+        const radius = 40 + Math.sin(frame * 0.04) * 5;
+        
+        // توهج حول الشخصية
+        const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 1.5);
+        glow.addColorStop(0, 'rgba(139, 92, 246, 0.3)');
+        glow.addColorStop(1, 'rgba(139, 92, 246, 0)');
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius * 1.5, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // الجسم (دائرة)
+        const bodyGrad = ctx.createRadialGradient(cx - 10, cy - 10, 0, cx, cy, radius);
+        bodyGrad.addColorStop(0, `hsl(${(frame * 0.5) % 360}, 80%, 70%)`);
+        bodyGrad.addColorStop(0.5, `hsl(${(frame * 0.5 + 60) % 360}, 80%, 50%)`);
+        bodyGrad.addColorStop(1, `hsl(${(frame * 0.5 + 120) % 360}, 80%, 30%)`);
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // عيون
+        ctx.fillStyle = 'white';
+        ctx.beginPath();
+        ctx.arc(cx - 15, cy - 10, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + 15, cy - 10, 12, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // بؤبؤ العين (يتحرك)
+        const eyeX = Math.sin(frame * 0.02) * 5;
+        const eyeY = Math.sin(frame * 0.015) * 5;
+        ctx.fillStyle = '#2d1b69';
+        ctx.beginPath();
+        ctx.arc(cx - 15 + eyeX, cy - 10 + eyeY, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + 15 + eyeX, cy - 10 + eyeY, 6, 0, Math.PI * 2);
+        ctx.fill();
+        
+        // فم (يبتسم ويتحرك)
+        const mouthY = 20 + Math.sin(frame * 0.05) * 5;
+        ctx.strokeStyle = '#2d1b69';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy + 15, 15, 0.1, Math.PI - 0.1);
+        ctx.stroke();
+        
+        // قبعة صغيرة
+        ctx.fillStyle = '#8b5cf6';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - radius + 5, 30, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(cx - 10, cy - radius - 5, 20, 10);
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(cx - 2, cy - radius - 15, 4, 10);
+        
+        // شعاع ضوئي (يتحرك)
+        const beamAngle = frame * 0.02;
+        ctx.strokeStyle = `hsla(${(frame * 0.3) % 360}, 100%, 70%, 0.3)`;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+            const angle = beamAngle + i * Math.PI / 4;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(
+                cx + Math.cos(angle) * (radius + 20 + Math.sin(frame * 0.03 + i) * 10),
+                cy + Math.sin(angle) * (radius + 20 + Math.sin(frame * 0.03 + i) * 10)
+            );
+            ctx.stroke();
+        }
+        
+        // العلامة المائية (اسم الشخصية)
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.font = '16px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('🧑 بطل', 128, 240);
+        
+        requestAnimationFrame(drawCharacter);
     }
-
-    // 🔄 تحريك الأرضية قليلاً (تأثير واقعي)
-    if (floor) {
-      floor.position.y = Math.sin(time * 0.2) * 0.05;
-      floor.rotation.z = Math.sin(time * 0.1) * 0.005;
-    }
-
-    // 💡 إضاءة متحركة
-    mainLight.position.x = Math.sin(time * 0.1) * 15;
-    mainLight.position.z = Math.cos(time * 0.1) * 15;
-
-    // 🎥 كاميرا تدور ببطء حول المركز
-    const radius = 12;
-    const angle = time * 0.03;
-    camera.position.x = Math.sin(angle) * radius;
-    camera.position.z = Math.cos(angle) * radius;
-    camera.lookAt(0, 0, 0);
-
-    renderer.render(scene, camera);
-  }
-
-  render();
+    drawCharacter();
+    
+    // تحويل Canvas إلى فيديو
+    const video = document.createElement('video');
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    const stream = charCanvas.captureStream(30);
+    video.srcObject = stream;
+    
+    video.onloadeddata = function() {
+        video.play().catch(() => {});
+        characterVideo = video;
+        
+        characterTexture = new THREE.VideoTexture(video);
+        characterTexture.minFilter = THREE.LinearFilter;
+        characterTexture.magFilter = THREE.LinearFilter;
+        characterTexture.format = THREE.RGBAFormat;
+        
+        // 🔥 المفتاح: استخدام SpriteMaterial لعرض الشخصية مع خلفية شفافة
+        const material = new THREE.SpriteMaterial({
+            map: characterTexture,
+            transparent: true,
+            depthTest: true,
+            depthWrite: false,
+            blending: THREE.NormalBlending,
+            side: THREE.DoubleSide
+        });
+        
+        characterSprite = new THREE.Sprite(material);
+        characterSprite.scale.set(3, 3, 1);
+        characterSprite.position.y = 1.5;
+        characterGroup.add(characterSprite);
+        
+        console.log('🧑 الشخصية جاهزة');
+    };
+    
+    video.load();
 }
 
 // ============================================================
-//  البدء
+//  4. 🏃 حركة الشخصية
 // ============================================================
 
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+let moveX = 0, moveZ = 0;
+const MOVE_SPEED = 0.06;
+
+// لوحة المفاتيح
+const keys = {};
+
+document.addEventListener('keydown', (e) => {
+    keys[e.key] = true;
+    updateMovement();
 });
 
-// 🌊 تحميل فيديو أرضية واقعية
-// استخدام فيديو تجريبي
-const testVideo = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm';
-createVideoFloor(testVideo);
+document.addEventListener('keyup', (e) => {
+    keys[e.key] = false;
+    updateMovement();
+});
 
-console.log('🌍 أرضية واقعية 3D - جاهزة!');
+function updateMovement() {
+    moveX = 0;
+    moveZ = 0;
+    
+    // 🔄 وضع عربي (يمين ← يسار)
+    if (keys['ArrowUp'] || keys['w'] || keys['W']) moveZ = 1;
+    if (keys['ArrowDown'] || keys['s'] || keys['S']) moveZ = -1;
+    if (keys['ArrowLeft'] || keys['a'] || keys['A']) moveX = 1;
+    if (keys['ArrowRight'] || keys['d'] || keys['D']) moveX = -1;
+    
+    if (moveX !== 0 && moveZ !== 0) {
+        moveX *= 0.707;
+        moveZ *= 0.707;
+    }
+}
+
+// D-Pad
+function setupTouchControls() {
+    document.querySelectorAll('.dpad-btn').forEach(btn => {
+        const dir = btn.getAttribute('data-dir');
+        btn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            switch(dir) {
+                case 'up': moveZ = 1; break;
+                case 'down': moveZ = -1; break;
+                case 'left': moveX = 1; break;
+                case 'right': moveX = -1; break;
+            }
+            if (moveX !== 0 && moveZ !== 0) {
+                moveX *= 0.707;
+                moveZ *= 0.707;
+            }
+            btn.style.background = 'rgba(139,92,246,0.2)';
+            btn.style.borderColor = '#8b5cf6';
+        }, { passive: false });
+        btn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            switch(dir) {
+                case 'up': if (moveZ === 1 || moveZ === -1) moveZ = 0; break;
+                case 'down': if (moveZ === 1 || moveZ === -1) moveZ = 0; break;
+                case 'left': if (moveX === 1 || moveX === -1) moveX = 0; break;
+                case 'right': if (moveX === 1 || moveX === -1) moveX = 0; break;
+            }
+            btn.style.background = '';
+            btn.style.borderColor = '';
+        }, { passive: false });
+        btn.addEventListener('touchcancel', () => {
+            moveX = 0; moveZ = 0;
+            btn.style.background = '';
+            btn.style.borderColor = '';
+        });
+    });
+}
+
+function updateCharacter() {
+    const dx = moveX * MOVE_SPEED;
+    const dz = moveZ * MOVE_SPEED;
+    
+    const newX = characterGroup.position.x + dx;
+    const newZ = characterGroup.position.z + dz;
+    const limit = 10;
+    
+    if (Math.abs(newX) < limit) {
+        characterGroup.position.x = newX;
+    }
+    if (Math.abs(newZ) < limit) {
+        characterGroup.position.z = newZ;
+    }
+    
+    // تدوير الشخصية
+    if (moveX !== 0 || moveZ !== 0) {
+        const angle = Math.atan2(moveX, moveZ);
+        characterGroup.rotation.y = angle;
+        document.getElementById('charStatus').textContent = '🏃 تتحرك';
+    } else {
+        document.getElementById('charStatus').textContent = '🧍 واقفة';
+    }
+    
+    // تحديث سرعة الفيديو
+    const speed = Math.sqrt(moveX * moveX + moveZ * moveZ);
+    const videoSpeed = 0.5 + speed * 2;
+    if (characterVideo) {
+        characterVideo.playbackRate = Math.min(videoSpeed, 4);
+    }
+}
+
+// ============================================================
+//  5. الكاميرا
+// ============================================================
+
+let cameraAngle = 0;
+let cameraRadius = 12;
+
+function updateCamera() {
+    const target = characterGroup.position.clone();
+    cameraAngle += 0.005;
+    
+    const x = target.x + Math.sin(cameraAngle) * cameraRadius;
+    const z = target.z + Math.cos(cameraAngle) * cameraRadius;
+    
+    camera.position.x += (x - camera.position.x) * 0.05;
+    camera.position.z += (z - camera.position.z) * 0.05;
+    camera.position.y = 8 + Math.sin(cameraAngle * 2) * 0.5;
+    
+    camera.lookAt(target.x, 0, target.z);
+}
+
+// ============================================================
+//  6. التحكم في إظهار/إخفاء العناصر
+// ============================================================
+
+function toggleCharacter() {
+    characterVisible = !characterVisible;
+    if (characterGroup) {
+        characterGroup.visible = characterVisible;
+    }
+    document.querySelector('#controls button:first-child').textContent = 
+        characterVisible ? '🧑 إخفاء الشخصية' : '🧑 إظهار الشخصية';
+}
+
+function toggleEnvironment() {
+    environmentVisible = !environmentVisible;
+    if (floorMesh) {
+        floorMesh.visible = environmentVisible;
+    }
+    document.querySelector('#controls button:nth-child(2)').textContent = 
+        environmentVisible ? '🌍 إخفاء البيئة' : '🌍 إظهار البيئة';
+}
+
+function resetView() {
+    cameraAngle = 0;
+    cameraRadius = 12;
+    camera.position.set(0, 8, 12);
+    camera.lookAt(0, 0, 0);
+    characterGroup.position.set(0, 0, 0);
+}
+
+// ============================================================
+//  7. حلقة الرسم
+// ============================================================
+
+function animate() {
+    requestAnimationFrame(animate);
+    
+    // تحديث الشخصية
+    updateCharacter();
+    
+    // تحديث الكاميرا
+    updateCamera();
+    
+    // تحديث الفيديوهات
+    if (floorTexture) {
+        floorTexture.needsUpdate = true;
+    }
+    if (characterTexture) {
+        characterTexture.needsUpdate = true;
+    }
+    
+    renderer.render(scene, camera);
+}
+
+// ============================================================
+//  8. التهيئة
+// ============================================================
+
+function init() {
+    // إنشاء البيئة
+    createVideoEnvironment();
+    
+    // إنشاء الشخصية
+    createCharacterVideo();
+    
+    // إعداد التحكم
+    setupTouchControls();
+    
+    // بدء الحلقة
+    animate();
+    
+    // تغيير الحجم
+    window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+    
+    console.log('🎬 شخصية + بيئة = عالم متكامل!');
+}
+
+init();
 </script>
 </body>
 </html>
