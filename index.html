@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🎬 فيديو من القناة + أرضية 3D Pro</title>
+<title>🎬 فيديو من القناة - أرضية 3D Pro</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -172,7 +172,6 @@ body { font-family:'Segoe UI','Cairo',sans-serif; background:#050510; color:#fff
 }
 .fx-badge.on { color:#4ade80; border-color:rgba(74,222,128,0.3); }
 
-/* قائمة القنوات */
 #channels-list {
   margin-top:6px; border-top:1px solid rgba(255,215,0,0.1); padding-top:6px;
 }
@@ -192,7 +191,7 @@ body { font-family:'Segoe UI','Cairo',sans-serif; background:#050510; color:#fff
   <div class="start-subtitle">جلب فيديو من Telegram + انعكاس + ظلال + جزيئات</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v45.0 | Telegram Video Floor</div>
+  <div class="version-tag">v46.0 | Telegram Video Floor Complete</div>
 </div>
 
 <!-- اللعبة -->
@@ -234,8 +233,8 @@ body { font-family:'Segoe UI','Cairo',sans-serif; background:#050510; color:#fff
     </div>
     <div class="row">
       <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
-      <button class="btn btn-purple" onclick="fetchVideoFromTelegram()">🎬 جلب فيديو</button>
-      <button class="btn btn-gold" onclick="addChannel()">➕ إضافة قناة</button>
+      <button class="btn btn-purple" onclick="addChannel()">➕ إضافة قناة</button>
+      <button class="btn btn-gold" onclick="fetchVideoFromTelegram()">🎬 جلب فيديو</button>
       <button class="btn btn-red" onclick="toggleTG()">✖</button>
     </div>
 
@@ -270,7 +269,7 @@ body { font-family:'Segoe UI','Cairo',sans-serif; background:#050510; color:#fff
 
 const tg = window.Telegram?.WebApp;
 let userData = null;
-let botToken = '', channelId = '', connected = false, lastUpdateId = 0;
+let botToken = '', connected = false, lastUpdateId = 0;
 let channels = [];
 
 function initTelegram() {
@@ -291,7 +290,7 @@ function initTelegram() {
 
 function loadChannels() {
   try {
-    const saved = localStorage.getItem('nardo_channels_v45');
+    const saved = localStorage.getItem('nardo_channels_v46');
     if (saved) {
       channels = JSON.parse(saved);
       renderChannels();
@@ -301,7 +300,7 @@ function loadChannels() {
 
 function saveChannels() {
   try {
-    localStorage.setItem('nardo_channels_v45', JSON.stringify(channels));
+    localStorage.setItem('nardo_channels_v46', JSON.stringify(channels));
   } catch(e) {}
 }
 
@@ -375,9 +374,6 @@ function setTGStatus(msg, type) {
 //  4. جلب فيديو من القناة
 // ============================================================
 
-let fetchedVideoUrl = null;
-let fetchedVideoName = 'فيديو من القناة';
-
 async function fetchVideoFromTelegram() {
   if (!connected) {
     showToast('⚠️ اتصل بالقناة أولاً', 'error');
@@ -409,16 +405,12 @@ async function fetchVideoFromTelegram() {
       const msg = update.channel_post || update.message;
       if (!msg) continue;
 
-      // التحقق من القناة
       const msgChannelId = msg.chat.id.toString();
       if (!channels.some(c => c.id === msgChannelId)) continue;
 
-      // البحث عن فيديو (ملصق أو فيديو عادي)
       let fileId = null;
-      let filePath = null;
       let name = 'فيديو';
 
-      // 1. ملصق فيديو (WebM)
       if (msg.sticker && msg.sticker.is_video) {
         fileId = msg.sticker.file_id;
         const caption = msg.caption || '';
@@ -426,7 +418,6 @@ async function fetchVideoFromTelegram() {
         name = nameMatch ? nameMatch[1].trim() : 'ملصق WebM';
       }
 
-      // 2. فيديو عادي
       if (!fileId && msg.video) {
         fileId = msg.video.file_id;
         const caption = msg.caption || '';
@@ -434,7 +425,6 @@ async function fetchVideoFromTelegram() {
         name = nameMatch ? nameMatch[1].trim() : 'فيديو';
       }
 
-      // 3. ملف فيديو
       if (!fileId && msg.document) {
         const doc = msg.document;
         if (doc.mime_type && doc.mime_type.startsWith('video/')) {
@@ -447,19 +437,12 @@ async function fetchVideoFromTelegram() {
 
       if (!fileId) continue;
 
-      // الحصول على مسار الملف
       const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
       const fileData = await fileRes.json();
 
       if (fileData.ok && fileData.result.file_path) {
         const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
 
-        // تجربة التحميل المباشر (قد يفشل بسبب CORS)
-        // نستخدم Blob كحل بديل
-        fetchedVideoUrl = url;
-        fetchedVideoName = name;
-
-        // محاولة تحميل مباشر (قد يفشل CORS)
         try {
           const videoRes = await fetch(url);
           const blob = await videoRes.blob();
@@ -470,7 +453,6 @@ async function fetchVideoFromTelegram() {
           found = true;
           break;
         } catch (blobErr) {
-          // إذا فشل التحميل المباشر، نعرض الرابط للمستخدم
           console.warn('فشل تحميل الفيديو كـ Blob:', blobErr);
           setTGStatus('⚠️ فشل التحميل، حاول "رابط مباشر"', 'warn');
           document.getElementById('directUrl').value = url;
@@ -648,7 +630,6 @@ function initParticles() {
   particles = new THREE.Points(particleGeo, particleMat);
   particles.userData = { velocities: [], lifetimes: [], count: count };
 
-  // تهيئة السرعات والأعمار
   for (let i = 0; i < count; i++) {
     particles.userData.velocities[i] = { x: 0, y: 0, z: 0 };
     particles.userData.lifetimes[i] = 0;
@@ -839,7 +820,6 @@ function showVideoAsFloor(src, name, isStream = false) {
     floorVideoMesh.receiveShadow = true;
     scene.add(floorVideoMesh);
 
-    // إزالة الشبكة
     scene.children.forEach(child => {
       if (child.name === 'gridHelper') scene.remove(child);
     });
@@ -1064,7 +1044,6 @@ function animate() {
     videoTexture.needsUpdate = true;
   }
 
-  // انعكاس
   if (floorVideoMesh && frameCount % 15 === 0) {
     const oldVis = playerGroup.visible;
     playerGroup.visible = false;
@@ -1076,7 +1055,6 @@ function animate() {
     floorVideoMesh.material.needsUpdate = true;
   }
 
-  // اهتزاز
   let shakeX = 0, shakeY = 0;
   if (shakeIntensity > 0.01) {
     shakeX = (Math.random() - 0.5) * shakeIntensity;
@@ -1195,14 +1173,18 @@ setTimeout(() => {
   document.getElementById('start-btn').style.display = 'block';
 }, 400);
 
-console.log('🎬 v45.0 — فيديو من القناة كأرضية 3D Pro+');
+console.log('🎬 v46.0 — فيديو من القناة كأرضية 3D Pro+ (كامل)');
 console.log('📌 المميزات:');
 console.log('  📡 جلب فيديو من قناة Telegram');
-console.log('  🌑 ظلال حقيقية');
+console.log('  🌑 ظلال حقيقية (PCFSoftShadowMap)');
 console.log('  🪞 انعكاس (CubeCamera)');
 console.log('  💡 إضاءة ديناميكية تتبع اللاعب');
 console.log('  ✨ جزيئات تفاعلية');
 console.log('  💥 اهتزاز كاميرا عند الاصطدام');
+console.log('  📁 رفع ملف محلي');
+console.log('  🎥 كاميرا ويب');
+console.log('  🖥️ مشاركة شاشة');
+console.log('  🔗 رابط مباشر');
 </script>
 </body>
 </html>
