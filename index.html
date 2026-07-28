@@ -104,10 +104,10 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <div id="start-screen">
   <div class="start-logo">🎬 WebM في 3D</div>
-  <div class="start-subtitle">تحميل عبر Blob • حجم كبير</div>
+  <div class="start-subtitle">جلب Reels من Telegram • حجم كبير</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v34.0 | Blob Fix</div>
+  <div class="version-tag">v35.0 | Load Reels</div>
 </div>
 
 <div id="game-container">
@@ -136,7 +136,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     </div>
     <div class="row">
       <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
-      <button class="btn btn-purple" onclick="fetchWebM()">🎬 جلب WebM</button>
+      <button class="btn btn-purple" onclick="loadReelsFromTelegram()">🎬 جلب Reels</button>
       <button class="btn btn-gold" onclick="fetchStickers()">📌 جلب ملصق</button>
       <button class="btn btn-red" onclick="toggleTG()">✖</button>
     </div>
@@ -155,7 +155,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  WebM في 3D - مع Blob
+//  WebM في 3D - مع دالة loadReelsFromTelegram
 // ============================================================
 
 const tg = window.Telegram?.WebApp;
@@ -186,6 +186,7 @@ let botToken = '', channelId = '', connected = false, lastUpdateId = 0;
 let fetchedStickers = [];
 let playerSkin = null;
 let autoSelectDone = false;
+let reelList = []; // قائمة الـ Reels المجلوبة
 
 // ===== Three.js =====
 let scene, mainCamera, minimapCamera, renderer;
@@ -337,19 +338,17 @@ function animate() {
   
   updatePlayer();
   
-  // تحديث الفيديو
   if (videoTexture) {
     videoTexture.needsUpdate = true;
   }
   
-  // كاميرا رئيسية
+  // كاميرا
   const target = playerGroup.position.clone();
   mainCamera.position.x += (target.x + 12 - mainCamera.position.x) * 0.08;
   mainCamera.position.z += (target.z + 12 - mainCamera.position.z) * 0.08;
   mainCamera.position.y += (18 - mainCamera.position.y) * 0.08;
   mainCamera.lookAt(target.x, 0, target.z);
   
-  // خريطة مصغرة
   minimapCamera.position.set(target.x, 60, target.z);
   minimapCamera.lookAt(target.x, 0, target.z);
   
@@ -379,7 +378,102 @@ function animate() {
 }
 
 // ============================================================
-//  عرض WebM مع Blob 🔥
+//  🔥 دالة loadReelsFromTelegram - جلب الفيديوات من القناة
+// ============================================================
+
+async function loadReelsFromTelegram() {
+  if (!connected) { 
+    setTGStatus('⚠️ اتصل أولاً بالقناة', 'error'); 
+    showToast('⚠️ اتصل بالقناة أولاً', 'error');
+    return; 
+  }
+
+  setTGStatus('🎬 جاري جلب الـ Reels...', '');
+  showToast('📥 جاري جلب الفيديوات من القناة...', 'info');
+
+  try {
+    // جلب آخر التحديثات من القناة
+    const res = await fetch(
+      'https://api.telegram.org/bot' + botToken + '/getUpdates?limit=100&offset=' + (lastUpdateId + 1)
+    );
+    const data = await res.json();
+    
+    if (!data.ok) { 
+      setTGStatus('❌ ' + data.description, 'error'); 
+      return; 
+    }
+
+    let foundReels = 0;
+    let reels = [];
+
+    // البحث عن الفيديوات
+    for (const update of (data.result || [])) {
+      lastUpdateId = Math.max(lastUpdateId, update.update_id);
+      const msg = update.channel_post || update.message;
+      if (!msg) continue;
+
+      // 1. ملصق فيديو (WebM)
+      if (msg.sticker && msg.sticker.is_video) {
+        const fileId = msg.sticker.file_id;
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        
+        if (fileData.ok && fileData.result.file_path) {
+          const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+          const caption = msg.caption || '';
+          const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+          const name = nameMatch ? nameMatch[1].trim() : 'Reel #' + (reels.length + 1);
+          
+          reels.push({ name, url, fileId });
+          foundReels++;
+        }
+      }
+
+      // 2. فيديو عادي (ملف فيديو)
+      if (msg.video) {
+        const fileId = msg.video.file_id;
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        
+        if (fileData.ok && fileData.result.file_path) {
+          const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+          const caption = msg.caption || '';
+          const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+          const name = nameMatch ? nameMatch[1].trim() : 'فيديو #' + (reels.length + 1);
+          
+          reels.push({ name, url, fileId });
+          foundReels++;
+        }
+      }
+    }
+
+    // حفظ الـ Reels في القائمة
+    reelList = reels;
+
+    if (foundReels > 0) {
+      setTGStatus('✅ تم جلب ' + foundReels + ' Reel!', 'success');
+      showToast('📌 تم جلب ' + foundReels + ' فيديو من القناة', 'success');
+      
+      // عرض أول فيديو
+      if (reels.length > 0) {
+        const firstReel = reels[0];
+        await showWebM(firstReel.url, firstReel.name);
+        showToast('🎬 جاري عرض: ' + firstReel.name, 'success');
+      }
+    } else {
+      setTGStatus('📭 لا يوجد فيديوهات في القناة', '');
+      showToast('📭 أرسل فيديوهات في القناة ثم أعد المحاولة', 'info');
+    }
+
+  } catch (e) {
+    console.error('❌ loadReelsFromTelegram error:', e);
+    setTGStatus('❌ خطأ في الجلب', 'error');
+    showToast('❌ ' + (e.message || 'خطأ في الاتصال'), 'error');
+  }
+}
+
+// ============================================================
+//  عرض WebM مع Blob
 // ============================================================
 
 async function showWebM(url, name) {
@@ -397,27 +491,17 @@ async function showWebM(url, name) {
   }
 
   try {
-    setTGStatus('📥 جاري تحميل الفيديو...', '');
-    showToast('📥 جاري تحميل الفيديو...', 'info');
+    setTGStatus('📥 جاري تحميل: ' + name, '');
+    showToast('📥 جاري تحميل ' + name + '...', 'info');
 
-    // 1. جلب الملف كـ Blob
     const response = await fetch(url);
     if (!response.ok) {
       throw new Error('فشل جلب الملف: ' + response.status);
     }
 
     const blob = await response.blob();
-    
-    // التحقق من نوع الملف
-    if (!blob.type.includes('video')) {
-      throw new Error('الملف ليس فيديو: ' + blob.type);
-    }
-
-    // 2. إنشاء URL محلي
     const blobUrl = URL.createObjectURL(blob);
-    console.log('✅ تم تحميل الفيديو كـ Blob:', blobUrl);
 
-    // 3. إنشاء عنصر الفيديو
     videoElement = document.createElement('video');
     videoElement.muted = true;
     videoElement.loop = true;
@@ -425,21 +509,14 @@ async function showWebM(url, name) {
     videoElement.preload = 'auto';
     videoElement.src = blobUrl;
 
-    // 4. عند تحميل الفيديو
     videoElement.onloadeddata = function() {
-      console.log('✅ onloadeddata - الفيديو جاهز');
+      videoElement.play().catch(err => console.warn('play error', err));
       
-      videoElement.play().catch(err => {
-        console.warn('⚠️ play error:', err);
-      });
-      
-      // إنشاء الـ VideoTexture
       videoTexture = new THREE.VideoTexture(videoElement);
       videoTexture.minFilter = THREE.LinearFilter;
       videoTexture.magFilter = THREE.LinearFilter;
       videoTexture.format = THREE.RGBAFormat;
       
-      // إنشاء الـ Sprite
       const material = new THREE.SpriteMaterial({ 
         map: videoTexture, 
         transparent: true,
@@ -455,88 +532,24 @@ async function showWebM(url, name) {
       playerGroup.add(sprite);
       currentSticker = sprite;
       
-      document.getElementById('char-name').textContent = '🎬 ' + name + ' (Blob)';
-      setTGStatus('✅ WebM جاهز!', 'success');
-      showToast('✅ WebM جاهز للعرض!', 'success');
-      console.log('✅ Sprite تم إضافته إلى المشهد');
+      document.getElementById('char-name').textContent = '🎬 ' + name;
+      setTGStatus('✅ ' + name + ' جاهز!', 'success');
+      showToast('✅ ' + name + ' جاهز للعرض!', 'success');
     };
 
-    // 5. عند حدوث خطأ
     videoElement.onerror = function(e) {
       console.error('❌ خطأ في الفيديو:', e);
-      console.error('❌ videoElement.error:', videoElement.error);
-      
-      let errorMsg = 'فشل تحميل الفيديو';
-      if (videoElement.error) {
-        switch(videoElement.error.code) {
-          case 1: errorMsg = 'تم إلغاء التحميل'; break;
-          case 2: errorMsg = 'خطأ في الشبكة'; break;
-          case 3: errorMsg = 'فشل فك التشفير'; break;
-          case 4: errorMsg = 'تنسيق غير مدعوم'; break;
-        }
-      }
-      
-      showToast('❌ ' + errorMsg, 'error');
-      setTGStatus('❌ ' + errorMsg, 'error');
-      
-      // تحرير الـ URL
+      showToast('❌ فشل تحميل الفيديو', 'error');
+      setTGStatus('❌ فشل التحميل', 'error');
       if (blobUrl) URL.revokeObjectURL(blobUrl);
     };
 
-    // 6. بدء التحميل
     videoElement.load();
 
   } catch (err) {
     console.error('❌ showWebM error:', err);
     showToast('❌ ' + (err.message || 'خطأ في التحميل'), 'error');
     setTGStatus('❌ فشل التحميل', 'error');
-  }
-}
-
-// ============================================================
-//  جلب WebM
-// ============================================================
-
-async function fetchWebM() {
-  if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
-  setTGStatus('🎬 جاري البحث عن WebM...', '');
-
-  try {
-    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
-    const data = await res.json();
-    if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
-
-    for (const update of (data.result || [])) {
-      lastUpdateId = Math.max(lastUpdateId, update.update_id);
-      const msg = update.channel_post || update.message;
-      if (!msg || !msg.sticker) continue;
-
-      const sticker = msg.sticker;
-      
-      if (sticker.is_video) {
-        const fileId = sticker.file_id;
-        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
-        const fileData = await fileRes.json();
-        
-        if (fileData.ok && fileData.result.file_path) {
-          const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
-          const caption = msg.caption || '';
-          const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
-          const charName = nameMatch ? nameMatch[1].trim() : 'ملصق WebM';
-          
-          await showWebM(url, charName);
-          setTGStatus('✅ تم جلب WebM!', 'success');
-          return;
-        }
-      }
-    }
-
-    setTGStatus('📭 لا يوجد WebM في القناة', '');
-    showToast('📭 أرسل WebM في القناة ثم أعد المحاولة', 'info');
-  } catch (e) {
-    console.error(e);
-    setTGStatus('❌ خطأ في الجلب', 'error');
-    showToast('❌ ' + (e.message || 'خطأ'), 'error');
   }
 }
 
@@ -767,7 +780,7 @@ function enterApp() {
 
     setTimeout(() => {
       if (connected) {
-        showToast('📡 جاهز - أرسل WebM في القناة ثم اضغط جلب WebM', 'info');
+        showToast('📡 جاهز - اضغط جلب Reels', 'info');
       } else {
         showToast('📡 اضغط اتصال أولاً', 'info');
       }
@@ -792,7 +805,8 @@ setTimeout(() => {
   document.getElementById('start-btn').style.display = 'block';
 }, 400);
 
-console.log('🎬 v34.0 — WebM مع Blob');
+console.log('🎬 v35.0 — loadReelsFromTelegram');
 </script>
 </body>
 </html>
+
