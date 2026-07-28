@@ -3,33 +3,37 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WebM في 3D - الحل النهائي</title>
+<title>WebM في 3D - يعمل</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
-body { margin:0; overflow:hidden; background:#050510; }
-#canvas { display:block; width:100%; height:100%; }
-#info { position:fixed; top:10px; left:50%; transform:translateX(-50%); color:#fff; font-family:sans-serif; background:rgba(0,0,0,0.7); padding:8px 20px; border-radius:10px; z-index:10; }
+body { margin:0; overflow:hidden; background:#050510; font-family:sans-serif; }
+#info { position:fixed; top:10px; left:50%; transform:translateX(-50%); color:#fff; background:rgba(0,0,0,0.8); padding:12px 24px; border-radius:12px; z-index:10; font-size:16px; text-align:center; }
+#info .status { color:#ffd700; }
+#info .error { color:#f87171; }
+#info .success { color:#4ade80; }
 </style>
 </head>
 <body>
 
-<div id="info">⏳ جاري تحميل الفيديو...</div>
+<div id="info">
+  <div class="status">⏳ جاري التحميل...</div>
+</div>
 <canvas id="canvas"></canvas>
 
 <script>
 // ============================================================
-//  مختصر 3D + WebM + Blob
+//  حل بسيط ومضمون لعرض الفيديو في 3D
 // ============================================================
 
 const canvas = document.getElementById('canvas');
 const info = document.getElementById('info');
 
-// --- المشهد ---
+// --- Three.js ---
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x050510);
+scene.background = new THREE.Color(0x0a0a1a);
 
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.set(0, 8, 10);
+camera.position.set(0, 5, 8);
 camera.lookAt(0, 0, 0);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
@@ -37,89 +41,114 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
 // --- إضاءة ---
-scene.add(new THREE.AmbientLight(0x8b5cf6, 0.5));
-const light = new THREE.DirectionalLight(0xffffff, 0.8);
-light.position.set(10, 20, 10);
-scene.add(light);
+const ambient = new THREE.AmbientLight(0x8b5cf6, 0.4);
+scene.add(ambient);
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+dirLight.position.set(5, 10, 5);
+scene.add(dirLight);
 
 // --- أرضية ---
 const ground = new THREE.Mesh(
-  new THREE.PlaneGeometry(20, 20),
-  new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.9 })
+  new THREE.PlaneGeometry(10, 10),
+  new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.9, metalness: 0.1 })
 );
 ground.rotation.x = -Math.PI / 2;
 scene.add(ground);
 
 // --- شبكة ---
-scene.add(new THREE.GridHelper(20, 10, 0x8b5cf6, 0x2a2a4a));
+scene.add(new THREE.GridHelper(10, 10, 0x8b5cf6, 0x333355));
 
-// --- كرة (اللاعب) ---
+// --- اللاعب (كرة متوهجة) ---
 const player = new THREE.Mesh(
-  new THREE.SphereGeometry(0.5, 16, 16),
-  new THREE.MeshStandardMaterial({ color: 0x8b5cf6, emissive: 0x4a1a8a, emissiveIntensity: 0.2 })
+  new THREE.SphereGeometry(0.4, 16, 16),
+  new THREE.MeshStandardMaterial({ 
+    color: 0x8b5cf6, 
+    emissive: 0x6d28d9, 
+    emissiveIntensity: 0.5 
+  })
 );
-player.position.y = 0.5;
+player.position.y = 0.4;
 scene.add(player);
 
 // ============================================================
-//  🔥 تحميل وعرض الفيديو باستخدام Blob
+//  🎬 الطريقة الجديدة لعرض الفيديو
 // ============================================================
 
-// رابط فيديو تجريبي (WebM من Telegram)
-const TEST_URL = 'https://cdn.pixabay.com/vimeo/877366053/sea-877366053-360.mp4?width=360&hash=9d8c4f4b1c4a1b1e4f4a1b1e4f4a1b1e';
+// روابط فيديو تجريبية (تعمل في جميع المتصفحات)
+const VIDEOS = [
+  'https://www.w3schools.com/html/mov_bbb.mp4',
+  'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4',
+  'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+];
 
-async function loadVideo() {
-  info.textContent = '📥 جاري تحميل الفيديو...';
+// وظيفة لعرض الفيديو
+function showVideo(url) {
+  info.innerHTML = `<div class="status">🎬 جاري تحميل: ${url.split('/').pop()}</div>`;
   
-  try {
-    // 1. جلب الفيديو كـ Blob
-    const response = await fetch(TEST_URL);
-    const blob = await response.blob();
+  // 1. إنشاء عنصر الفيديو
+  const video = document.createElement('video');
+  video.muted = true;
+  video.loop = true;
+  video.playsInline = true;
+  video.crossOrigin = 'anonymous';
+  video.preload = 'auto';
+  video.src = url;
+  
+  // 2. عند تحميل الفيديو
+  video.onloadedmetadata = function() {
+    info.innerHTML = `<div class="success">✅ تم التحميل! جاري التشغيل...</div>`;
     
-    // 2. إنشاء رابط محلي
-    const blobUrl = URL.createObjectURL(blob);
-    info.textContent = '✅ تم التحميل، جاري التشغيل...';
+    // بدء التشغيل
+    video.play().catch(() => {
+      info.innerHTML = `<div class="error">⚠️ لا يمكن التشغيل التلقائي</div>`;
+    });
     
-    // 3. عنصر الفيديو
-    const video = document.createElement('video');
-    video.muted = true;
-    video.loop = true;
-    video.playsInline = true;
-    video.src = blobUrl;
+    // 3. إنشاء الـ Texture
+    const texture = new THREE.VideoTexture(video);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.format = THREE.RGBAFormat;
     
-    video.onloadeddata = () => {
-      video.play().catch(() => {});
-      info.textContent = '🎬 الفيديو يعمل!';
-      
-      // 4. إنشاء Texture وعرضها
-      const texture = new THREE.VideoTexture(video);
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-      
-      const material = new THREE.SpriteMaterial({ 
-        map: texture, 
-        transparent: true 
-      });
-      const sprite = new THREE.Sprite(material);
-      sprite.scale.set(4, 4, 1);
-      sprite.position.y = 2.5;
-      scene.add(sprite);
-      
-      // تحريك الكاميرا قليلاً
-      camera.position.set(0, 6, 8);
-      camera.lookAt(0, 0, 0);
-    };
+    // 4. إزالة Sprite القديم إن وجد
+    if (window.sprite) {
+      scene.remove(window.sprite);
+    }
     
-    video.onerror = () => {
-      info.textContent = '❌ فشل تشغيل الفيديو';
-    };
+    // 5. إنشاء Sprite جديد
+    const material = new THREE.SpriteMaterial({ 
+      map: texture, 
+      transparent: true,
+      depthTest: true,
+      depthWrite: false
+    });
+    const sprite = new THREE.Sprite(material);
+    sprite.scale.set(3.5, 3.5, 1);
+    sprite.position.y = 2.0;
+    scene.add(sprite);
+    window.sprite = sprite;
     
-    video.load();
+    info.innerHTML = `<div class="success">🎬 الفيديو يعمل! (${url.split('/').pop()})</div>`;
+  };
+  
+  // 6. عند حدوث خطأ
+  video.onerror = function(e) {
+    const errorMsg = video.error ? video.error.message : 'خطأ غير معروف';
+    info.innerHTML = `<div class="error">❌ فشل: ${errorMsg}</div>`;
+    console.error('❌ Video Error:', video.error);
     
-  } catch (err) {
-    info.textContent = '❌ خطأ: ' + err.message;
-    console.error(err);
-  }
+    // تجربة الرابط التالي
+    const currentIndex = VIDEOS.indexOf(url);
+    if (currentIndex < VIDEOS.length - 1) {
+      info.innerHTML += `<div class="status">🔄 تجربة الرابط التالي...</div>`;
+      setTimeout(() => showVideo(VIDEOS[currentIndex + 1]), 1000);
+    } else {
+      info.innerHTML = `<div class="error">❌ جميع الروابط فشلت</div>`;
+    }
+  };
+  
+  // 7. بدء التحميل
+  video.load();
 }
 
 // ============================================================
@@ -129,8 +158,13 @@ async function loadVideo() {
 function animate() {
   requestAnimationFrame(animate);
   
-  // دوران اللاعب
-  player.rotation.y += 0.02;
+  // دوران الكرة
+  player.rotation.y += 0.03;
+  
+  // تحديث الـ Texture
+  if (window.sprite && window.sprite.material.map) {
+    window.sprite.material.map.needsUpdate = true;
+  }
   
   renderer.render(scene, camera);
 }
@@ -141,17 +175,19 @@ function animate() {
 
 animate();
 
-// تحميل الفيديو بعد 1 ثانية
-setTimeout(loadVideo, 1000);
+// تشغيل الفيديو الأول
+setTimeout(() => {
+  showVideo(VIDEOS[0]);
+}, 500);
 
-// تكبير عند تغيير الحجم
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-console.log('🚀 جاهز - انتظر تحميل الفيديو...');
+console.log('🚀 جاهز - جاري تحميل الفيديو...');
 </script>
 </body>
 </html>
+
