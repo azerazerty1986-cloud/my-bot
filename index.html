@@ -5,20 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ملصق متحرك 3D + خريطة</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <!-- Three.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <!-- Lottie و pako -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --gold: #ffd700;
-            --success: #4ade80;
-            --error: #f87171;
-            --info: #60a5fa;
-            --accent: #00f2ff;
-            --purple: #8b5cf6;
-        }
         * {
             margin: 0;
             padding: 0;
@@ -32,7 +28,6 @@
             user-select: none;
         }
 
-        /* شاشة البداية */
         #start-screen {
             position: fixed;
             inset: 0;
@@ -47,7 +42,7 @@
         .start-logo {
             font-size: 42px;
             font-weight: 900;
-            color: var(--gold);
+            color: #ffd700;
             animation: float 3s ease-in-out infinite;
         }
         .start-subtitle {
@@ -57,8 +52,8 @@
             max-width: 350px;
         }
         .start-btn {
-            border: 2px solid var(--accent);
-            color: var(--accent);
+            border: 2px solid #00f2ff;
+            color: #00f2ff;
             padding: 16px 50px;
             background: rgba(0, 242, 255, 0.08);
             border-radius: 60px;
@@ -70,12 +65,12 @@
         }
         .start-btn:hover {
             transform: scale(1.05);
-            background: var(--accent);
+            background: #00f2ff;
             color: #000;
             box-shadow: 0 0 50px rgba(0, 242, 255, 0.4);
         }
         .user-info {
-            color: var(--accent);
+            color: #00f2ff;
             font-size: 13px;
             background: rgba(0, 0, 0, 0.6);
             padding: 8px 24px;
@@ -97,7 +92,6 @@
             }
         }
 
-        /* حاوية اللعبة 3D */
         #game-container {
             position: fixed;
             inset: 0;
@@ -110,7 +104,26 @@
             height: 100%;
         }
 
-        /* HUD علوي */
+        #minimap-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 160px;
+            height: 160px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            overflow: hidden;
+            z-index: 150;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+        }
+        #minimap-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
         .hud {
             position: fixed;
             top: 0;
@@ -126,7 +139,7 @@
             backdrop-filter: blur(8px);
         }
         .hud .title {
-            color: var(--gold);
+            color: #ffd700;
             font-size: 13px;
             font-weight: 700;
         }
@@ -135,7 +148,6 @@
             font-size: 11px;
         }
 
-        /* D-Pad تحكم */
         .dpad {
             position: fixed;
             bottom: 20px;
@@ -161,8 +173,8 @@
         }
         .dpad-btn:active {
             background: rgba(139, 92, 246, 0.2);
-            border-color: var(--purple);
-            color: var(--purple);
+            border-color: #8b5cf6;
+            color: #8b5cf6;
             transform: scale(0.88);
         }
         .dpad-up {
@@ -182,28 +194,6 @@
             right: 0;
         }
 
-        /* خريطة التصغير (Minimap) - 2D Orthographic */
-        #minimap-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            width: 160px;
-            height: 160px;
-            border-radius: 12px;
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-            overflow: hidden;
-            z-index: 150;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-        }
-        #minimap-canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-
-        /* باقي العناصر */
         .tg-dropdown {
             position: fixed;
             bottom: 170px;
@@ -249,19 +239,19 @@
             font-family: inherit;
         }
         .btn-accent {
-            background: var(--accent);
+            background: #00f2ff;
             color: #111;
         }
         .btn-purple {
-            background: var(--purple);
+            background: #8b5cf6;
             color: #fff;
         }
         .btn-gold {
-            background: var(--gold);
+            background: #ffd700;
             color: #111;
         }
         .btn-red {
-            background: var(--error);
+            background: #f87171;
             color: #fff;
         }
         .tg-toggle {
@@ -300,7 +290,7 @@
             display: block;
         }
         .skin-selector h4 {
-            color: var(--gold);
+            color: #ffd700;
             font-size: 12px;
             margin-bottom: 6px;
             text-align: center;
@@ -321,7 +311,7 @@
         }
         .skin-option:hover {
             background: rgba(139, 92, 246, 0.1);
-            border-color: var(--purple);
+            border-color: #8b5cf6;
         }
         .skin-option .preview {
             width: 28px;
@@ -348,7 +338,7 @@
             text-overflow: ellipsis;
         }
         .skin-option.active {
-            border-color: var(--gold);
+            border-color: #ffd700;
             background: rgba(255, 215, 0, 0.05);
         }
 
@@ -367,7 +357,7 @@
             display: none;
         }
         .skin-toggle:hover {
-            color: var(--gold);
+            color: #ffd700;
         }
 
         .toast-container {
@@ -390,12 +380,12 @@
             animation: toastIn .3s, toastOut .3s 2.7s forwards;
         }
         .toast.success {
-            border-color: var(--success);
-            color: var(--success);
+            border-color: #4ade80;
+            color: #4ade80;
         }
         .toast.error {
-            border-color: var(--error);
-            color: var(--error);
+            border-color: #f87171;
+            color: #f87171;
         }
         @keyframes toastIn {
             from {
@@ -418,13 +408,12 @@
             }
         }
 
-        /* Canvas مخفي لـ Lottie */
         #lottie-hidden {
             position: fixed;
             left: -9999px;
             top: -9999px;
-            width: 240px;
-            height: 240px;
+            width: 200px;
+            height: 200px;
             pointer-events: none;
             opacity: 0;
             z-index: -1;
@@ -438,14 +427,13 @@
         <div class="start-subtitle">Three.js • كاميرتان • خريطة مصغرة</div>
         <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
         <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-        <div class="version-tag">v28.0 | Three.js + Minimap</div>
+        <div class="version-tag">v30.0 | 3D + Minimap</div>
     </div>
 
     <div id="game-container">
         <canvas id="game-canvas"></canvas>
-        <canvas id="lottie-hidden" width="240" height="240"></canvas>
+        <canvas id="lottie-hidden" width="200" height="200"></canvas>
 
-        <!-- خريطة التصغير 2D -->
         <div id="minimap-container">
             <canvas id="minimap-canvas" width="160" height="160"></canvas>
         </div>
@@ -489,7 +477,7 @@
 
     <script>
         // ================================================================
-        //  محرك Three.js + خريطة مصغرة 2D
+        //  محرك Three.js 3D + Minimap
         // ================================================================
 
         const tg = window.Telegram?.WebApp;
@@ -538,18 +526,18 @@
         // ========== Three.js ==========
         let scene, camera, renderer;
         let minimapCtx, minimapCanvas;
-        let playerMesh, playerGroup;
-        let groundMeshes = [];
+        let playerGroup;
         let mapSize = 16;
         let tileSize = 2.5;
         let mapData = [];
+        let groundMeshes = [];
+        let stickerMesh = null;
 
-        // ========== بيانات اللاعب ==========
         let player = { x: 1.5, z: 1.5, speed: 0.06 };
         let touchDirs = { up: false, down: false, left: false, right: false };
 
         // ================================================================
-        //  إنشاء العالم ثلاثي الأبعاد
+        //  بناء الخريطة
         // ================================================================
 
         function generateMap() {
@@ -567,38 +555,34 @@
                 for (let x = 1; x <= 3; x++) mapData[z][x] = 0;
         }
 
+        // ================================================================
+        //  Three.js
+        // ================================================================
+
         function initThreeJS() {
-            const container = document.getElementById('game-container');
             const canvas = document.getElementById('game-canvas');
 
-            // المشهد
             scene = new THREE.Scene();
             scene.background = new THREE.Color(0x0a0a1a);
             scene.fog = new THREE.Fog(0x0a0a1a, 30, 60);
 
-            // الكاميرا الأساسية (Perspective)
             const aspect = window.innerWidth / window.innerHeight;
-            camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 100);
-            camera.position.set(8, 12, 10);
+            camera = new THREE.PerspectiveCamera(50, aspect, 0.1, 100);
+            camera.position.set(8, 10, 12);
             camera.lookAt(8, 0, 8);
 
-            // الإضاءة
+            // إضاءة
             const ambient = new THREE.AmbientLight(0x404060, 0.6);
             scene.add(ambient);
 
-            const dirLight = new THREE.DirectionalLight(0xffeedd, 0.8);
+            const dirLight = new THREE.DirectionalLight(0xffeedd, 1.0);
             dirLight.position.set(10, 20, 5);
             dirLight.castShadow = true;
             scene.add(dirLight);
 
-            const fillLight = new THREE.DirectionalLight(0x4466ff, 0.3);
-            fillLight.position.set(-10, 5, -10);
-            scene.add(fillLight);
-
             const hemi = new THREE.HemisphereLight(0x444477, 0x222244, 0.6);
             scene.add(hemi);
 
-            // المحور Y للأعلى
             renderer = new THREE.WebGLRenderer({
                 canvas: canvas,
                 antialias: true
@@ -607,33 +591,24 @@
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
             renderer.shadowMap.enabled = true;
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            renderer.toneMapping = THREE.ACESFilmicToneMapping;
-            renderer.toneMappingExposure = 1.2;
 
-            // بناء الأرضية
             buildGround();
 
-            // إنشاء مجموعة اللاعب
+            // اللاعب
             playerGroup = new THREE.Group();
             scene.add(playerGroup);
-            createPlayerMesh();
+            createPlayer();
 
-            // تحديث موقع اللاعب
-            updatePlayerPosition();
-
-            // خريطة التصغير (Minimap)
+            // Minimap
             minimapCanvas = document.getElementById('minimap-canvas');
             minimapCtx = minimapCanvas.getContext('2d');
 
-            // أحداث التحجيم
             window.addEventListener('resize', onResize);
 
-            // بدء الحلقة
             animate();
         }
 
         function buildGround() {
-            // إزالة الأرضيات القديمة
             groundMeshes.forEach(m => scene.remove(m));
             groundMeshes = [];
 
@@ -655,9 +630,10 @@
                     mesh.position.set(px, -0.1, pz);
                     mesh.receiveShadow = true;
                     mesh.castShadow = true;
+                    scene.add(mesh);
+                    groundMeshes.push(mesh);
 
                     if (isWall) {
-                        // جدار مرتفع
                         const wallMat = new THREE.MeshStandardMaterial({
                             color: 0x3a3a6a,
                             roughness: 0.7,
@@ -671,21 +647,18 @@
                         scene.add(wallMesh);
                         groundMeshes.push(wallMesh);
                     }
-
-                    scene.add(mesh);
-                    groundMeshes.push(mesh);
                 }
             }
 
             // شبكة إرشادية
-            const gridHelper = new THREE.GridHelper(mapSize * tileSize, mapSize, 0x444477, 0x333355);
-            gridHelper.position.set((mapSize - 1) * tileSize / 2, -0.05, (mapSize - 1) * tileSize / 2);
-            scene.add(gridHelper);
-            groundMeshes.push(gridHelper);
+            const grid = new THREE.GridHelper(mapSize * tileSize, mapSize, 0x444477, 0x333355);
+            grid.position.set((mapSize - 1) * tileSize / 2, -0.05, (mapSize - 1) * tileSize / 2);
+            scene.add(grid);
+            groundMeshes.push(grid);
         }
 
-        function createPlayerMesh() {
-            // جسم اللاعب (كرة مع تاج)
+        function createPlayer() {
+            // جسم
             const bodyGeo = new THREE.SphereGeometry(0.5, 16, 16);
             const bodyMat = new THREE.MeshStandardMaterial({
                 color: 0x8b5cf6,
@@ -705,7 +678,7 @@
             const glowMat = new THREE.MeshBasicMaterial({
                 color: 0x8b5cf6,
                 transparent: true,
-                opacity: 0.15,
+                opacity: 0.12,
                 wireframe: true,
             });
             const glow = new THREE.Mesh(glowGeo, glowMat);
@@ -725,171 +698,60 @@
             crown.position.y = 1.0;
             crown.castShadow = true;
             playerGroup.add(crown);
-
-            playerMesh = body;
         }
 
         function updatePlayerPosition() {
             const px = player.x * tileSize;
             const pz = player.z * tileSize;
             playerGroup.position.set(px, 0, pz);
-
-            // تدوير اللاعب قليلاً حسب الاتجاه
-            if (touchDirs.up) playerGroup.rotation.y = 0;
-            else if (touchDirs.down) playerGroup.rotation.y = Math.PI;
-            else if (touchDirs.left) playerGroup.rotation.y = -Math.PI / 2;
-            else if (touchDirs.right) playerGroup.rotation.y = Math.PI / 2;
         }
 
         // ================================================================
-        //  خريطة التصغير (2D Orthographic)
+        //  عرض الملصق في 3D (كـ Plane مع Texture)
         // ================================================================
 
-        function updateMinimap() {
-            const ctx = minimapCtx;
-            const w = 160,
-                h = 160;
-
-            ctx.clearRect(0, 0, w, h);
-
-            // خلفية
-            ctx.fillStyle = 'rgba(10,10,26,0.9)';
-            ctx.fillRect(0, 0, w, h);
-
-            const scale = w / (mapSize * tileSize);
-            const offsetX = 0;
-            const offsetY = 0;
-
-            // رسم الخريطة
-            for (let z = 0; z < mapSize; z++) {
-                for (let x = 0; x < mapSize; x++) {
-                    const px = x * tileSize * scale + offsetX;
-                    const py = z * tileSize * scale + offsetY;
-                    const size = tileSize * scale * 0.9;
-
-                    if (mapData[z][x] === 1) {
-                        ctx.fillStyle = '#3a3a6a';
-                        ctx.fillRect(px, py, size, size);
-                    } else {
-                        ctx.fillStyle = (x + z) % 2 === 0 ? '#1a1a2e' : '#222244';
-                        ctx.fillRect(px, py, size, size);
-                    }
-                }
+        function updateSticker() {
+            // إزالة القديم
+            if (stickerMesh) {
+                playerGroup.remove(stickerMesh);
+                stickerMesh = null;
             }
 
-            // رسم اللاعب
-            const px = player.x * tileSize * scale + offsetX + tileSize * scale / 2;
-            const py = player.z * tileSize * scale + offsetY + tileSize * scale / 2;
+            let texture = null;
 
-            // توهج
-            const grad = ctx.createRadialGradient(px, py, 2, px, py, 10);
-            grad.addColorStop(0, 'rgba(139,92,246,0.8)');
-            grad.addColorStop(1, 'rgba(139,92,246,0)');
-            ctx.fillStyle = grad;
-            ctx.beginPath();
-            ctx.arc(px, py, 10, 0, Math.PI * 2);
-            ctx.fill();
-
-            // نقطة اللاعب
-            ctx.fillStyle = '#8b5cf6';
-            ctx.beginPath();
-            ctx.arc(px, py, 4, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.strokeStyle = '#c084fc';
-            ctx.lineWidth = 1.5;
-            ctx.beginPath();
-            ctx.arc(px, py, 6, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // إطار
-            ctx.strokeStyle = 'rgba(255,215,0,0.2)';
-            ctx.lineWidth = 1;
-            ctx.strokeRect(0, 0, w, h);
-
-            // عنوان
-            ctx.fillStyle = 'rgba(255,215,0,0.5)';
-            ctx.font = '8px Cairo';
-            ctx.textAlign = 'center';
-            ctx.fillText('🗺️ الخريطة', w / 2, 12);
-        }
-
-        // ================================================================
-        //  عرض الملصقات (Stickers / Lottie / Video) في 3D
-        // ================================================================
-
-        let currentStickerMesh = null;
-
-        function updateStickerIn3D() {
-            // إزالة الملصق القديم
-            if (currentStickerMesh) {
-                playerGroup.remove(currentStickerMesh);
-                currentStickerMesh = null;
-            }
-
-            // إذا كان فيديو WebM
+            // 1. فيديو WebM
             if (videoReady && videoSticker) {
-                // فيديو يُعرض كـ Texture على سطح
-                const videoTexture = new THREE.VideoTexture(videoSticker);
-                const mat = new THREE.MeshBasicMaterial({
-                    map: videoTexture,
-                    transparent: true,
-                    side: THREE.DoubleSide,
-                    depthWrite: false,
-                });
-                const geo = new THREE.PlaneGeometry(1.8, 1.8);
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.set(0, 1.2, 0);
-                mesh.rotation.x = 0;
-                playerGroup.add(mesh);
-                currentStickerMesh = mesh;
+                texture = new THREE.VideoTexture(videoSticker);
                 document.getElementById('char-name').textContent = '🎬 WebM';
-                return;
             }
-
-            // إذا كان Lottie (TGS)
-            if (animationLoaded && lottieCanvas) {
-                const lottieTexture = new THREE.CanvasTexture(lottieCanvas);
-                const mat = new THREE.MeshBasicMaterial({
-                    map: lottieTexture,
-                    transparent: true,
-                    side: THREE.DoubleSide,
-                    depthWrite: false,
-                });
-                const geo = new THREE.PlaneGeometry(1.8, 1.8);
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.set(0, 1.2, 0);
-                playerGroup.add(mesh);
-                currentStickerMesh = mesh;
+            // 2. Lottie TGS
+            else if (animationLoaded && lottieCanvas) {
+                texture = new THREE.CanvasTexture(lottieCanvas);
                 document.getElementById('char-name').textContent = '🎬 TGS';
-                return;
+            }
+            // 3. ملصق ثابت
+            else if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
+                const img = loadedImages[playerSkin.id];
+                texture = new THREE.CanvasTexture(img);
+                document.getElementById('char-name').textContent = playerSkin.name || 'ملصق';
             }
 
-            // إذا كان ملصق ثابت
-            if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
-                const img = loadedImages[playerSkin.id];
-                const texture = new THREE.CanvasTexture(img);
+            if (texture) {
                 const mat = new THREE.MeshBasicMaterial({
                     map: texture,
                     transparent: true,
                     side: THREE.DoubleSide,
                     depthWrite: false,
                 });
-                const geo = new THREE.PlaneGeometry(1.6, 1.6);
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.set(0, 1.2, 0);
-                playerGroup.add(mesh);
-                currentStickerMesh = mesh;
-                document.getElementById('char-name').textContent = playerSkin.name || 'ملصق';
-                return;
+                const geo = new THREE.PlaneGeometry(1.8, 1.8);
+                stickerMesh = new THREE.Mesh(geo, mat);
+                stickerMesh.position.set(0, 1.4, 0);
+                playerGroup.add(stickerMesh);
             }
-
-            // لا شيء
-            document.getElementById('char-name').textContent = 'لا توجد شخصية';
         }
 
         // ================================================================
-        //  تحديث اللاعب والتصادم
+        //  تحديث اللاعب
         // ================================================================
 
         function updatePlayer() {
@@ -919,7 +781,67 @@
         }
 
         // ================================================================
-        //  حلقة اللعبة (Animation Loop)
+        //  خريطة التصغير (Minimap)
+        // ================================================================
+
+        function updateMinimap() {
+            const ctx = minimapCtx;
+            const w = 160,
+                h = 160;
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = 'rgba(10,10,26,0.9)';
+            ctx.fillRect(0, 0, w, h);
+
+            const scale = w / (mapSize * tileSize);
+
+            for (let z = 0; z < mapSize; z++) {
+                for (let x = 0; x < mapSize; x++) {
+                    const px = x * tileSize * scale;
+                    const py = z * tileSize * scale;
+                    const size = tileSize * scale * 0.9;
+
+                    if (mapData[z][x] === 1) {
+                        ctx.fillStyle = '#3a3a6a';
+                        ctx.fillRect(px, py, size, size);
+                    } else {
+                        ctx.fillStyle = (x + z) % 2 === 0 ? '#1a1a2e' : '#222244';
+                        ctx.fillRect(px, py, size, size);
+                    }
+                }
+            }
+
+            // اللاعب
+            const px = player.x * tileSize * scale + tileSize * scale / 2;
+            const py = player.z * tileSize * scale + tileSize * scale / 2;
+
+            ctx.fillStyle = '#8b5cf6';
+            ctx.shadowColor = '#8b5cf6';
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(px, py, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.strokeStyle = '#c084fc';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(px, py, 6, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // إطار
+            ctx.strokeStyle = 'rgba(255,215,0,0.2)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(0, 0, w, h);
+
+            ctx.fillStyle = 'rgba(255,215,0,0.5)';
+            ctx.font = '8px Cairo';
+            ctx.textAlign = 'center';
+            ctx.fillText('🗺️', w / 2, 12);
+        }
+
+        // ================================================================
+        //  الحلقة الرئيسية
         // ================================================================
 
         function animate() {
@@ -927,25 +849,18 @@
 
             updatePlayer();
 
-            // تحديث الكاميرا لتتبع اللاعب
+            // الكاميرا تتبع اللاعب
             const targetX = player.x * tileSize;
             const targetZ = player.z * tileSize;
-            camera.position.x += (targetX - camera.position.x) * 0.06;
-            camera.position.z += (targetZ - camera.position.z) * 0.06;
+            camera.position.x += (targetX - camera.position.x) * 0.05;
+            camera.position.z += (targetZ - camera.position.z) * 0.05;
             camera.lookAt(targetX, 0, targetZ);
 
-            // تحديث خريطة التصغير
+            updateSticker();
             updateMinimap();
-
-            // تحديث الملصق
-            updateStickerIn3D();
 
             renderer.render(scene, camera);
         }
-
-        // ================================================================
-        //  أحداث التحجيم
-        // ================================================================
 
         function onResize() {
             const w = window.innerWidth;
@@ -956,7 +871,7 @@
         }
 
         // ================================================================
-        //  دوال تحكم اللاعب (D-Pad)
+        //  تحكم D-Pad
         // ================================================================
 
         function setupTouchControls() {
@@ -1024,11 +939,10 @@
 
         function selectSkin(char) {
             // إزالة الملصق القديم
-            if (currentStickerMesh) {
-                playerGroup.remove(currentStickerMesh);
-                currentStickerMesh = null;
+            if (stickerMesh) {
+                playerGroup.remove(stickerMesh);
+                stickerMesh = null;
             }
-            // إيقاف Lottie/Video
             destroyAllAnimated();
 
             if (char) {
@@ -1044,7 +958,7 @@
                 playerSkin = null;
                 document.getElementById('char-name').textContent = 'لا توجد شخصية';
             }
-            updateStickerIn3D();
+            updateSticker();
             renderSkinSelector();
             document.getElementById('skin-selector').classList.remove('show');
         }
@@ -1052,7 +966,7 @@
         function setTGStatus(msg, type) {
             const el = document.getElementById('tg-status');
             el.textContent = msg;
-            el.style.color = type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : '#888';
+            el.style.color = type === 'success' ? '#4ade80' : type === 'error' ? '#f87171' : '#888';
         }
 
         async function testTelegram() {
@@ -1185,7 +1099,7 @@
                 videoSticker.play().catch(err => console.warn('play error', err));
                 document.getElementById('char-name').textContent = '🎬 ' + name;
                 showToast('✅ الفيديو جاهز للعرض', 'success');
-                updateStickerIn3D();
+                updateSticker();
             };
 
             videoSticker.onerror = () => {
@@ -1225,14 +1139,14 @@
                     animationLoaded = true;
                     document.getElementById('char-name').textContent = '🎬 ' + name;
                     showToast('✅ TGS جاهز للعرض', 'success');
-                    updateStickerIn3D();
+                    updateSticker();
                 });
 
                 setTimeout(() => {
                     if (!animationLoaded) {
                         animationLoaded = true;
                         document.getElementById('char-name').textContent = '🎬 ' + name;
-                        updateStickerIn3D();
+                        updateSticker();
                     }
                 }, 1500);
 
@@ -1315,7 +1229,7 @@
                             if (isSticker && !autoSelectDone && fetchedStickers.length === 1) {
                                 setTimeout(autoSelectFirstSticker, 400);
                             }
-                            updateStickerIn3D();
+                            updateSticker();
                         };
                         img.onerror = () => {
                             console.warn('فشل تحميل صورة:', imageUrl);
@@ -1382,7 +1296,6 @@
                 generateMap();
                 initThreeJS();
 
-                // تحميل البيانات المحفوظة
                 const savedToken = localStorage.getItem('nardo_bot_token');
                 const savedChat = localStorage.getItem('nardo_chat_id');
                 if (savedToken) document.getElementById('bot-token').value = savedToken;
@@ -1414,9 +1327,8 @@
             document.getElementById('start-btn').style.display = 'block';
         }, 400);
 
-        console.log('🎬 v28.0 — Three.js + Minimap');
+        console.log('🎬 v30.0 — 3D + Minimap');
     </script>
 </body>
 </html>
 
-                                                               
