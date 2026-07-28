@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🎬 أرضية فيديو + شخصية</title>
+<title>🎬 عالم فيديو 360 - أرضية + سماء + جوانب</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -98,15 +98,24 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 @keyframes toastOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-20px); } }
 
 #local-video-input { display:none; }
+
+#status-bar {
+  position:fixed; bottom:140px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,0.7); padding:4px 16px;
+  border-radius:12px; font-size:10px; color:#4ade80;
+  z-index:95; border:1px solid rgba(74,222,128,0.2);
+  display:none;
+  text-align:center;
+}
 </style>
 </head>
 <body>
 
 <!-- شاشة البداية -->
 <div id="start-screen">
-  <div class="start-logo">🎬 أرضية متحركة 3D</div>
+  <div class="start-logo">🌍 عالم فيديو 360</div>
   <button class="start-btn" onclick="enterApp()">🚀 دخول</button>
-  <div class="version-tag">v48.0 | عملي</div>
+  <div class="version-tag">v49.0 | عالم متكامل</div>
 </div>
 
 <!-- اللعبة -->
@@ -116,16 +125,17 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
   <div id="minimap-frame"></div>
   <div id="minimap-label">🗺️</div>
 
+  <div id="status-bar">🌍 جاري تحميل العالم...</div>
+
   <div class="hud">
-    <div class="title">🎮 العالم 3D</div>
-    <div class="info" id="char-name">لا يوجد فيديو</div>
+    <div class="title">🌍 عالم 360</div>
+    <div class="info" id="char-name">جاري التحميل...</div>
   </div>
 
   <div id="controls">
-    <button onclick="loadTestVideo()">🧪 فيديو تجريبي</button>
-    <button onclick="loadSampleFloor()">🏗️ أرضية نموذج</button>
-    <button onclick="document.getElementById('local-video-input').click()">📁 رفع فيديو</button>
-    <button onclick="stopVideo()">⏹️ إيقاف</button>
+    <button onclick="loadTestWorld()">🧪 عالم تجريبي</button>
+    <button onclick="document.getElementById('local-video-input').click()">📁 رفع فيديوهات</button>
+    <button onclick="resetCamera()">🔄 إعادة الكاميرا</button>
   </div>
 
   <div class="dpad" id="dpad">
@@ -135,14 +145,14 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
     <div class="dpad-btn dpad-right" data-dir="right">▶</div>
   </div>
 
-  <input type="file" id="local-video-input" accept="video/*,.webm,.mp4,.mov" onchange="handleLocalVideo(event)">
+  <input type="file" id="local-video-input" accept="video/*,.webm,.mp4,.mov" multiple onchange="handleLocalVideos(event)">
 </div>
 
 <div class="toast-container" id="toast-container"></div>
 
 <script>
 // ============================================================
-//  🎬 الملف العملي - أرضية فيديو + شخصية + تفاعل
+//  🌍 عالم فيديو 360 - أرضية + سماء + جوانب
 // ============================================================
 
 // ============================================================
@@ -150,18 +160,14 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 // ============================================================
 
 let scene, camera, renderer;
-let playerGroup, floorMesh, shadowPlane;
-let videoElement = null, videoTexture = null;
-let isVideoReady = false;
-let playerLight;
-let frameCount = 0;
+let playerGroup;
+let worldMeshes = {};
+let videoElements = {};
+let videoTextures = {};
+let isWorldReady = false;
 
-const MAP_SIZE = 16;
-const TILE_SIZE = 4;
-const WORLD_SIZE = MAP_SIZE * TILE_SIZE;
-const OFFSET = WORLD_SIZE / 2;
-const PLAYER_SPEED = 0.12;
-let mapData = [];
+const WORLD_SIZE = 30;
+const PLAYER_SPEED = 0.08;
 let touchDirs = { up: false, down: false, left: false, right: false };
 
 function initThree() {
@@ -170,119 +176,441 @@ function initThree() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a1a);
 
-  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 12, 12);
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 2, 5);
+  camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   // إضاءة
-  const ambient = new THREE.AmbientLight(0x8b5cf6, 0.4);
+  const ambient = new THREE.AmbientLight(0x8b5cf6, 0.6);
   scene.add(ambient);
 
-  const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
-  dirLight.position.set(10, 20, 10);
-  dirLight.castShadow = true;
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(5, 10, 5);
   scene.add(dirLight);
-
-  const fillLight = new THREE.DirectionalLight(0x4466ff, 0.3);
-  fillLight.position.set(-10, 10, -10);
-  scene.add(fillLight);
 
   // لاعب
   playerGroup = new THREE.Group();
   scene.add(playerGroup);
 
   // كرة
-  const bodyGeo = new THREE.SphereGeometry(0.5, 32, 32);
+  const bodyGeo = new THREE.SphereGeometry(0.4, 16, 16);
   const bodyMat = new THREE.MeshStandardMaterial({
-    color: 0x8b5cf6, emissive: 0x6d28d9, emissiveIntensity: 0.3,
-    roughness: 0.3, metalness: 0.6
+    color: 0x8b5cf6, emissive: 0x6d28d9, emissiveIntensity: 0.3
   });
   const body = new THREE.Mesh(bodyGeo, bodyMat);
-  body.position.y = 0.5;
-  body.castShadow = true;
-  body.receiveShadow = true;
+  body.position.y = 0.4;
   playerGroup.add(body);
 
   // تاج
-  const crownGeo = new THREE.ConeGeometry(0.3, 0.3, 6);
+  const crownGeo = new THREE.ConeGeometry(0.2, 0.25, 6);
   const crownMat = new THREE.MeshStandardMaterial({
-    color: 0xffd700, emissive: 0xffa500, emissiveIntensity: 0.3, metalness: 0.9
+    color: 0xffd700, emissive: 0xffa500, emissiveIntensity: 0.2, metalness: 0.9
   });
   const crown = new THREE.Mesh(crownGeo, crownMat);
-  crown.position.y = 1.0;
-  crown.castShadow = true;
+  crown.position.y = 0.8;
   playerGroup.add(crown);
 
-  // إضاءة تتبع اللاعب
-  playerLight = new THREE.PointLight(0x00f2ff, 0.8, 12, 2);
-  playerLight.position.set(0, 2, 0);
-  playerGroup.add(playerLight);
+  // توهج
+  const glowGeo = new THREE.PlaneGeometry(1.5, 1.5);
+  const glowMat = new THREE.MeshBasicMaterial({
+    color: 0x8b5cf6, transparent: true, opacity: 0.1
+  });
+  const glow = new THREE.Mesh(glowGeo, glowMat);
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.y = 0.02;
+  playerGroup.add(glow);
 
-  // ظلال
-  const shadowMat = new THREE.ShadowMaterial({ opacity: 0.35 });
-  shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE * 1.5, WORLD_SIZE * 1.5), shadowMat);
-  shadowPlane.rotation.x = -Math.PI / 2;
-  shadowPlane.position.y = 0.03;
-  shadowPlane.receiveShadow = true;
-  scene.add(shadowPlane);
-
-  // جدران
-  buildWalls();
-
-  // شبكة
-  const gridHelper = new THREE.GridHelper(WORLD_SIZE, MAP_SIZE, 0x333366, 0x1a1a3e);
-  gridHelper.name = 'gridHelper';
-  scene.add(gridHelper);
-
-  playerGroup.position.set(
-    1.5 * TILE_SIZE - OFFSET + TILE_SIZE/2,
-    0,
-    1.5 * TILE_SIZE - OFFSET + TILE_SIZE/2
-  );
+  playerGroup.position.set(0, 0, 0);
 
   setupMinimap();
   animate();
+
+  document.getElementById('status-bar').style.display = 'block';
+  document.getElementById('status-bar').textContent = '🌍 انتظر تحميل العالم...';
 }
 
-function buildWalls() {
-  mapData = [];
-  const wallGeo = new THREE.BoxGeometry(TILE_SIZE * 0.92, TILE_SIZE * 0.8, TILE_SIZE * 0.92);
-  const wallMat = new THREE.MeshStandardMaterial({
-    color: 0x2a2a4a, roughness: 0.4, metalness: 0.5, transparent: true, opacity: 0.8
+// ============================================================
+//  2. بناء العالم من الفيديو (قبة 360)
+// ============================================================
+
+function buildWorldFromVideos(videos) {
+  // تنظيف العالم القديم
+  Object.values(worldMeshes).forEach(mesh => {
+    if (mesh.parent) mesh.parent.remove(mesh);
+    if (mesh.material) {
+      if (mesh.material.map) mesh.material.map.dispose();
+      mesh.material.dispose();
+    }
+    if (mesh.geometry) mesh.geometry.dispose();
+  });
+  worldMeshes = {};
+
+  const half = WORLD_SIZE / 2;
+
+  // ===== 1. الأرضية (Floor) =====
+  if (videos.floor) {
+    const floorMat = new THREE.MeshStandardMaterial({
+      map: videos.floor,
+      side: THREE.DoubleSide,
+      roughness: 0.3,
+      metalness: 0.1
+    });
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE), floorMat);
+    floor.rotation.x = -Math.PI / 2;
+    floor.position.y = -0.1;
+    floor.receiveShadow = true;
+    scene.add(floor);
+    worldMeshes.floor = floor;
+  }
+
+  // ===== 2. السماء (Sky) =====
+  if (videos.sky) {
+    const skyMat = new THREE.MeshStandardMaterial({
+      map: videos.sky,
+      side: THREE.DoubleSide,
+      roughness: 0.1,
+      metalness: 0.0,
+      transparent: true,
+      opacity: 0.9
+    });
+    const sky = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE * 1.2, WORLD_SIZE * 0.8), skyMat);
+    sky.position.set(0, half * 0.7, -half * 0.3);
+    scene.add(sky);
+    worldMeshes.sky = sky;
+  }
+
+  // ===== 3. الجانب الأيمن =====
+  if (videos.right) {
+    const rightMat = new THREE.MeshStandardMaterial({
+      map: videos.right,
+      side: THREE.DoubleSide,
+      roughness: 0.4,
+      metalness: 0.1
+    });
+    const right = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE * 0.8, WORLD_SIZE * 0.7), rightMat);
+    right.position.set(half * 0.9, half * 0.2, 0);
+    right.rotation.y = -Math.PI / 2;
+    scene.add(right);
+    worldMeshes.right = right;
+  }
+
+  // ===== 4. الجانب الأيسر =====
+  if (videos.left) {
+    const leftMat = new THREE.MeshStandardMaterial({
+      map: videos.left,
+      side: THREE.DoubleSide,
+      roughness: 0.4,
+      metalness: 0.1
+    });
+    const left = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE * 0.8, WORLD_SIZE * 0.7), leftMat);
+    left.position.set(-half * 0.9, half * 0.2, 0);
+    left.rotation.y = Math.PI / 2;
+    scene.add(left);
+    worldMeshes.left = left;
+  }
+
+  // ===== 5. الجانب الأمامي =====
+  if (videos.front) {
+    const frontMat = new THREE.MeshStandardMaterial({
+      map: videos.front,
+      side: THREE.DoubleSide,
+      roughness: 0.4,
+      metalness: 0.1
+    });
+    const front = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE * 0.8, WORLD_SIZE * 0.7), frontMat);
+    front.position.set(0, half * 0.2, -half * 0.9);
+    scene.add(front);
+    worldMeshes.front = front;
+  }
+
+  // ===== 6. الجانب الخلفي =====
+  if (videos.back) {
+    const backMat = new THREE.MeshStandardMaterial({
+      map: videos.back,
+      side: THREE.DoubleSide,
+      roughness: 0.4,
+      metalness: 0.1
+    });
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE * 0.8, WORLD_SIZE * 0.7), backMat);
+    back.position.set(0, half * 0.2, half * 0.9);
+    back.rotation.y = Math.PI;
+    scene.add(back);
+    worldMeshes.back = back;
+  }
+
+  // إزالة الشبكة
+  scene.children.forEach(child => {
+    if (child.name === 'gridHelper') scene.remove(child);
   });
 
-  for (let z = 0; z < MAP_SIZE; z++) {
-    const row = [];
-    for (let x = 0; x < MAP_SIZE; x++) {
-      let isWall = false;
-      if (x === 0 || x === MAP_SIZE - 1 || z === 0 || z === MAP_SIZE - 1) isWall = true;
-      else if (Math.random() < 0.08 && !(x <= 3 && z <= 3)) isWall = true;
+  isWorldReady = true;
+  document.getElementById('status-bar').style.display = 'none';
+  document.getElementById('char-name').textContent = '🌍 عالم جاهز!';
+  showToast('✅ العالم جاهز! تحرك بحرية', 'success');
+}
 
-      row.push(isWall ? 1 : 0);
+// ============================================================
+//  3. تحميل الفيديوهات وإنشاء Textures
+// ============================================================
 
-      if (isWall) {
-        const wall = new THREE.Mesh(wallGeo, wallMat);
-        wall.position.set(
-          x * TILE_SIZE - OFFSET + TILE_SIZE/2,
-          TILE_SIZE * 0.4,
-          z * TILE_SIZE - OFFSET + TILE_SIZE/2
-        );
-        wall.castShadow = true;
-        wall.receiveShadow = true;
-        scene.add(wall);
-      }
+function createVideoTexture(src) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.crossOrigin = 'anonymous';
+    video.src = src;
+
+    video.onloadeddata = function() {
+      video.play().catch(() => {});
+      const texture = new THREE.VideoTexture(video);
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+      resolve({ video, texture });
+    };
+
+    video.onerror = function() {
+      reject(new Error('فشل تحميل الفيديو'));
+    };
+
+    video.load();
+  });
+}
+
+// ============================================================
+//  4. تحميل عالم كامل
+// ============================================================
+
+async function loadWorld(videoSources) {
+  try {
+    document.getElementById('status-bar').style.display = 'block';
+    document.getElementById('status-bar').textContent = '📥 جاري تحميل الفيديوهات...';
+
+    const textures = {};
+
+    // تحميل كل فيديو
+    for (const [key, src] of Object.entries(videoSources)) {
+      if (!src) continue;
+      document.getElementById('status-bar').textContent = `📥 تحميل: ${key}...`;
+      const result = await createVideoTexture(src);
+      textures[key] = result.texture;
+      videoElements[key] = result.video;
+      videoTextures[key] = result.texture;
     }
-    mapData.push(row);
+
+    // بناء العالم
+    buildWorldFromVideos(textures);
+    document.getElementById('status-bar').style.display = 'none';
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('status-bar').textContent = '❌ فشل التحميل';
+    showToast('❌ ' + err.message, 'error');
   }
 }
 
 // ============================================================
-//  2. خريطة مصغرة
+//  5. عالم تجريبي (فيديوهات وهمية)
+// ============================================================
+
+function loadTestWorld() {
+  // إنشاء فيديوهات وهمية لكل اتجاه
+  const videos = {};
+
+  const directions = ['floor', 'sky', 'right', 'left', 'front', 'back'];
+  const patterns = [
+    { name: 'floor', colors: ['#0a2e0a', '#1a4a1a'], pattern: 'grid' },
+    { name: 'sky', colors: ['#0a0a3e', '#1a1a6a'], pattern: 'stars' },
+    { name: 'right', colors: ['#2a1a2a', '#4a3a4a'], pattern: 'stripes' },
+    { name: 'left', colors: ['#1a2a3a', '#3a4a5a'], pattern: 'waves' },
+    { name: 'front', colors: ['#3a2a1a', '#5a4a3a'], pattern: 'circles' },
+    { name: 'back', colors: ['#2a0a1a', '#4a1a3a'], pattern: 'dots' }
+  ];
+
+  patterns.forEach((p, i) => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    let frame = 0;
+
+    function draw() {
+      frame++;
+      ctx.clearRect(0, 0, 512, 512);
+
+      const grad = ctx.createLinearGradient(0, 0, 512, 512);
+      grad.addColorStop(0, p.colors[0]);
+      grad.addColorStop(1, p.colors[1]);
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 512, 512);
+
+      // نمط حسب النوع
+      switch(p.pattern) {
+        case 'grid':
+          ctx.strokeStyle = `rgba(255,255,255,0.1)`;
+          ctx.lineWidth = 1;
+          for (let i = 0; i < 512; i += 30) {
+            const offset = (frame * 0.2) % 30;
+            ctx.beginPath(); ctx.moveTo(i + offset, 0); ctx.lineTo(i + offset, 512); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(0, i + offset); ctx.lineTo(512, i + offset); ctx.stroke();
+          }
+          break;
+        case 'stars':
+          for (let i = 0; i < 80; i++) {
+            const x = (i * 17 + frame * 0.5) % 512;
+            const y = (i * 13 + frame * 0.3) % 512;
+            const size = 1 + Math.sin(frame * 0.05 + i) * 2;
+            ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.sin(frame * 0.03 + i) * 0.2})`;
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+        case 'stripes':
+          for (let i = 0; i < 15; i++) {
+            const x = (i * 40 + frame * 0.5) % 560 - 20;
+            ctx.fillStyle = `hsla(${i * 30 + frame * 0.3}, 80%, 50%, 0.15)`;
+            ctx.fillRect(x, 0, 20, 512);
+          }
+          break;
+        case 'waves':
+          ctx.strokeStyle = `rgba(255,255,255,0.1)`;
+          ctx.lineWidth = 2;
+          for (let y = 0; y < 512; y += 20) {
+            const offset = Math.sin(y * 0.05 + frame * 0.04) * 30;
+            ctx.beginPath();
+            ctx.moveTo(0, y + offset);
+            for (let x = 0; x < 512; x += 5) {
+              const wave = Math.sin(x * 0.05 + y * 0.02 + frame * 0.03) * 20;
+              ctx.lineTo(x, y + wave + offset);
+            }
+            ctx.stroke();
+          }
+          break;
+        case 'circles':
+          for (let i = 0; i < 30; i++) {
+            const x = 256 + Math.sin(i * 1.7 + frame * 0.02) * 200;
+            const y = 256 + Math.cos(i * 2.3 + frame * 0.015) * 200;
+            const r = 10 + Math.sin(frame * 0.03 + i) * 5;
+            ctx.fillStyle = `hsla(${i * 20 + frame % 360}, 80%, 60%, 0.15)`;
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+        case 'dots':
+          for (let i = 0; i < 40; i++) {
+            const x = (i * 19 + frame * 0.3) % 512;
+            const y = (i * 23 + frame * 0.2) % 512;
+            ctx.fillStyle = `hsla(${i * 15 + frame % 360}, 80%, 60%, 0.2)`;
+            ctx.beginPath();
+            ctx.arc(x, y, 3 + Math.sin(frame * 0.02 + i) * 2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          break;
+      }
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+
+    const stream = canvas.captureStream(30);
+    const video = document.createElement('video');
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.srcObject = stream;
+    video.onloadeddata = function() {
+      video.play().catch(() => {});
+    };
+    video.load();
+
+    // تخزين الفيديو مؤقتاً
+    const url = URL.createObjectURL(stream);
+    videos[p.name] = url;
+    videoElements[p.name] = video;
+  });
+
+  // انتظر قليلاً ثم قم بتحميل العالم
+  setTimeout(() => {
+    const sources = {};
+    Object.keys(videos).forEach(key => {
+      sources[key] = videos[key];
+    });
+    loadWorld(sources);
+  }, 500);
+}
+
+// ============================================================
+//  6. رفع فيديوهات محلية
+// ============================================================
+
+function handleLocalVideos(event) {
+  const files = event.target.files;
+  if (files.length === 0) return;
+
+  const sources = {};
+  const names = ['floor', 'sky', 'right', 'left', 'front', 'back'];
+  let index = 0;
+
+  for (const file of files) {
+    if (index >= names.length) break;
+    if (!file.type.startsWith('video/')) continue;
+    const url = URL.createObjectURL(file);
+    const key = names[index];
+    sources[key] = url;
+    index++;
+    showToast(`📁 تم رفع: ${key} (${file.name})`, 'info');
+  }
+
+  if (Object.keys(sources).length > 0) {
+    loadWorld(sources);
+  } else {
+    showToast('❌ لم يتم رفع أي فيديو صالح', 'error');
+  }
+  event.target.value = '';
+}
+
+// ============================================================
+//  7. تحديث اللاعب
+// ============================================================
+
+function updatePlayer() {
+  let dx = 0, dz = 0;
+  if (touchDirs.up) dz = -PLAYER_SPEED;
+  if (touchDirs.down) dz = PLAYER_SPEED;
+  if (touchDirs.left) dx = -PLAYER_SPEED;
+  if (touchDirs.right) dx = PLAYER_SPEED;
+
+  const newX = playerGroup.position.x + dx;
+  const newZ = playerGroup.position.z + dz;
+  const limit = WORLD_SIZE / 2 - 1;
+
+  playerGroup.position.x = Math.max(-limit, Math.min(limit, newX));
+  playerGroup.position.z = Math.max(-limit, Math.min(limit, newZ));
+
+  // تدوير الشخصية
+  if (dx !== 0 || dz !== 0) {
+    playerGroup.rotation.y = Math.atan2(dx, dz);
+  }
+
+  // تحديث سرعة الفيديو
+  const speed = Math.sqrt(dx*dx + dz*dz);
+  Object.values(videoElements).forEach(video => {
+    if (video) {
+      const videoSpeed = 0.3 + speed * 2;
+      video.playbackRate = Math.min(videoSpeed, 3);
+    }
+  });
+}
+
+// ============================================================
+//  8. خريطة مصغرة
 // ============================================================
 
 let minimapCtx;
@@ -304,20 +632,15 @@ function updateMinimap() {
   ctx.fillStyle = 'rgba(10,10,26,0.9)';
   ctx.fillRect(0, 0, w, h);
 
-  const scale = w / (MAP_SIZE * TILE_SIZE);
+  // محيط العالم
+  const scale = w / WORLD_SIZE;
+  ctx.strokeStyle = 'rgba(255,215,0,0.2)';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(0, 0, w, h);
 
-  for (let z = 0; z < mapData.length; z++) {
-    for (let x = 0; x < mapData[z].length; x++) {
-      const px = x * TILE_SIZE * scale;
-      const py = z * TILE_SIZE * scale;
-      const size = TILE_SIZE * scale * 0.8;
-      ctx.fillStyle = mapData[z][x] === 1 ? '#3a3a6a' : '#1a1a2e';
-      ctx.fillRect(px, py, size, size);
-    }
-  }
-
-  const px = (playerGroup.position.x + OFFSET) * scale;
-  const py = (playerGroup.position.z + OFFSET) * scale;
+  // اللاعب
+  const px = (playerGroup.position.x + WORLD_SIZE/2) * scale;
+  const py = (playerGroup.position.z + WORLD_SIZE/2) * scale;
 
   ctx.fillStyle = '#8b5cf6';
   ctx.shadowColor = '#8b5cf6';
@@ -325,249 +648,56 @@ function updateMinimap() {
   ctx.beginPath();
   ctx.arc(px, py, 4, 0, Math.PI * 2);
   ctx.fill();
+  ctx.shadowBlur = 0;
 
+  // اتجاه اللاعب
+  const angle = playerGroup.rotation.y;
   ctx.strokeStyle = '#ffd700';
   ctx.lineWidth = 1.5;
-  ctx.strokeRect(0, 0, w, h);
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.lineTo(px + Math.sin(angle) * 10, py - Math.cos(angle) * 10);
+  ctx.stroke();
 }
 
 // ============================================================
-//  3. عرض الفيديو كأرضية
+//  9. كاميرا تتبع اللاعب
 // ============================================================
 
-function cleanupVideo() {
-  if (floorMesh) {
-    if (floorMesh.material) {
-      if (floorMesh.material.map) floorMesh.material.map.dispose();
-      floorMesh.material.dispose();
-    }
-    floorMesh.geometry.dispose();
-    scene.remove(floorMesh);
-    floorMesh = null;
-  }
-  if (videoElement) {
-    try { videoElement.pause(); } catch(e) {}
-    videoElement = null;
-  }
-  if (videoTexture) {
-    try { videoTexture.dispose(); } catch(e) {}
-    videoTexture = null;
-  }
-  isVideoReady = false;
-
-  let hasGrid = false;
-  scene.children.forEach(child => { if (child.name === 'gridHelper') hasGrid = true; });
-  if (!hasGrid) {
-    const gridHelper = new THREE.GridHelper(WORLD_SIZE, MAP_SIZE, 0x333366, 0x1a1a3e);
-    gridHelper.name = 'gridHelper';
-    scene.add(gridHelper);
-  }
+function updateCamera() {
+  const target = playerGroup.position.clone();
+  camera.position.x += (target.x - camera.position.x) * 0.05;
+  camera.position.z += (target.z + 4 - camera.position.z) * 0.05;
+  camera.position.y += (2.5 - camera.position.y) * 0.05;
+  camera.lookAt(target.x, 0.5, target.z);
 }
 
-function showVideoAsFloor(src, name) {
-  cleanupVideo();
-
-  showToast('📥 جاري تحميل: ' + name, 'info');
-  document.getElementById('char-name').textContent = '🎬 ' + name;
-
-  videoElement = document.createElement('video');
-  videoElement.muted = true;
-  videoElement.loop = true;
-  videoElement.playsInline = true;
-  videoElement.crossOrigin = 'anonymous';
-  videoElement.src = src;
-
-  videoElement.onloadeddata = function() {
-    if (isVideoReady) return;
-    isVideoReady = true;
-
-    videoTexture = new THREE.VideoTexture(videoElement);
-    videoTexture.minFilter = THREE.LinearFilter;
-    videoTexture.magFilter = THREE.LinearFilter;
-
-    const aspect = videoElement.videoWidth && videoElement.videoHeight
-      ? videoElement.videoWidth / videoElement.videoHeight : 1;
-
-    const floorWidth = WORLD_SIZE;
-    const floorHeight = WORLD_SIZE / aspect;
-
-    const geometry = new THREE.PlaneGeometry(floorWidth, floorHeight);
-    const material = new THREE.MeshStandardMaterial({
-      map: videoTexture,
-      side: THREE.DoubleSide,
-      transparent: true,
-      roughness: 0.15,
-      metalness: 0.4,
-      envMapIntensity: 1.0
-    });
-
-    floorMesh = new THREE.Mesh(geometry, material);
-    floorMesh.rotation.x = -Math.PI / 2;
-    floorMesh.position.y = 0.02;
-    floorMesh.receiveShadow = true;
-    scene.add(floorMesh);
-
-    scene.children.forEach(child => {
-      if (child.name === 'gridHelper') scene.remove(child);
-    });
-
-    videoElement.play().catch(() => {});
-    document.getElementById('char-name').textContent = '🎬 أرضية: ' + name;
-    showToast('✅ الأرضية جاهزة!', 'success');
-  };
-
-  videoElement.onerror = function() {
-    showToast('❌ فشل تحميل الفيديو', 'error');
-  };
-
-  videoElement.load();
+function resetCamera() {
+  camera.position.set(0, 2.5, 5);
+  camera.lookAt(0, 0, 0);
 }
 
 // ============================================================
-//  4. مصادر الفيديو
-// ============================================================
-
-function handleLocalVideo(event) {
-  const file = event.target.files[0];
-  if (!file || !file.type.startsWith('video/')) {
-    showToast('❌ ملف غير صالح', 'error');
-    return;
-  }
-  const blobUrl = URL.createObjectURL(file);
-  showVideoAsFloor(blobUrl, file.name.replace(/\.[^/.]+$/, '') || 'فيديو محلي');
-  event.target.value = '';
-}
-
-function loadTestVideo() {
-  showVideoAsFloor('https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm', 'زهرة متحركة 🌸');
-}
-
-function loadSampleFloor() {
-  cleanupVideo();
-
-  const canvas = document.createElement('canvas');
-  canvas.width = 512; canvas.height = 512;
-  const ctx = canvas.getContext('2d');
-  let frame = 0;
-
-  function draw() {
-    frame++;
-    const grad = ctx.createRadialGradient(256, 256, 0, 256, 256, 256);
-    grad.addColorStop(0, `hsl(${frame % 360}, 80%, 50%)`);
-    grad.addColorStop(0.5, `hsl(${(frame + 120) % 360}, 80%, 30%)`);
-    grad.addColorStop(1, `hsl(${(frame + 240) % 360}, 80%, 20%)`);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 512, 512);
-
-    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-    ctx.lineWidth = 2;
-    const offset = frame % 50;
-    for (let i = 0; i < 512; i += 50) {
-      ctx.beginPath(); ctx.moveTo(i + offset, 0); ctx.lineTo(i + offset, 512); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, i + offset); ctx.lineTo(512, i + offset); ctx.stroke();
-    }
-
-    ctx.fillStyle = 'rgba(139,92,246,0.3)';
-    for (let i = 0; i < 20; i++) {
-      const x = (Math.sin(i * 1.7 + frame * 0.02) * 0.4 + 0.5) * 512;
-      const y = (Math.cos(i * 2.3 + frame * 0.015) * 0.4 + 0.5) * 512;
-      ctx.beginPath();
-      ctx.arc(x, y, 5 + Math.sin(frame * 0.05 + i) * 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    requestAnimationFrame(draw);
-  }
-  draw();
-
-  const stream = canvas.captureStream(30);
-  const video = document.createElement('video');
-  video.muted = true;
-  video.loop = true;
-  video.playsInline = true;
-  video.srcObject = stream;
-  video.onloadeddata = function() {
-    video.play().catch(() => {});
-    const url = URL.createObjectURL(stream);
-    showVideoAsFloor(url, 'أرضية نموذجية ✨');
-  };
-  video.load();
-}
-
-function stopVideo() {
-  cleanupVideo();
-  document.getElementById('char-name').textContent = 'لا يوجد فيديو';
-  showToast('⏹️ تم الإيقاف', 'info');
-}
-
-// ============================================================
-//  5. تحديث اللاعب
-// ============================================================
-
-function updatePlayer() {
-  let dx = 0, dz = 0;
-  if (touchDirs.up) dz = -PLAYER_SPEED;
-  if (touchDirs.down) dz = PLAYER_SPEED;
-  if (touchDirs.left) dx = -PLAYER_SPEED;
-  if (touchDirs.right) dx = PLAYER_SPEED;
-
-  if (dx === 0 && dz === 0) {
-    playerLight.intensity += (0.5 - playerLight.intensity) * 0.1;
-    return;
-  }
-
-  const newX = playerGroup.position.x + dx;
-  const newZ = playerGroup.position.z + dz;
-  const gridX = Math.floor((newX + OFFSET) / TILE_SIZE);
-  const gridZ = Math.floor((newZ + OFFSET) / TILE_SIZE);
-
-  if (gridX >= 0 && gridX < MAP_SIZE && gridZ >= 0 && gridZ < MAP_SIZE && mapData[gridZ][gridX] !== 1) {
-    playerGroup.position.x = newX;
-  }
-  if (gridX >= 0 && gridX < MAP_SIZE && gridZ >= 0 && gridZ < MAP_SIZE && mapData[gridZ][gridX] !== 1) {
-    playerGroup.position.z = newZ;
-  }
-
-  const speed = Math.sqrt(dx*dx + dz*dz);
-  playerLight.intensity += ((0.8 + speed * 15) - playerLight.intensity) * 0.2;
-
-  if (speed > 0.05) {
-    const hue = 0.55 + speed * 2;
-    playerLight.color.setHSL(hue % 1, 1, 0.5);
-  }
-
-  // 🔥 سرعة الفيديو تتغير مع الحركة!
-  if (videoElement && isVideoReady) {
-    const videoSpeed = 0.3 + speed * 3;
-    videoElement.playbackRate = Math.min(videoSpeed, 4);
-  }
-}
-
-// ============================================================
-//  6. حلقة الرسم
+//  10. حلقة الرسم
 // ============================================================
 
 function animate() {
   requestAnimationFrame(animate);
-  frameCount++;
 
   updatePlayer();
-
-  if (videoTexture && isVideoReady) {
-    videoTexture.needsUpdate = true;
-  }
-
-  const target = playerGroup.position.clone();
-  camera.position.x += (target.x - camera.position.x) * 0.05;
-  camera.position.z += (target.z + 10 - camera.position.z) * 0.05;
-  camera.position.y += (12 - camera.position.y) * 0.05;
-  camera.lookAt(target.x, 0, target.z);
-
+  updateCamera();
   updateMinimap();
+
+  // تحديث textures
+  Object.values(videoTextures).forEach(texture => {
+    if (texture) texture.needsUpdate = true;
+  });
+
   renderer.render(scene, camera);
 }
 
 // ============================================================
-//  7. تحكم
+//  11. تحكم
 // ============================================================
 
 function setupTouchControls() {
@@ -616,7 +746,7 @@ function showToast(message, type) {
 }
 
 // ============================================================
-//  8. الدخول
+//  12. الدخول
 // ============================================================
 
 function enterApp() {
@@ -635,26 +765,25 @@ function enterApp() {
     }
   });
 
-  showToast('📁 اختر فيديو أو اضغط "فيديو تجريبي"', 'info');
+  showToast('🌍 اضغط "عالم تجريبي" أو ارفع فيديوهات', 'info');
 }
 
 // ============================================================
-//  9. بدء التشغيل
+//  13. بدء التشغيل
 // ============================================================
 
 setupTouchControls();
 
-console.log('🎬 v48.0 — الملف العملي النهائي');
-console.log('📌 المميزات المطبقة:');
-console.log('  ✅ أرضية فيديو 3D');
-console.log('  ✅ شخصية تتحرك (D-Pad + مفاتيح)');
+console.log('🌍 v49.0 — عالم فيديو 360 متكامل');
+console.log('📌 المميزات:');
+console.log('  ✅ أرضية فيديو');
+console.log('  ✅ سماء فيديو');
+console.log('  ✅ جوانب فيديو (يمين، يسار، أمام، خلف)');
+console.log('  ✅ شخصية تتحرك');
 console.log('  ✅ سرعة الفيديو تتغير مع الحركة');
 console.log('  ✅ خريطة مصغرة');
-console.log('  ✅ ظلال وانعكاس');
-console.log('  ✅ إضاءة ديناميكية');
-console.log('  ✅ رفع فيديو محلي');
-console.log('  ✅ فيديو تجريبي');
-console.log('  ✅ أرضية نموذجية');
+console.log('  ✅ رفع فيديوهات محلية');
+console.log('  ✅ عالم تجريبي');
 </script>
 </body>
 </html>
