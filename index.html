@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🗺️ خريطة 16×16 - كل مربع له هويته</title>
+<title>🎬 فيديو واحد مقسم 16×16</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -17,13 +17,13 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
   display:flex; flex-direction:column; justify-content:center; align-items:center; gap:20px;
 }
 .start-logo { font-size:42px; font-weight:900; color:#ffd700; animation:float 3s ease-in-out infinite; }
-.start-subtitle { font-size:15px; color:#666; text-align:center; max-width:380px; line-height:1.6; }
+.start-subtitle { font-size:15px; color:#666; text-align:center; max-width:380px; }
 .start-btn {
   border:2px solid #00f2ff; color:#00f2ff; padding:16px 50px;
   background:rgba(0,242,255,0.08); border-radius:60px; font-size:20px;
   cursor:pointer; transition:all .3s; font-weight:700; font-family:inherit;
 }
-.start-btn:hover { transform:scale(1.05); background:#00f2ff; color:#000; box-shadow:0 0 50px rgba(0,242,255,0.4); }
+.start-btn:hover { transform:scale(1.05); background:#00f2ff; color:#000; }
 .version-tag { position:absolute; bottom:15px; font-size:11px; color:#444; }
 @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
 
@@ -71,7 +71,7 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 
 #minimap-frame {
   position:fixed; top:50px; left:10px;
-  width:140px; height:140px;
+  width:120px; height:120px;
   border:2px solid #ffd700; border-radius:12px;
   overflow:hidden; pointer-events:none; z-index:90;
   background:rgba(5,5,16,0.6);
@@ -99,6 +99,7 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 @keyframes toastIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 @keyframes toastOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-20px); } }
 
+#video-input { display:none; }
 #status-bar {
   position:fixed; bottom:140px; left:50%; transform:translateX(-50%);
   background:rgba(0,0,0,0.7); padding:4px 16px;
@@ -106,24 +107,16 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
   z-index:95; border:1px solid rgba(74,222,128,0.2);
   display:none; text-align:center;
 }
-
-#tile-info {
-  position:fixed; top:36px; left:50%; transform:translateX(-50%);
-  background:rgba(0,0,0,0.7); padding:3px 14px;
-  border-radius:12px; font-size:10px; color:#ffd700;
-  z-index:95; border:1px solid rgba(255,215,0,0.2);
-  display:none;
-}
 </style>
 </head>
 <body>
 
 <!-- شاشة البداية -->
 <div id="start-screen">
-  <div class="start-logo">🗺️ خريطة 16×16</div>
-  <div class="start-subtitle">كل مربع له فيديو خاص · كل معلم له خصائصه</div>
+  <div class="start-logo">🎬 فيديو مقسم 16×16</div>
+  <div class="start-subtitle">فيديو واحد · 256 مربع · تحرك بحرية</div>
   <button class="start-btn" onclick="enterApp()">🚀 دخول</button>
-  <div class="version-tag">v53.0 | Multi-Video Tiles</div>
+  <div class="version-tag">v54.0 | Simple Split</div>
 </div>
 
 <!-- اللعبة -->
@@ -133,19 +126,21 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
   <div id="minimap-frame"></div>
   <div id="minimap-label">🗺️</div>
 
-  <div id="tile-info">🧩 المربع: -</div>
-  <div id="status-bar">🌍 جاري بناء الخريطة...</div>
+  <div id="status-bar">📥 جاري تحميل الفيديو...</div>
 
   <div class="hud">
-    <div class="title">🗺️ خريطة متعددة الفيديوهات</div>
-    <div class="info" id="char-name">جاري التحميل...</div>
+    <div class="title">🎬 فيديو مقسم</div>
+    <div class="info" id="char-name">لا يوجد فيديو</div>
   </div>
 
   <div id="controls">
-    <button onclick="generateMap()">🗺️ توليد خريطة</button>
+    <button onclick="document.getElementById('video-input').click()">📁 تحميل فيديو</button>
+    <button onclick="loadTestVideo()">🧪 فيديو تجريبي</button>
     <button onclick="toggleGrid()">📐 شبكة</button>
     <button onclick="resetCamera()">🔄 إعادة</button>
   </div>
+
+  <input type="file" id="video-input" accept="video/*,.webm,.mp4,.mov" onchange="handleVideo(event)">
 
   <div class="dpad" id="dpad">
     <div class="dpad-btn dpad-up" data-dir="up">▲</div>
@@ -159,88 +154,25 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 
 <script>
 // ============================================================
-//  🗺️ خريطة 16×16 - كل مربع له فيديو خاص
+//  🎬 فيديو واحد مقسم إلى 16×16
 // ============================================================
 
 // ============================================================
-//  1. أنواع التضاريس (المعلمات)
-// ============================================================
-
-const TERRAIN_TYPES = {
-    CITY: {
-        name: 'مدينة',
-        color: '#4a4a7a',
-        height: 0.3,
-        speed: 0.8,
-        emoji: '🏙️',
-        pattern: 'grid'
-    },
-    FOREST: {
-        name: 'غابة',
-        color: '#1a4a1a',
-        height: 0.5,
-        speed: 1.0,
-        emoji: '🌲',
-        pattern: 'circles'
-    },
-    WATER: {
-        name: 'ماء',
-        color: '#1a3a6a',
-        height: -0.2,
-        speed: 0.6,
-        emoji: '🌊',
-        pattern: 'waves'
-    },
-    MOUNTAIN: {
-        name: 'جبل',
-        color: '#5a4a3a',
-        height: 1.2,
-        speed: 0.5,
-        emoji: '⛰️',
-        pattern: 'stars'
-    },
-    DESERT: {
-        name: 'صحراء',
-        color: '#8a7a5a',
-        height: 0.2,
-        speed: 1.2,
-        emoji: '🏜️',
-        pattern: 'dots'
-    },
-    PLAINS: {
-        name: 'سهول',
-        color: '#3a5a2a',
-        height: 0.1,
-        speed: 1.1,
-        emoji: '🌾',
-        pattern: 'stripes'
-    }
-};
-
-// ============================================================
-//  2. توليد خريطة 16×16
-// ============================================================
-
-const MAP_SIZE = 16;
-const TILE_SIZE = 3;
-const WORLD_SIZE = MAP_SIZE * TILE_SIZE;
-const HALF = WORLD_SIZE / 2;
-
-let mapData = [];
-let tileMeshes = [];
-let tileVideos = [];
-let gridHelper = null;
-let gridVisible = true;
-let isReady = false;
-
-// ============================================================
-//  3. Three.js
+//  1. Three.js
 // ============================================================
 
 let scene, camera, renderer;
 let playerGroup, tileGroup;
-let touchDirs = { up: false, down: false, left: false, right: false };
+let tileMeshes = [];
+let mainVideo = null, mainTexture = null;
+let gridVisible = true, isReady = false;
+
+const GRID = 16;
+const TILE_SIZE = 2.5;
+const WORLD_SIZE = GRID * TILE_SIZE;
+const HALF = WORLD_SIZE / 2;
 const PLAYER_SPEED = 0.08;
+let touchDirs = { up: false, down: false, left: false, right: false };
 
 function initThree() {
   const canvas = document.getElementById('game-canvas');
@@ -297,163 +229,10 @@ function initThree() {
 }
 
 // ============================================================
-//  4. توليد التضاريس
+//  2. تقسيم الفيديو إلى 16×16
 // ============================================================
 
-function generateTerrainMap() {
-  mapData = [];
-
-  // أنواع التضاريس
-  const types = ['CITY', 'FOREST', 'WATER', 'MOUNTAIN', 'DESERT', 'PLAINS'];
-
-  for (let y = 0; y < MAP_SIZE; y++) {
-    const row = [];
-    for (let x = 0; x < MAP_SIZE; x++) {
-      // توليد تضاريس طبيعية (متجاورة)
-      let type;
-      
-      // مناطق محددة
-      if (x < 3 && y < 3) type = 'CITY'; // مدينة في الزاوية
-      else if (x > 12 && y > 12) type = 'DESERT'; // صحراء في الزاوية
-      else if (x > 10 && y < 3) type = 'MOUNTAIN'; // جبال في الأعلى يمين
-      else if (x > 5 && x < 9 && y > 5 && y < 11) type = 'WATER'; // بحيرة في المنتصف
-      else if (y > 12 && x < 5) type = 'FOREST'; // غابة في الأسفل يسار
-      else {
-        // مناطق عشوائية
-        const rand = Math.random();
-        if (rand < 0.2) type = 'FOREST';
-        else if (rand < 0.35) type = 'PLAINS';
-        else if (rand < 0.5) type = 'WATER';
-        else if (rand < 0.7) type = 'MOUNTAIN';
-        else if (rand < 0.85) type = 'DESERT';
-        else type = 'CITY';
-      }
-
-      // إضافة بعض العشوائية
-      if (Math.random() < 0.05) {
-        const randomType = types[Math.floor(Math.random() * types.length)];
-        type = randomType;
-      }
-
-      row.push(type);
-    }
-    mapData.push(row);
-  }
-}
-
-// ============================================================
-//  5. إنشاء فيديوهات وهمية لكل نوع تضاريس
-// ============================================================
-
-function createTerrainVideo(type, frame) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 128;
-  canvas.height = 128;
-  const ctx = canvas.getContext('2d');
-
-  const terrain = TERRAIN_TYPES[type];
-  const color = terrain.color;
-  const pattern = terrain.pattern;
-
-  let f = frame || 0;
-
-  function draw() {
-    f++;
-    ctx.clearRect(0, 0, 128, 128);
-
-    // خلفية
-    const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    const c = new THREE.Color(color);
-    const r = Math.floor(c.r * 255);
-    const g = Math.floor(c.g * 255);
-    const b = Math.floor(c.b * 255);
-    grad.addColorStop(0, `rgb(${r+30},${g+30},${b+30})`);
-    grad.addColorStop(1, `rgb(${r-20},${g-20},${b-20})`);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 128, 128);
-
-    // نمط حسب النوع
-    ctx.strokeStyle = `rgba(255,255,255,0.05)`;
-    ctx.lineWidth = 1;
-
-    switch(pattern) {
-      case 'grid':
-        for (let i = 0; i < 128; i += 16) {
-          const off = (f * 0.2) % 16;
-          ctx.beginPath(); ctx.moveTo(i + off, 0); ctx.lineTo(i + off, 128); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(0, i + off); ctx.lineTo(128, i + off); ctx.stroke();
-        }
-        break;
-      case 'circles':
-        for (let i = 0; i < 15; i++) {
-          const x = 64 + Math.sin(i * 1.7 + f * 0.02) * 50;
-          const y = 64 + Math.cos(i * 2.3 + f * 0.015) * 50;
-          const r = 5 + Math.sin(f * 0.03 + i) * 3;
-          ctx.fillStyle = `rgba(255,255,255,0.05)`;
-          ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-        }
-        break;
-      case 'waves':
-        for (let y = 0; y < 128; y += 10) {
-          const off = Math.sin(y * 0.05 + f * 0.04) * 10;
-          ctx.beginPath();
-          ctx.moveTo(0, y + off);
-          for (let x = 0; x < 128; x += 3) {
-            const wave = Math.sin(x * 0.05 + y * 0.02 + f * 0.03) * 8;
-            ctx.lineTo(x, y + wave + off);
-          }
-          ctx.stroke();
-        }
-        break;
-      case 'stars':
-        for (let i = 0; i < 30; i++) {
-          const x = (i * 23 + f * 0.5) % 128;
-          const y = (i * 17 + f * 0.3) % 128;
-          const size = 1 + Math.sin(f * 0.05 + i) * 1.5;
-          ctx.fillStyle = `rgba(255,255,255,${0.1 + Math.sin(f * 0.03 + i) * 0.1})`;
-          ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill();
-        }
-        break;
-      case 'dots':
-        for (let i = 0; i < 25; i++) {
-          const x = (i * 19 + f * 0.3) % 128;
-          const y = (i * 23 + f * 0.2) % 128;
-          ctx.fillStyle = `rgba(255,255,255,0.05)`;
-          ctx.beginPath(); ctx.arc(x, y, 2 + Math.sin(f * 0.02 + i), 0, Math.PI * 2); ctx.fill();
-        }
-        break;
-      case 'stripes':
-        for (let i = 0; i < 10; i++) {
-          const x = (i * 16 + f * 0.5) % 140 - 10;
-          ctx.fillStyle = `rgba(255,255,255,0.04)`;
-          ctx.fillRect(x, 0, 8, 128);
-        }
-        break;
-    }
-
-    // إسم التضاريس
-    ctx.fillStyle = `rgba(255,255,255,${0.1 + Math.sin(f * 0.02) * 0.05})`;
-    ctx.font = '12px Arial';
-    ctx.textAlign = 'center';
-    ctx.fillText(terrain.emoji + ' ' + terrain.name, 64, 65);
-
-    // حدود
-    ctx.strokeStyle = `rgba(255,255,255,0.03)`;
-    ctx.lineWidth = 0.5;
-    ctx.strokeRect(0, 0, 128, 128);
-
-    requestAnimationFrame(draw);
-  }
-  draw();
-
-  return canvas;
-}
-
-// ============================================================
-//  6. بناء الخريطة
-// ============================================================
-
-function buildMap() {
+function splitVideo(texture) {
   // تنظيف القديم
   tileMeshes.forEach(mesh => {
     if (mesh.parent) mesh.parent.remove(mesh);
@@ -464,123 +243,213 @@ function buildMap() {
     if (mesh.geometry) mesh.geometry.dispose();
   });
   tileMeshes = [];
-  tileVideos = [];
 
-  // توليد التضاريس
-  generateTerrainMap();
+  const tileW = 1 / GRID;
+  const tileH = 1 / GRID;
 
-  for (let y = 0; y < MAP_SIZE; y++) {
-    for (let x = 0; x < MAP_SIZE; x++) {
-      const type = mapData[y][x];
-      const terrain = TERRAIN_TYPES[type];
-      
-      // إنشاء فيديو خاص بالمربع
-      const canvas = createTerrainVideo(type, x * MAP_SIZE + y);
-      const video = document.createElement('video');
-      video.muted = true;
-      video.loop = true;
-      video.playsInline = true;
-      const stream = canvas.captureStream(30);
-      video.srcObject = stream;
-      video.onloadeddata = function() {
-        video.play().catch(() => {});
-      };
-      video.load();
+  for (let row = 0; row < GRID; row++) {
+    for (let col = 0; col < GRID; col++) {
+      // كل مربع يأخذ جزءاً من الفيديو
+      const clone = texture.clone();
+      clone.repeat.set(tileW, tileH);
+      clone.offset.set(col * tileW, row * tileH);
 
-      // حفظ الفيديو
-      tileVideos.push(video);
-
-      // إنشاء Texture
-      const texture = new THREE.VideoTexture(video);
-      texture.minFilter = THREE.LinearFilter;
-      texture.magFilter = THREE.LinearFilter;
-
-      // ارتفاع المربع حسب التضاريس
-      const height = terrain.height;
-
-      // إنشاء المربع
       const geometry = new THREE.PlaneGeometry(TILE_SIZE * 0.95, TILE_SIZE * 0.95);
       const material = new THREE.MeshStandardMaterial({
-        map: texture,
+        map: clone,
         side: THREE.DoubleSide,
         transparent: true,
-        roughness: 0.5,
-        metalness: 0.1,
-        emissive: new THREE.Color(terrain.color),
-        emissiveIntensity: 0.05
+        roughness: 0.3,
+        metalness: 0.1
       });
 
       const mesh = new THREE.Mesh(geometry, material);
-      const posX = x * TILE_SIZE - HALF + TILE_SIZE / 2;
-      const posZ = y * TILE_SIZE - HALF + TILE_SIZE / 2;
-      mesh.position.set(posX, height, posZ);
+      const posX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
+      const posZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
+      mesh.position.set(posX, 0, posZ);
       mesh.rotation.x = -Math.PI / 2;
       mesh.receiveShadow = true;
-
-      mesh.userData = {
-        gridX: x,
-        gridY: y,
-        type: type,
-        terrain: terrain,
-        index: y * MAP_SIZE + x
-      };
+      mesh.userData = { row, col, index: row * GRID + col };
 
       tileGroup.add(mesh);
       tileMeshes.push(mesh);
     }
   }
 
-  // إضافة شبكة
+  // شبكة
   addGrid();
 
   isReady = true;
   document.getElementById('status-bar').style.display = 'none';
-  document.getElementById('char-name').textContent = '🗺️ خريطة ' + MAP_SIZE + '×' + MAP_SIZE + ' جاهزة';
-  showToast('✅ خريطة ' + MAP_SIZE + '×' + MAP_SIZE + ' مع ' + Object.keys(TERRAIN_TYPES).length + ' تضاريس', 'success');
+  document.getElementById('char-name').textContent = '🎬 ' + (GRID * GRID) + ' مربع';
+  showToast('✅ تم تقسيم الفيديو إلى ' + (GRID * GRID) + ' مربع', 'success');
 }
 
 // ============================================================
-//  7. شبكة إرشادية
+//  3. تحميل الفيديو
 // ============================================================
+
+function loadVideo(src, name) {
+  showToast('📥 جاري تحميل الفيديو...', 'info');
+  document.getElementById('status-bar').style.display = 'block';
+  document.getElementById('status-bar').textContent = '📥 تحميل الفيديو...';
+
+  if (mainVideo) {
+    try { mainVideo.pause(); } catch(e) {}
+    mainVideo = null;
+  }
+  if (mainTexture) {
+    try { mainTexture.dispose(); } catch(e) {}
+    mainTexture = null;
+  }
+
+  mainVideo = document.createElement('video');
+  mainVideo.muted = true;
+  mainVideo.loop = true;
+  mainVideo.playsInline = true;
+  mainVideo.preload = 'auto';
+  mainVideo.crossOrigin = 'anonymous';
+  mainVideo.src = src;
+
+  mainVideo.onloadeddata = function() {
+    mainVideo.play().catch(() => {});
+    mainTexture = new THREE.VideoTexture(mainVideo);
+    mainTexture.minFilter = THREE.LinearFilter;
+    mainTexture.magFilter = THREE.LinearFilter;
+    mainTexture.format = THREE.RGBAFormat;
+
+    splitVideo(mainTexture);
+    document.getElementById('char-name').textContent = '🎬 ' + (name || 'فيديو');
+  };
+
+  mainVideo.onerror = function() {
+    showToast('❌ فشل تحميل الفيديو', 'error');
+    document.getElementById('status-bar').style.display = 'none';
+  };
+
+  mainVideo.load();
+}
+
+// ============================================================
+//  4. فيديو تجريبي
+// ============================================================
+
+function loadTestVideo() {
+  showToast('🎨 إنشاء فيديو تجريبي...', 'info');
+  document.getElementById('status-bar').style.display = 'block';
+  document.getElementById('status-bar').textContent = '🎨 إنشاء فيديو...';
+
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 1024;
+  const ctx = canvas.getContext('2d');
+  let frame = 0;
+
+  function draw() {
+    frame++;
+    ctx.clearRect(0, 0, 1024, 1024);
+
+    const grad = ctx.createRadialGradient(512, 512, 0, 512, 512, 512);
+    grad.addColorStop(0, `hsl(${frame * 0.3 % 360}, 80%, 60%)`);
+    grad.addColorStop(0.5, `hsl(${(frame * 0.3 + 120) % 360}, 70%, 40%)`);
+    grad.addColorStop(1, `hsl(${(frame * 0.3 + 240) % 360}, 80%, 20%)`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1024, 1024);
+
+    // شبكة
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 2;
+    const off = (frame * 0.2) % 80;
+    for (let i = 0; i < 1024; i += 80) {
+      ctx.beginPath(); ctx.moveTo(i + off, 0); ctx.lineTo(i + off, 1024); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i + off); ctx.lineTo(1024, i + off); ctx.stroke();
+    }
+
+    // دوائر
+    for (let i = 0; i < 25; i++) {
+      const x = 512 + Math.sin(i * 1.7 + frame * 0.015) * 350;
+      const y = 512 + Math.cos(i * 2.3 + frame * 0.012) * 350;
+      const r = 15 + Math.sin(frame * 0.03 + i) * 8;
+      ctx.fillStyle = `hsla(${(i * 20 + frame * 0.5) % 360}, 100%, 70%, 0.15)`;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    }
+
+    // مربعات متحركة (تظهر في كل جزء من الفيديو)
+    for (let i = 0; i < 16; i++) {
+      const cx = (i % 4) * 256 + 128;
+      const cy = Math.floor(i / 4) * 256 + 128;
+      const size = 60 + Math.sin(frame * 0.02 + i * 0.5) * 30;
+      ctx.fillStyle = `hsla(${i * 22 + frame * 0.3}, 90%, 60%, 0.15)`;
+      ctx.fillRect(cx - size/2, cy - size/2, size, size);
+    }
+
+    // نص
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.font = '40px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('🎬 16×16 = 256 مربع', 512, 60);
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  const stream = canvas.captureStream(30);
+  const video = document.createElement('video');
+  video.muted = true;
+  video.loop = true;
+  video.playsInline = true;
+  video.srcObject = stream;
+
+  video.onloadeddata = function() {
+    video.play().catch(() => {});
+    const url = URL.createObjectURL(stream);
+    loadVideo(url, 'فيديو تجريبي');
+  };
+  video.load();
+}
+
+// ============================================================
+//  5. رفع فيديو محلي
+// ============================================================
+
+function handleVideo(event) {
+  const file = event.target.files[0];
+  if (!file || !file.type.startsWith('video/')) {
+    showToast('❌ ملف غير صالح', 'error');
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  loadVideo(url, file.name.replace(/\.[^/.]+$/, ''));
+  event.target.value = '';
+}
+
+// ============================================================
+//  6. شبكة
+// ============================================================
+
+let gridHelper = null;
 
 function addGrid() {
   if (gridHelper) {
     tileGroup.remove(gridHelper);
     gridHelper = null;
   }
-
-  gridHelper = new THREE.GridHelper(WORLD_SIZE, MAP_SIZE, 0x8b5cf6, 0x2a2a4a);
+  gridHelper = new THREE.GridHelper(WORLD_SIZE, GRID, 0x8b5cf6, 0x2a2a4a);
   gridHelper.position.y = 0.05;
   gridHelper.material.transparent = true;
-  gridHelper.material.opacity = gridVisible ? 0.2 : 0;
+  gridHelper.material.opacity = gridVisible ? 0.15 : 0;
   tileGroup.add(gridHelper);
 }
 
 function toggleGrid() {
   gridVisible = !gridVisible;
   if (gridHelper) {
-    gridHelper.material.opacity = gridVisible ? 0.2 : 0;
+    gridHelper.material.opacity = gridVisible ? 0.15 : 0;
   }
-  showToast(gridVisible ? '📐 شبكة ظاهرة' : '📐 شبكة مخفية', 'info');
 }
 
 // ============================================================
-//  8. توليد الخريطة
-// ============================================================
-
-function generateMap() {
-  document.getElementById('status-bar').style.display = 'block';
-  document.getElementById('status-bar').textContent = '🔄 جاري توليد الخريطة...';
-  document.getElementById('tile-info').style.display = 'block';
-  
-  setTimeout(() => {
-    buildMap();
-    document.getElementById('tile-info').textContent = '🧩 ' + MAP_SIZE + '×' + MAP_SIZE + ' = ' + (MAP_SIZE * MAP_SIZE) + ' مربع';
-  }, 100);
-}
-
-// ============================================================
-//  9. تحديث اللاعب
+//  7. اللاعب
 // ============================================================
 
 function updatePlayer() {
@@ -592,7 +461,7 @@ function updatePlayer() {
 
   const newX = playerGroup.position.x + dx;
   const newZ = playerGroup.position.z + dz;
-  const limit = HALF - TILE_SIZE / 2;
+  const limit = HALF - TILE_SIZE/2;
 
   playerGroup.position.x = Math.max(-limit, Math.min(limit, newX));
   playerGroup.position.z = Math.max(-limit, Math.min(limit, newZ));
@@ -601,11 +470,14 @@ function updatePlayer() {
     playerGroup.rotation.y = Math.atan2(dx, dz);
   }
 
-  // معرفة المربع الحالي
-  updateActiveTile();
+  // سرعة الفيديو تتغير مع الحركة
+  const speed = Math.sqrt(dx*dx + dz*dz);
+  if (mainVideo && isReady) {
+    mainVideo.playbackRate = 0.3 + speed * 2;
+  }
 
-  // تحديث سرعة الفيديو حسب التضاريس
-  updateTileSpeed();
+  // تمييز المربع النشط
+  updateActiveTile();
 }
 
 function updateActiveTile() {
@@ -614,74 +486,37 @@ function updateActiveTile() {
   const col = Math.floor(px / TILE_SIZE);
   const row = Math.floor(pz / TILE_SIZE);
 
-  if (col >= 0 && col < MAP_SIZE && row >= 0 && row < MAP_SIZE) {
-    const index = row * MAP_SIZE + col;
-    const type = mapData[row][col];
-    const terrain = TERRAIN_TYPES[type];
-
-    // تمييز المربع النشط
-    tileMeshes.forEach((mesh, i) => {
-      if (i === index) {
-        mesh.material.emissive = new THREE.Color(0x8b5cf6);
-        mesh.material.emissiveIntensity = 0.2;
-        mesh.scale.set(1.02, 1.02, 1);
-      } else {
-        mesh.material.emissive = new THREE.Color(0x000000);
-        mesh.material.emissiveIntensity = 0;
-        mesh.scale.set(1, 1, 1);
-      }
-    });
-
-    // تحديث معلومات المربع
-    document.getElementById('tile-info').textContent = 
-      '🧩 ' + terrain.emoji + ' ' + terrain.name + 
-      ' (' + col + ', ' + row + ')';
-  }
-}
-
-function updateTileSpeed() {
-  const px = playerGroup.position.x + HALF;
-  const pz = playerGroup.position.z + HALF;
-  const col = Math.floor(px / TILE_SIZE);
-  const row = Math.floor(pz / TILE_SIZE);
-
-  if (col >= 0 && col < MAP_SIZE && row >= 0 && row < MAP_SIZE) {
-    const type = mapData[row][col];
-    const terrain = TERRAIN_TYPES[type];
-    const speed = terrain.speed;
-
-    // تغيير سرعة الفيديو حسب التضاريس
-    const idx = row * MAP_SIZE + col;
-    if (tileVideos[idx]) {
-      // سرعة الحركة تؤثر على الفيديو
-      const moveSpeed = Math.sqrt(
-        Math.pow(touchDirs.up || touchDirs.down ? 1 : 0, 2) +
-        Math.pow(touchDirs.left || touchDirs.right ? 1 : 0, 2)
-      );
-      const videoSpeed = speed * (0.3 + moveSpeed * 0.7);
-      tileVideos[idx].playbackRate = Math.min(videoSpeed, 2);
+  tileMeshes.forEach((mesh, i) => {
+    const r = Math.floor(i / GRID);
+    const c = i % GRID;
+    if (r === row && c === col) {
+      mesh.material.emissive = new THREE.Color(0x8b5cf6);
+      mesh.material.emissiveIntensity = 0.15;
+    } else {
+      mesh.material.emissive = new THREE.Color(0x000000);
+      mesh.material.emissiveIntensity = 0;
     }
-  }
+  });
 }
 
 // ============================================================
-//  10. خريطة مصغرة
+//  8. خريطة مصغرة
 // ============================================================
 
 let minimapCtx;
 
 function setupMinimap() {
-  const minimapFrame = document.getElementById('minimap-frame');
+  const frame = document.getElementById('minimap-frame');
   const canvas = document.createElement('canvas');
-  canvas.width = 140; canvas.height = 140;
-  minimapFrame.appendChild(canvas);
+  canvas.width = 120; canvas.height = 120;
+  frame.appendChild(canvas);
   minimapCtx = canvas.getContext('2d');
 }
 
 function updateMinimap() {
   if (!minimapCtx) return;
   const ctx = minimapCtx;
-  const w = 140, h = 140;
+  const w = 120, h = 120;
 
   ctx.clearRect(0, 0, w, h);
   ctx.fillStyle = 'rgba(10,10,26,0.9)';
@@ -689,17 +524,13 @@ function updateMinimap() {
 
   const scale = w / WORLD_SIZE;
 
-  // رسم المربعات
-  for (let y = 0; y < MAP_SIZE; y++) {
-    for (let x = 0; x < MAP_SIZE; x++) {
+  // شبكة المربعات
+  for (let y = 0; y < GRID; y++) {
+    for (let x = 0; x < GRID; x++) {
       const px = x * TILE_SIZE * scale;
       const py = y * TILE_SIZE * scale;
       const size = TILE_SIZE * scale * 0.9;
-      
-      const type = mapData[y]?.[x] || 'PLAINS';
-      const terrain = TERRAIN_TYPES[type];
-      const color = new THREE.Color(terrain.color);
-      ctx.fillStyle = `rgb(${color.r*255|0},${color.g*255|0},${color.b*255|0})`;
+      ctx.fillStyle = ((x + y) % 2 === 0) ? '#2a2a4a' : '#1a1a2e';
       ctx.fillRect(px, py, size, size);
     }
   }
@@ -712,7 +543,7 @@ function updateMinimap() {
   ctx.shadowColor = '#8b5cf6';
   ctx.shadowBlur = 6;
   ctx.beginPath();
-  ctx.arc(px, py, 4, 0, Math.PI * 2);
+  ctx.arc(px, py, 3, 0, Math.PI * 2);
   ctx.fill();
 
   ctx.strokeStyle = '#ffd700';
@@ -721,7 +552,7 @@ function updateMinimap() {
 }
 
 // ============================================================
-//  11. كاميرا
+//  9. كاميرا
 // ============================================================
 
 function updateCamera() {
@@ -739,7 +570,7 @@ function resetCamera() {
 }
 
 // ============================================================
-//  12. حلقة الرسم
+//  10. حلقة الرسم
 // ============================================================
 
 function animate() {
@@ -749,18 +580,15 @@ function animate() {
   updateCamera();
   updateMinimap();
 
-  // تحديث الفيديوهات
-  tileVideos.forEach(video => {
-    if (video && video.texture) {
-      video.texture.needsUpdate = true;
-    }
-  });
+  if (mainTexture && isReady) {
+    mainTexture.needsUpdate = true;
+  }
 
   renderer.render(scene, camera);
 }
 
 // ============================================================
-//  13. تحكم
+//  11. تحكم
 // ============================================================
 
 function setupTouchControls() {
@@ -809,7 +637,7 @@ function showToast(message, type) {
 }
 
 // ============================================================
-//  14. الدخول
+//  12. الدخول
 // ============================================================
 
 function enterApp() {
@@ -817,6 +645,7 @@ function enterApp() {
   document.getElementById('game-container').style.display = 'block';
   document.getElementById('minimap-frame').style.display = 'block';
   document.getElementById('minimap-label').style.display = 'block';
+  document.getElementById('status-bar').style.display = 'block';
 
   initThree();
 
@@ -828,26 +657,26 @@ function enterApp() {
     }
   });
 
-  // توليد الخريطة تلقائياً
-  setTimeout(generateMap, 500);
+  // تحميل فيديو تجريبي تلقائياً
+  setTimeout(loadTestVideo, 500);
 }
 
 // ============================================================
-//  15. بدء التشغيل
+//  13. بدء التشغيل
 // ============================================================
 
 setupTouchControls();
 
-console.log('🗺️ v53.0 — خريطة 16×16 بتضاريس متعددة');
+console.log('🎬 v54.0 — فيديو واحد مقسم 16×16');
 console.log('📌 المميزات:');
-console.log('  ✅ ' + MAP_SIZE + '×' + MAP_SIZE + ' = ' + (MAP_SIZE * MAP_SIZE) + ' مربع');
-console.log('  ✅ كل مربع له فيديو خاص');
-console.log('  ✅ 6 أنواع تضاريس (مدينة، غابة، ماء، جبل، صحراء، سهول)');
-console.log('  ✅ كل تضاريس لها سرعة وارتفاع مختلف');
+console.log('  ✅ فيديو واحد فقط');
+console.log('  ✅ تقسيم إلى 16×16 = 256 مربع');
+console.log('  ✅ كل مربع يعرض جزءاً من الفيديو');
 console.log('  ✅ تمييز المربع النشط');
-console.log('  ✅ خريطة مصغرة ملونة');
+console.log('  ✅ سرعة الفيديو تتغير مع الحركة');
+console.log('  ✅ تحميل فيديو من ملف');
+console.log('  ✅ فيديو تجريبي');
 </script>
 </body>
 </html>
-
 
