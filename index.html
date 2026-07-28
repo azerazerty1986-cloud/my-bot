@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🎬 عالم فيديو 360°</title>
+<title>🧩 فيديو واحد مقسم إلى مربعات</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -69,6 +69,20 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 }
 #controls button:hover { background:rgba(139,92,246,0.3); border-color:#8b5cf6; }
 
+#minimap-frame {
+  position:fixed; top:50px; left:10px;
+  width:120px; height:120px;
+  border:2px solid #ffd700; border-radius:12px;
+  overflow:hidden; pointer-events:none; z-index:90;
+  background:rgba(5,5,16,0.6);
+  display:none;
+}
+#minimap-label {
+  position:fixed; top:52px; left:12px; z-index:91;
+  font-size:8px; color:#ffd700; background:rgba(0,0,0,0.6);
+  padding:1px 6px; border-radius:4px; pointer-events:none; display:none;
+}
+
 .toast-container {
   position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
   z-index:700; display:flex; flex-direction:column; gap:5px; pointer-events:none;
@@ -86,7 +100,6 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 @keyframes toastOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-20px); } }
 
 #local-video-input { display:none; }
-
 #status-bar {
   position:fixed; bottom:140px; left:50%; transform:translateX(-50%);
   background:rgba(0,0,0,0.7); padding:4px 16px;
@@ -100,27 +113,30 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 
 <!-- شاشة البداية -->
 <div id="start-screen">
-  <div class="start-logo">🌍 عالم 360°</div>
-  <div class="start-subtitle">قبة فيديو 360 درجة · تحرك بحرية</div>
+  <div class="start-logo">🧩 فيديو مقسم</div>
+  <div class="start-subtitle">فيديو واحد · مقسم إلى مربعات · كل مربع يظهر جزءاً مختلفاً</div>
   <button class="start-btn" onclick="enterApp()">🚀 دخول</button>
-  <div class="version-tag">v50.0 | 360° Dome</div>
+  <div class="version-tag">v52.0 | One Video Split</div>
 </div>
 
 <!-- اللعبة -->
 <div id="game-container">
   <canvas id="game-canvas"></canvas>
 
-  <div id="status-bar">🌍 جاري تحميل العالم 360°...</div>
+  <div id="minimap-frame"></div>
+  <div id="minimap-label">🗺️</div>
+
+  <div id="status-bar">🌍 جاري تحميل الفيديو...</div>
 
   <div class="hud">
-    <div class="title">🌍 360°</div>
-    <div class="info" id="char-name">جاري التحميل...</div>
+    <div class="title">🧩 فيديو مقسم</div>
+    <div class="info" id="char-name">لا يوجد فيديو</div>
   </div>
 
   <div id="controls">
-    <button onclick="loadTestWorld()">🧪 عالم 360 تجريبي</button>
-    <button onclick="document.getElementById('local-video-input').click()">📁 رفع فيديو 360</button>
-    <button onclick="toggleMouseControl()">🖱️ تحكم بالماوس</button>
+    <button onclick="loadTestVideo()">🧪 فيديو تجريبي</button>
+    <button onclick="document.getElementById('local-video-input').click()">📁 رفع فيديو</button>
+    <button onclick="toggleGrid()">📐 شبكة</button>
     <button onclick="resetCamera()">🔄 إعادة</button>
   </div>
 
@@ -138,22 +154,27 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 
 <script>
 // ============================================================
-//  🌍 قبة فيديو 360 درجة
+//  🧩 فيديو واحد مقسم إلى مربعات
 // ============================================================
 
 // ============================================================
-//  1. Three.js - المحرك الأساسي
+//  1. Three.js
 // ============================================================
 
 let scene, camera, renderer;
-let sphereMesh, playerGroup, playerLight;
-let videoElement = null, videoTexture = null;
+let playerGroup, tileGroup;
+let tileMeshes = [];
+let tileTextures = [];
+let videoElement = null, mainVideoTexture = null;
+let gridVisible = true;
 let isReady = false;
-let mouseControl = false;
 
+const GRID = 4; // 4x4 = 16 مربع
+const TILE_SIZE = 4;
+const WORLD_SIZE = GRID * TILE_SIZE;
+const HALF = WORLD_SIZE / 2;
 const PLAYER_SPEED = 0.08;
 let touchDirs = { up: false, down: false, left: false, right: false };
-let mouseX = 0, mouseY = 0;
 
 function initThree() {
   const canvas = document.getElementById('game-canvas');
@@ -161,94 +182,144 @@ function initThree() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0a1a);
 
-  camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 100);
-  camera.position.set(0, 1.6, 0.1);
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 6, 10);
+  camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.2;
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-  // لاعب (كرة صغيرة للإشارة)
+  // إضاءة
+  const ambient = new THREE.AmbientLight(0x8b5cf6, 0.5);
+  scene.add(ambient);
+  const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+  dirLight.position.set(10, 20, 10);
+  dirLight.castShadow = true;
+  scene.add(dirLight);
+
+  // لاعب
   playerGroup = new THREE.Group();
   scene.add(playerGroup);
 
-  // كرة صغيرة تحت اللاعب
-  const dotGeo = new THREE.SphereGeometry(0.1, 8, 8);
-  const dotMat = new THREE.MeshBasicMaterial({ color: 0x8b5cf6 });
-  const dot = new THREE.Mesh(dotGeo, dotMat);
-  dot.position.y = 0.05;
-  playerGroup.add(dot);
+  const bodyGeo = new THREE.SphereGeometry(0.35, 16, 16);
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: 0x8b5cf6, emissive: 0x6d28d9, emissiveIntensity: 0.3
+  });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = 0.35;
+  body.castShadow = true;
+  playerGroup.add(body);
 
-  // نقطة ضوئية صغيرة
-  playerLight = new THREE.PointLight(0x8b5cf6, 0.5, 2);
-  playerLight.position.y = 0.1;
-  playerGroup.add(playerLight);
+  const crownGeo = new THREE.ConeGeometry(0.2, 0.2, 6);
+  const crownMat = new THREE.MeshStandardMaterial({
+    color: 0xffd700, emissive: 0xffa500, emissiveIntensity: 0.2, metalness: 0.9
+  });
+  const crown = new THREE.Mesh(crownGeo, crownMat);
+  crown.position.y = 0.7;
+  playerGroup.add(crown);
 
   playerGroup.position.set(0, 0, 0);
 
-  // تحكم بالماوس
-  setupMouseControls();
+  // مجموعة المربعات
+  tileGroup = new THREE.Group();
+  scene.add(tileGroup);
 
+  setupMinimap();
   animate();
 }
 
 // ============================================================
-//  2. قبة 360 درجة (Sphere)
+//  2. تقسيم الفيديو إلى مربعات
 // ============================================================
 
-function createDome(texture) {
-  // تنظيف القبة القديمة
-  if (sphereMesh) {
-    if (sphereMesh.material) {
-      if (sphereMesh.material.map) sphereMesh.material.map.dispose();
-      sphereMesh.material.dispose();
+function splitVideoIntoTiles(videoTexture) {
+  // تنظيف المربعات القديمة
+  tileMeshes.forEach(mesh => {
+    if (mesh.parent) mesh.parent.remove(mesh);
+    if (mesh.material) {
+      if (mesh.material.map) mesh.material.map.dispose();
+      mesh.material.dispose();
     }
-    if (sphereMesh.geometry) sphereMesh.geometry.dispose();
-    scene.remove(sphereMesh);
+    if (mesh.geometry) mesh.geometry.dispose();
+  });
+  tileMeshes = [];
+  tileTextures = [];
+
+  // كل مربع يأخذ جزءاً من الفيديو
+  const tileWidth = 1 / GRID;
+  const tileHeight = 1 / GRID;
+
+  for (let row = 0; row < GRID; row++) {
+    for (let col = 0; col < GRID; col++) {
+      // حساب إحداثيات الجزء من الفيديو
+      const u = col / GRID;
+      const v = row / GRID;
+
+      // إنشاء Texture للجزء
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      // رسم جزء من الفيديو على Canvas
+      // (في الواقع نستخدم VideoTexture مع UV offset)
+
+      // إنشاء المربع
+      const geometry = new THREE.PlaneGeometry(TILE_SIZE * 0.95, TILE_SIZE * 0.95);
+      
+      // 🔥 نستخدم VideoTexture مع إزاحة UV
+      const texture = videoTexture.clone();
+      texture.repeat.set(tileWidth, tileHeight);
+      texture.offset.set(u, v);
+
+      const material = new THREE.MeshStandardMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        transparent: true,
+        roughness: 0.3,
+        metalness: 0.1
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      
+      // موقع المربع في الخريطة
+      const posX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
+      const posZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
+      mesh.position.set(posX, 0, posZ);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.receiveShadow = true;
+      
+      mesh.userData = { row, col, index: row * GRID + col };
+      tileGroup.add(mesh);
+      tileMeshes.push(mesh);
+      tileTextures.push(texture);
+    }
   }
 
-  // إنشاء كرة كبيرة (قبة 360)
-  const geometry = new THREE.SphereGeometry(30, 64, 64);
-  const material = new THREE.MeshBasicMaterial({
-    map: texture,
-    side: THREE.BackSide, // نعرض من الداخل
-    transparent: true
-  });
-
-  sphereMesh = new THREE.Mesh(geometry, material);
-  sphereMesh.position.set(0, 0, 0);
-  scene.add(sphereMesh);
-
-  // إزالة الشبكة إن وجدت
-  scene.children.forEach(child => {
-    if (child.name === 'gridHelper') scene.remove(child);
-  });
+  // إضافة شبكة إرشادية
+  addGrid();
 
   isReady = true;
   document.getElementById('status-bar').style.display = 'none';
-  document.getElementById('char-name').textContent = '🌍 عالم 360 جاهز!';
-  showToast('✅ عالم 360° جاهز! تحرك بحرية', 'success');
+  document.getElementById('char-name').textContent = '✅ فيديو مقسم إلى ' + (GRID * GRID) + ' مربع';
+  showToast('✅ الفيديو مقسم إلى ' + (GRID * GRID) + ' مربع!', 'success');
 }
 
 // ============================================================
-//  3. تحميل فيديو 360
+//  3. تحميل الفيديو وتقسيمه
 // ============================================================
 
-function loadVideo360(src, name) {
-  showToast('📥 جاري تحميل فيديو 360...', 'info');
+function loadAndSplitVideo(src, name) {
+  showToast('📥 جاري تحميل الفيديو...', 'info');
   document.getElementById('status-bar').style.display = 'block';
-  document.getElementById('status-bar').textContent = '📥 تحميل فيديو 360...';
+  document.getElementById('status-bar').textContent = '📥 تحميل الفيديو...';
 
-  // تنظيف الفيديو القديم
   if (videoElement) {
     try { videoElement.pause(); } catch(e) {}
     videoElement = null;
-  }
-  if (videoTexture) {
-    try { videoTexture.dispose(); } catch(e) {}
-    videoTexture = null;
   }
 
   videoElement = document.createElement('video');
@@ -261,13 +332,13 @@ function loadVideo360(src, name) {
 
   videoElement.onloadeddata = function() {
     videoElement.play().catch(() => {});
-    videoTexture = new THREE.VideoTexture(videoElement);
-    videoTexture.minFilter = THREE.LinearFilter;
-    videoTexture.magFilter = THREE.LinearFilter;
-    videoTexture.format = THREE.RGBAFormat;
+    mainVideoTexture = new THREE.VideoTexture(videoElement);
+    mainVideoTexture.minFilter = THREE.LinearFilter;
+    mainVideoTexture.magFilter = THREE.LinearFilter;
+    mainVideoTexture.format = THREE.RGBAFormat;
 
-    createDome(videoTexture);
-    document.getElementById('char-name').textContent = '🎬 ' + (name || 'فيديو 360');
+    splitVideoIntoTiles(mainVideoTexture);
+    document.getElementById('char-name').textContent = '🎬 ' + (name || 'فيديو مقسم');
   };
 
   videoElement.onerror = function() {
@@ -279,102 +350,72 @@ function loadVideo360(src, name) {
 }
 
 // ============================================================
-//  4. عالم 360 تجريبي
+//  4. فيديو تجريبي (مرسوم)
 // ============================================================
 
-function loadTestWorld() {
-  showToast('🌍 جاري إنشاء عالم 360...', 'info');
+function loadTestVideo() {
+  showToast('🎨 إنشاء فيديو تجريبي...', 'info');
   document.getElementById('status-bar').style.display = 'block';
-  document.getElementById('status-bar').textContent = '🎨 إنشاء عالم 360...';
+  document.getElementById('status-bar').textContent = '🎨 إنشاء فيديو تجريبي...';
 
-  // إنشاء Canvas فيديو 360
   const canvas = document.createElement('canvas');
   canvas.width = 1024;
-  canvas.height = 512;
+  canvas.height = 1024;
   const ctx = canvas.getContext('2d');
 
   let frame = 0;
 
   function draw() {
     frame++;
-    ctx.clearRect(0, 0, 1024, 512);
+    ctx.clearRect(0, 0, 1024, 1024);
 
-    // سماء متحركة
-    const skyGrad = ctx.createLinearGradient(0, 0, 0, 512);
-    skyGrad.addColorStop(0, `hsl(${200 + frame * 0.1 % 360}, 80%, 30%)`);
-    skyGrad.addColorStop(0.5, `hsl(${220 + frame * 0.05 % 360}, 70%, 20%)`);
-    skyGrad.addColorStop(1, `hsl(${240 + frame * 0.02 % 360}, 60%, 15%)`);
-    ctx.fillStyle = skyGrad;
-    ctx.fillRect(0, 0, 1024, 512);
+    // خلفية متحركة
+    const grad = ctx.createRadialGradient(512, 512, 0, 512, 512, 512);
+    grad.addColorStop(0, `hsl(${frame * 0.3 % 360}, 80%, 60%)`);
+    grad.addColorStop(0.5, `hsl(${(frame * 0.3 + 120) % 360}, 70%, 40%)`);
+    grad.addColorStop(1, `hsl(${(frame * 0.3 + 240) % 360}, 80%, 20%)`);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1024, 1024);
 
-    // أرضية
-    const groundY = 400;
-    const groundGrad = ctx.createLinearGradient(0, groundY, 0, 512);
-    groundGrad.addColorStop(0, `hsl(${120 + frame * 0.05 % 360}, 70%, 25%)`);
-    groundGrad.addColorStop(0.3, `hsl(${110 + frame * 0.03 % 360}, 60%, 20%)`);
-    groundGrad.addColorStop(1, `hsl(${100 + frame * 0.02 % 360}, 50%, 15%)`);
-    ctx.fillStyle = groundGrad;
-    ctx.fillRect(0, groundY, 1024, 512 - groundY);
-
-    // خط الأفق
-    ctx.strokeStyle = `rgba(139,92,246,0.2)`;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(0, groundY);
-    ctx.lineTo(1024, groundY);
-    ctx.stroke();
-
-    // غيوم متحركة
-    for (let i = 0; i < 8; i++) {
-      const x = (i * 150 + frame * 0.5) % 1100 - 50;
-      const y = 50 + Math.sin(i * 1.3 + frame * 0.01) * 30;
-      const w = 80 + Math.sin(i * 0.7) * 30;
-      const h = 20 + Math.sin(i * 0.5) * 8;
-      ctx.fillStyle = `rgba(255,255,255,${0.05 + Math.sin(frame * 0.01 + i) * 0.02})`;
-      ctx.beginPath();
-      ctx.ellipse(x, y, w, h, 0, 0, Math.PI * 2);
-      ctx.fill();
+    // شبكة متحركة
+    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+    ctx.lineWidth = 2;
+    const off = (frame * 0.2) % 80;
+    for (let i = 0; i < 1024; i += 80) {
+      ctx.beginPath(); ctx.moveTo(i + off, 0); ctx.lineTo(i + off, 1024); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i + off); ctx.lineTo(1024, i + off); ctx.stroke();
     }
 
-    // أشجار على الأفق
-    for (let i = 0; i < 20; i++) {
-      const x = (i * 55 + frame * 0.2) % 1100 - 50;
-      const h = 20 + Math.sin(i * 0.7 + frame * 0.01) * 10;
-      ctx.fillStyle = `hsl(${120 + Math.sin(i * 0.5) * 20}, 60%, ${20 + Math.sin(i + frame * 0.02) * 5}%)`;
-      ctx.fillRect(x, groundY - h, 4, h);
-      // تاج الشجرة
-      ctx.beginPath();
-      ctx.arc(x + 2, groundY - h - 5, 8 + Math.sin(i + frame * 0.02) * 3, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // نجوم متلألئة في السماء
-    for (let i = 0; i < 40; i++) {
-      const x = (i * 37 + frame * 0.1) % 1024;
-      const y = (i * 53 + frame * 0.05) % 350;
-      const size = 1 + Math.sin(frame * 0.03 + i * 2) * 1.5;
-      ctx.fillStyle = `rgba(255,255,255,${0.2 + Math.sin(frame * 0.02 + i) * 0.2})`;
-      ctx.beginPath();
-      ctx.arc(x, y, size, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    // نقاط ضوئية متحركة (أضواء)
-    for (let i = 0; i < 6; i++) {
-      const x = 200 + i * 120 + Math.sin(frame * 0.02 + i * 1.2) * 30;
-      const y = groundY - 10 + Math.sin(frame * 0.03 + i * 0.8) * 5;
-      const r = 3 + Math.sin(frame * 0.04 + i) * 2;
-      ctx.fillStyle = `hsla(${i * 60 + frame % 360}, 100%, 60%, 0.3)`;
+    // دوائر متحركة
+    for (let i = 0; i < 25; i++) {
+      const x = 512 + Math.sin(i * 1.7 + frame * 0.015) * 350;
+      const y = 512 + Math.cos(i * 2.3 + frame * 0.012) * 350;
+      const r = 15 + Math.sin(frame * 0.03 + i) * 8;
+      ctx.fillStyle = `hsla(${(i * 20 + frame * 0.5) % 360}, 100%, 70%, 0.15)`;
       ctx.beginPath();
       ctx.arc(x, y, r, 0, Math.PI * 2);
       ctx.fill();
     }
 
+    // مربعات متحركة (ستظهر بشكل مختلف في كل مربع)
+    for (let i = 0; i < 16; i++) {
+      const cx = (i % 4) * 256 + 128;
+      const cy = Math.floor(i / 4) * 256 + 128;
+      const size = 60 + Math.sin(frame * 0.02 + i * 0.5) * 30;
+      ctx.fillStyle = `hsla(${i * 22 + frame * 0.3}, 90%, 60%, 0.15)`;
+      ctx.fillRect(cx - size/2, cy - size/2, size, size);
+    }
+
+    // نص إرشادي
+    ctx.fillStyle = 'rgba(255,255,255,0.1)';
+    ctx.font = '30px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('🧩 فيديو مقسم إلى 16 مربع', 512, 50);
+
     requestAnimationFrame(draw);
   }
   draw();
 
-  // تحويل Canvas إلى فيديو
   const stream = canvas.captureStream(30);
   const video = document.createElement('video');
   video.muted = true;
@@ -385,14 +426,13 @@ function loadTestWorld() {
   video.onloadeddata = function() {
     video.play().catch(() => {});
     const url = URL.createObjectURL(stream);
-    loadVideo360(url, 'عالم 360 تجريبي');
-    document.getElementById('status-bar').style.display = 'none';
+    loadAndSplitVideo(url, 'فيديو تجريبي');
   };
   video.load();
 }
 
 // ============================================================
-//  5. رفع فيديو 360 محلي
+//  5. رفع فيديو محلي
 // ============================================================
 
 function handleLocalVideo(event) {
@@ -402,69 +442,37 @@ function handleLocalVideo(event) {
     return;
   }
   const blobUrl = URL.createObjectURL(file);
-  loadVideo360(blobUrl, file.name.replace(/\.[^/.]+$/, '') || 'فيديو 360');
+  loadAndSplitVideo(blobUrl, file.name.replace(/\.[^/.]+$/, '') || 'فيديو محلي');
   event.target.value = '';
 }
 
 // ============================================================
-//  6. تحكم بالماوس (360)
+//  6. شبكة إرشادية
 // ============================================================
 
-function setupMouseControls() {
-  const canvas = document.getElementById('game-canvas');
+let gridHelper = null;
 
-  canvas.addEventListener('mousedown', (e) => {
-    mouseControl = true;
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-  });
+function addGrid() {
+  if (gridHelper) {
+    tileGroup.remove(gridHelper);
+    gridHelper = null;
+  }
 
-  document.addEventListener('mousemove', (e) => {
-    if (!mouseControl) return;
-    const dx = e.clientX - mouseX;
-    const dy = e.clientY - mouseY;
-    mouseX = e.clientX;
-    mouseY = e.clientY;
-
-    // تدوير القبة (وليس الكاميرا)
-    if (sphereMesh) {
-      sphereMesh.rotation.y += dx * 0.005;
-      sphereMesh.rotation.x += dy * 0.005;
-      sphereMesh.rotation.x = Math.max(-0.5, Math.min(0.5, sphereMesh.rotation.x));
-    }
-  });
-
-  document.addEventListener('mouseup', () => {
-    mouseControl = false;
-  });
-
-  // تحكم باللمس للسحب (360)
-  let touchStartX = 0, touchStartY = 0;
-  canvas.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 1) {
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-    }
-  });
-
-  canvas.addEventListener('touchmove', (e) => {
-    if (e.touches.length !== 1) return;
-    const dx = e.touches[0].clientX - touchStartX;
-    const dy = e.touches[0].clientY - touchStartY;
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-
-    if (sphereMesh) {
-      sphereMesh.rotation.y += dx * 0.005;
-      sphereMesh.rotation.x += dy * 0.005;
-      sphereMesh.rotation.x = Math.max(-0.5, Math.min(0.5, sphereMesh.rotation.x));
-    }
-  });
+  const size = WORLD_SIZE;
+  const divisions = GRID;
+  gridHelper = new THREE.GridHelper(size, divisions, 0x8b5cf6, 0x2a2a4a);
+  gridHelper.position.y = 0.05;
+  gridHelper.material.transparent = true;
+  gridHelper.material.opacity = gridVisible ? 0.3 : 0;
+  tileGroup.add(gridHelper);
 }
 
-function toggleMouseControl() {
-  mouseControl = !mouseControl;
-  showToast(mouseControl ? '🖱️ تحكم بالماوس مفعل' : '🖱️ تحكم بالماوس معطل', 'info');
+function toggleGrid() {
+  gridVisible = !gridVisible;
+  if (gridHelper) {
+    gridHelper.material.opacity = gridVisible ? 0.3 : 0;
+  }
+  showToast(gridVisible ? '📐 شبكة ظاهرة' : '📐 شبكة مخفية', 'info');
 }
 
 // ============================================================
@@ -480,10 +488,15 @@ function updatePlayer() {
 
   const newX = playerGroup.position.x + dx;
   const newZ = playerGroup.position.z + dz;
-  const limit = 4;
+  const limit = HALF - TILE_SIZE/2;
 
   playerGroup.position.x = Math.max(-limit, Math.min(limit, newX));
   playerGroup.position.z = Math.max(-limit, Math.min(limit, newZ));
+
+  // تدوير
+  if (dx !== 0 || dz !== 0) {
+    playerGroup.rotation.y = Math.atan2(dx, dz);
+  }
 
   // تحديث سرعة الفيديو
   const speed = Math.sqrt(dx*dx + dz*dz);
@@ -491,31 +504,104 @@ function updatePlayer() {
     const videoSpeed = 0.3 + speed * 2;
     videoElement.playbackRate = Math.min(videoSpeed, 3);
   }
+
+  // معرفة المربع الحالي
+  updateActiveTile();
+}
+
+function updateActiveTile() {
+  const px = playerGroup.position.x + HALF;
+  const pz = playerGroup.position.z + HALF;
+  const col = Math.floor(px / TILE_SIZE);
+  const row = Math.floor(pz / TILE_SIZE);
+
+  if (col >= 0 && col < GRID && row >= 0 && row < GRID) {
+    const index = row * GRID + col;
+    // تمييز المربع النشط
+    tileMeshes.forEach((mesh, i) => {
+      if (i === index) {
+        mesh.material.emissive = new THREE.Color(0x8b5cf6);
+        mesh.material.emissiveIntensity = 0.15;
+      } else {
+        mesh.material.emissive = new THREE.Color(0x000000);
+        mesh.material.emissiveIntensity = 0;
+      }
+    });
+  }
 }
 
 // ============================================================
-//  8. الكاميرا
+//  8. خريطة مصغرة
+// ============================================================
+
+let minimapCtx;
+
+function setupMinimap() {
+  const minimapFrame = document.getElementById('minimap-frame');
+  const canvas = document.createElement('canvas');
+  canvas.width = 120; canvas.height = 120;
+  minimapFrame.appendChild(canvas);
+  minimapCtx = canvas.getContext('2d');
+}
+
+function updateMinimap() {
+  if (!minimapCtx) return;
+  const ctx = minimapCtx;
+  const w = 120, h = 120;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = 'rgba(10,10,26,0.9)';
+  ctx.fillRect(0, 0, w, h);
+
+  const scale = w / WORLD_SIZE;
+
+  // رسم المربعات
+  for (let row = 0; row < GRID; row++) {
+    for (let col = 0; col < GRID; col++) {
+      const x = col * TILE_SIZE * scale;
+      const y = row * TILE_SIZE * scale;
+      const size = TILE_SIZE * scale * 0.9;
+      ctx.fillStyle = ((row + col) % 2 === 0) ? '#2a2a4a' : '#1a1a2e';
+      ctx.fillRect(x, y, size, size);
+    }
+  }
+
+  // اللاعب
+  const px = (playerGroup.position.x + HALF) * scale;
+  const py = (playerGroup.position.z + HALF) * scale;
+
+  ctx.fillStyle = '#8b5cf6';
+  ctx.shadowColor = '#8b5cf6';
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  ctx.arc(px, py, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(0, 0, w, h);
+}
+
+// ============================================================
+//  9. كاميرا
 // ============================================================
 
 function updateCamera() {
   const target = playerGroup.position.clone();
   camera.position.x += (target.x - camera.position.x) * 0.05;
-  camera.position.z += (target.z + 0.1 - camera.position.z) * 0.05;
-  camera.position.y += (1.6 - camera.position.y) * 0.05;
-  camera.lookAt(target.x, 0.5, target.z);
+  camera.position.z += (target.z + 8 - camera.position.z) * 0.05;
+  camera.position.y += (6 - camera.position.y) * 0.05;
+  camera.lookAt(target.x, 0, target.z);
 }
 
 function resetCamera() {
-  camera.position.set(0, 1.6, 0.1);
-  camera.lookAt(0, 0.5, 0);
-  if (sphereMesh) {
-    sphereMesh.rotation.set(0, 0, 0);
-  }
+  camera.position.set(0, 6, 10);
+  camera.lookAt(0, 0, 0);
   playerGroup.position.set(0, 0, 0);
 }
 
 // ============================================================
-//  9. حلقة الرسم
+//  10. حلقة الرسم
 // ============================================================
 
 function animate() {
@@ -523,16 +609,20 @@ function animate() {
 
   updatePlayer();
   updateCamera();
+  updateMinimap();
 
-  if (videoTexture && isReady) {
-    videoTexture.needsUpdate = true;
+  if (mainVideoTexture && isReady) {
+    mainVideoTexture.needsUpdate = true;
   }
+
+  // تحديث نسيج المربعات
+  tileTextures.forEach(t => { if (t) t.needsUpdate = true; });
 
   renderer.render(scene, camera);
 }
 
 // ============================================================
-//  10. تحكم
+//  11. تحكم
 // ============================================================
 
 function setupTouchControls() {
@@ -581,12 +671,14 @@ function showToast(message, type) {
 }
 
 // ============================================================
-//  11. الدخول
+//  12. الدخول
 // ============================================================
 
 function enterApp() {
   document.getElementById('start-screen').style.display = 'none';
   document.getElementById('game-container').style.display = 'block';
+  document.getElementById('minimap-frame').style.display = 'block';
+  document.getElementById('minimap-label').style.display = 'block';
   document.getElementById('status-bar').style.display = 'block';
 
   initThree();
@@ -599,26 +691,25 @@ function enterApp() {
     }
   });
 
-  showToast('🌍 اضغط "عالم 360 تجريبي" أو ارفع فيديو', 'info');
+  // تحميل فيديو تجريبي تلقائياً
+  setTimeout(loadTestVideo, 500);
 }
 
 // ============================================================
-//  12. بدء التشغيل
+//  13. بدء التشغيل
 // ============================================================
 
 setupTouchControls();
 
-console.log('🌍 v50.0 — قبة فيديو 360 درجة');
+console.log('🧩 v52.0 — فيديو واحد مقسم إلى مربعات');
 console.log('📌 المميزات:');
-console.log('  ✅ قبة 360 درجة (كرة عملاقة)');
-console.log('  ✅ فيديو يحيط بالمستخدم من كل الاتجاهات');
-console.log('  ✅ تحكم بالماوس لتدوير المنظر');
-console.log('  ✅ شخصية تتحرك');
+console.log('  ✅ فيديو واحد مقسم إلى ' + (GRID * GRID) + ' مربع');
+console.log('  ✅ كل مربع يعرض جزءاً من الفيديو');
+console.log('  ✅ تمييز المربع الذي يقف عليه اللاعب');
 console.log('  ✅ سرعة الفيديو تتغير مع الحركة');
-console.log('  ✅ رفع فيديو 360 محلي');
-console.log('  ✅ عالم 360 تجريبي');
+console.log('  ✅ شبكة إرشادية');
+console.log('  ✅ خريطة مصغرة');
 </script>
 </body>
 </html>
-
 
