@@ -3,582 +3,1206 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🎬 شخصية + بيئة = عالم متكامل</title>
+<title>🎬 فيديو من القناة + أرضية 3D Pro</title>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { background:#050510; overflow:hidden; font-family:'Arial',sans-serif; }
+body { font-family:'Segoe UI','Cairo',sans-serif; background:#050510; color:#fff; overflow:hidden; user-select:none; }
 
-#info {
-    position:fixed; top:10px; left:50%; transform:translateX(-50%);
-    color:#fff; background:rgba(0,0,0,0.7); padding:6px 18px;
-    border-radius:20px; z-index:100; font-size:12px;
-    border:1px solid rgba(255,215,0,0.2);
-    text-align:center;
+#start-screen {
+  position:fixed; inset:0; z-index:2000;
+  background:linear-gradient(135deg,#0a0a2a,#000);
+  display:flex; flex-direction:column; justify-content:center; align-items:center; gap:20px;
 }
-#info span { color:#ffd700; }
+.start-logo { font-size:42px; font-weight:900; color:#ffd700; animation:float 3s ease-in-out infinite; }
+.start-subtitle { font-size:15px; color:#666; text-align:center; max-width:380px; line-height:1.6; }
+.start-btn {
+  border:2px solid #00f2ff; color:#00f2ff; padding:16px 50px;
+  background:rgba(0,242,255,0.08); border-radius:60px; font-size:20px;
+  cursor:pointer; transition:all .3s; font-weight:700; font-family:inherit;
+}
+.start-btn:hover { transform:scale(1.05); background:#00f2ff; color:#000; box-shadow:0 0 50px rgba(0,242,255,0.4); }
+.user-info { color:#00f2ff; font-size:13px; background:rgba(0,0,0,0.6); padding:8px 24px; border-radius:30px; }
+.version-tag { position:absolute; bottom:15px; font-size:11px; color:#444; }
+@keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
 
-#hud {
-    position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
-    color:#aaa; font-size:12px; background:rgba(0,0,0,0.6);
-    padding:8px 20px; border-radius:15px; z-index:100;
-    text-align:center; min-width:200px;
-    border:1px solid rgba(255,255,255,0.05);
-}
+#game-container { position:fixed; inset:0; display:none; background:#0a0a1a; }
+#game-canvas { display:block; width:100%; height:100%; }
 
-#controls {
-    position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-    display:flex; gap:8px; z-index:100; flex-wrap:wrap; justify-content:center;
+.hud {
+  position:fixed; top:0; left:0; right:0; padding:6px 12px;
+  display:flex; justify-content:space-between; align-items:center;
+  pointer-events:none; z-index:100;
+  background:rgba(0,0,0,0.6); backdrop-filter:blur(8px);
 }
-#controls button {
-    background:rgba(139,92,246,0.15); color:#fff; border:1px solid rgba(139,92,246,0.2);
-    padding:6px 14px; border-radius:15px; cursor:pointer; font-size:11px;
-    transition:all 0.3s; font-family:inherit;
-}
-#controls button:hover { background:rgba(139,92,246,0.3); border-color:#8b5cf6; }
-#controls button.active { background:#8b5cf6; color:#fff; border-color:#8b5cf6; }
+.hud .title { color:#ffd700; font-size:13px; font-weight:700; }
+.hud .info { color:#aaa; font-size:11px; }
 
 .dpad {
-    position:fixed; bottom:80px; left:20px;
-    width:100px; height:100px; z-index:200;
+  position:fixed; bottom:20px; left:16px;
+  width:120px; height:120px; z-index:200;
 }
 .dpad-btn {
-    position:absolute; width:32px; height:32px;
-    background:rgba(255,255,255,0.06);
-    border:1px solid rgba(255,255,255,0.08);
-    border-radius:50%;
-    display:flex; align-items:center; justify-content:center;
-    font-size:14px; color:rgba(255,255,255,0.3);
-    cursor:pointer; transition:all .1s;
+  position:absolute; width:40px; height:40px;
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:16px; color:rgba(255,255,255,0.4);
+  cursor:pointer; transition:all .1s;
 }
 .dpad-btn:active {
-    background:rgba(139,92,246,0.2);
-    border-color:#8b5cf6; color:#8b5cf6;
-    transform:scale(0.85);
+  background:rgba(139,92,246,0.2);
+  border-color:#8b5cf6; color:#8b5cf6;
+  transform:scale(0.88);
 }
-.dpad-up { top:0; left:34px; }
-.dpad-down { bottom:0; left:34px; }
-.dpad-left { top:34px; left:0; }
-.dpad-right { top:34px; right:0; }
+.dpad-up { top:0; left:40px; }
+.dpad-down { bottom:0; left:40px; }
+.dpad-left { top:40px; left:0; }
+.dpad-right { top:40px; right:0; }
+
+.tg-toggle {
+  position:fixed; bottom:155px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,0.6); border:1px solid rgba(255,215,0,0.1);
+  border-radius:20px; padding:3px 14px;
+  z-index:210; font-size:11px; color:#888; cursor:pointer; display:none;
+}
+.tg-toggle:hover { color:#ffd700; }
+
+.tg-dropdown {
+  position:fixed; bottom:170px; left:50%; transform:translateX(-50%);
+  background:rgba(10,10,30,0.95); border:1px solid rgba(255,215,0,0.15);
+  border-radius:14px; padding:10px 14px; z-index:250;
+  min-width:320px; max-width:92%; display:none; backdrop-filter:blur(12px);
+  max-height:350px; overflow-y:auto;
+}
+.tg-dropdown.show { display:block; }
+.tg-dropdown .row { display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; }
+.tg-dropdown input[type="text"] {
+  flex:1; padding:6px 10px; border-radius:8px;
+  border:1px solid rgba(255,215,0,0.15); background:#0a0a1a;
+  color:#fff; font-size:11px; font-family:inherit; min-width:50px;
+}
+.tg-dropdown input[type="text"]::placeholder { color:#555; }
+.tg-dropdown .btn {
+  padding:6px 12px; border:none; border-radius:8px;
+  font-weight:700; font-size:11px; cursor:pointer; font-family:inherit;
+  transition:all .2s;
+}
+.tg-dropdown .btn:hover { transform:scale(1.05); }
+.btn-accent { background:#00f2ff; color:#111; }
+.btn-purple { background:#8b5cf6; color:#fff; }
+.btn-gold { background:#ffd700; color:#111; }
+.btn-green { background:#4ade80; color:#111; }
+.btn-red { background:#f87171; color:#fff; }
+.btn-pink { background:#ec4899; color:#fff; }
+.btn-blue { background:#3b82f6; color:#fff; }
+.btn-orange { background:#fb923c; color:#111; }
+#tg-status { font-size:10px; color:#888; margin-top:4px; text-align:center; }
+
+#minimap-frame {
+  position:fixed; top:50px; left:10px;
+  width:120px; height:120px;
+  border:2px solid #ffd700; border-radius:12px;
+  overflow:hidden; pointer-events:none; z-index:90;
+  background:rgba(5,5,16,0.6);
+  display:none; box-shadow:0 0 20px rgba(255,215,0,0.15);
+}
+#minimap-label {
+  position:fixed; top:52px; left:12px; z-index:91;
+  font-size:8px; color:#ffd700; background:rgba(0,0,0,0.6);
+  padding:1px 6px; border-radius:4px; pointer-events:none; display:none;
+}
+
+.toast-container {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+  z-index:700; display:flex; flex-direction:column; gap:5px; pointer-events:none;
+  align-items:center;
+}
+.toast {
+  background:rgba(0,0,0,0.9); padding:6px 16px; border-radius:30px;
+  font-size:11px; border:1px solid rgba(255,255,255,0.06);
+  animation:toastIn .3s,toastOut .3s 2.7s forwards;
+}
+.toast.success { border-color:#4ade80; color:#4ade80; }
+.toast.error { border-color:#f87171; color:#f87171; }
+.toast.info { border-color:#60a5fa; color:#60a5fa; }
+.toast.warn { border-color:#fb923c; color:#fb923c; }
+@keyframes toastIn {
+  from { opacity:0; transform:translateY(20px); }
+  to { opacity:1; transform:translateY(0); }
+}
+@keyframes toastOut {
+  from { opacity:1; transform:translateY(0); }
+  to { opacity:0; transform:translateY(-20px); }
+}
+
+#local-video-input { display:none; }
+
+#video-status-bar {
+  position:fixed; top:36px; right:10px;
+  background:rgba(0,0,0,0.7); padding:4px 12px;
+  border-radius:10px; font-size:10px; color:#aaa;
+  z-index:95; border:1px solid rgba(255,215,0,0.1);
+  display:none;
+}
+#video-status-bar.active { color:#4ade80; border-color:#4ade80; }
+#video-status-bar.rec { color:#f87171; border-color:#f87171; animation:pulse 1s infinite; }
+@keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
+
+#video-preview {
+  position:fixed; bottom:200px; right:10px;
+  width:160px; height:90px; border-radius:10px;
+  border:2px solid rgba(139,92,246,0.3);
+  background:#000; z-index:90; display:none;
+  object-fit:cover;
+}
+
+#fx-bar {
+  position:fixed; top:36px; left:10px;
+  display:flex; gap:6px; z-index:95; flex-wrap:wrap;
+}
+.fx-badge {
+  background:rgba(0,0,0,0.7); padding:3px 10px;
+  border-radius:8px; font-size:9px; color:#888;
+  border:1px solid rgba(255,255,255,0.05);
+}
+.fx-badge.on { color:#4ade80; border-color:rgba(74,222,128,0.3); }
+
+/* قائمة القنوات */
+#channels-list {
+  margin-top:6px; border-top:1px solid rgba(255,215,0,0.1); padding-top:6px;
+}
+.channel-item {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:3px 0; font-size:10px; color:#888;
+  border-bottom:1px solid rgba(255,255,255,0.03);
+}
+.channel-item .del { color:#f87171; cursor:pointer; padding:0 4px; }
 </style>
 </head>
 <body>
 
-<div id="info">🎬 <span>شخصية + بيئة</span> · عالم متكامل من الفيديو</div>
-
-<div id="hud">
-    <div>🧑 الشخصية: <span id="charStatus">تتحرك</span></div>
-    <div>🌍 البيئة: <span id="envStatus">نشطة</span></div>
+<!-- شاشة البداية -->
+<div id="start-screen">
+  <div class="start-logo">🎬 أرضية من القناة</div>
+  <div class="start-subtitle">جلب فيديو من Telegram + انعكاس + ظلال + جزيئات</div>
+  <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
+  <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
+  <div class="version-tag">v45.0 | Telegram Video Floor</div>
 </div>
 
-<div id="controls">
-    <button class="active" onclick="toggleCharacter()">🧑 إظهار/إخفاء الشخصية</button>
-    <button onclick="toggleEnvironment()">🌍 إظهار/إخفاء البيئة</button>
-    <button onclick="resetView()">🔄 إعادة الكاميرا</button>
-</div>
+<!-- اللعبة -->
+<div id="game-container">
+  <canvas id="game-canvas"></canvas>
 
-<div class="dpad" id="dpad">
+  <div id="minimap-frame"></div>
+  <div id="minimap-label">🗺️</div>
+
+  <div id="fx-bar">
+    <div class="fx-badge" id="fx-shadow">🌑 ظلال</div>
+    <div class="fx-badge" id="fx-reflect">🪞 انعكاس</div>
+    <div class="fx-badge" id="fx-light">💡 إضاءة</div>
+    <div class="fx-badge" id="fx-particles">✨ جزيئات</div>
+  </div>
+
+  <div id="video-status-bar">⏹️ لا يوجد فيديو</div>
+  <video id="video-preview" autoplay muted playsinline></video>
+
+  <div class="hud">
+    <div class="title">🎮 أرضية من القناة</div>
+    <div class="info" id="char-name">لا يوجد فيديو</div>
+  </div>
+
+  <div class="dpad" id="dpad">
     <div class="dpad-btn dpad-up" data-dir="up">▲</div>
     <div class="dpad-btn dpad-down" data-dir="down">▼</div>
     <div class="dpad-btn dpad-left" data-dir="left">◀</div>
     <div class="dpad-btn dpad-right" data-dir="right">▶</div>
+  </div>
+
+  <button class="tg-toggle" id="tg-toggle" onclick="toggleTG()">📡 القناة</button>
+
+  <div class="tg-dropdown" id="tg-dropdown">
+    <!-- اتصال Telegram -->
+    <div class="row">
+      <input type="text" id="bot-token" placeholder="Bot Token">
+      <input type="text" id="chat-id" placeholder="Channel ID">
+    </div>
+    <div class="row">
+      <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
+      <button class="btn btn-purple" onclick="fetchVideoFromTelegram()">🎬 جلب فيديو</button>
+      <button class="btn btn-gold" onclick="addChannel()">➕ إضافة قناة</button>
+      <button class="btn btn-red" onclick="toggleTG()">✖</button>
+    </div>
+
+    <!-- قائمة القنوات -->
+    <div id="channels-list"></div>
+
+    <!-- مصادر إضافية -->
+    <div class="row" style="margin-top:6px;border-top:1px solid rgba(255,215,0,0.1);padding-top:6px;">
+      <button class="btn btn-green" onclick="document.getElementById('local-video-input').click()">📁 رفع ملف</button>
+      <button class="btn btn-blue" onclick="startWebcam()">🎥 كاميرا</button>
+      <button class="btn btn-orange" onclick="startScreenShare()">🖥️ شاشة</button>
+      <button class="btn btn-pink" onclick="loadTestVideo()">🧪 تجريبي</button>
+      <button class="btn btn-red" onclick="stopVideo()">⏹️ إيقاف</button>
+    </div>
+    <div class="row">
+      <input type="text" id="directUrl" placeholder="🔗 رابط مباشر">
+      <button class="btn btn-accent" onclick="loadDirectUrl()">▶️</button>
+    </div>
+
+    <div id="tg-status">⭕ اتصل بالقناة لجلب فيديو</div>
+  </div>
+
+  <input type="file" id="local-video-input" accept="video/*,.webm,.mp4,.mov" onchange="handleLocalVideo(event)">
 </div>
 
-<canvas id="canvas"></canvas>
+<div class="toast-container" id="toast-container"></div>
 
 <script>
 // ============================================================
-//  🎬 دمج شخصية فيديو مع بيئة فيديو
+//  1. التهيئة + Telegram
 // ============================================================
 
-const canvas = document.getElementById('canvas');
+const tg = window.Telegram?.WebApp;
+let userData = null;
+let botToken = '', channelId = '', connected = false, lastUpdateId = 0;
+let channels = [];
 
-// ============================================================
-//  1. المشهد الأساسي
-// ============================================================
-
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x0a0a1a);
-scene.fog = new THREE.Fog(0x0a0a1a, 20, 40);
-
-const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-camera.position.set(0, 8, 12);
-camera.lookAt(0, 0, 0);
-
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-// الإضاءة
-const ambient = new THREE.AmbientLight(0x8b5cf6, 0.4);
-scene.add(ambient);
-
-const mainLight = new THREE.DirectionalLight(0xffeedd, 0.8);
-mainLight.position.set(10, 20, 10);
-mainLight.castShadow = true;
-scene.add(mainLight);
-
-const fillLight = new THREE.DirectionalLight(0x4466ff, 0.3);
-fillLight.position.set(-10, 10, -10);
-scene.add(fillLight);
-
-// ============================================================
-//  2. 🌍 البيئة (أرضية فيديو)
-// ============================================================
-
-let floorVideo = null;
-let floorTexture = null;
-let floorMesh = null;
-let environmentVisible = true;
-
-function createVideoEnvironment() {
-    // إنشاء Canvas فيديو وهمي للبيئة
-    const envCanvas = document.createElement('canvas');
-    envCanvas.width = 512;
-    envCanvas.height = 512;
-    const ctx = envCanvas.getContext('2d');
-    
-    let frame = 0;
-    
-    function drawEnvironment() {
-        frame++;
-        ctx.clearRect(0, 0, 512, 512);
-        
-        // خلفية متحركة (غابة/طبيعة)
-        const grad = ctx.createRadialGradient(256, 256, 0, 256, 256, 256);
-        grad.addColorStop(0, `hsl(${frame * 0.2 % 360}, 70%, 45%)`);
-        grad.addColorStop(0.5, `hsl(${(frame * 0.2 + 120) % 360}, 60%, 30%)`);
-        grad.addColorStop(1, `hsl(${(frame * 0.2 + 240) % 360}, 50%, 20%)`);
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 512, 512);
-        
-        // عشب متحرك (خطوط)
-        for (let i = 0; i < 30; i++) {
-            const x = (i * 20 + frame * 0.3) % 540 - 20;
-            const height = 10 + Math.sin(i + frame * 0.05) * 5;
-            ctx.fillStyle = `hsla(${i * 10 + 100}, 90%, ${40 + Math.sin(i + frame * 0.03) * 10}%, 0.15)`;
-            ctx.fillRect(x, 400, 8, height);
-        }
-        
-        // نقاط ضوئية (زهور/نجوم)
-        for (let i = 0; i < 20; i++) {
-            const x = (i * 30 + frame * 0.2) % 540 - 20;
-            const y = 300 + Math.sin(i * 1.5 + frame * 0.01) * 100;
-            const r = 3 + Math.sin(frame * 0.04 + i) * 2;
-            ctx.fillStyle = `hsla(${i * 20 + 50}, 100%, ${60 + Math.sin(frame * 0.03 + i) * 20}%, 0.2)`;
-            ctx.beginPath();
-            ctx.arc(x, y, r, 0, Math.PI * 2);
-            ctx.fill();
-        }
-        
-        requestAnimationFrame(drawEnvironment);
-    }
-    drawEnvironment();
-    
-    // تحويل Canvas إلى فيديو
-    const video = document.createElement('video');
-    video.muted = true;
-    video.loop = true;
-    video.playsInline = true;
-    const stream = envCanvas.captureStream(30);
-    video.srcObject = stream;
-    
-    video.onloadeddata = function() {
-        video.play().catch(() => {});
-        floorVideo = video;
-        
-        floorTexture = new THREE.VideoTexture(video);
-        floorTexture.minFilter = THREE.LinearFilter;
-        floorTexture.magFilter = THREE.LinearFilter;
-        floorTexture.anisotropy = renderer.capabilities.getMaxAnisotropy();
-        
-        const geometry = new THREE.PlaneGeometry(24, 24);
-        const material = new THREE.MeshStandardMaterial({
-            map: floorTexture,
-            side: THREE.DoubleSide,
-            transparent: true,
-            roughness: 0.6,
-            metalness: 0.1
-        });
-        
-        floorMesh = new THREE.Mesh(geometry, material);
-        floorMesh.rotation.x = -Math.PI / 2;
-        floorMesh.position.y = -0.1;
-        floorMesh.receiveShadow = true;
-        scene.add(floorMesh);
-        
-        console.log('🌍 البيئة جاهزة');
-    };
-    
-    video.load();
+function initTelegram() {
+  try {
+    if (tg) { tg.ready(); tg.expand(); }
+    userData = tg?.initDataUnsafe?.user || { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+    document.getElementById('userInfoDisplay').innerHTML = '👤 ' + (userData.first_name || 'مستخدم');
+  } catch(e) {
+    userData = { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+    document.getElementById('userInfoDisplay').innerHTML = '👤 مستخدم';
+  }
+  loadChannels();
 }
 
 // ============================================================
-//  3. 🧑 الشخصية (فيديو)
+//  2. إدارة القنوات
 // ============================================================
 
-let characterVideo = null;
-let characterTexture = null;
-let characterSprite = null;
-let characterVisible = true;
-let characterGroup = new THREE.Group();
-scene.add(characterGroup);
-
-function createCharacterVideo() {
-    // إنشاء Canvas فيديو وهمي للشخصية
-    const charCanvas = document.createElement('canvas');
-    charCanvas.width = 256;
-    charCanvas.height = 256;
-    const ctx = charCanvas.getContext('2d');
-    
-    let frame = 0;
-    let characterX = 128;
-    let characterY = 128;
-    
-    function drawCharacter() {
-        frame++;
-        ctx.clearRect(0, 0, 256, 256);
-        
-        // خلفية شفافة (Alpha)
-        ctx.clearRect(0, 0, 256, 256);
-        
-        // جسم الشخصية (كرة متحركة)
-        const cx = 128 + Math.sin(frame * 0.02) * 30;
-        const cy = 128 + Math.sin(frame * 0.03) * 20;
-        const radius = 40 + Math.sin(frame * 0.04) * 5;
-        
-        // توهج حول الشخصية
-        const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius * 1.5);
-        glow.addColorStop(0, 'rgba(139, 92, 246, 0.3)');
-        glow.addColorStop(1, 'rgba(139, 92, 246, 0)');
-        ctx.fillStyle = glow;
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius * 1.5, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // الجسم (دائرة)
-        const bodyGrad = ctx.createRadialGradient(cx - 10, cy - 10, 0, cx, cy, radius);
-        bodyGrad.addColorStop(0, `hsl(${(frame * 0.5) % 360}, 80%, 70%)`);
-        bodyGrad.addColorStop(0.5, `hsl(${(frame * 0.5 + 60) % 360}, 80%, 50%)`);
-        bodyGrad.addColorStop(1, `hsl(${(frame * 0.5 + 120) % 360}, 80%, 30%)`);
-        ctx.fillStyle = bodyGrad;
-        ctx.beginPath();
-        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // عيون
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(cx - 15, cy - 10, 12, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(cx + 15, cy - 10, 12, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // بؤبؤ العين (يتحرك)
-        const eyeX = Math.sin(frame * 0.02) * 5;
-        const eyeY = Math.sin(frame * 0.015) * 5;
-        ctx.fillStyle = '#2d1b69';
-        ctx.beginPath();
-        ctx.arc(cx - 15 + eyeX, cy - 10 + eyeY, 6, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(cx + 15 + eyeX, cy - 10 + eyeY, 6, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // فم (يبتسم ويتحرك)
-        const mouthY = 20 + Math.sin(frame * 0.05) * 5;
-        ctx.strokeStyle = '#2d1b69';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy + 15, 15, 0.1, Math.PI - 0.1);
-        ctx.stroke();
-        
-        // قبعة صغيرة
-        ctx.fillStyle = '#8b5cf6';
-        ctx.beginPath();
-        ctx.ellipse(cx, cy - radius + 5, 30, 10, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillRect(cx - 10, cy - radius - 5, 20, 10);
-        ctx.fillStyle = '#ffd700';
-        ctx.fillRect(cx - 2, cy - radius - 15, 4, 10);
-        
-        // شعاع ضوئي (يتحرك)
-        const beamAngle = frame * 0.02;
-        ctx.strokeStyle = `hsla(${(frame * 0.3) % 360}, 100%, 70%, 0.3)`;
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 8; i++) {
-            const angle = beamAngle + i * Math.PI / 4;
-            ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(
-                cx + Math.cos(angle) * (radius + 20 + Math.sin(frame * 0.03 + i) * 10),
-                cy + Math.sin(angle) * (radius + 20 + Math.sin(frame * 0.03 + i) * 10)
-            );
-            ctx.stroke();
-        }
-        
-        // العلامة المائية (اسم الشخصية)
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.font = '16px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText('🧑 بطل', 128, 240);
-        
-        requestAnimationFrame(drawCharacter);
+function loadChannels() {
+  try {
+    const saved = localStorage.getItem('nardo_channels_v45');
+    if (saved) {
+      channels = JSON.parse(saved);
+      renderChannels();
     }
-    drawCharacter();
-    
-    // تحويل Canvas إلى فيديو
-    const video = document.createElement('video');
-    video.muted = true;
-    video.loop = true;
-    video.playsInline = true;
-    const stream = charCanvas.captureStream(30);
-    video.srcObject = stream;
-    
-    video.onloadeddata = function() {
-        video.play().catch(() => {});
-        characterVideo = video;
-        
-        characterTexture = new THREE.VideoTexture(video);
-        characterTexture.minFilter = THREE.LinearFilter;
-        characterTexture.magFilter = THREE.LinearFilter;
-        characterTexture.format = THREE.RGBAFormat;
-        
-        // 🔥 المفتاح: استخدام SpriteMaterial لعرض الشخصية مع خلفية شفافة
-        const material = new THREE.SpriteMaterial({
-            map: characterTexture,
-            transparent: true,
-            depthTest: true,
-            depthWrite: false,
-            blending: THREE.NormalBlending,
-            side: THREE.DoubleSide
-        });
-        
-        characterSprite = new THREE.Sprite(material);
-        characterSprite.scale.set(3, 3, 1);
-        characterSprite.position.y = 1.5;
-        characterGroup.add(characterSprite);
-        
-        console.log('🧑 الشخصية جاهزة');
-    };
-    
-    video.load();
+  } catch(e) {}
+}
+
+function saveChannels() {
+  try {
+    localStorage.setItem('nardo_channels_v45', JSON.stringify(channels));
+  } catch(e) {}
+}
+
+function addChannel() {
+  const id = document.getElementById('chat-id').value.trim();
+  if (!id) { showToast('⚠️ ادخل معرف القناة', 'error'); return; }
+  if (channels.some(c => c.id === id)) { showToast('⚠️ القناة مضافة', 'error'); return; }
+
+  channels.push({ id: id, name: 'قناة #' + (channels.length + 1), added: Date.now() });
+  saveChannels();
+  renderChannels();
+  document.getElementById('chat-id').value = '';
+  showToast('✅ تم إضافة القناة', 'success');
+}
+
+function removeChannel(index) {
+  channels.splice(index, 1);
+  saveChannels();
+  renderChannels();
+  showToast('🗑️ تم حذف القناة', 'info');
+}
+
+function renderChannels() {
+  const list = document.getElementById('channels-list');
+  if (channels.length === 0) {
+    list.innerHTML = '<div style="font-size:9px;color:#555;">📭 لا توجد قنوات مضافة</div>';
+    return;
+  }
+  list.innerHTML = channels.map((c, i) =>
+    `<div class="channel-item">
+      <span>📡 ${c.name} (${c.id})</span>
+      <span class="del" onclick="removeChannel(${i})">✖</span>
+    </div>`
+  ).join('');
 }
 
 // ============================================================
-//  4. 🏃 حركة الشخصية
+//  3. الاتصال بـ Telegram
 // ============================================================
 
-let moveX = 0, moveZ = 0;
-const MOVE_SPEED = 0.06;
+async function testTelegram() {
+  botToken = document.getElementById('bot-token').value.trim();
+  if (!botToken) { setTGStatus('❌ ادخل Token', 'error'); return; }
 
-// لوحة المفاتيح
-const keys = {};
-
-document.addEventListener('keydown', (e) => {
-    keys[e.key] = true;
-    updateMovement();
-});
-
-document.addEventListener('keyup', (e) => {
-    keys[e.key] = false;
-    updateMovement();
-});
-
-function updateMovement() {
-    moveX = 0;
-    moveZ = 0;
-    
-    // 🔄 وضع عربي (يمين ← يسار)
-    if (keys['ArrowUp'] || keys['w'] || keys['W']) moveZ = 1;
-    if (keys['ArrowDown'] || keys['s'] || keys['S']) moveZ = -1;
-    if (keys['ArrowLeft'] || keys['a'] || keys['A']) moveX = 1;
-    if (keys['ArrowRight'] || keys['d'] || keys['D']) moveX = -1;
-    
-    if (moveX !== 0 && moveZ !== 0) {
-        moveX *= 0.707;
-        moveZ *= 0.707;
-    }
-}
-
-// D-Pad
-function setupTouchControls() {
-    document.querySelectorAll('.dpad-btn').forEach(btn => {
-        const dir = btn.getAttribute('data-dir');
-        btn.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            switch(dir) {
-                case 'up': moveZ = 1; break;
-                case 'down': moveZ = -1; break;
-                case 'left': moveX = 1; break;
-                case 'right': moveX = -1; break;
-            }
-            if (moveX !== 0 && moveZ !== 0) {
-                moveX *= 0.707;
-                moveZ *= 0.707;
-            }
-            btn.style.background = 'rgba(139,92,246,0.2)';
-            btn.style.borderColor = '#8b5cf6';
-        }, { passive: false });
-        btn.addEventListener('touchend', (e) => {
-            e.preventDefault();
-            switch(dir) {
-                case 'up': if (moveZ === 1 || moveZ === -1) moveZ = 0; break;
-                case 'down': if (moveZ === 1 || moveZ === -1) moveZ = 0; break;
-                case 'left': if (moveX === 1 || moveX === -1) moveX = 0; break;
-                case 'right': if (moveX === 1 || moveX === -1) moveX = 0; break;
-            }
-            btn.style.background = '';
-            btn.style.borderColor = '';
-        }, { passive: false });
-        btn.addEventListener('touchcancel', () => {
-            moveX = 0; moveZ = 0;
-            btn.style.background = '';
-            btn.style.borderColor = '';
-        });
-    });
-}
-
-function updateCharacter() {
-    const dx = moveX * MOVE_SPEED;
-    const dz = moveZ * MOVE_SPEED;
-    
-    const newX = characterGroup.position.x + dx;
-    const newZ = characterGroup.position.z + dz;
-    const limit = 10;
-    
-    if (Math.abs(newX) < limit) {
-        characterGroup.position.x = newX;
-    }
-    if (Math.abs(newZ) < limit) {
-        characterGroup.position.z = newZ;
-    }
-    
-    // تدوير الشخصية
-    if (moveX !== 0 || moveZ !== 0) {
-        const angle = Math.atan2(moveX, moveZ);
-        characterGroup.rotation.y = angle;
-        document.getElementById('charStatus').textContent = '🏃 تتحرك';
+  setTGStatus('🔄 جاري...', '');
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getMe');
+    const data = await res.json();
+    if (data.ok) {
+      connected = true;
+      setTGStatus('✅ متصل بـ @' + data.result.username, 'success');
+      localStorage.setItem('nardo_bot_token', botToken);
+      showToast('✅ تم الاتصال!', 'success');
+      loadChannels();
     } else {
-        document.getElementById('charStatus').textContent = '🧍 واقفة';
+      setTGStatus('❌ ' + data.description, 'error');
     }
-    
-    // تحديث سرعة الفيديو
-    const speed = Math.sqrt(moveX * moveX + moveZ * moveZ);
-    const videoSpeed = 0.5 + speed * 2;
-    if (characterVideo) {
-        characterVideo.playbackRate = Math.min(videoSpeed, 4);
+  } catch(e) {
+    setTGStatus('❌ فشل الاتصال (CORS)', 'error');
+    showToast('❌ لا يمكن الاتصال من المتصفح (CORS)', 'error');
+  }
+}
+
+function setTGStatus(msg, type) {
+  const el = document.getElementById('tg-status');
+  el.textContent = msg;
+  el.style.color = type === 'success' ? '#4ade80' : type === 'error' ? '#f87171' : '#888';
+}
+
+// ============================================================
+//  4. جلب فيديو من القناة
+// ============================================================
+
+let fetchedVideoUrl = null;
+let fetchedVideoName = 'فيديو من القناة';
+
+async function fetchVideoFromTelegram() {
+  if (!connected) {
+    showToast('⚠️ اتصل بالقناة أولاً', 'error');
+    return;
+  }
+  if (channels.length === 0) {
+    showToast('⚠️ أضف قناة أولاً', 'error');
+    return;
+  }
+
+  setTGStatus('🔍 جاري البحث عن فيديو...', '');
+  showToast('📥 جاري جلب الفيديو من القناة...', 'info');
+
+  try {
+    const res = await fetch(
+      'https://api.telegram.org/bot' + botToken + '/getUpdates?limit=100&offset=' + (lastUpdateId + 1)
+    );
+    const data = await res.json();
+
+    if (!data.ok) {
+      setTGStatus('❌ ' + data.description, 'error');
+      return;
     }
-}
 
-// ============================================================
-//  5. الكاميرا
-// ============================================================
+    let found = false;
 
-let cameraAngle = 0;
-let cameraRadius = 12;
+    for (const update of (data.result || [])) {
+      lastUpdateId = Math.max(lastUpdateId, update.update_id);
+      const msg = update.channel_post || update.message;
+      if (!msg) continue;
 
-function updateCamera() {
-    const target = characterGroup.position.clone();
-    cameraAngle += 0.005;
-    
-    const x = target.x + Math.sin(cameraAngle) * cameraRadius;
-    const z = target.z + Math.cos(cameraAngle) * cameraRadius;
-    
-    camera.position.x += (x - camera.position.x) * 0.05;
-    camera.position.z += (z - camera.position.z) * 0.05;
-    camera.position.y = 8 + Math.sin(cameraAngle * 2) * 0.5;
-    
-    camera.lookAt(target.x, 0, target.z);
-}
+      // التحقق من القناة
+      const msgChannelId = msg.chat.id.toString();
+      if (!channels.some(c => c.id === msgChannelId)) continue;
 
-// ============================================================
-//  6. التحكم في إظهار/إخفاء العناصر
-// ============================================================
+      // البحث عن فيديو (ملصق أو فيديو عادي)
+      let fileId = null;
+      let filePath = null;
+      let name = 'فيديو';
 
-function toggleCharacter() {
-    characterVisible = !characterVisible;
-    if (characterGroup) {
-        characterGroup.visible = characterVisible;
+      // 1. ملصق فيديو (WebM)
+      if (msg.sticker && msg.sticker.is_video) {
+        fileId = msg.sticker.file_id;
+        const caption = msg.caption || '';
+        const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+        name = nameMatch ? nameMatch[1].trim() : 'ملصق WebM';
+      }
+
+      // 2. فيديو عادي
+      if (!fileId && msg.video) {
+        fileId = msg.video.file_id;
+        const caption = msg.caption || '';
+        const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+        name = nameMatch ? nameMatch[1].trim() : 'فيديو';
+      }
+
+      // 3. ملف فيديو
+      if (!fileId && msg.document) {
+        const doc = msg.document;
+        if (doc.mime_type && doc.mime_type.startsWith('video/')) {
+          fileId = doc.file_id;
+          const caption = msg.caption || '';
+          const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+          name = nameMatch ? nameMatch[1].trim() : doc.file_name || 'فيديو';
+        }
+      }
+
+      if (!fileId) continue;
+
+      // الحصول على مسار الملف
+      const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+      const fileData = await fileRes.json();
+
+      if (fileData.ok && fileData.result.file_path) {
+        const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+
+        // تجربة التحميل المباشر (قد يفشل بسبب CORS)
+        // نستخدم Blob كحل بديل
+        fetchedVideoUrl = url;
+        fetchedVideoName = name;
+
+        // محاولة تحميل مباشر (قد يفشل CORS)
+        try {
+          const videoRes = await fetch(url);
+          const blob = await videoRes.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          showVideoAsFloor(blobUrl, name + ' (من القناة)', false);
+          setTGStatus('✅ تم جلب: ' + name, 'success');
+          showToast('✅ فيديو من القناة جاهز!', 'success');
+          found = true;
+          break;
+        } catch (blobErr) {
+          // إذا فشل التحميل المباشر، نعرض الرابط للمستخدم
+          console.warn('فشل تحميل الفيديو كـ Blob:', blobErr);
+          setTGStatus('⚠️ فشل التحميل، حاول "رابط مباشر"', 'warn');
+          document.getElementById('directUrl').value = url;
+          showToast('📋 تم نسخ الرابط في حقل "رابط مباشر"', 'info');
+          found = true;
+          break;
+        }
+      }
     }
-    document.querySelector('#controls button:first-child').textContent = 
-        characterVisible ? '🧑 إخفاء الشخصية' : '🧑 إظهار الشخصية';
-}
 
-function toggleEnvironment() {
-    environmentVisible = !environmentVisible;
-    if (floorMesh) {
-        floorMesh.visible = environmentVisible;
+    if (!found) {
+      setTGStatus('📭 لا يوجد فيديو في القناة', '');
+      showToast('📭 أرسل فيديو/ملصق في القناة', 'info');
     }
-    document.querySelector('#controls button:nth-child(2)').textContent = 
-        environmentVisible ? '🌍 إخفاء البيئة' : '🌍 إظهار البيئة';
-}
 
-function resetView() {
-    cameraAngle = 0;
-    cameraRadius = 12;
-    camera.position.set(0, 8, 12);
-    camera.lookAt(0, 0, 0);
-    characterGroup.position.set(0, 0, 0);
+  } catch (e) {
+    console.error('fetchVideoFromTelegram error:', e);
+    setTGStatus('❌ خطأ', 'error');
+    showToast('❌ ' + (e.message || 'خطأ'), 'error');
+  }
 }
 
 // ============================================================
-//  7. حلقة الرسم
+//  5. Three.js + تأثيرات متقدمة
+// ============================================================
+
+let scene, camera, renderer;
+let playerGroup, floorVideoMesh, shadowPlane;
+let videoElement = null, videoTexture = null;
+let isVideoReady = false, currentBlobUrl = null, activeStream = null;
+
+let cubeCamera, cubeRenderTarget, playerLight;
+let particles, particleGeo, particleMat;
+let shakeIntensity = 0, frameCount = 0;
+
+const MAP_SIZE = 16;
+const TILE_SIZE = 4;
+const WORLD_SIZE = MAP_SIZE * TILE_SIZE;
+const OFFSET = WORLD_SIZE / 2;
+const PLAYER_SPEED = 0.12;
+let mapData = [];
+let touchDirs = { up: false, down: false, left: false, right: false };
+
+// ============================================================
+//  6. تهيئة Three.js
+// ============================================================
+
+function initThree() {
+  const canvas = document.getElementById('game-canvas');
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a1a);
+
+  camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+  camera.position.set(0, 12, 12);
+
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  // إضاءة
+  const ambient = new THREE.AmbientLight(0x8b5cf6, 0.4);
+  scene.add(ambient);
+
+  const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+  dirLight.position.set(10, 20, 10);
+  dirLight.castShadow = true;
+  dirLight.shadow.mapSize.width = 2048;
+  dirLight.shadow.mapSize.height = 2048;
+  scene.add(dirLight);
+
+  const fillLight = new THREE.DirectionalLight(0x4466ff, 0.3);
+  fillLight.position.set(-10, 10, -10);
+  scene.add(fillLight);
+
+  // مجموعة اللاعب
+  playerGroup = new THREE.Group();
+  scene.add(playerGroup);
+
+  // كرة اللاعب
+  const bodyGeo = new THREE.SphereGeometry(0.5, 32, 32);
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: 0x8b5cf6, emissive: 0x6d28d9, emissiveIntensity: 0.3,
+    roughness: 0.3, metalness: 0.6
+  });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = 0.5;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  playerGroup.add(body);
+
+  // تاج
+  const crownGeo = new THREE.ConeGeometry(0.3, 0.3, 6);
+  const crownMat = new THREE.MeshStandardMaterial({
+    color: 0xffd700, emissive: 0xffa500, emissiveIntensity: 0.3, metalness: 0.9, roughness: 0.1
+  });
+  const crown = new THREE.Mesh(crownGeo, crownMat);
+  crown.position.y = 1.0;
+  crown.castShadow = true;
+  playerGroup.add(crown);
+
+  // إضاءة ديناميكية
+  playerLight = new THREE.PointLight(0x00f2ff, 1.0, 12, 2);
+  playerLight.position.set(0, 2, 0);
+  playerLight.castShadow = true;
+  playerGroup.add(playerLight);
+
+  // ظلال
+  const shadowMat = new THREE.ShadowMaterial({ opacity: 0.35 });
+  shadowPlane = new THREE.Mesh(new THREE.PlaneGeometry(WORLD_SIZE * 1.5, WORLD_SIZE * 1.5), shadowMat);
+  shadowPlane.rotation.x = -Math.PI / 2;
+  shadowPlane.position.y = 0.03;
+  shadowPlane.receiveShadow = true;
+  scene.add(shadowPlane);
+
+  // انعكاس
+  cubeRenderTarget = new THREE.WebGLCubeRenderTarget(256, {
+    format: THREE.RGBAFormat,
+    generateMipmaps: true
+  });
+  cubeCamera = new THREE.CubeCamera(0.1, 1000, cubeRenderTarget);
+  scene.add(cubeCamera);
+
+  // جزيئات
+  initParticles();
+
+  // جدران
+  buildWalls();
+
+  // شبكة
+  const gridHelper = new THREE.GridHelper(WORLD_SIZE, MAP_SIZE, 0x333366, 0x1a1a3e);
+  gridHelper.name = 'gridHelper';
+  scene.add(gridHelper);
+
+  // موقع البداية
+  playerGroup.position.set(
+    1.5 * TILE_SIZE - OFFSET + TILE_SIZE/2,
+    0,
+    1.5 * TILE_SIZE - OFFSET + TILE_SIZE/2
+  );
+
+  setupMinimap();
+  animate();
+}
+
+// ============================================================
+//  7. الجزيئات
+// ============================================================
+
+function initParticles() {
+  const count = 300;
+  particleGeo = new THREE.BufferGeometry();
+  const positions = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i++) {
+    positions[i*3] = 0; positions[i*3+1] = -100; positions[i*3+2] = 0;
+    colors[i*3] = 1; colors[i*3+1] = 1; colors[i*3+2] = 1;
+  }
+
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  particleGeo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+
+  particleMat = new THREE.PointsMaterial({
+    size: 0.15,
+    vertexColors: true,
+    transparent: true,
+    opacity: 0.8,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false
+  });
+
+  particles = new THREE.Points(particleGeo, particleMat);
+  particles.userData = { velocities: [], lifetimes: [], count: count };
+
+  // تهيئة السرعات والأعمار
+  for (let i = 0; i < count; i++) {
+    particles.userData.velocities[i] = { x: 0, y: 0, z: 0 };
+    particles.userData.lifetimes[i] = 0;
+  }
+
+  scene.add(particles);
+}
+
+function emitParticles(x, z, intensity, colorHex) {
+  const positions = particleGeo.attributes.position.array;
+  const colors = particleGeo.attributes.color.array;
+  const vels = particles.userData.velocities;
+  const lifes = particles.userData.lifetimes;
+  const count = particles.userData.count;
+  const color = new THREE.Color(colorHex);
+
+  let emitted = 0;
+  for (let i = 0; i < count && emitted < intensity; i++) {
+    if (lifes[i] <= 0) {
+      positions[i*3] = x + (Math.random() - 0.5) * 0.5;
+      positions[i*3+1] = 0.1;
+      positions[i*3+2] = z + (Math.random() - 0.5) * 0.5;
+
+      vels[i] = {
+        x: (Math.random() - 0.5) * 0.03,
+        y: Math.random() * 0.05 + 0.02,
+        z: (Math.random() - 0.5) * 0.03
+      };
+
+      colors[i*3] = color.r;
+      colors[i*3+1] = color.g;
+      colors[i*3+2] = color.b;
+
+      lifes[i] = 1.0;
+      emitted++;
+    }
+  }
+  particleGeo.attributes.position.needsUpdate = true;
+  particleGeo.attributes.color.needsUpdate = true;
+}
+
+function updateParticles() {
+  const positions = particleGeo.attributes.position.array;
+  const vels = particles.userData.velocities;
+  const lifes = particles.userData.lifetimes;
+  const count = particles.userData.count;
+
+  let active = 0;
+  for (let i = 0; i < count; i++) {
+    if (lifes[i] > 0) {
+      lifes[i] -= 0.02;
+      positions[i*3] += vels[i].x;
+      positions[i*3+1] += vels[i].y;
+      positions[i*3+2] += vels[i].z;
+      vels[i].y -= 0.001;
+      active++;
+    } else {
+      positions[i*3+1] = -100;
+    }
+  }
+  particleGeo.attributes.position.needsUpdate = true;
+
+  const badge = document.getElementById('fx-particles');
+  if (active > 10) { badge.classList.add('on'); badge.textContent = '✨ جزيئات ' + active; }
+  else { badge.classList.remove('on'); badge.textContent = '✨ جزيئات'; }
+}
+
+// ============================================================
+//  8. بناء الجدران والخريطة
+// ============================================================
+
+function buildWalls() {
+  mapData = [];
+  const wallGeo = new THREE.BoxGeometry(TILE_SIZE * 0.92, TILE_SIZE * 0.8, TILE_SIZE * 0.92);
+  const wallMat = new THREE.MeshStandardMaterial({
+    color: 0x2a2a4a, roughness: 0.4, metalness: 0.5, transparent: true, opacity: 0.8
+  });
+
+  for (let z = 0; z < MAP_SIZE; z++) {
+    const row = [];
+    for (let x = 0; x < MAP_SIZE; x++) {
+      let isWall = false;
+      if (x === 0 || x === MAP_SIZE - 1 || z === 0 || z === MAP_SIZE - 1) isWall = true;
+      else if (Math.random() < 0.08 && !(x <= 3 && z <= 3)) isWall = true;
+
+      row.push(isWall ? 1 : 0);
+
+      if (isWall) {
+        const wall = new THREE.Mesh(wallGeo, wallMat);
+        wall.position.set(
+          x * TILE_SIZE - OFFSET + TILE_SIZE/2,
+          TILE_SIZE * 0.4,
+          z * TILE_SIZE - OFFSET + TILE_SIZE/2
+        );
+        wall.castShadow = true;
+        wall.receiveShadow = true;
+        scene.add(wall);
+      }
+    }
+    mapData.push(row);
+  }
+}
+
+// ============================================================
+//  9. عرض الفيديو كأرضية
+// ============================================================
+
+function cleanupVideo() {
+  if (activeStream) {
+    activeStream.getTracks().forEach(track => track.stop());
+    activeStream = null;
+  }
+
+  if (floorVideoMesh) {
+    if (floorVideoMesh.material) {
+      if (floorVideoMesh.material.map) floorVideoMesh.material.map.dispose();
+      floorVideoMesh.material.dispose();
+    }
+    floorVideoMesh.geometry.dispose();
+    scene.remove(floorVideoMesh);
+    floorVideoMesh = null;
+  }
+
+  if (videoElement) {
+    try { videoElement.pause(); } catch(e) {}
+    videoElement = null;
+  }
+  if (videoTexture) {
+    try { videoTexture.dispose(); } catch(e) {}
+    videoTexture = null;
+  }
+  if (currentBlobUrl) {
+    try { URL.revokeObjectURL(currentBlobUrl); } catch(e) {}
+    currentBlobUrl = null;
+  }
+
+  isVideoReady = false;
+  document.getElementById('video-preview').style.display = 'none';
+  updateStatusBar('⏹️ لا يوجد فيديو', '');
+  document.getElementById('fx-reflect').classList.remove('on');
+}
+
+function showVideoAsFloor(src, name, isStream = false) {
+  cleanupVideo();
+
+  showToast('📥 جاري تحميل: ' + name, 'info');
+  document.getElementById('char-name').textContent = '🎬 ' + name;
+  updateStatusBar('🟡 جاري التحميل...', 'active');
+
+  videoElement = document.createElement('video');
+  videoElement.muted = true;
+  videoElement.loop = true;
+  videoElement.playsInline = true;
+  videoElement.preload = 'auto';
+  videoElement.crossOrigin = 'anonymous';
+  videoElement.setAttribute('playsinline', '');
+  videoElement.setAttribute('webkit-playsinline', '');
+
+  videoElement.onloadeddata = function() {
+    if (isVideoReady) return;
+    isVideoReady = true;
+
+    videoTexture = new THREE.VideoTexture(videoElement);
+    videoTexture.minFilter = THREE.LinearFilter;
+    videoTexture.magFilter = THREE.LinearFilter;
+    videoTexture.format = THREE.RGBAFormat;
+
+    const aspect = videoElement.videoWidth && videoElement.videoHeight
+      ? videoElement.videoWidth / videoElement.videoHeight
+      : 1;
+
+    const floorWidth = WORLD_SIZE;
+    const floorHeight = WORLD_SIZE / aspect;
+
+    const geometry = new THREE.PlaneGeometry(floorWidth, floorHeight);
+    const material = new THREE.MeshStandardMaterial({
+      map: videoTexture,
+      side: THREE.DoubleSide,
+      transparent: true,
+      roughness: 0.15,
+      metalness: 0.4,
+      envMapIntensity: 1.0
+    });
+
+    floorVideoMesh = new THREE.Mesh(geometry, material);
+    floorVideoMesh.rotation.x = -Math.PI / 2;
+    floorVideoMesh.position.y = 0.02;
+    floorVideoMesh.receiveShadow = true;
+    scene.add(floorVideoMesh);
+
+    // إزالة الشبكة
+    scene.children.forEach(child => {
+      if (child.name === 'gridHelper') scene.remove(child);
+    });
+
+    videoElement.play().catch(() => {});
+
+    document.getElementById('char-name').textContent = '🎬 أرضية: ' + name;
+    updateStatusBar('🟢 يعمل: ' + name, 'active');
+    document.getElementById('fx-reflect').classList.add('on');
+    showToast('✅ الأرضية جاهزة!', 'success');
+  };
+
+  videoElement.onerror = function(e) {
+    console.error('❌ خطأ:', e, videoElement.error);
+    let msg = 'فشل تحميل الفيديو';
+    if (videoElement.error) {
+      if (videoElement.error.code === 2) msg = 'خطأ شبكة / CORS';
+      if (videoElement.error.code === 3) msg = 'ملف تالف';
+      if (videoElement.error.code === 4) msg = 'تنسيق غير مدعوم';
+    }
+    showToast('❌ ' + msg, 'error');
+    updateStatusBar('❌ فشل التحميل', '');
+  };
+
+  if (isStream && src instanceof MediaStream) {
+    videoElement.srcObject = src;
+    videoElement.load();
+  } else {
+    videoElement.src = src;
+    videoElement.load();
+  }
+}
+
+// ============================================================
+//  10. مصادر الفيديو
+// ============================================================
+
+async function startWebcam() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' },
+      audio: false
+    });
+    activeStream = stream;
+    document.getElementById('video-preview').srcObject = stream;
+    document.getElementById('video-preview').style.display = 'block';
+    showVideoAsFloor(stream, 'كاميرا ويب 📷', true);
+    updateStatusBar('🔴 تسجيل كاميرا', 'rec');
+  } catch (err) {
+    showToast('❌ تم رفض إذن الكاميرا', 'error');
+  }
+}
+
+async function startScreenShare() {
+  try {
+    const stream = await navigator.mediaDevices.getDisplayMedia({
+      video: { cursor: 'always' }, audio: false
+    });
+    activeStream = stream;
+    stream.getVideoTracks()[0].onended = () => {
+      showToast('⏹️ تم إيقاف مشاركة الشاشة', 'info');
+      cleanupVideo();
+    };
+    document.getElementById('video-preview').srcObject = stream;
+    document.getElementById('video-preview').style.display = 'block';
+    showVideoAsFloor(stream, 'شاشة العرض 🖥️', true);
+    updateStatusBar('🔴 تسجيل شاشة', 'rec');
+  } catch (err) {
+    showToast('❌ تم رفض إذن الشاشة', 'error');
+  }
+}
+
+function handleLocalVideo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('video/')) {
+    showToast('❌ الملف ليس فيديو', 'error');
+    return;
+  }
+  const blobUrl = URL.createObjectURL(file);
+  currentBlobUrl = blobUrl;
+  const name = file.name.replace(/\.[^/.]+$/, '') || 'فيديو محلي';
+  showVideoAsFloor(blobUrl, name, false);
+  event.target.value = '';
+}
+
+function loadDirectUrl() {
+  const url = document.getElementById('directUrl').value.trim();
+  if (!url) { showToast('❌ أدخل رابطاً', 'error'); return; }
+  showVideoAsFloor(url, 'رابط مباشر 🔗', false);
+  document.getElementById('directUrl').value = '';
+}
+
+function loadTestVideo() {
+  showVideoAsFloor('https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm', 'زهرة متحركة 🌸', false);
+}
+
+function stopVideo() {
+  cleanupVideo();
+  document.getElementById('char-name').textContent = 'لا يوجد فيديو';
+  showToast('⏹️ تم إيقاف الفيديو', 'info');
+}
+
+function updateStatusBar(text, cls) {
+  const bar = document.getElementById('video-status-bar');
+  bar.textContent = text;
+  bar.style.display = 'block';
+  bar.className = '';
+  if (cls) bar.classList.add(cls);
+}
+
+// ============================================================
+//  11. تحديث اللاعب
+// ============================================================
+
+function updatePlayer() {
+  let dx = 0, dz = 0;
+  if (touchDirs.up) dz = -PLAYER_SPEED;
+  if (touchDirs.down) dz = PLAYER_SPEED;
+  if (touchDirs.left) dx = -PLAYER_SPEED;
+  if (touchDirs.right) dx = PLAYER_SPEED;
+
+  if (dx === 0 && dz === 0) {
+    playerLight.intensity += (0.5 - playerLight.intensity) * 0.1;
+    return;
+  }
+
+  const newX = playerGroup.position.x + dx;
+  const newZ = playerGroup.position.z + dz;
+  const gridX = Math.floor((newX + OFFSET) / TILE_SIZE);
+  const gridZ = Math.floor((newZ + OFFSET) / TILE_SIZE);
+
+  let blocked = false;
+
+  if (gridX >= 0 && gridX < MAP_SIZE && gridZ >= 0 && gridZ < MAP_SIZE && mapData[gridZ][gridX] !== 1) {
+    playerGroup.position.x = newX;
+  } else { blocked = true; }
+
+  if (gridX >= 0 && gridX < MAP_SIZE && gridZ >= 0 && gridZ < MAP_SIZE && mapData[gridZ][gridX] !== 1) {
+    playerGroup.position.z = newZ;
+  } else { blocked = true; }
+
+  const speed = Math.sqrt(dx*dx + dz*dz);
+  const targetIntensity = 0.8 + speed * 15;
+  playerLight.intensity += (targetIntensity - playerLight.intensity) * 0.2;
+
+  if (speed > 0.05) {
+    const hue = 0.55 + speed * 2;
+    playerLight.color.setHSL(hue % 1, 1, 0.5);
+    const pColor = new THREE.Color().setHSL(hue % 1, 1, 0.6).getHex();
+    emitParticles(playerGroup.position.x, playerGroup.position.z, 3, pColor);
+  }
+
+  if (blocked) {
+    shakeIntensity = 0.4;
+    emitParticles(playerGroup.position.x, playerGroup.position.z, 8, 0xff4444);
+  }
+}
+
+// ============================================================
+//  12. خريطة مصغرة
+// ============================================================
+
+let minimapCtx;
+
+function setupMinimap() {
+  const minimapFrame = document.getElementById('minimap-frame');
+  const canvas = document.createElement('canvas');
+  canvas.width = 120; canvas.height = 120;
+  minimapFrame.appendChild(canvas);
+  minimapCtx = canvas.getContext('2d');
+}
+
+function updateMinimap() {
+  if (!minimapCtx) return;
+  const ctx = minimapCtx;
+  const w = 120, h = 120;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = 'rgba(10,10,26,0.9)';
+  ctx.fillRect(0, 0, w, h);
+
+  const scale = w / (MAP_SIZE * TILE_SIZE);
+
+  for (let z = 0; z < mapData.length; z++) {
+    for (let x = 0; x < mapData[z].length; x++) {
+      const px = x * TILE_SIZE * scale;
+      const py = z * TILE_SIZE * scale;
+      const size = TILE_SIZE * scale * 0.8;
+      ctx.fillStyle = mapData[z][x] === 1 ? '#3a3a6a' : '#1a1a2e';
+      ctx.fillRect(px, py, size, size);
+    }
+  }
+
+  const px = (playerGroup.position.x + OFFSET) * scale;
+  const py = (playerGroup.position.z + OFFSET) * scale;
+
+  ctx.fillStyle = '#8b5cf6';
+  ctx.shadowColor = '#8b5cf6';
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  ctx.arc(px, py, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(0, 0, w, h);
+}
+
+// ============================================================
+//  13. حلقة الرسم
 // ============================================================
 
 function animate() {
-    requestAnimationFrame(animate);
-    
-    // تحديث الشخصية
-    updateCharacter();
-    
-    // تحديث الكاميرا
-    updateCamera();
-    
-    // تحديث الفيديوهات
-    if (floorTexture) {
-        floorTexture.needsUpdate = true;
-    }
-    if (characterTexture) {
-        characterTexture.needsUpdate = true;
-    }
-    
-    renderer.render(scene, camera);
+  requestAnimationFrame(animate);
+  frameCount++;
+
+  updatePlayer();
+  updateParticles();
+
+  if (videoTexture && isVideoReady) {
+    videoTexture.needsUpdate = true;
+  }
+
+  // انعكاس
+  if (floorVideoMesh && frameCount % 15 === 0) {
+    const oldVis = playerGroup.visible;
+    playerGroup.visible = false;
+    cubeCamera.position.copy(floorVideoMesh.position);
+    cubeCamera.position.y += 0.5;
+    cubeCamera.update(renderer, scene);
+    playerGroup.visible = oldVis;
+    floorVideoMesh.material.envMap = cubeRenderTarget.texture;
+    floorVideoMesh.material.needsUpdate = true;
+  }
+
+  // اهتزاز
+  let shakeX = 0, shakeY = 0;
+  if (shakeIntensity > 0.01) {
+    shakeX = (Math.random() - 0.5) * shakeIntensity;
+    shakeY = (Math.random() - 0.5) * shakeIntensity;
+    shakeIntensity *= 0.9;
+  }
+
+  const target = playerGroup.position.clone();
+  camera.position.x += (target.x + shakeX - camera.position.x) * 0.05;
+  camera.position.z += (target.z + 10 - camera.position.z) * 0.05;
+  camera.position.y += (12 + shakeY - camera.position.y) * 0.05;
+  camera.lookAt(target.x, 0, target.z);
+
+  updateMinimap();
+  renderer.render(scene, camera);
 }
 
 // ============================================================
-//  8. التهيئة
+//  14. تحكم
 // ============================================================
 
-function init() {
-    // إنشاء البيئة
-    createVideoEnvironment();
-    
-    // إنشاء الشخصية
-    createCharacterVideo();
-    
-    // إعداد التحكم
-    setupTouchControls();
-    
-    // بدء الحلقة
-    animate();
-    
-    // تغيير الحجم
+function toggleTG() {
+  document.getElementById('tg-dropdown').classList.toggle('show');
+}
+
+function setupTouchControls() {
+  document.querySelectorAll('.dpad-btn').forEach(btn => {
+    const dir = btn.getAttribute('data-dir');
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      touchDirs[dir] = true;
+      btn.style.background = 'rgba(139,92,246,0.2)';
+      btn.style.borderColor = '#8b5cf6';
+    }, { passive: false });
+    btn.addEventListener('touchend', e => {
+      e.preventDefault();
+      touchDirs[dir] = false;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    }, { passive: false });
+    btn.addEventListener('touchcancel', () => {
+      touchDirs[dir] = false;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    });
+  });
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowUp') touchDirs.up = true;
+  if (e.key === 'ArrowDown') touchDirs.down = true;
+  if (e.key === 'ArrowLeft') touchDirs.left = true;
+  if (e.key === 'ArrowRight') touchDirs.right = true;
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'ArrowUp') touchDirs.up = false;
+  if (e.key === 'ArrowDown') touchDirs.down = false;
+  if (e.key === 'ArrowLeft') touchDirs.left = false;
+  if (e.key === 'ArrowRight') touchDirs.right = false;
+});
+
+function showToast(message, type) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + (type || '');
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
+}
+
+// ============================================================
+//  15. الدخول
+// ============================================================
+
+function enterApp() {
+  document.getElementById('start-screen').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('game-container').style.display = 'block';
+    document.getElementById('tg-toggle').style.display = 'block';
+    document.getElementById('minimap-frame').style.display = 'block';
+    document.getElementById('minimap-label').style.display = 'block';
+    document.getElementById('video-status-bar').style.display = 'block';
+
+    initThree();
+    document.getElementById('fx-shadow').classList.add('on');
+
     window.addEventListener('resize', () => {
+      if (camera) {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+      }
     });
-    
-    console.log('🎬 شخصية + بيئة = عالم متكامل!');
+
+    const savedToken = localStorage.getItem('nardo_bot_token');
+    if (savedToken) {
+      document.getElementById('bot-token').value = savedToken;
+      setTimeout(testTelegram, 600);
+    }
+
+    setTimeout(() => {
+      showToast('📡 اتصل بالقناة ثم اضغط "جلب فيديو"', 'info');
+    }, 800);
+  }, 400);
 }
 
-init();
+// ============================================================
+//  16. بدء التشغيل
+// ============================================================
+
+initTelegram();
+setupTouchControls();
+
+setTimeout(() => {
+  document.getElementById('start-btn').style.display = 'block';
+}, 400);
+
+console.log('🎬 v45.0 — فيديو من القناة كأرضية 3D Pro+');
+console.log('📌 المميزات:');
+console.log('  📡 جلب فيديو من قناة Telegram');
+console.log('  🌑 ظلال حقيقية');
+console.log('  🪞 انعكاس (CubeCamera)');
+console.log('  💡 إضاءة ديناميكية تتبع اللاعب');
+console.log('  ✨ جزيئات تفاعلية');
+console.log('  💥 اهتزاز كاميرا عند الاصطدام');
 </script>
 </body>
 </html>
