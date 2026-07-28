@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>ملصق متحرك في الخريطة</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.9.6/lottie.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
 :root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--info:#60a5fa;--accent:#00f2ff;--purple:#8b5cf6}
@@ -67,53 +66,6 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .toast.error{border-color:var(--error);color:var(--error)}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
-
-/* ============================================================
-   حاوية الملصق المتحرك - مكبرة
-   ============================================================ */
-#sticker-container {
-    position: fixed;
-    width: 180px !important;
-    height: 180px !important;
-    z-index: 300;
-    pointer-events: none;
-    display: none;
-    background: rgba(139,92,246,0.06);
-    border-radius: 50%;
-    border: 2px solid rgba(139,92,246,0.15);
-    box-shadow: 0 0 50px rgba(139,92,246,0.1);
-    backdrop-filter: blur(2px);
-    transition: all 0.15s ease;
-}
-
-#sticker-container svg {
-    width: 100% !important;
-    height: 100% !important;
-    transform: scale(1.8) !important;
-    transform-origin: center center;
-    filter: drop-shadow(0 0 15px rgba(139,92,246,0.2));
-}
-
-/* اسم الملصق المتحرك */
-.sticker-label {
-    position: fixed;
-    bottom: calc(50% + 110px);
-    left: 50%;
-    transform: translateX(-50%);
-    color: #c084fc;
-    font-family: 'Cairo', sans-serif;
-    font-size: 14px;
-    font-weight: 700;
-    z-index: 301;
-    text-shadow: 0 0 20px rgba(0,0,0,0.9);
-    background: rgba(0,0,0,0.5);
-    padding: 4px 18px;
-    border-radius: 20px;
-    border: 1px solid rgba(139,92,246,0.15);
-    backdrop-filter: blur(4px);
-    white-space: nowrap;
-    display: none;
-}
 </style>
 </head>
 <body>
@@ -121,19 +73,15 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 <!-- START -->
 <div id="start-screen">
   <div class="start-logo">🎬 ملصق متحرك</div>
-  <div class="start-subtitle">جلب الملصق المتحرك من القناة • يظهر في الخريطة</div>
+  <div class="start-subtitle">جلب الملصق المتحرك (WebM) من القناة • يظهر في الخريطة</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v21.0 | Animated Sticker Big</div>
+  <div class="version-tag">v24.0 | WebM Video Sticker</div>
 </div>
 
 <!-- GAME -->
 <div id="game-container">
   <canvas id="game-canvas"></canvas>
-
-  <!-- حاوية الملصق المتحرك (مكبرة) -->
-  <div id="sticker-container"></div>
-  <div class="sticker-label" id="sticker-label">🎬 ملصق متحرك</div>
 
   <div class="hud">
     <div class="title">🗺️ الخريطة</div>
@@ -155,7 +103,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     </div>
     <div class="row">
       <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
-      <button class="btn btn-purple" onclick="fetchAnimatedSticker()">🎬 جلب متحرك</button>
+      <button class="btn btn-purple" onclick="fetchVideoSticker()">🎬 جلب WebM</button>
       <button class="btn btn-gold" onclick="fetchStickers()">📌 جلب ملصق</button>
       <button class="btn btn-red" onclick="toggleTG()">✖</button>
     </div>
@@ -174,11 +122,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  ملصق متحرك في الخريطة 2D v21.0 (مكبر)
-// ============================================================
-
-// ============================================================
-//  TELEGRAM
+//  ملصق فيديو WebM — v24.0
 // ============================================================
 
 const tg = window.Telegram?.WebApp;
@@ -212,13 +156,21 @@ let playerSkin = null;
 let autoSelectDone = false;
 
 // ============================================================
-//  Lottie Animation
+//  Video Sticker (WebM)
 // ============================================================
 
-let lottieAnimation = null;
-let stickerContainer = document.getElementById('sticker-container');
-let stickerLabel = document.getElementById('sticker-label');
-let animationLoaded = false;
+let videoSticker = null;          // HTMLVideoElement
+let videoReady = false;
+
+function destroyVideoSticker() {
+  if (videoSticker) {
+    videoSticker.pause();
+    videoSticker.removeAttribute('src');
+    videoSticker.load();
+    videoSticker = null;
+  }
+  videoReady = false;
+}
 
 // ============================================================
 //  TELEGRAM FUNCTIONS
@@ -235,12 +187,6 @@ function renderSkinSelector() {
   const grid = document.getElementById('skin-grid');
   grid.innerHTML = '';
 
-  const defaultOpt = document.createElement('div');
-  defaultOpt.className = 'skin-option' + (!playerSkin ? ' active' : '');
-  defaultOpt.innerHTML = `<div class="preview" style="font-size:16px;">🧑</div><div class="sname">افتراضي</div>`;
-  defaultOpt.onclick = function() { selectSkin(null); };
-  grid.appendChild(defaultOpt);
-
   for (const char of fetchedStickers) {
     const opt = document.createElement('div');
     opt.className = 'skin-option' + (playerSkin && playerSkin.id === char.id ? ' active' : '');
@@ -255,6 +201,9 @@ function renderSkinSelector() {
 }
 
 function selectSkin(char) {
+  // إيقاف أي فيديو متحرك
+  destroyVideoSticker();
+
   if (char) {
     playerSkin = {
       id: char.id,
@@ -264,19 +213,6 @@ function selectSkin(char) {
     };
     document.getElementById('char-name').textContent = char.name + ' 📌';
     showToast('✅ تم اختيار ' + char.name, 'success');
-  } else {
-    playerSkin = null;
-    document.getElementById('char-name').textContent = 'افتراضي';
-    showToast('🧑 المظهر الافتراضي', 'info');
-  }
-  
-  // إخفاء الملصق المتحرك
-  if (lottieAnimation) {
-    lottieAnimation.destroy();
-    lottieAnimation = null;
-    stickerContainer.style.display = 'none';
-    stickerLabel.style.display = 'none';
-    animationLoaded = false;
   }
   
   renderGame();
@@ -311,47 +247,43 @@ async function testTelegram() {
 }
 
 // ============================================================
-//  جلب الملصق المتحرك (الميزة الرئيسية)
+//  جلب الملصق المتحرك (WebM Video Sticker)
 // ============================================================
 
-async function fetchAnimatedSticker() {
+async function fetchVideoSticker() {
   if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
-  setTGStatus('🎬 جاري جلب الملصق المتحرك...', '');
+  setTGStatus('🎬 جاري جلب ملصق الفيديو (WebM)...', '');
 
   try {
     const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
     const data = await res.json();
     if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
 
-    let found = false;
-
     for (const update of data.result || []) {
       lastUpdateId = Math.max(lastUpdateId, update.update_id);
       const msg = update.channel_post || update.message;
       if (!msg) continue;
 
-      if (msg.sticker && msg.sticker.is_animated) {
+      // ملصق فيديو (WebM)
+      if (msg.sticker && msg.sticker.is_video) {
         const fileId = msg.sticker.file_id;
         
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
         const fileData = await fileRes.json();
         
         if (fileData.ok && fileData.result.file_path) {
-          const tgsUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+          const webmUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
           
-          showAnimatedSticker(tgsUrl);
-          setTGStatus('✅ تم جلب الملصق المتحرك!', 'success');
-          showToast('🎬 تم جلب الملصق المتحرك!', 'success');
-          found = true;
+          showVideoSticker(webmUrl);
+          setTGStatus('✅ تم جلب ملصق الفيديو!', 'success');
+          showToast('🎬 تم جلب ملصق WebM!', 'success');
           return;
         }
       }
     }
     
-    if (!found) {
-      setTGStatus('📭 لا يوجد ملصق متحرك في القناة', '');
-      showToast('📭 لا يوجد ملصق متحرك في القناة', 'info');
-    }
+    setTGStatus('📭 لا يوجد ملصق فيديو (WebM) في القناة', '');
+    showToast('📭 لا يوجد ملصق فيديو في القناة', 'info');
   } catch(e) {
     setTGStatus('❌ خطأ', 'error');
     console.error(e);
@@ -359,59 +291,33 @@ async function fetchAnimatedSticker() {
 }
 
 // ============================================================
-//  عرض الملصق المتحرك (مكبر)
+//  عرض ملصق الفيديو (WebM)
 // ============================================================
 
-function showAnimatedSticker(tgsUrl) {
-    // إظهار الحاوية والاسم
-    stickerContainer.style.display = 'block';
-    stickerLabel.style.display = 'block';
-    
-    // تدمير القديم
-    if (lottieAnimation) {
-        lottieAnimation.destroy();
-        lottieAnimation = null;
-    }
-    
-    // تحميل Lottie
-    lottieAnimation = lottie.loadAnimation({
-        container: stickerContainer,
-        renderer: 'svg',
-        loop: true,
-        autoplay: true,
-        path: tgsUrl
-    });
-    
-    lottieAnimation.addEventListener('DOMLoaded', function() {
-        animationLoaded = true;
-        updateStickerPosition();
-    });
-    
-    document.getElementById('char-name').textContent = '🎬 ملصق متحرك';
-}
+function showVideoSticker(webmUrl) {
+  destroyVideoSticker();
+  playerSkin = null;
 
-// ============================================================
-//  تحديث موقع الملصق المتحرك (مكبر)
-// ============================================================
+  videoSticker = document.createElement('video');
+  videoSticker.muted = true;
+  videoSticker.loop = true;
+  videoSticker.playsInline = true;
+  videoSticker.crossOrigin = 'anonymous';
+  videoSticker.src = webmUrl;
 
-function updateStickerPosition() {
-    if (!animationLoaded && !lottieAnimation) return;
-    
-    const px = player.x * TILE_SIZE;
-    const py = player.y * TILE_SIZE;
-    
-    const screenX = px - camera.x;
-    const screenY = py - camera.y;
-    
-    // توسيط الحاوية على اللاعب
-    const containerSize = 180;
-    stickerContainer.style.left = (screenX - containerSize/2) + 'px';
-    stickerContainer.style.top = (screenY - containerSize/2 - 5) + 'px';
-    
-    // تحديث موقع الاسم
-    stickerLabel.style.left = (screenX) + 'px';
-    stickerLabel.style.top = (screenY - containerSize/2 - 35) + 'px';
-    stickerLabel.style.transform = 'translateX(-50%)';
+  videoSticker.addEventListener('loadeddata', function() {
+    videoReady = true;
+    videoSticker.play().catch(() => {});
+    document.getElementById('char-name').textContent = '🎬 ملصق فيديو (WebM)';
+  });
+
+  videoSticker.addEventListener('error', function() {
+    showToast('❌ فشل تحميل الفيديو', 'error');
+    setTGStatus('❌ فشل تحميل WebM', 'error');
+  });
+
+  // محاولة التشغيل
+  videoSticker.load();
 }
 
 // ============================================================
@@ -436,7 +342,7 @@ async function fetchStickers() {
 
       let fileId = null, imageUrl = '';
 
-      if (msg.sticker && !msg.sticker.is_animated) {
+      if (msg.sticker && !msg.sticker.is_animated && !msg.sticker.is_video) {
         fileId = msg.sticker.file_id;
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
         const fileData = await fileRes.json();
@@ -460,7 +366,7 @@ async function fetchStickers() {
       const caption = msg.caption || '';
       const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
 
-      const isSticker = !!msg.sticker && !msg.sticker.is_animated;
+      const isSticker = !!msg.sticker && !msg.sticker.is_animated && !msg.sticker.is_video;
       const char = {
         id: (isSticker ? 'sticker_' : 'image_') + fileId,
         fileId: fileId,
@@ -503,29 +409,489 @@ async function fetchStickers() {
 }
 
 function autoSelectFirstSticker() {
-    if (autoSelectDone) return;
-    const stickers = fetchedStickers.filter(c => c.isSticker);
-    if (stickers.length > 0) {
-        const first = stickers[0];
-        showToast('📌 تم اختيار الملصق تلقائياً: ' + first.name, 'success');
-        selectSkin(first);
-        autoSelectDone = true;
-        return true;
+  if (autoSelectDone) return;
+  const stickers = fetchedStickers.filter(c => c.isSticker);
+  if (stickers.length > 0) {
+    const first = stickers[0];
+    show- ملصقات فيديو `.webm`
+
+إليك النسخة الكاملة الجاهزة:
+
+```html
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ملصق متحرك في الخريطة</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--info:#60a5fa;--accent:#00f2ff;--purple:#8b5cf6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none}
+
+#start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px}
+.start-logo{font-size:42px;font-weight:900;color:var(--gold);animation:float 3s ease-in-out infinite}
+.start-subtitle{font-size:15px;color:#666;text-align:center;max-width:350px}
+.start-btn{border:2px solid var(--accent);color:var(--accent);padding:16px 50px;background:rgba(0,242,255,0.08);border-radius:60px;font-size:20px;cursor:pointer;transition:all .3s;font-weight:700;font-family:inherit}
+.start-btn:hover{transform:scale(1.05);background:var(--accent);color:#000;box-shadow:0 0 50px rgba(0,242,255,0.4)}
+.user-info{color:var(--accent);font-size:13px;background:rgba(0,0,0,0.6);padding:8px 24px;border-radius:30px}
+.version-tag{position:absolute;bottom:15px;font-size:11px;color:#444}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+
+#game-container{position:fixed;inset:0;display:none;background:#0a0a1a}
+#game-canvas{display:block;width:100%;height:100%}
+
+.hud{position:fixed;top:0;left:0;right:0;padding:6px 12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:100;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px)}
+.hud .title{color:var(--gold);font-size:13px;font-weight:700}
+.hud .info{color:#aaa;font-size:11px}
+
+.dpad{position:fixed;bottom:20px;left:16px;width:120px;height:120px;z-index:200}
+.dpad-btn{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .1s}
+.dpad-btn:active{background:rgba(139,92,246,0.2);border-color:var(--purple);color:var(--purple);transform:scale(0.88)}
+.dpad-up{top:0;left:40px}
+.dpad-down{bottom:0;left:40px}
+.dpad-left{top:40px;left:0}
+.dpad-right{top:40px;right:0}
+
+.tg-dropdown{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:10px 14px;z-index:250;min-width:280px;max-width:92%;display:none;backdrop-filter:blur(12px)}
+.tg-dropdown.show{display:block}
+.tg-dropdown .row{display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap}
+.tg-dropdown input{flex:1;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,215,0,0.1);background:#0a0a1a;color:#fff;font-size:10px;font-family:inherit;min-width:50px}
+.tg-dropdown .btn{padding:4px 10px;border:none;border-radius:6px;font-weight:700;font-size:10px;cursor:pointer;font-family:inherit}
+.btn-accent{background:var(--accent);color:#111}
+.btn-purple{background:var(--purple);color:#fff}
+.btn-gold{background:var(--gold);color:#111}
+.btn-red{background:var(--error);color:#fff}
+.tg-toggle{position:fixed;bottom:155px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none}
+
+.skin-selector{position:fixed;bottom:220px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:10px;z-index:230;display:none;backdrop-filter:blur(12px);min-width:180px;max-height:180px;overflow-y:auto}
+.skin-selector.show{display:block}
+.skin-selector h4{color:var(--gold);font-size:12px;margin-bottom:6px;text-align:center}
+.skin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px}
+.skin-option{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:4px;text-align:center;cursor:pointer;transition:.2s}
+.skin-option:hover{background:rgba(139,92,246,0.1);border-color:var(--purple)}
+.skin-option .preview{width:28px;height:28px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
+.skin-option .preview img{width:100%;height:100%;object-fit:cover}
+.skin-option .sname{font-size:7px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skin-option.active{border-color:var(--gold);background:rgba(255,215,0,0.05)}
+
+.skin-toggle{position:fixed;top:10px;right:60px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;cursor:pointer;display:none}
+.skin-toggle:hover{color:var(--gold)}
+
+.toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.toast{background:rgba(0,0,0,0.9);padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
+.toast.success{border-color:var(--success);color:var(--success)}
+.toast.error{border-color:var(--error);color:var(--error)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
+</style>
+</head>
+<body>
+
+<div id="start-screen">
+  <div class="start-logo">🎬 ملصق متحرك</div>
+  <div class="start-subtitle">يدعم .tgs (Lottie) و .webm • يظهر في الخريطة</div>
+  <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
+  <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
+  <div class="version-tag">v25.0 | TGS + WebM</div>
+</div>
+
+<div id="game-container">
+  <canvas id="game-canvas"></canvas>
+
+  <div class="hud">
+    <div class="title">🗺️ الخريطة</div>
+    <div class="info" id="char-name">لا توجد شخصية</div>
+  </div>
+
+  <div class="dpad" id="dpad">
+    <div class="dpad-btn dpad-up" data-dir="up">▲</div>
+    <div class="dpad-btn dpad-down" data-dir="down">▼</div>
+    <div class="dpad-btn dpad-left" data-dir="left">◀</div>
+    <div class="dpad-btn dpad-right" data-dir="right">▶</div>
+  </div>
+
+  <button class="tg-toggle" id="tg-toggle" onclick="toggleTG()">📡 القناة</button>
+  <div class="tg-dropdown" id="tg-dropdown">
+    <div class="row">
+      <input type="text" id="bot-token" placeholder="Bot Token">
+      <input type="text" id="chat-id" placeholder="Channel ID">
+    </div>
+    <div class="row">
+      <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
+      <button class="btn btn-purple" onclick="fetchAnimatedOrVideo()">🎬 جلب متحرك</button>
+      <button class="btn btn-gold" onclick="fetchStickers()">📌 جلب ملصق</button>
+      <button class="btn btn-red" onclick="toggleTG()">✖</button>
+    </div>
+    <div style="font-size:10px;color:#888;" id="tg-status">⭕ غير متصل</div>
+  </div>
+
+  <div class="skin-selector" id="skin-selector">
+    <h4>📌 اختر الملصق</h4>
+    <div class="skin-grid" id="skin-grid"></div>
+  </div>
+
+  <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">📌 شخصيتي</button>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+const tg = window.Telegram?.WebApp;
+let userData = null;
+
+function initTelegram() {
+  try {
+    if (tg) {
+      tg.ready(); tg.expand();
+      if (tg.initDataUnsafe?.user) {
+        userData = tg.initDataUnsafe.user;
+        document.getElementById('userInfoDisplay').innerHTML = '👤 ' + (userData.first_name || 'مستخدم');
+      } else {
+        userData = { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+        document.getElementById('userInfoDisplay').innerHTML = '👤 مستخدم';
+      }
+    } else {
+      userData = { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+      document.getElementById('userInfoDisplay').innerHTML = '👤 مستخدم';
     }
-    if (fetchedStickers.length > 0) {
-        const first = fetchedStickers[0];
-        showToast('🖼️ تم اختيار الصورة تلقائياً: ' + first.name, 'success');
-        selectSkin(first);
-        autoSelectDone = true;
-        return true;
+  } catch(e) {
+    userData = { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+    document.getElementById('userInfoDisplay').innerHTML = '👤 مستخدم';
+  }
+}
+
+let botToken = '', channelId = '', connected = false, lastUpdateId = 0;
+let fetchedStickers = [];
+let loadedImages = {};
+let playerSkin = null;
+let autoSelectDone = false;
+
+// ===== Lottie (.tgs) =====
+let lottieAnimation = null;
+let lottieCanvas = null;
+let animationLoaded = false;
+
+// ===== Video (.webm) =====
+let videoSticker = null;
+let videoReady = false;
+
+function initLottieCanvas() {
+  if (!lottieCanvas) {
+    lottieCanvas = document.createElement('canvas');
+    lottieCanvas.width = 240;
+    lottieCanvas.height = 240;
+  }
+}
+
+function destroyLottie() {
+  if (lottieAnimation) {
+    lottieAnimation.destroy();
+    lottieAnimation = null;
+  }
+  animationLoaded = false;
+}
+
+function destroyVideo() {
+  if (videoSticker) {
+    videoSticker.pause();
+    videoSticker.removeAttribute('src');
+    videoSticker.load();
+    videoSticker = null;
+  }
+  videoReady = false;
+}
+
+function destroyAllAnimated() {
+  destroyLottie();
+  destroyVideo();
+}
+
+function toggleTG() { document.getElementById('tg-dropdown').classList.toggle('show'); }
+
+function toggleSkinSelector() {
+  document.getElementById('skin-selector').classList.toggle('show');
+  renderSkinSelector();
+}
+
+function renderSkinSelector() {
+  const grid = document.getElementById('skin-grid');
+  grid.innerHTML = '';
+  for (const char of fetchedStickers) {
+    const opt = document.createElement('div');
+    opt.className = 'skin-option' + (playerSkin && playerSkin.id === char.id ? ' active' : '');
+    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '📌';
+    opt.innerHTML = `<div class="preview">\( {avatar}</div><div class="sname"> \){char.name}</div>`;
+    opt.onclick = () => selectSkin(char);
+    grid.appendChild(opt);
+  }
+}
+
+function selectSkin(char) {
+  destroyAllAnimated();
+  if (char) {
+    playerSkin = {
+      id: char.id,
+      name: char.name,
+      imageUrl: char.imageUrl,
+      isSticker: char.isSticker || false
+    };
+    document.getElementById('char-name').textContent = char.name + ' 📌';
+    showToast('✅ تم اختيار ' + char.name, 'success');
+  }
+  renderGame();
+  renderSkinSelector();
+  document.getElementById('skin-selector').classList.remove('show');
+}
+
+function setTGStatus(msg, type) {
+  const el = document.getElementById('tg-status');
+  el.textContent = msg;
+  el.style.color = type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : '#888';
+}
+
+async function testTelegram() {
+  botToken = document.getElementById('bot-token').value.trim();
+  channelId = document.getElementById('chat-id').value.trim();
+  if (!botToken || !channelId) { setTGStatus('❌ ادخل البيانات', 'error'); return; }
+  setTGStatus('🔄 جاري...', '');
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getMe');
+    const data = await res.json();
+    if (data.ok) {
+      connected = true;
+      setTGStatus('✅ متصل بـ @' + data.result.username, 'success');
+      localStorage.setItem('nardo_bot_token', botToken);
+      localStorage.setItem('nardo_chat_id', channelId);
+      showToast('✅ تم الاتصال!', 'success');
+    } else {
+      setTGStatus('❌ ' + data.description, 'error');
     }
-    return false;
+  } catch(e) { setTGStatus('❌ فشل الاتصال', 'error'); }
 }
 
 // ============================================================
-//  GAME ENGINE 2D
+// جلب ملصق متحرك (يدعم .tgs و .webm)
 // ============================================================
+async function fetchAnimatedOrVideo() {
+  if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
+  setTGStatus('🎬 جاري البحث عن ملصق متحرك...', '');
 
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
+    const data = await res.json();
+    if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
+
+    for (const update of data.result || []) {
+      lastUpdateId = Math.max(lastUpdateId, update.update_id);
+      const msg = update.channel_post || update.message;
+      if (!msg || !msg.sticker) continue;
+
+      const sticker = msg.sticker;
+      const fileId = sticker.file_id;
+
+      // ---- Video Sticker (.webm) ----
+      if (sticker.is_video) {
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        if (fileData.ok && fileData.result.file_path) {
+          const webmUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+          showVideoSticker(webmUrl);
+          setTGStatus('✅ تم جلب ملصق فيديو (WebM)!', 'success');
+          showToast('🎬 WebM جاهز!', 'success');
+          return;
+        }
+      }
+
+      // ---- Animated Sticker (.tgs) ----
+      if (sticker.is_animated) {
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        if (fileData.ok && fileData.result.file_path) {
+          const tgsUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+          await showTgsSticker(tgsUrl);
+          setTGStatus('✅ تم جلب ملصق متحرك (TGS)!', 'success');
+          showToast('🎬 TGS جاهز!', 'success');
+          return;
+        }
+      }
+    }
+
+    setTGStatus('📭 لا يوجد ملصق متحرك في القناة', '');
+    showToast('📭 لا يوجد ملصق متحرك', 'info');
+  } catch(e) {
+    console.error(e);
+    setTGStatus('❌ خطأ', 'error');
+  }
+}
+
+// ============================================================
+// عرض .webm
+// ============================================================
+function showVideoSticker(webmUrl) {
+  destroyAllAnimated();
+  playerSkin = null;
+
+  videoSticker = document.createElement('video');
+  videoSticker.muted = true;
+  videoSticker.loop = true;
+  videoSticker.playsInline = true;
+  videoSticker.crossOrigin = 'anonymous';
+  videoSticker.src = webmUrl;
+
+  videoSticker.addEventListener('loadeddata', () => {
+    videoReady = true;
+    videoSticker.play().catch(() => {});
+    document.getElementById('char-name').textContent = '🎬 ملصق فيديو (WebM)';
+  });
+
+  videoSticker.addEventListener('error', () => {
+    showToast('❌ فشل تحميل WebM', 'error');
+  });
+
+  videoSticker.load();
+}
+
+// ============================================================
+// عرض .tgs (مع فك الضغط)
+// ============================================================
+async function showTgsSticker(tgsUrl) {
+  destroyAllAnimated();
+  playerSkin = null;
+  initLottieCanvas();
+
+  try {
+    const response = await fetch(tgsUrl);
+    const buffer = await response.arrayBuffer();
+    const decompressed = pako.ungzip(new Uint8Array(buffer), { to: 'string' });
+    const animationData = JSON.parse(decompressed);
+
+    lottieAnimation = lottie.loadAnimation({
+      container: lottieCanvas,
+      renderer: 'canvas',
+      loop: true,
+      autoplay: true,
+      animationData: animationData
+    });
+
+    lottieAnimation.addEventListener('DOMLoaded', () => {
+      animationLoaded = true;
+      document.getElementById('char-name').textContent = '🎬 ملصق متحرك (TGS)';
+    });
+  } catch (err) {
+    console.error(err);
+    showToast('❌ فشل تحميل TGS', 'error');
+    setTGStatus('❌ فشل فك ضغط TGS', 'error');
+  }
+}
+
+// ============================================================
+// جلب الملصقات الثابتة
+// ============================================================
+async function fetchStickers() {
+  if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
+  setTGStatus('📌 جاري جلب الملصقات...', '');
+
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
+    const data = await res.json();
+    if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
+
+    let newItems = 0;
+
+    for (const update of data.result || []) {
+      lastUpdateId = Math.max(lastUpdateId, update.update_id);
+      const msg = update.channel_post || update.message;
+      if (!msg) continue;
+
+      let fileId = null, imageUrl = '';
+
+      if (msg.sticker && !msg.sticker.is_animated && !msg.sticker.is_video) {
+        fileId = msg.sticker.file_id;
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        if (fileData.ok && fileData.result.file_path) {
+          imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+        }
+      }
+
+      if (!fileId && msg.photo && msg.photo.length > 0) {
+        fileId = msg.photo[msg.photo.length - 1].file_id;
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        if (fileData.ok && fileData.result.file_path) {
+          imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+        }
+      }
+
+      if (!fileId) continue;
+      if (fetchedStickers.some(c => c.fileId === fileId)) continue;
+
+      const caption = msg.caption || '';
+      const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+      const isSticker = !!msg.sticker && !msg.sticker.is_animated && !msg.sticker.is_video;
+
+      const char = {
+        id: (isSticker ? 'sticker_' : 'image_') + fileId,
+        fileId,
+        name: nameMatch ? nameMatch[1].trim() : (isSticker ? 'ملصق #' : 'صورة #') + (fetchedStickers.length + 1),
+        imageUrl,
+        isSticker
+      };
+
+      fetchedStickers.push(char);
+      newItems++;
+
+      if (imageUrl) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          loadedImages[char.id] = img;
+          if (isSticker && !autoSelectDone && fetchedStickers.length === 1) {
+            setTimeout(autoSelectFirstSticker, 500);
+          }
+        };
+        img.src = imageUrl;
+      }
+    }
+
+    if (newItems > 0) {
+      setTGStatus('✅ جلب ' + newItems + ' عنصر!', 'success');
+      renderSkinSelector();
+      showToast('📌 تم جلب ' + newItems + ' ملصق/صورة!', 'success');
+      if (!autoSelectDone) setTimeout(autoSelectFirstSticker, 800);
+    } else {
+      setTGStatus('📭 لا توجد عناصر جديدة', '');
+    }
+  } catch(e) {
+    console.error(e);
+    setTGStatus('❌ خطأ', 'error');
+  }
+}
+
+function autoSelectFirstSticker() {
+  if (autoSelectDone) return;
+  const stickers = fetchedStickers.filter(c => c.isSticker);
+  if (stickers.length > 0) {
+    selectSkin(stickers[0]);
+    autoSelectDone = true;
+    return true;
+  }
+  if (fetchedStickers.length > 0) {
+    selectSkin(fetchedStickers[0]);
+    autoSelectDone = true;
+    return true;
+  }
+  return false;
+}
+
+// ============================================================
+// GAME ENGINE
+// ============================================================
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 
@@ -533,180 +899,120 @@ const MAP_SIZE = 16;
 const TILE_SIZE = 40;
 let mapData = [];
 
-let player = {
-  x: 1.5,
-  y: 1.5,
-  speed: 0.08,
-  direction: 'down',
-  frame: 0,
-  frameTimer: 0
-};
-
+let player = { x: 1.5, y: 1.5, speed: 0.08, direction: 'down' };
 let camera = { x: 0, y: 0 };
 let touchDirs = { up: false, down: false, left: false, right: false };
-
-// ============================================================
-//  الخريطة
-// ============================================================
 
 function generateMap() {
   mapData = [];
   for (let y = 0; y < MAP_SIZE; y++) {
     const row = [];
     for (let x = 0; x < MAP_SIZE; x++) {
-      if (x === 0 || x === MAP_SIZE-1 || y === 0 || y === MAP_SIZE-1) {
-        row.push(1);
-      } else if (Math.random() < 0.1 && !(x <= 3 && y <= 3)) {
-        row.push(1);
-      } else {
-        row.push(0);
-      }
+      if (x === 0 || x === MAP_SIZE-1 || y === 0 || y === MAP_SIZE-1) row.push(1);
+      else if (Math.random() < 0.1 && !(x <= 3 && y <= 3)) row.push(1);
+      else row.push(0);
     }
     mapData.push(row);
   }
-  for (let y = 1; y <= 3; y++) {
-    for (let x = 1; x <= 3; x++) {
-      mapData[y][x] = 0;
-    }
-  }
+  for (let y = 1; y <= 3; y++) for (let x = 1; x <= 3; x++) mapData[y][x] = 0;
 }
 
-// ============================================================
-//  الرسم
-// ============================================================
-
 function renderGame() {
-  const w = canvas.width;
-  const h = canvas.height;
-  
+  const w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
-  
-  const halfW = w / 2;
-  const halfH = h / 2;
-  camera.x = player.x * TILE_SIZE - halfW;
-  camera.y = player.y * TILE_SIZE - halfH;
-  
-  const maxX = MAP_SIZE * TILE_SIZE - w;
-  const maxY = MAP_SIZE * TILE_SIZE - h;
-  camera.x = Math.max(0, Math.min(maxX, camera.x));
-  camera.y = Math.max(0, Math.min(maxY, camera.y));
-  
+
+  camera.x = player.x * TILE_SIZE - w / 2;
+  camera.y = player.y * TILE_SIZE - h / 2;
+  camera.x = Math.max(0, Math.min(MAP_SIZE * TILE_SIZE - w, camera.x));
+  camera.y = Math.max(0, Math.min(MAP_SIZE * TILE_SIZE - h, camera.y));
+
   ctx.save();
   ctx.translate(-camera.x, -camera.y);
-  
+
   // رسم الخريطة
   for (let y = 0; y < MAP_SIZE; y++) {
     for (let x = 0; x < MAP_SIZE; x++) {
-      const px = x * TILE_SIZE;
-      const py = y * TILE_SIZE;
-      
+      const px = x * TILE_SIZE, py = y * TILE_SIZE;
       if (mapData[y][x] === 1) {
         ctx.fillStyle = '#2a2a4a';
         ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
         ctx.strokeStyle = '#3a3a5a';
-        ctx.lineWidth = 1;
         ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
       } else {
-        const isLight = (x + y) % 2 === 0;
-        ctx.fillStyle = isLight ? '#1a1a2e' : '#222244';
+        ctx.fillStyle = (x + y) % 2 === 0 ? '#1a1a2e' : '#222244';
         ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
       }
     }
   }
-  
-  // ============================================================
-  //  رسم الشخصية (إذا لم يكن هناك ملصق متحرك)
-  // ============================================================
-  
-  if (lottieAnimation && animationLoaded) {
-    // فقط ظل تحت الملصق المتحرك
-    const px = player.x * TILE_SIZE;
-    const py = player.y * TILE_SIZE;
-    const size = TILE_SIZE;
-    
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath();
-    ctx.ellipse(px + size/2, py + size * 0.85, size * 0.4, size * 0.08, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    updateStickerPosition();
-    
-  } else if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
-    // رسم الملصق العادي
-    const px = player.x * TILE_SIZE;
-    const py = player.y * TILE_SIZE;
-    const size = TILE_SIZE * 0.8;
-    
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath();
-    ctx.ellipse(px + size/2, py + size * 0.85, size * 0.4, size * 0.08, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
+
+  const px = player.x * TILE_SIZE;
+  const py = player.y * TILE_SIZE;
+
+  // ظل
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(px + TILE_SIZE/2, py + TILE_SIZE * 0.9, TILE_SIZE * 0.5, TILE_SIZE * 0.1, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ===== رسم الملصق المتحرك =====
+  if (videoReady && videoSticker) {
+    // WebM
+    const size = 220;
+    ctx.drawImage(videoSticker, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2 + 5, size, size);
+    ctx.fillStyle = '#c084fc';
+    ctx.font = 'bold 11px Cairo';
+    ctx.textAlign = 'center';
+    ctx.fillText('🎬 WebM', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2);
+  }
+  else if (animationLoaded && lottieAnimation && lottieCanvas) {
+    // TGS (Lottie)
+    const size = 220;
+    ctx.drawImage(lottieCanvas, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2 + 5, size, size);
+    ctx.fillStyle = '#c084fc';
+    ctx.font = 'bold 11px Cairo';
+    ctx.textAlign = 'center';
+    ctx.fillText('🎬 TGS', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2);
+  }
+  else if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
+    // ملصق ثابت
+    const size = TILE_SIZE * 1.6;
     const img = loadedImages[playerSkin.id];
-    
-    const glow = ctx.createRadialGradient(
-      px + size/2, py + size/2, 0,
-      px + size/2, py + size/2, size * 0.9
-    );
-    glow.addColorStop(0, 'rgba(139,92,246,0.15)');
+    const glow = ctx.createRadialGradient(px + TILE_SIZE/2, py + TILE_SIZE/2, size*0.1, px + TILE_SIZE/2, py + TILE_SIZE/2, size*0.7);
+    glow.addColorStop(0, 'rgba(139,92,246,0.2)');
     glow.addColorStop(1, 'rgba(139,92,246,0)');
     ctx.fillStyle = glow;
     ctx.beginPath();
-    ctx.arc(px + size/2, py + size/2, size * 0.9, 0, Math.PI * 2);
+    ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size*0.7, 0, Math.PI*2);
     ctx.fill();
-    
+
     ctx.save();
     ctx.beginPath();
-    ctx.arc(px + size/2, py + size/2, size * 0.45, 0, Math.PI * 2);
+    ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size*0.5, 0, Math.PI*2);
     ctx.clip();
-    ctx.drawImage(img, px + size * 0.05, py + size * 0.05, size * 0.9, size * 0.9);
+    ctx.drawImage(img, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size);
     ctx.restore();
-    
+
     ctx.strokeStyle = '#8b5cf6';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.beginPath();
-    ctx.arc(px + size/2, py + size/2, size * 0.45, 0, Math.PI * 2);
+    ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size*0.5, 0, Math.PI*2);
     ctx.stroke();
-    
+
     ctx.fillStyle = '#c084fc';
-    ctx.font = 'bold 10px Cairo';
+    ctx.font = 'bold 11px Cairo';
     ctx.textAlign = 'center';
-    ctx.fillText(playerSkin.name || 'ملصق', px + size/2, py - 8);
-    
+    ctx.fillText(playerSkin.name || 'ملصق', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2 - 5);
   } else {
-    // شخصية افتراضية
-    const px = player.x * TILE_SIZE;
-    const py = player.y * TILE_SIZE;
-    const size = TILE_SIZE * 0.7;
-    
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    // لا يوجد شيء
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
     ctx.beginPath();
-    ctx.ellipse(px + size/2, py + size * 0.85, size * 0.4, size * 0.08, 0, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.fillStyle = '#00f2ff';
-    ctx.shadowColor = '#00f2ff';
-    ctx.shadowBlur = 20;
-    ctx.beginPath();
-    ctx.arc(px + size/2, py + size/2, size * 0.4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-    
-    ctx.fillStyle = '#fff';
-    ctx.beginPath();
-    ctx.arc(px + size * 0.35, py + size * 0.4, size * 0.08, 0, Math.PI * 2);
-    ctx.arc(px + size * 0.65, py + size * 0.4, size * 0.08, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#333';
-    ctx.beginPath();
-    ctx.arc(px + size * 0.38, py + size * 0.42, size * 0.04, 0, Math.PI * 2);
-    ctx.arc(px + size * 0.68, py + size * 0.42, size * 0.04, 0, Math.PI * 2);
+    ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, 4, 0, Math.PI*2);
     ctx.fill();
   }
-  
+
   ctx.restore();
-  
-  // معلومات
+
+  // إحداثيات
   ctx.fillStyle = 'rgba(0,0,0,0.5)';
   ctx.fillRect(10, 10, 200, 20);
   ctx.fillStyle = '#aaa';
@@ -715,48 +1021,33 @@ function renderGame() {
   ctx.fillText('📍 ' + Math.round(player.x) + ',' + Math.round(player.y), 16, 26);
 }
 
-// ============================================================
-//  حركة اللاعب
-// ============================================================
-
 function updatePlayer() {
   let dx = 0, dy = 0;
-  
   if (touchDirs.up) dy = -player.speed;
   if (touchDirs.down) dy = player.speed;
   if (touchDirs.left) dx = -player.speed;
   if (touchDirs.right) dx = player.speed;
-  
+
   if (dx < 0) player.direction = 'left';
   else if (dx > 0) player.direction = 'right';
   else if (dy < 0) player.direction = 'up';
   else if (dy > 0) player.direction = 'down';
-  
+
   const newX = player.x + dx;
   const newY = player.y + dy;
-  
   const checkX = Math.round(newX);
   const checkY = Math.round(newY);
-  
-  if (checkX >= 0 && checkX < MAP_SIZE && checkY >= 0 && checkY < MAP_SIZE) {
-    if (mapData[checkY][checkX] !== 1) {
-      player.x = newX;
-    }
+
+  if (checkX >= 0 && checkX < MAP_SIZE && checkY >= 0 && checkY < MAP_SIZE && mapData[checkY][checkX] !== 1) {
+    player.x = newX;
   }
-  
-  if (checkX >= 0 && checkX < MAP_SIZE && checkY >= 0 && checkY < MAP_SIZE) {
-    if (mapData[checkY][checkX] !== 1) {
-      player.y = newY;
-    }
+  if (checkX >= 0 && checkX < MAP_SIZE && checkY >= 0 && checkY < MAP_SIZE && mapData[checkY][checkX] !== 1) {
+    player.y = newY;
   }
-  
+
   player.x = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.x));
   player.y = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.y));
 }
-
-// ============================================================
-//  حلقة اللعبة
-// ============================================================
 
 function gameLoop() {
   updatePlayer();
@@ -764,36 +1055,28 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// ============================================================
-//  حجم الشاشة
-// ============================================================
-
 function resize() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
   renderGame();
 }
 
-// ============================================================
-//  أزرار التحكم
-// ============================================================
-
 function setupTouchControls() {
-  document.querySelectorAll('.dpad-btn').forEach(function(btn) {
+  document.querySelectorAll('.dpad-btn').forEach(btn => {
     const dir = btn.getAttribute('data-dir');
-    btn.addEventListener('touchstart', function(e) {
+    btn.addEventListener('touchstart', e => {
       e.preventDefault();
       touchDirs[dir] = true;
       btn.style.background = 'rgba(139,92,246,0.15)';
       btn.style.borderColor = '#8b5cf6';
     }, { passive: false });
-    btn.addEventListener('touchend', function(e) {
+    btn.addEventListener('touchend', e => {
       e.preventDefault();
       touchDirs[dir] = false;
       btn.style.background = '';
       btn.style.borderColor = '';
     }, { passive: false });
-    btn.addEventListener('touchcancel', function() {
+    btn.addEventListener('touchcancel', () => {
       touchDirs[dir] = false;
       btn.style.background = '';
       btn.style.borderColor = '';
@@ -801,22 +1084,18 @@ function setupTouchControls() {
   });
 }
 
-document.addEventListener('keydown', function(e) {
+document.addEventListener('keydown', e => {
   if (e.key === 'ArrowUp') touchDirs.up = true;
   if (e.key === 'ArrowDown') touchDirs.down = true;
   if (e.key === 'ArrowLeft') touchDirs.left = true;
   if (e.key === 'ArrowRight') touchDirs.right = true;
 });
-document.addEventListener('keyup', function(e) {
+document.addEventListener('keyup', e => {
   if (e.key === 'ArrowUp') touchDirs.up = false;
   if (e.key === 'ArrowDown') touchDirs.down = false;
   if (e.key === 'ArrowLeft') touchDirs.left = false;
   if (e.key === 'ArrowRight') touchDirs.right = false;
 });
-
-// ============================================================
-  // TOAST
-// ============================================================
 
 function showToast(message, type) {
   const container = document.getElementById('toast-container');
@@ -824,33 +1103,26 @@ function showToast(message, type) {
   toast.className = 'toast ' + type;
   toast.textContent = message;
   container.appendChild(toast);
-  setTimeout(function() { toast.remove(); }, 3000);
+  setTimeout(() => toast.remove(), 3000);
 }
-
-// ============================================================
-//  ENTER APP
-// ============================================================
 
 function enterApp() {
   document.getElementById('start-screen').style.opacity = '0';
-  setTimeout(function() {
+  setTimeout(() => {
     document.getElementById('start-screen').style.display = 'none';
     document.getElementById('game-container').style.display = 'block';
     document.getElementById('tg-toggle').style.display = 'block';
     document.getElementById('skin-toggle').style.display = 'block';
-    
+
     generateMap();
     resize();
     window.addEventListener('resize', resize);
-    
-    setTimeout(function() {
-      if (connected) {
-        fetchAnimatedSticker();
-      } else {
-        showToast('📡 اضغط "اتصال" ثم "🎬 جلب متحرك"', 'info');
-      }
+
+    setTimeout(() => {
+      if (connected) fetchAnimatedOrVideo();
+      else showToast('📡 اضغط "اتصال" ثم "🎬 جلب متحرك"', 'info');
     }, 1500);
-    
+
     gameLoop();
   }, 500);
 
@@ -858,29 +1130,22 @@ function enterApp() {
   const savedChat = localStorage.getItem('nardo_chat_id');
   if (savedToken) document.getElementById('bot-token').value = savedToken;
   if (savedChat) document.getElementById('chat-id').value = savedChat;
-  
-  setTimeout(function() {
-    if (savedToken && savedChat) {
-      testTelegram();
-    }
+
+  setTimeout(() => {
+    if (savedToken && savedChat) testTelegram();
   }, 1000);
-  
+
   if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
 }
 
-// ============================================================
-//  INIT
-// ============================================================
-
 initTelegram();
 setupTouchControls();
+setTimeout(() => document.getElementById('start-btn').style.display = 'block', 500);
 
-setTimeout(function() {
-  document.getElementById('start-btn').style.display = 'block';
-}, 500);
-
-console.log('🎬 ملصق متحرك مكبر في الخريطة 2D — جاهز!');
+console.log('🎬 v25.0 — يدعم TGS + WebM');
 </script>
 </body>
 </html>
 
+
+   
