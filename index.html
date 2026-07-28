@@ -107,7 +107,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
   <div class="start-subtitle">فيديو متحرك على خريطة ثلاثية الأبعاد</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v32.0 | WebM + 3D</div>
+  <div class="version-tag">v33.0 | WebM + حجم كبير</div>
 </div>
 
 <div id="game-container">
@@ -155,7 +155,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  WebM في 3D - الحل النهائي
+//  WebM في 3D - مع حجم كبير
 // ============================================================
 
 const tg = window.Telegram?.WebApp;
@@ -190,11 +190,9 @@ let autoSelectDone = false;
 // ===== Three.js =====
 let scene, mainCamera, minimapCamera, renderer;
 let playerGroup, wallsGroup;
-let currentSticker = null; // الـ Sprite الحالي
+let currentSticker = null;
 let videoTexture = null;
 let videoElement = null;
-let lottieTexture = null;
-let lottieAnimation = null;
 
 const MAP_SIZE = 16;
 const TILE_SIZE = 4;
@@ -215,11 +213,9 @@ function initThree() {
   scene.background = new THREE.Color(0x050510);
   scene.fog = new THREE.Fog(0x050510, 20, 90);
 
-  // كاميرا رئيسية
   mainCamera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
   mainCamera.position.set(0, 25, 20);
 
-  // كاميرا الخريطة المصغرة
   const mmSize = WORLD_SIZE * 0.6;
   minimapCamera = new THREE.OrthographicCamera(-mmSize, mmSize, mmSize, -mmSize, 1, 1000);
   minimapCamera.position.set(0, 60, 0);
@@ -243,7 +239,7 @@ function initThree() {
   pointLight.position.set(0, 10, 0);
   scene.add(pointLight);
 
-  // الأرضية
+  // أرضية
   const groundGeo = new THREE.PlaneGeometry(WORLD_SIZE, WORLD_SIZE);
   const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.9, metalness: 0.1 });
   const ground = new THREE.Mesh(groundGeo, groundMat);
@@ -255,7 +251,7 @@ function initThree() {
   gridHelper.position.y = 0.02;
   scene.add(gridHelper);
 
-  // مجموعة اللاعب
+  // لاعب
   playerGroup = new THREE.Group();
   scene.add(playerGroup);
   
@@ -267,13 +263,11 @@ function initThree() {
   glow.position.y = 0.05;
   playerGroup.add(glow);
   
-  // الجدران
+  // جدران
   wallsGroup = new THREE.Group();
   scene.add(wallsGroup);
 
   generateMap();
-  
-  // بدء الحلقة
   animate();
 }
 
@@ -310,7 +304,6 @@ function generateMap() {
     mapData.push(row);
   }
   
-  // موقع البداية
   playerGroup.position.set(
     1.5 * TILE_SIZE - OFFSET + TILE_SIZE/2,
     0,
@@ -344,15 +337,12 @@ function animate() {
   
   updatePlayer();
   
-  // 🔥 أهم شيء: تحديث الـ VideoTexture في كل إطار
+  // تحديث الفيديو
   if (videoTexture) {
     videoTexture.needsUpdate = true;
   }
-  if (lottieTexture) {
-    lottieTexture.needsUpdate = true;
-  }
   
-  // الكاميرا تتبع اللاعب
+  // كاميرا رئيسية
   const target = playerGroup.position.clone();
   mainCamera.position.x += (target.x + 12 - mainCamera.position.x) * 0.08;
   mainCamera.position.z += (target.z + 12 - mainCamera.position.z) * 0.08;
@@ -363,7 +353,7 @@ function animate() {
   minimapCamera.position.set(target.x, 60, target.z);
   minimapCamera.lookAt(target.x, 0, target.z);
   
-  // عرض المشهد الرئيسي
+  // عرض
   const w = window.innerWidth;
   const h = window.innerHeight;
   renderer.setViewport(0, 0, w, h);
@@ -372,7 +362,7 @@ function animate() {
   renderer.clear();
   renderer.render(scene, mainCamera);
   
-  // عرض الخريطة المصغرة
+  // Minimap
   const mmFrame = document.getElementById('minimap-frame');
   const mmRect = mmFrame.getBoundingClientRect();
   const mmW = mmRect.width * window.devicePixelRatio;
@@ -389,11 +379,11 @@ function animate() {
 }
 
 // ============================================================
-//  عرض الفيديو (WebM) في 3D
+//  عرض WebM مع حجم كبير 🔥
 // ============================================================
 
 function showWebM(url, name) {
-  // تنظيف القديم
+  // تنظيف
   if (currentSticker) {
     playerGroup.remove(currentSticker);
     currentSticker = null;
@@ -406,7 +396,6 @@ function showWebM(url, name) {
     videoTexture = null;
   }
 
-  // إنشاء عنصر الفيديو
   videoElement = document.createElement('video');
   videoElement.muted = true;
   videoElement.loop = true;
@@ -418,13 +407,11 @@ function showWebM(url, name) {
   videoElement.onloadeddata = function() {
     videoElement.play().catch(err => console.warn('play error', err));
     
-    // إنشاء الـ VideoTexture
     videoTexture = new THREE.VideoTexture(videoElement);
     videoTexture.minFilter = THREE.LinearFilter;
     videoTexture.magFilter = THREE.LinearFilter;
     videoTexture.format = THREE.RGBAFormat;
     
-    // إنشاء الـ Sprite
     const material = new THREE.SpriteMaterial({ 
       map: videoTexture, 
       transparent: true,
@@ -432,14 +419,17 @@ function showWebM(url, name) {
       depthWrite: false
     });
     const sprite = new THREE.Sprite(material);
-    sprite.scale.set(3.5, 3.5, 1);
-    sprite.position.y = 1.8;
+    
+    // 🔥🔥🔥 الحجم الكبير 🔥🔥🔥
+    sprite.scale.set(6.5, 6.5, 1);  // حجم كبير
+    sprite.position.y = 2.8;        // ارتفاع مناسب
+    
     playerGroup.add(sprite);
     currentSticker = sprite;
     
-    document.getElementById('char-name').textContent = '🎬 ' + name;
-    showToast('✅ WebM جاهز في 3D!', 'success');
-    console.log('✅ WebM عرض في 3D');
+    document.getElementById('char-name').textContent = '🎬 ' + name + ' (كبير)';
+    showToast('✅ WebM جاهز بحجم كبير!', 'success');
+    console.log('✅ WebM عرض بحجم 6.5');
   };
 
   videoElement.onerror = function(e) {
@@ -451,7 +441,7 @@ function showWebM(url, name) {
 }
 
 // ============================================================
-//  جلب WebM من القناة
+//  جلب WebM
 // ============================================================
 
 async function fetchWebM() {
@@ -470,7 +460,6 @@ async function fetchWebM() {
 
       const sticker = msg.sticker;
       
-      // فقط WebM (is_video)
       if (sticker.is_video) {
         const fileId = sticker.file_id;
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
@@ -532,13 +521,12 @@ function selectSkin(char) {
   }
   if (char && char.imageUrl) {
     playerSkin = char;
-    // استخدام TextureLoader للصور
     const loader = new THREE.TextureLoader();
     loader.load(char.imageUrl, (texture) => {
       const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
       const sprite = new THREE.Sprite(material);
-      sprite.scale.set(3.5, 3.5, 1);
-      sprite.position.y = 1.8;
+      sprite.scale.set(6, 6, 1);
+      sprite.position.y = 2.8;
       playerGroup.add(sprite);
       currentSticker = sprite;
       document.getElementById('char-name').textContent = '📌 ' + char.name;
@@ -752,8 +740,7 @@ setTimeout(() => {
   document.getElementById('start-btn').style.display = 'block';
 }, 400);
 
-console.log('🎬 v32.0 — WebM في 3D');
+console.log('🎬 v33.0 — WebM بحجم كبير');
 </script>
 </body>
 </html>
-
