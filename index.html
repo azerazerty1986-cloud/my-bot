@@ -109,15 +109,6 @@ canvas { display:block; width:100%; height:100%; }
   background:rgba(5,5,16,0.7); z-index:90;
 }
 
-/* مؤشرات العالم */
-.world-indicator {
-  position:fixed; bottom:170px; left:50%; transform:translateX(-50%);
-  z-index:150; display:none;
-  background:rgba(0,0,0,0.8); padding:8px 20px; border-radius:12px;
-  font-size:12px; border:1px solid rgba(255,215,0,0.2);
-}
-
-/* تحكمات فيديو 360 */
 #video-controls {
   position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
   z-index:300; display:none; gap:10px; align-items:center;
@@ -186,86 +177,110 @@ canvas { display:block; width:100%; height:100%; }
 
 <script>
 // ============================================================
-//  إعدادات العوالم التفاعلية
+//  أنواع العوالم
 // ============================================================
 const WORLD_TYPES = {
-    GALLERY: 'gallery',      // معرض صور متحركة
-    POSTER: 'poster',        // ملصقات
-    VIDEO360: 'video360',    // فيديو 360
-    ANIMATED: 'animated'     // صور متحركة
+  GALLERY: 'gallery',
+  POSTER: 'poster',
+  VIDEO360: 'video360',
+  ANIMATED: 'animated',
+  MAIN: 'main'
 };
 
-// ============================================================
-//  بيانات العوالم
-// ============================================================
 let worlds = [];
 
-// إنشاء عوالم افتراضية
+// ============================================================
+//  إنشاء العوالم الافتراضية (مع الخريطة الرئيسية)
+// ============================================================
 function createDefaultWorlds() {
-    worlds = [
-        {
-            id: 'world_gallery',
-            name: '🖼️ معرض الصور المتحركة',
-            type: WORLD_TYPES.GALLERY,
-            grid: 8,
-            tileSize: 3.5,
-            startPosition: { x: 0, z: 0 },
-            items: [
-                { id: 1, type: 'gif', title: '🌊 موجة', url: 'https://media.giphy.com/media/3o7abKhOpu0N9H1s9O/giphy.gif', row: 2, col: 2 },
-                { id: 2, type: 'gif', title: '🔥 نار', url: 'https://media.giphy.com/media/3o7abKhOpu0N9H1s9O/giphy.gif', row: 2, col: 5 },
-                { id: 3, type: 'gif', title: '🌈 قوس قزح', url: 'https://media.giphy.com/media/3o7abKhOpu0N9H1s9O/giphy.gif', row: 5, col: 2 },
-                { id: 4, type: 'gif', title: '⭐ نجوم', url: 'https://media.giphy.com/media/3o7abKhOpu0N9H1s9O/giphy.gif', row: 5, col: 5 }
-            ],
-            background: '#0a0a2e'
-        },
-        {
-            id: 'world_poster',
-            name: '📌 ملصقات تفاعلية',
-            type: WORLD_TYPES.POSTER,
-            grid: 8,
-            tileSize: 3.5,
-            startPosition: { x: 0, z: 0 },
-            items: [
-                { id: 5, type: 'poster', title: '🎬 فيلم أكشن', url: 'https://picsum.photos/seed/movie1/400/600', row: 2, col: 2 },
-                { id: 6, type: 'poster', title: '🎮 لعبة جديدة', url: 'https://picsum.photos/seed/game1/400/600', row: 2, col: 5 },
-                { id: 7, type: 'poster', title: '🎵 حفلة موسيقية', url: 'https://picsum.photos/seed/music1/400/600', row: 5, col: 2 },
-                { id: 8, type: 'poster', title: '🌍 سفر ومغامرات', url: 'https://picsum.photos/seed/travel1/400/600', row: 5, col: 5 }
-            ],
-            background: '#1a0a2e'
-        },
-        {
-            id: 'world_video360',
-            name: '🌐 فيديو 360',
-            type: WORLD_TYPES.VIDEO360,
-            grid: 6,
-            tileSize: 4,
-            startPosition: { x: 0, z: 0 },
-            videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
-            background: '#0a0a1a'
-        },
-        {
-            id: 'world_animated',
-            name: '🎨 صور متحركة',
-            type: WORLD_TYPES.ANIMATED,
-            grid: 10,
-            tileSize: 3,
-            startPosition: { x: 0, z: 0 },
-            items: [
-                { id: 9, type: 'animated', title: '🦋 فراشة', emoji: '🦋', row: 2, col: 2 },
-                { id: 10, type: 'animated', title: '🐉 تنين', emoji: '🐉', row: 2, col: 7 },
-                { id: 11, type: 'animated', title: '🧚 جنية', emoji: '🧚', row: 6, col: 2 },
-                { id: 12, type: 'animated', title: '🪐 كوكب', emoji: '🪐', row: 6, col: 7 }
-            ],
-            background: '#1a1a3a'
-        }
-    ];
+  worlds = [
+    // ===== الخريطة الرئيسية =====
+    {
+      id: 'main',
+      name: 'الخريطة الرئيسية',
+      type: WORLD_TYPES.MAIN,
+      grid: 12,
+      tileSize: 3,
+      startPosition: { x: 0, z: 0 },
+      background: '#0a0a1a',
+      items: [
+        { id: 'p1', type: 'portal', title: 'معرض الصور', emoji: '🖼️', row: 3, col: 3, targetWorld: 'world_gallery' },
+        { id: 'p2', type: 'portal', title: 'الملصقات', emoji: '📌', row: 3, col: 8, targetWorld: 'world_poster' },
+        { id: 'p3', type: 'portal', title: 'فيديو 360', emoji: '🌐', row: 8, col: 3, targetWorld: 'world_video360' },
+        { id: 'p4', type: 'portal', title: 'صور متحركة', emoji: '🎨', row: 8, col: 8, targetWorld: 'world_animated' }
+      ]
+    },
+
+    // ===== عالم المعرض =====
+    {
+      id: 'world_gallery',
+      name: '🖼️ معرض الصور المتحركة',
+      type: WORLD_TYPES.GALLERY,
+      grid: 8,
+      tileSize: 3.5,
+      startPosition: { x: 0, z: 0 },
+      background: '#0a0a2e',
+      items: [
+        { id: 1, type: 'gif', title: '🌊 موجة', emoji: '🌊', row: 2, col: 2 },
+        { id: 2, type: 'gif', title: '🔥 نار', emoji: '🔥', row: 2, col: 5 },
+        { id: 3, type: 'gif', title: '🌈 قوس قزح', emoji: '🌈', row: 5, col: 2 },
+        { id: 4, type: 'gif', title: '⭐ نجوم', emoji: '⭐', row: 5, col: 5 }
+      ]
+    },
+
+    // ===== عالم الملصقات =====
+    {
+      id: 'world_poster',
+      name: '📌 ملصقات تفاعلية',
+      type: WORLD_TYPES.POSTER,
+      grid: 8,
+      tileSize: 3.5,
+      startPosition: { x: 0, z: 0 },
+      background: '#1a0a2e',
+      items: [
+        { id: 5, type: 'poster', title: '🎬 فيلم أكشن', emoji: '🎬', row: 2, col: 2 },
+        { id: 6, type: 'poster', title: '🎮 لعبة جديدة', emoji: '🎮', row: 2, col: 5 },
+        { id: 7, type: 'poster', title: '🎵 حفلة موسيقية', emoji: '🎵', row: 5, col: 2 },
+        { id: 8, type: 'poster', title: '🌍 سفر ومغامرات', emoji: '🌍', row: 5, col: 5 }
+      ]
+    },
+
+    // ===== عالم فيديو 360 =====
+    {
+      id: 'world_video360',
+      name: '🌐 فيديو 360',
+      type: WORLD_TYPES.VIDEO360,
+      grid: 6,
+      tileSize: 4,
+      startPosition: { x: 0, z: 0 },
+      background: '#050510',
+      videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
+      items: []
+    },
+
+    // ===== عالم الصور المتحركة =====
+    {
+      id: 'world_animated',
+      name: '🎨 صور متحركة',
+      type: WORLD_TYPES.ANIMATED,
+      grid: 10,
+      tileSize: 3,
+      startPosition: { x: 0, z: 0 },
+      background: '#1a1a3a',
+      items: [
+        { id: 9,  type: 'animated', title: 'فراشة', emoji: '🦋', row: 2, col: 2 },
+        { id: 10, type: 'animated', title: 'تنين',   emoji: '🐉', row: 2, col: 7 },
+        { id: 11, type: 'animated', title: 'جنية',   emoji: '🧚', row: 6, col: 2 },
+        { id: 12, type: 'animated', title: 'كوكب',   emoji: '🪐', row: 6, col: 7 }
+      ]
+    }
+  ];
 }
 
 // ============================================================
-//  إعدادات اللعبة الأساسية
+//  متغيرات عامة
 // ============================================================
 let currentWorldId = null;
-let previousWorldId = null;
 let savedPlayerPos = null;
 
 let GRID = 12;
@@ -287,774 +302,772 @@ let isTransitioning = false;
 let isInWorld = false;
 let visitedWorlds = new Set();
 
-// متغيرات فيديو 360
+// فيديو 360
 let videoMesh = null;
 let videoTexture = null;
 let videoElement = null;
 let isVideoPlaying = true;
 let isVideoMuted = false;
 
-// ============================================================
-//  نظام اللعبة
-// ============================================================
+// كاميرا 360
+let lon = 0, lat = 0;
+let isDragging = false;
+let onPointerDownX = 0, onPointerDownY = 0;
+let onPointerDownLon = 0, onPointerDownLat = 0;
+
+// اللعبة
 let playerScore = 0;
 let playerLevel = 1;
 let playerXP = 0;
 const XP_PER_LEVEL = 100;
 
-function updateStats() {
-    document.getElementById('score').textContent = playerScore;
-    document.getElementById('level').textContent = playerLevel;
-    document.getElementById('xp').textContent = playerXP + '/' + XP_PER_LEVEL;
-    document.getElementById('world-count').textContent = visitedWorlds.size;
-}
-
-function addXP(amount) {
-    playerXP += amount;
-    while (playerXP >= XP_PER_LEVEL) {
-        playerXP -= XP_PER_LEVEL;
-        playerLevel++;
-        showToast('🎊 ترقية! المستوى ' + playerLevel, 'success');
-    }
-    updateStats();
-}
-
 // ============================================================
 //  الصوت
 // ============================================================
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-function playBeep(freq1, freq2, duration) {
-    try {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain);
-        gain.connect(audioCtx.destination);
-        const now = audioCtx.currentTime;
-        osc.frequency.setValueAtTime(freq1, now);
-        if (freq2) osc.frequency.exponentialRampToValueAtTime(freq2, now + duration);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-        osc.start(now);
-        osc.stop(now + duration);
-    } catch(e) {}
+function playBeep(f1, f2, dur) {
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    const now = audioCtx.currentTime;
+    osc.frequency.setValueAtTime(f1, now);
+    if (f2) osc.frequency.exponentialRampToValueAtTime(f2, now + dur);
+    gain.gain.setValueAtTime(0.08, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + dur);
+    osc.start(now); osc.stop(now + dur);
+  } catch(e) {}
 }
 
 // ============================================================
-//  نظام العوالم
+//  واجهة
+// ============================================================
+function updateStats() {
+  document.getElementById('score').textContent = playerScore;
+  document.getElementById('level').textContent = playerLevel;
+  document.getElementById('xp').textContent = playerXP + '/' + XP_PER_LEVEL;
+  document.getElementById('world-count').textContent = visitedWorlds.size;
+}
+
+function addXP(amount) {
+  playerXP += amount;
+  while (playerXP >= XP_PER_LEVEL) {
+    playerXP -= XP_PER_LEVEL;
+    playerLevel++;
+    showToast('🎊 ترقية! المستوى ' + playerLevel, 'success');
+  }
+  updateStats();
+}
+
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 2800);
+}
+
+function showTransition(text) {
+  document.getElementById('transition-text').textContent = text;
+  document.getElementById('transition-screen').style.display = 'flex';
+}
+function hideTransition() {
+  document.getElementById('transition-screen').style.display = 'none';
+}
+
+// ============================================================
+//  أدوات العوالم
 // ============================================================
 function getWorld(id) {
-    return worlds.find(w => w.id === id);
+  return worlds.find(w => w.id === id);
 }
-
 function getCurrentWorld() {
-    return getWorld(currentWorldId);
+  return getWorld(currentWorldId);
 }
-
 function getPlayerTile() {
-    const px = playerGroup.position.x + HALF;
-    const pz = playerGroup.position.z + HALF;
-    return {
-        col: Math.floor(px / TILE_SIZE),
-        row: Math.floor(pz / TILE_SIZE)
-    };
+  const px = playerGroup.position.x + HALF;
+  const pz = playerGroup.position.z + HALF;
+  return {
+    col: Math.floor(px / TILE_SIZE),
+    row: Math.floor(pz / TILE_SIZE)
+  };
 }
 
 // ============================================================
-//  بناء العالم
+//  بناء / تنظيف العالم
 // ============================================================
 function clearWorld() {
-    // تنظيف المربعات
-    tileMeshes.forEach(m => {
-        if (m.parent) m.parent.remove(m);
-        if (m.material?.map) m.material.map.dispose();
-        if (m.material) m.material.dispose();
-        if (m.geometry) m.geometry.dispose();
-    });
-    tileMeshes = [];
+  tileMeshes.forEach(m => {
+    if (m.parent) m.parent.remove(m);
+    if (m.material?.map) m.material.map.dispose();
+    if (m.material) m.material.dispose();
+    if (m.geometry) m.geometry.dispose();
+  });
+  tileMeshes = [];
 
-    // تنظيف الكائنات
-    worldObjects.forEach(obj => {
-        if (obj.parent) obj.parent.remove(obj);
-        if (obj.material?.map) obj.material.map.dispose();
-        if (obj.material) obj.material.dispose();
-        if (obj.geometry) obj.geometry.dispose();
-    });
-    worldObjects = [];
+  worldObjects.forEach(obj => {
+    if (obj.parent) obj.parent.remove(obj);
+    if (obj.material?.map) obj.material.map.dispose();
+    if (obj.material) obj.material.dispose();
+    if (obj.geometry) obj.geometry.dispose();
+  });
+  worldObjects = [];
 
-    // تنظيف فيديو 360
-    if (videoMesh) {
-        if (videoMesh.parent) videoMesh.parent.remove(videoMesh);
-        if (videoMesh.material?.map) videoMesh.material.map.dispose();
-        if (videoMesh.material) videoMesh.material.dispose();
-        if (videoMesh.geometry) videoMesh.geometry.dispose();
-        videoMesh = null;
-    }
-    if (videoTexture) {
-        videoTexture.dispose();
-        videoTexture = null;
-    }
-    if (videoElement) {
-        try { videoElement.pause(); } catch(e) {}
-        videoElement = null;
-    }
-    document.getElementById('video-controls').style.display = 'none';
+  if (videoMesh) {
+    if (videoMesh.parent) videoMesh.parent.remove(videoMesh);
+    if (videoMesh.material?.map) videoMesh.material.map.dispose();
+    if (videoMesh.material) videoMesh.material.dispose();
+    if (videoMesh.geometry) videoMesh.geometry.dispose();
+    videoMesh = null;
+  }
+  if (videoTexture) { videoTexture.dispose(); videoTexture = null; }
+  if (videoElement) {
+    try { videoElement.pause(); } catch(e) {}
+    videoElement = null;
+  }
+  document.getElementById('video-controls').style.display = 'none';
 
-    if (gridHelper && gridHelper.parent) {
-        gridHelper.parent.remove(gridHelper);
-        gridHelper = null;
-    }
+  if (gridHelper && gridHelper.parent) {
+    gridHelper.parent.remove(gridHelper);
+    gridHelper = null;
+  }
 }
 
 function buildWorld(worldId) {
-    const world = getWorld(worldId);
-    if (!world) return;
+  const world = getWorld(worldId);
+  if (!world) {
+    console.error('العالم غير موجود:', worldId);
+    return;
+  }
 
-    clearWorld();
-    currentWorldId = worldId;
-    GRID = world.grid || 8;
-    TILE_SIZE = world.tileSize || 3;
-    WORLD_SIZE = GRID * TILE_SIZE;
-    HALF = WORLD_SIZE / 2;
+  clearWorld();
+  currentWorldId = worldId;
+  GRID = world.grid || 8;
+  TILE_SIZE = world.tileSize || 3;
+  WORLD_SIZE = GRID * TILE_SIZE;
+  HALF = WORLD_SIZE / 2;
 
-    // تغيير لون الخلفية
-    if (world.background) {
-        scene.background = new THREE.Color(world.background);
+  scene.background = new THREE.Color(world.background || '#0a0a1a');
+
+  // بناء المربعات
+  for (let row = 0; row < GRID; row++) {
+    for (let col = 0; col < GRID; col++) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 128; canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+
+      const item = world.items?.find(i => i.row === row && i.col === col);
+
+      if (item) {
+        // مربع فيه محتوى
+        ctx.fillStyle = item.type === 'portal' ? '#0a2a3a' : '#1a1a2e';
+        ctx.fillRect(0, 0, 128, 128);
+
+        ctx.fillStyle = item.type === 'portal' ? '#00f2ff' : '#ffd700';
+        ctx.font = item.emoji ? '42px Arial' : '24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(item.emoji || '📌', 64, 48);
+
+        ctx.font = '11px Arial';
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText((item.title || '').substring(0, 12), 64, 95);
+      } else {
+        const colors = ['#1a1a2e', '#16213e', '#0f3460', '#1e293b', '#2d1b3d'];
+        ctx.fillStyle = colors[(row + col) % colors.length];
+        ctx.fillRect(0, 0, 128, 128);
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.font = '12px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(col + ',' + row, 64, 64);
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      const geo = new THREE.PlaneGeometry(TILE_SIZE * 0.95, TILE_SIZE * 0.95);
+      const mat = new THREE.MeshStandardMaterial({
+        map: tex, side: THREE.DoubleSide, roughness: 0.4, metalness: 0.1
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      const posX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
+      const posZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
+      mesh.position.set(posX, 0, posZ);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.userData = { row, col, item: item || null };
+      tileGroup.add(mesh);
+      tileMeshes.push(mesh);
     }
+  }
 
-    // بناء الشبكة
-    for (let row = 0; row < GRID; row++) {
-        for (let col = 0; col < GRID; col++) {
-            const canvas = document.createElement('canvas');
-            canvas.width = 128; canvas.height = 128;
-            const ctx = canvas.getContext('2d');
+  // أيقونات عائمة + حلقات للبوابات
+  if (world.items) {
+    world.items.forEach(item => {
+      const posX = item.col * TILE_SIZE - HALF + TILE_SIZE / 2;
+      const posZ = item.row * TILE_SIZE - HALF + TILE_SIZE / 2;
 
-            // لون الأرضية
-            const colors = ['#1a1a2e', '#16213e', '#0f3460', '#1e293b', '#2d1b3d'];
-            ctx.fillStyle = colors[(row + col) % colors.length];
-            ctx.fillRect(0, 0, 128, 128);
+      if (item.emoji) {
+        const c = document.createElement('canvas');
+        c.width = 128; c.height = 128;
+        const cx = c.getContext('2d');
+        cx.font = '80px Arial';
+        cx.textAlign = 'center';
+        cx.textBaseline = 'middle';
+        cx.fillText(item.emoji, 64, 64);
 
-            // عرض المحتوى
-            let hasItem = false;
-            if (world.items) {
-                const item = world.items.find(i => i.row === row && i.col === col);
-                if (item) {
-                    hasItem = true;
-                    ctx.fillStyle = '#ffd700';
-                    ctx.font = '24px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    
-                    if (item.emoji) {
-                        ctx.font = '48px Arial';
-                        ctx.fillText(item.emoji, 64, 55);
-                    } else {
-                        ctx.fillText('📌', 64, 45);
-                    }
-                    ctx.font = '11px Arial';
-                    ctx.fillStyle = '#fff';
-                    ctx.fillText(item.title.substring(0,10), 64, 90);
-                }
-            }
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+          map: new THREE.CanvasTexture(c), transparent: true, depthTest: false
+        }));
+        sprite.scale.set(1.4, 1.4, 1);
+        sprite.position.set(posX, 1.25, posZ);
+        scene.add(sprite);
+        worldObjects.push(sprite);
+      }
 
-            if (!hasItem) {
-                ctx.fillStyle = 'rgba(255,255,255,0.05)';
-                ctx.font = '12px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(col + ',' + row, 64, 64);
-            }
+      if (item.type === 'portal') {
+        const ring = new THREE.Mesh(
+          new THREE.RingGeometry(0.55, 0.8, 32),
+          new THREE.MeshBasicMaterial({
+            color: 0x00f2ff, transparent: true, opacity: 0.4, side: THREE.DoubleSide
+          })
+        );
+        ring.rotation.x = -Math.PI / 2;
+        ring.position.set(posX, 0.06, posZ);
+        scene.add(ring);
+        worldObjects.push(ring);
+      }
+    });
+  }
 
-            const tex = new THREE.CanvasTexture(canvas);
-            const geo = new THREE.PlaneGeometry(TILE_SIZE * 0.95, TILE_SIZE * 0.95);
-            const mat = new THREE.MeshStandardMaterial({
-                map: tex, side: THREE.DoubleSide, roughness: 0.4, metalness: 0.1
-            });
-            const mesh = new THREE.Mesh(geo, mat);
-            const posX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
-            const posZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
-            mesh.position.set(posX, 0, posZ);
-            mesh.rotation.x = -Math.PI / 2;
-            mesh.userData = { row, col, item: world.items?.find(i => i.row === row && i.col === col) || null };
-            tileGroup.add(mesh);
-            tileMeshes.push(mesh);
-        }
-    }
+  // فيديو 360
+  if (world.type === WORLD_TYPES.VIDEO360 && world.videoUrl) {
+    createVideo360(world.videoUrl);
+    document.getElementById('video-controls').style.display = 'flex';
+  }
 
-    // إضافة كائنات ثلاثية الأبعاد
-    if (world.items) {
-        world.items.forEach(item => {
-            const posX = item.col * TILE_SIZE - HALF + TILE_SIZE / 2;
-            const posZ = item.row * TILE_SIZE - HALF + TILE_SIZE / 2;
+  // الشبكة
+  gridHelper = new THREE.GridHelper(WORLD_SIZE, GRID, 0x8b5cf6, 0x2a2a4a);
+  gridHelper.position.y = 0.04;
+  gridHelper.material.transparent = true;
+  gridHelper.material.opacity = gridVisible ? 0.18 : 0;
+  tileGroup.add(gridHelper);
 
-            if (item.emoji) {
-                // أيقونة ثلاثية الأبعاد
-                const canvas = document.createElement('canvas');
-                canvas.width = 128; canvas.height = 128;
-                const ctx = canvas.getContext('2d');
-                ctx.font = '80px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(item.emoji, 64, 64);
-                
-                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-                    map: new THREE.CanvasTexture(canvas),
-                    transparent: true,
-                    depthTest: false
-                }));
-                sprite.scale.set(1.5, 1.5, 1);
-                sprite.position.set(posX, 1.2, posZ);
-                scene.add(sprite);
-                worldObjects.push(sprite);
+  // واجهة
+  document.getElementById('status').textContent = '📍 ' + world.name + ' (' + GRID + '×' + GRID + ')';
+  document.getElementById('exit-btn').style.display = (worldId !== 'main') ? 'block' : 'none';
+  document.getElementById('enter-btn').style.display = 'none';
 
-                // كرة تحتها
-                const sphere = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.3, 8, 8),
-                    new THREE.MeshStandardMaterial({
-                        color: 0xffd700,
-                        transparent: true,
-                        opacity: 0.3,
-                        emissive: 0xffd700,
-                        emissiveIntensity: 0.2
-                    })
-                );
-                sphere.position.set(posX, 0.3, posZ);
-                scene.add(sphere);
-                worldObjects.push(sphere);
-            }
-        });
-    }
+  isInWorld = (worldId !== 'main');
 
-    // فيديو 360
-    if (world.type === WORLD_TYPES.VIDEO360 && world.videoUrl) {
-        createVideo360(world.videoUrl);
-        document.getElementById('video-controls').style.display = 'flex';
-    }
+  if (world.startPosition) {
+    playerGroup.position.set(world.startPosition.x, 0, world.startPosition.z);
+  }
 
-    // الشبكة
-    gridHelper = new THREE.GridHelper(WORLD_SIZE, GRID, 0x8b5cf6, 0x2a2a4a);
-    gridHelper.position.y = 0.04;
-    gridHelper.material.transparent = true;
-    gridHelper.material.opacity = gridVisible ? 0.18 : 0;
-    tileGroup.add(gridHelper);
-
-    // تحديث واجهة المستخدم
-    document.getElementById('status').textContent = '📍 ' + world.name;
-    document.getElementById('exit-btn').style.display = 'block';
-    document.getElementById('enter-btn').style.display = 'none';
-    isInWorld = true;
-
-    // وضع اللاعب
-    if (world.startPosition) {
-        playerGroup.position.set(world.startPosition.x, 0, world.startPosition.z);
-    }
-
-    updateStats();
-    updateActiveTile();
-    showToast('🌍 دخلت: ' + world.name, 'success');
+  updateStats();
+  updateActiveTile();
 }
 
 // ============================================================
 //  فيديو 360
 // ============================================================
 function createVideo360(url) {
-    videoElement = document.createElement('video');
-    videoElement.muted = false;
-    videoElement.loop = true;
-    videoElement.playsInline = true;
-    videoElement.crossOrigin = 'anonymous';
-    videoElement.src = url;
-    videoElement.volume = 0.3;
+  videoElement = document.createElement('video');
+  videoElement.muted = false;
+  videoElement.loop = true;
+  videoElement.playsInline = true;
+  videoElement.crossOrigin = 'anonymous';
+  videoElement.src = url;
+  videoElement.volume = 0.35;
 
-    videoElement.addEventListener('loadeddata', () => {
-        videoElement.play().catch(() => {});
-        videoTexture = new THREE.VideoTexture(videoElement);
-        videoTexture.minFilter = THREE.LinearFilter;
-        videoTexture.magFilter = THREE.LinearFilter;
-        
-        const geo = new THREE.SphereGeometry(4.5, 48, 48);
-        const mat = new THREE.MeshBasicMaterial({
-            map: videoTexture,
-            side: THREE.BackSide
-        });
-        videoMesh = new THREE.Mesh(geo, mat);
-        videoMesh.position.set(0, 0, 0);
-        scene.add(videoMesh);
-        worldObjects.push(videoMesh);
-        
-        showToast('🎬 فيديو 360 يعمل! اسحب للنظر حولك', 'success');
+  videoElement.addEventListener('loadeddata', () => {
+    videoElement.play().catch(() => {});
+    videoTexture = new THREE.VideoTexture(videoElement);
+    videoTexture.minFilter = THREE.LinearFilter;
+    videoTexture.magFilter = THREE.LinearFilter;
+
+    const geo = new THREE.SphereGeometry(6, 64, 64);
+    const mat = new THREE.MeshBasicMaterial({
+      map: videoTexture,
+      side: THREE.BackSide
     });
+    videoMesh = new THREE.Mesh(geo, mat);
+    videoMesh.position.set(0, 0, 0);
+    scene.add(videoMesh);
+    worldObjects.push(videoMesh);
 
-    videoElement.addEventListener('error', () => {
-        showToast('⚠️ فشل تحميل الفيديو', 'error');
-    });
+    // وضع الكاميرا في المركز
+    camera.position.set(0, 0, 0);
+    lon = 0; lat = 0;
+    update360Camera();
 
-    videoElement.load();
+    showToast('🎬 فيديو 360 يعمل! اسحب للنظر حولك', 'success');
+  });
+
+  videoElement.addEventListener('error', () => {
+    showToast('⚠️ فشل تحميل الفيديو', 'error');
+  });
+
+  videoElement.load();
 }
 
 function togglePlay() {
-    if (!videoElement) return;
-    if (isVideoPlaying) {
-        videoElement.pause();
-        document.querySelector('#video-controls button:first-child').textContent = '▶️';
-    } else {
-        videoElement.play();
-        document.querySelector('#video-controls button:first-child').textContent = '⏸️';
-    }
-    isVideoPlaying = !isVideoPlaying;
+  if (!videoElement) return;
+  if (isVideoPlaying) {
+    videoElement.pause();
+    document.querySelector('#video-controls button:first-child').textContent = '▶️';
+  } else {
+    videoElement.play();
+    document.querySelector('#video-controls button:first-child').textContent = '⏸️';
+  }
+  isVideoPlaying = !isVideoPlaying;
 }
 
 function seekVideo(value) {
-    if (!videoElement) return;
-    videoElement.currentTime = (value / 100) * videoElement.duration;
+  if (!videoElement || !videoElement.duration) return;
+  videoElement.currentTime = (value / 100) * videoElement.duration;
 }
 
 function toggleMute() {
-    if (!videoElement) return;
-    isVideoMuted = !isVideoMuted;
-    videoElement.muted = isVideoMuted;
-    document.querySelector('#video-controls button:last-child').textContent = isVideoMuted ? '🔇' : '🔊';
+  if (!videoElement) return;
+  isVideoMuted = !isVideoMuted;
+  videoElement.muted = isVideoMuted;
+  document.querySelector('#video-controls button:last-child').textContent = isVideoMuted ? '🔇' : '🔊';
 }
 
-// تحديث وقت الفيديو
 setInterval(() => {
-    if (videoElement && videoElement.duration) {
-        const current = videoElement.currentTime || 0;
-        const duration = videoElement.duration || 0;
-        const mins = Math.floor(current / 60);
-        const secs = Math.floor(current % 60);
-        document.getElementById('video-time').textContent = 
-            String(mins).padStart(2,'0') + ':' + String(secs).padStart(2,'0');
-        document.getElementById('video-progress').value = (current / duration) * 100;
-    }
-}, 500);
+  if (videoElement && videoElement.duration) {
+    const current = videoElement.currentTime || 0;
+    const duration = videoElement.duration || 0;
+    const m = Math.floor(current / 60);
+    const s = Math.floor(current % 60);
+    document.getElementById('video-time').textContent =
+      String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+    document.getElementById('video-progress').value = (current / duration) * 100;
+  }
+}, 400);
 
 // ============================================================
-//  الدخول والخروج من العوالم
+//  كاميرا 360 محسّنة
+// ============================================================
+function update360Camera() {
+  const phi = THREE.MathUtils.degToRad(90 - lat);
+  const theta = THREE.MathUtils.degToRad(lon);
+  const target = new THREE.Vector3(
+    Math.sin(phi) * Math.cos(theta),
+    Math.cos(phi),
+    Math.sin(phi) * Math.sin(theta)
+  );
+  camera.lookAt(target);
+}
+
+document.addEventListener('pointerdown', e => {
+  if (!isInWorld || getCurrentWorld()?.type !== WORLD_TYPES.VIDEO360) return;
+  isDragging = true;
+  onPointerDownX = e.clientX;
+  onPointerDownY = e.clientY;
+  onPointerDownLon = lon;
+  onPointerDownLat = lat;
+});
+
+document.addEventListener('pointermove', e => {
+  if (!isDragging) return;
+  lon = onPointerDownLon - (e.clientX - onPointerDownX) * 0.15;
+  lat = Math.max(-85, Math.min(85, onPointerDownLat + (e.clientY - onPointerDownY) * 0.15));
+  update360Camera();
+});
+
+document.addEventListener('pointerup', () => { isDragging = false; });
+document.addEventListener('pointerleave', () => { isDragging = false; });
+
+// ============================================================
+//  الدخول والخروج (مُصلح)
 // ============================================================
 function enterWorld() {
-    if (isTransitioning) return;
-    const { row, col } = getPlayerTile();
-    const world = getCurrentWorld();
-    if (!world) return;
+  if (isTransitioning || currentWorldId !== 'main') return;
 
-    // البحث عن بوابة في الخريطة الرئيسية
-    if (currentWorldId === 'main') {
-        // التحقق من وجود معلم
-        const item = world.items?.find(i => i.row === row && i.col === col);
-        if (!item) {
-            showToast('❌ لا يوجد عالم هنا', 'error');
-            return;
-        }
+  const { row, col } = getPlayerTile();
+  const world = getCurrentWorld();
+  const item = world.items?.find(i => i.row === row && i.col === col && i.type === 'portal');
 
-        // البحث عن العالم المقابل
-        const targetWorld = worlds.find(w => w.id !== 'main');
-        if (!targetWorld) {
-            showToast('❌ لا توجد عوالم متاحة', 'error');
-            return;
-        }
+  if (!item || !item.targetWorld) {
+    showToast('❌ لا توجد بوابة هنا', 'error');
+    return;
+  }
 
-        isTransitioning = true;
-        playBeep(440, 660, 0.4);
-        showTransition('جاري الدخول إلى ' + targetWorld.name);
+  const target = getWorld(item.targetWorld);
+  if (!target) {
+    showToast('❌ العالم الهدف غير موجود', 'error');
+    return;
+  }
 
-        setTimeout(() => {
-            buildWorld(targetWorld.id);
-            if (!visitedWorlds.has(targetWorld.id)) {
-                visitedWorlds.add(targetWorld.id);
-                playerScore += 50;
-                addXP(30);
-                showToast('🏆 اكتشاف عالم جديد! +50 نقطة', 'success');
-            }
-            hideTransition();
-            isTransitioning = false;
-            
-            // كاميرا داخل العالم
-            camera.position.set(0, 6, 10);
-            camera.lookAt(0, 0, 0);
-        }, 800);
+  isTransitioning = true;
+  playBeep(440, 660, 0.35);
+  savedPlayerPos = { x: playerGroup.position.x, z: playerGroup.position.z };
+
+  showTransition('جاري الدخول إلى ' + target.name);
+
+  setTimeout(() => {
+    buildWorld(item.targetWorld);
+
+    // مكافأة أول زيارة
+    if (!visitedWorlds.has(item.targetWorld)) {
+      visitedWorlds.add(item.targetWorld);
+      playerScore += 50;
+      addXP(35);
+      showToast('🏆 اكتشاف عالم جديد! +50 نقطة', 'success');
     }
+
+    // كاميرا مناسبة
+    if (target.type === WORLD_TYPES.VIDEO360) {
+      camera.position.set(0, 0, 0);
+      lon = 0; lat = 0;
+      update360Camera();
+    } else {
+      camera.position.set(0, 6.5, 11);
+      camera.lookAt(0, 0.5, 0);
+    }
+
+    hideTransition();
+    isTransitioning = false;
+    showToast('✅ دخلت: ' + target.name, 'success');
+  }, 750);
 }
 
 function exitWorld() {
-    if (isTransitioning || !isInWorld) return;
-    isTransitioning = true;
-    playBeep(600, 400, 0.3);
-    showTransition('جاري العودة...');
+  if (isTransitioning || currentWorldId === 'main') return;
 
-    setTimeout(() => {
-        // العودة للخريطة الرئيسية
-        const mainWorld = worlds.find(w => w.id === 'main');
-        if (mainWorld) {
-            buildWorld('main');
-            camera.position.set(0, 7, 12);
-            camera.lookAt(0, 0, 0);
-            isInWorld = false;
-            document.getElementById('exit-btn').style.display = 'none';
-            document.getElementById('enter-btn').style.display = 'block';
-            showToast('✅ عدت إلى الخريطة الرئيسية', 'success');
-        }
-        hideTransition();
-        isTransitioning = false;
-    }, 600);
+  isTransitioning = true;
+  playBeep(600, 380, 0.3);
+  showTransition('جاري العودة للخريطة الرئيسية...');
+
+  setTimeout(() => {
+    buildWorld('main');
+
+    if (savedPlayerPos) {
+      playerGroup.position.set(savedPlayerPos.x, 0, savedPlayerPos.z);
+      savedPlayerPos = null;
+    }
+
+    camera.position.set(0, 7, 12);
+    camera.lookAt(0, 0, 0);
+
+    hideTransition();
+    isTransitioning = false;
+    showToast('✅ عدت إلى الخريطة الرئيسية', 'success');
+  }, 650);
 }
 
 // ============================================================
 //  إضافة عالم عشوائي
 // ============================================================
 function addRandomWorld() {
-    const emojis = ['🎮', '🎯', '🎨', '🌈', '⭐', '🌺', '🌸', '🌊', '🔥', '💫'];
-    const titles = ['ملصقات', 'فن', 'طبيعة', 'خيال', 'مغامرات', 'ألعاب', 'رياضة', 'موسيقى'];
-    
-    const newWorld = {
-        id: 'world_' + Date.now(),
-        name: '🌍 ' + titles[Math.floor(Math.random() * titles.length)],
-        type: WORLD_TYPES.ANIMATED,
-        grid: 8,
-        tileSize: 3.5,
-        startPosition: { x: 0, z: 0 },
-        background: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6,'0'),
-        items: []
-    };
+  const emojis = ['🎮','🎯','🎨','🌈','⭐','🌺','🌸','🌊','🔥','💫','🚀','🌙'];
+  const titles = ['ملصقات','فن','طبيعة','خيال','مغامرات','ألعاب','رياضة','موسيقى'];
 
-    // إضافة عناصر عشوائية
-    const numItems = 4 + Math.floor(Math.random() * 4);
-    for (let i = 0; i < numItems; i++) {
-        let row, col;
-        do {
-            row = Math.floor(Math.random() * 6) + 1;
-            col = Math.floor(Math.random() * 6) + 1;
-        } while (newWorld.items.some(it => it.row === row && it.col === col));
-        
-        newWorld.items.push({
-            id: Date.now() + i,
-            type: 'animated',
-            title: emojis[i % emojis.length] + ' ' + titles[i % titles.length],
-            emoji: emojis[i % emojis.length],
-            row: row,
-            col: col
-        });
-    }
+  const newId = 'world_' + Date.now();
+  const newWorld = {
+    id: newId,
+    name: '🌍 ' + titles[Math.floor(Math.random() * titles.length)],
+    type: WORLD_TYPES.ANIMATED,
+    grid: 8,
+    tileSize: 3.5,
+    startPosition: { x: 0, z: 0 },
+    background: '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0'),
+    items: []
+  };
 
-    worlds.push(newWorld);
-    showToast('✅ تم إنشاء عالم جديد: ' + newWorld.name, 'success');
-    
-    // إضافة بوابة في الخريطة الرئيسية
-    const mainWorld = worlds.find(w => w.id === 'main');
-    if (mainWorld) {
-        const portalRow = 1 + Math.floor(Math.random() * 8);
-        const portalCol = 1 + Math.floor(Math.random() * 8);
-        mainWorld.items = mainWorld.items || [];
-        mainWorld.items.push({
-            id: 'portal_' + Date.now(),
-            type: 'portal',
-            title: '🚪 ' + newWorld.name,
-            emoji: '🌐',
-            row: portalRow,
-            col: portalCol,
-            targetWorld: newWorld.id
-        });
-        if (currentWorldId === 'main') {
-            buildWorld('main');
-        }
-    }
+  const num = 4 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < num; i++) {
+    let r, c;
+    do {
+      r = 1 + Math.floor(Math.random() * 6);
+      c = 1 + Math.floor(Math.random() * 6);
+    } while (newWorld.items.some(it => it.row === r && it.col === c));
+
+    newWorld.items.push({
+      id: Date.now() + i,
+      type: 'animated',
+      title: titles[i % titles.length],
+      emoji: emojis[i % emojis.length],
+      row: r,
+      col: c
+    });
+  }
+
+  worlds.push(newWorld);
+
+  // إضافة بوابة في الخريطة الرئيسية
+  const main = getWorld('main');
+  if (main) {
+    let pr, pc;
+    do {
+      pr = 1 + Math.floor(Math.random() * 10);
+      pc = 1 + Math.floor(Math.random() * 10);
+    } while (main.items.some(it => it.row === pr && it.col === pc));
+
+    main.items.push({
+      id: 'portal_' + Date.now(),
+      type: 'portal',
+      title: newWorld.name,
+      emoji: '🌐',
+      row: pr,
+      col: pc,
+      targetWorld: newId
+    });
+
+    if (currentWorldId === 'main') buildWorld('main');
+  }
+
+  showToast('✅ تم إنشاء عالم جديد: ' + newWorld.name, 'success');
 }
 
 // ============================================================
 //  تحديث المربع النشط
 // ============================================================
 function updateActiveTile() {
-    if (isTransitioning) return;
-    const { row, col } = getPlayerTile();
-    let hasPortal = false;
-    let portalName = '';
+  if (isTransitioning) return;
+  const { row, col } = getPlayerTile();
+  let onPortal = false;
+  let portalTitle = '';
 
-    tileMeshes.forEach(mesh => {
-        const d = mesh.userData;
-        if (d.row === row && d.col === col) {
-            mesh.material.emissive = new THREE.Color(0x00f2ff);
-            mesh.material.emissiveIntensity = 0.35;
-            if (d.item && d.item.type === 'portal') {
-                hasPortal = true;
-                portalName = d.item.title || 'عالم';
-            }
-        } else {
-            mesh.material.emissive = new THREE.Color(0x000000);
-            mesh.material.emissiveIntensity = 0;
-        }
-    });
-
-    const enterBtn = document.getElementById('enter-btn');
-    if (hasPortal && currentWorldId === 'main') {
-        enterBtn.style.display = 'block';
-        enterBtn.textContent = '🌐 دخول ' + portalName;
+  tileMeshes.forEach(mesh => {
+    const d = mesh.userData;
+    if (d.row === row && d.col === col) {
+      mesh.material.emissive = new THREE.Color(0x00f2ff);
+      mesh.material.emissiveIntensity = 0.35;
+      if (d.item && d.item.type === 'portal') {
+        onPortal = true;
+        portalTitle = d.item.title || 'عالم';
+      }
     } else {
-        enterBtn.style.display = 'none';
+      mesh.material.emissive = new THREE.Color(0x000000);
+      mesh.material.emissiveIntensity = 0;
     }
+  });
+
+  const btn = document.getElementById('enter-btn');
+  if (onPortal && currentWorldId === 'main') {
+    btn.style.display = 'block';
+    btn.textContent = '🌐 دخول ' + portalTitle;
+  } else {
+    btn.style.display = 'none';
+  }
 }
 
 // ============================================================
 //  حركة اللاعب والكاميرا
 // ============================================================
 function updatePlayer() {
-    if (isTransitioning) return;
-    let dx = 0, dz = 0;
-    if (touchDirs.up) dz = -PLAYER_SPEED;
-    if (touchDirs.down) dz = PLAYER_SPEED;
-    if (touchDirs.left) dx = -PLAYER_SPEED;
-    if (touchDirs.right) dx = PLAYER_SPEED;
+  if (isTransitioning) return;
 
-    const limit = HALF - TILE_SIZE / 2;
-    playerGroup.position.x = Math.max(-limit, Math.min(limit, playerGroup.position.x + dx));
-    playerGroup.position.z = Math.max(-limit, Math.min(limit, playerGroup.position.z + dz));
+  // في وضع 360 لا نتحرك
+  if (isInWorld && getCurrentWorld()?.type === WORLD_TYPES.VIDEO360) return;
 
-    if (dx !== 0 || dz !== 0) {
-        playerGroup.rotation.y = Math.atan2(dx, dz);
-    }
-    updateActiveTile();
+  let dx = 0, dz = 0;
+  if (touchDirs.up)    dz = -PLAYER_SPEED;
+  if (touchDirs.down)  dz =  PLAYER_SPEED;
+  if (touchDirs.left)  dx = -PLAYER_SPEED;
+  if (touchDirs.right) dx =  PLAYER_SPEED;
+
+  const limit = HALF - TILE_SIZE / 2;
+  playerGroup.position.x = Math.max(-limit, Math.min(limit, playerGroup.position.x + dx));
+  playerGroup.position.z = Math.max(-limit, Math.min(limit, playerGroup.position.z + dz));
+
+  if (dx !== 0 || dz !== 0) {
+    playerGroup.rotation.y = Math.atan2(dx, dz);
+  }
+  updateActiveTile();
 }
 
 function updateCamera() {
-    if (isTransitioning) return;
-    
-    // في وضع فيديو 360، الكاميرا في المنتصف
-    if (isInWorld && getCurrentWorld()?.type === WORLD_TYPES.VIDEO360) {
-        // لا نحرك الكاميرا، تبقى ثابتة لمشاهدة الفيديو 360
-        return;
-    }
-    
-    const target = playerGroup.position.clone();
-    const angle = playerGroup.rotation.y;
-    const dist = 7;
-    const height = 4.8;
+  if (isTransitioning) return;
 
-    const desired = new THREE.Vector3(
-        target.x - Math.sin(angle) * dist,
-        target.y + height,
-        target.z - Math.cos(angle) * dist
-    );
+  // في فيديو 360 الكاميرا تُدار بالسحب فقط
+  if (isInWorld && getCurrentWorld()?.type === WORLD_TYPES.VIDEO360) return;
 
-    camera.position.lerp(desired, 0.08);
-    camera.lookAt(target.x, target.y + 0.9, target.z);
+  const target = playerGroup.position.clone();
+  const angle = playerGroup.rotation.y;
+  const dist = 7.5;
+  const height = 5;
+
+  const desired = new THREE.Vector3(
+    target.x - Math.sin(angle) * dist,
+    target.y + height,
+    target.z - Math.cos(angle) * dist
+  );
+
+  camera.position.lerp(desired, 0.08);
+  camera.lookAt(target.x, target.y + 0.9, target.z);
 }
 
 // ============================================================
-//  الخريطة المصغرة
+//  الميني ماب
 // ============================================================
 function setupMinimap() {
-    const frame = document.getElementById('minimap-frame');
-    const c = document.createElement('canvas');
-    c.width = 110; c.height = 110;
-    frame.appendChild(c);
-    minimapCtx = c.getContext('2d');
+  const frame = document.getElementById('minimap-frame');
+  const c = document.createElement('canvas');
+  c.width = 110; c.height = 110;
+  frame.appendChild(c);
+  minimapCtx = c.getContext('2d');
 }
 
 function updateMinimap() {
-    if (!minimapCtx) return;
-    const ctx = minimapCtx;
-    const w = 110, h = 110;
-    ctx.clearRect(0,0,w,h);
-    ctx.fillStyle = 'rgba(8,8,20,0.92)';
-    ctx.fillRect(0,0,w,h);
+  if (!minimapCtx) return;
+  const ctx = minimapCtx;
+  const w = 110, h = 110;
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = 'rgba(8,8,20,0.92)';
+  ctx.fillRect(0, 0, w, h);
 
-    const scale = w / WORLD_SIZE;
-    const world = getCurrentWorld();
-    if (!world) return;
+  const scale = w / WORLD_SIZE;
+  const world = getCurrentWorld();
+  if (!world) return;
 
-    for (let y = 0; y < GRID; y++) {
-        for (let x = 0; x < GRID; x++) {
-            const item = world.items?.find(i => i.row === y && i.col === x);
-            ctx.fillStyle = item ? (item.type === 'portal' ? '#00f2ff' : '#fbbf24') : ((x+y)%2===0 ? '#2a2a4a' : '#1a1a2e');
-            ctx.fillRect(x*TILE_SIZE*scale, y*TILE_SIZE*scale, TILE_SIZE*scale*0.9, TILE_SIZE*scale*0.9);
-        }
+  for (let y = 0; y < GRID; y++) {
+    for (let x = 0; x < GRID; x++) {
+      const item = world.items?.find(i => i.row === y && i.col === x);
+      ctx.fillStyle = item
+        ? (item.type === 'portal' ? '#00f2ff' : '#fbbf24')
+        : ((x + y) % 2 === 0 ? '#2a2a4a' : '#1a1a2e');
+      ctx.fillRect(x * TILE_SIZE * scale, y * TILE_SIZE * scale,
+                   TILE_SIZE * scale * 0.9, TILE_SIZE * scale * 0.9);
     }
+  }
 
-    const px = (playerGroup.position.x + HALF) * scale;
-    const py = (playerGroup.position.z + HALF) * scale;
-    ctx.fillStyle = '#a78bfa';
-    ctx.beginPath();
-    ctx.arc(px, py, 3.5, 0, Math.PI*2);
-    ctx.fill();
-}
-
-// ============================================================
-//  التحكم في الكاميرا 360 (للفيديو)
-// ============================================================
-let isDragging = false;
-let dragStartX = 0, dragStartY = 0;
-let cameraAngleX = 0, cameraAngleY = 0;
-
-document.addEventListener('pointerdown', (e) => {
-    if (!isInWorld || getCurrentWorld()?.type !== WORLD_TYPES.VIDEO360) return;
-    isDragging = true;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
-});
-
-document.addEventListener('pointermove', (e) => {
-    if (!isDragging) return;
-    const dx = e.clientX - dragStartX;
-    const dy = e.clientY - dragStartY;
-    cameraAngleX += dx * 0.005;
-    cameraAngleY = Math.max(-1.5, Math.min(1.5, cameraAngleY + dy * 0.005));
-    updateVideoCamera();
-});
-
-document.addEventListener('pointerup', () => { isDragging = false; });
-
-function updateVideoCamera() {
-    if (!isInWorld || getCurrentWorld()?.type !== WORLD_TYPES.VIDEO360) return;
-    const radius = 0.1;
-    const x = Math.sin(cameraAngleX) * Math.cos(cameraAngleY) * radius;
-    const y = Math.sin(cameraAngleY) * radius;
-    const z = Math.cos(cameraAngleX) * Math.cos(cameraAngleY) * radius;
-    camera.position.set(x, y, z);
-    camera.lookAt(0, 0, 0);
+  const px = (playerGroup.position.x + HALF) * scale;
+  const py = (playerGroup.position.z + HALF) * scale;
+  ctx.fillStyle = '#a78bfa';
+  ctx.beginPath();
+  ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 // ============================================================
 //  وظائف مساعدة
 // ============================================================
-function showToast(msg, type = 'info') {
-    const c = document.getElementById('toast-container');
-    const t = document.createElement('div');
-    t.className = 'toast ' + type;
-    t.textContent = msg;
-    c.appendChild(t);
-    setTimeout(() => t.remove(), 2800);
-}
-
-function showTransition(text) {
-    document.getElementById('transition-text').textContent = text;
-    document.getElementById('transition-screen').style.display = 'flex';
-}
-
-function hideTransition() {
-    document.getElementById('transition-screen').style.display = 'none';
-}
-
 function resetCamera() {
-    camera.position.set(0, 6, 10);
+  if (isInWorld && getCurrentWorld()?.type === WORLD_TYPES.VIDEO360) {
+    lon = 0; lat = 0;
+    camera.position.set(0, 0, 0);
+    update360Camera();
+  } else {
+    camera.position.set(0, 7, 12);
     camera.lookAt(0, 0, 0);
-    cameraAngleX = 0;
-    cameraAngleY = 0;
+  }
 }
 
 function toggleGrid() {
-    gridVisible = !gridVisible;
-    if (gridHelper) gridHelper.material.opacity = gridVisible ? 0.18 : 0;
+  gridVisible = !gridVisible;
+  if (gridHelper) gridHelper.material.opacity = gridVisible ? 0.18 : 0;
 }
 
 function resetGame() {
-    if (!confirm('🔄 إعادة تعيين اللعبة؟')) return;
-    playerScore = 0;
-    playerLevel = 1;
-    playerXP = 0;
-    visitedWorlds = new Set();
-    worlds = [];
-    createDefaultWorlds();
-    buildWorld('main');
-    camera.position.set(0, 7, 12);
-    camera.lookAt(0, 0, 0);
-    updateStats();
-    showToast('🔄 تم إعادة التعيين', 'info');
+  if (!confirm('🔄 إعادة تعيين اللعبة؟')) return;
+  playerScore = 0;
+  playerLevel = 1;
+  playerXP = 0;
+  visitedWorlds = new Set();
+  createDefaultWorlds();
+  buildWorld('main');
+  camera.position.set(0, 7, 12);
+  camera.lookAt(0, 0, 0);
+  updateStats();
+  showToast('🔄 تم إعادة التعيين', 'info');
 }
 
 // ============================================================
-//  Three.js تهيئة
+//  تهيئة Three.js
 // ============================================================
 function init() {
-    const canvas = document.getElementById('canvas');
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a1a);
-    scene.fog = new THREE.Fog(0x0a0a1a, 25, 50);
+  const canvas = document.getElementById('canvas');
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a1a);
+  scene.fog = new THREE.Fog(0x0a0a1a, 28, 55);
 
-    camera = new THREE.PerspectiveCamera(58, innerWidth/innerHeight, 0.1, 100);
-    camera.position.set(0, 7, 12);
+  camera = new THREE.PerspectiveCamera(58, innerWidth / innerHeight, 0.1, 100);
+  camera.position.set(0, 7, 12);
 
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setSize(innerWidth, innerHeight);
-    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
 
-    // إضاءة
-    const ambient = new THREE.AmbientLight(0x8b5cf6, 0.5);
-    scene.add(ambient);
-    const dir = new THREE.DirectionalLight(0xfff0dd, 0.8);
-    dir.position.set(10, 20, 8);
-    dir.castShadow = true;
-    scene.add(dir);
+  scene.add(new THREE.AmbientLight(0x8b5cf6, 0.5));
+  const dir = new THREE.DirectionalLight(0xfff0dd, 0.85);
+  dir.position.set(10, 20, 8);
+  dir.castShadow = true;
+  scene.add(dir);
 
-    // اللاعب
-    playerGroup = new THREE.Group();
-    const body = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.32, 0.38, 0.75, 8),
-        new THREE.MeshStandardMaterial({ color: 0x8b5cf6, emissive: 0x5b21b6, emissiveIntensity: 0.2 })
-    );
-    body.position.y = 0.4;
-    playerGroup.add(body);
-    const head = new THREE.Mesh(
-        new THREE.SphereGeometry(0.2, 8, 8),
-        new THREE.MeshStandardMaterial({ color: 0xa78bfa })
-    );
-    head.position.y = 0.9;
-    playerGroup.add(head);
-    scene.add(playerGroup);
+  // اللاعب
+  playerGroup = new THREE.Group();
+  const body = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.32, 0.38, 0.75, 8),
+    new THREE.MeshStandardMaterial({ color: 0x8b5cf6, emissive: 0x5b21b6, emissiveIntensity: 0.2 })
+  );
+  body.position.y = 0.4;
+  playerGroup.add(body);
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.2, 8, 8),
+    new THREE.MeshStandardMaterial({ color: 0xa78bfa })
+  );
+  head.position.y = 0.9;
+  playerGroup.add(head);
+  scene.add(playerGroup);
 
-    tileGroup = new THREE.Group();
-    scene.add(tileGroup);
+  tileGroup = new THREE.Group();
+  scene.add(tileGroup);
 
-    setupMinimap();
+  setupMinimap();
+  createDefaultWorlds();
+  buildWorld('main');
+  updateStats();
 
-    // إنشاء العوالم وبدء اللعبة
-    createDefaultWorlds();
-    buildWorld('main');
-    updateStats();
-    showToast('🎮 مرحباً! تحرك إلى البوابات 🌐 لدخول العوالم', 'success');
+  showToast('🎮 مرحباً! تحرك إلى البوابات 🌐 لدخول العوالم', 'success');
 
-    function loop() {
-        requestAnimationFrame(loop);
-        updatePlayer();
-        updateCamera();
-        updateMinimap();
-        renderer.render(scene, camera);
-    }
-    loop();
+  function loop() {
+    requestAnimationFrame(loop);
+    updatePlayer();
+    updateCamera();
+    updateMinimap();
+    if (videoTexture) videoTexture.needsUpdate = true;
+    renderer.render(scene, camera);
+  }
+  loop();
 
-    document.getElementById('status').textContent = '✅ جاهز - استكشف البوابات';
+  document.getElementById('status').textContent = '✅ جاهز - استكشف البوابات';
 }
 
 // ============================================================
 //  التحكم
 // ============================================================
 function setupControls() {
-    document.querySelectorAll('.dpad-btn').forEach(btn => {
-        const dir = btn.dataset.dir;
-        btn.addEventListener('touchstart', e => { e.preventDefault(); touchDirs[dir] = true; }, {passive:false});
-        btn.addEventListener('touchend', e => { e.preventDefault(); touchDirs[dir] = false; }, {passive:false});
-    });
+  document.querySelectorAll('.dpad-btn').forEach(btn => {
+    const dir = btn.dataset.dir;
+    btn.addEventListener('touchstart', e => { e.preventDefault(); touchDirs[dir] = true; }, { passive: false });
+    btn.addEventListener('touchend',   e => { e.preventDefault(); touchDirs[dir] = false; }, { passive: false });
+  });
 
-    window.addEventListener('keydown', e => {
-        if (e.key === 'ArrowUp') touchDirs.up = true;
-        if (e.key === 'ArrowDown') touchDirs.down = true;
-        if (e.key === 'ArrowLeft') touchDirs.left = true;
-        if (e.key === 'ArrowRight') touchDirs.right = true;
-        if (e.key === 'Enter' || e.key === ' ') enterWorld();
-        if (e.key === 'Escape') exitWorld();
-        if (e.key === 'm') toggleMute();
-    });
-    window.addEventListener('keyup', e => {
-        if (e.key === 'ArrowUp') touchDirs.up = false;
-        if (e.key === 'ArrowDown') touchDirs.down = false;
-        if (e.key === 'ArrowLeft') touchDirs.left = false;
-        if (e.key === 'ArrowRight') touchDirs.right = false;
-    });
+  window.addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp')    touchDirs.up = true;
+    if (e.key === 'ArrowDown')  touchDirs.down = true;
+    if (e.key === 'ArrowLeft')  touchDirs.left = true;
+    if (e.key === 'ArrowRight') touchDirs.right = true;
+    if (e.key === 'Enter' || e.key === ' ') enterWorld();
+    if (e.key === 'Escape') exitWorld();
+    if (e.key === 'm') toggleMute();
+  });
+  window.addEventListener('keyup', e => {
+    if (e.key === 'ArrowUp')    touchDirs.up = false;
+    if (e.key === 'ArrowDown')  touchDirs.down = false;
+    if (e.key === 'ArrowLeft')  touchDirs.left = false;
+    if (e.key === 'ArrowRight') touchDirs.right = false;
+  });
 }
 
 window.addEventListener('resize', () => {
-    camera.aspect = innerWidth / innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
 });
 
 setupControls();
@@ -1062,5 +1075,3 @@ init();
 </script>
 </body>
 </html>
-
-
