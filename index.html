@@ -159,6 +159,27 @@ canvas { display:block; width:100%; height:100%; background:#0a0a1a; }
   font-family:inherit; display:none;
   animation:pulse 1.5s infinite;
 }
+
+/* شاشة انتظار الفيديو */
+#video-loader {
+  position:fixed; inset:0; z-index:300;
+  background:rgba(0,0,0,0.85);
+  display:none;
+  justify-content:center; align-items:center;
+  flex-direction:column;
+  backdrop-filter:blur(8px);
+}
+#video-loader .spinner {
+  width:60px; height:60px;
+  border:4px solid rgba(255,215,0,0.1);
+  border-top-color:#ffd700;
+  border-radius:50%;
+  animation:spin 1s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+#video-loader .text {
+  margin-top:20px; color:#ffd700; font-size:14px;
+}
 </style>
 </head>
 <body>
@@ -197,6 +218,12 @@ canvas { display:block; width:100%; height:100%; background:#0a0a1a; }
 <div id="minimap-frame"></div>
 <div id="minimap-label">🗺️</div>
 
+<!-- شاشة انتظار الفيديو -->
+<div id="video-loader">
+  <div class="spinner"></div>
+  <div class="text">🌐 جاري تحميل الفيديو 360...</div>
+</div>
+
 <!-- نافذة رفع -->
 <div id="upload-modal">
   <div class="modal-content">
@@ -222,7 +249,7 @@ canvas { display:block; width:100%; height:100%; background:#0a0a1a; }
     </div>
     <div class="file-upload-area" onclick="document.getElementById('file-input').click()">
       <span class="icon">📁</span>
-      <span class="text">اضغط لاختيار ملف</span>
+      <span class="text">اضغط لاختيار ملف فيديو</span>
       <span class="file-name" id="file-name-display"></span>
     </div>
     <input type="file" id="file-input" accept="video/*,.webm,.mp4,.mov" onchange="handleLandmarkFile(event)">
@@ -237,7 +264,7 @@ canvas { display:block; width:100%; height:100%; background:#0a0a1a; }
 
 <script>
 // ============================================================
-//  🎮 منصة الألعاب - الكود الكامل
+//  🎮 منصة الألعاب - الكود المحسّن لتشغيل الفيديو 360
 // ============================================================
 
 // ============================================================
@@ -292,7 +319,7 @@ let nextLandmarkId = 1;
 let pendingFile = null;
 
 // ============================================================
-//  4. متغيرات 360
+//  4. متغيرات 360 - محسّنة
 // ============================================================
 
 let lon = 0, lat = 0;
@@ -303,6 +330,8 @@ let isGyroAvailable = false;
 let sphere360Mesh = null;
 let sphere360Video = null;
 let sphere360Texture = null;
+let videoLoaded = false;
+let current360Landmark = null;
 
 // ============================================================
 //  5. نظام الصوت
@@ -856,19 +885,20 @@ function addLandmarkFromModal() {
 }
 
 // ============================================================
-//  15. المعالم التجريبية
+//  15. المعالم التجريبية - مع فيديوهات حقيقية
 // ============================================================
 
 function loadExampleLandmarks() {
+  // استخدام فيديوهات حقيقية من مصادر عامة
   const realVideo = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm';
+  const bigVideo = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm';
   
   landmarks = [];
-  landmarks.push({ id: nextLandmarkId++, name: '🏟️ الملعب', type: 'video', url: realVideo, file: 'مثال', row: 2, col: 3, is360: false, visited: false });
-  landmarks.push({ id: nextLandmarkId++, name: '🌳 الحديقة', type: 'image', url: 'https://picsum.photos/200/200', file: 'مثال', row: 8, col: 1, is360: false, visited: false });
-  landmarks.push({ id: nextLandmarkId++, name: '🌐 غرفة 360', type: 'video360', url: realVideo, file: 'مثال', row: 6, col: 6, is360: true, visited: false });
+  landmarks.push({ id: nextLandmarkId++, name: '🏟️ فيديو 360', type: 'video360', url: realVideo, file: 'مثال', row: 6, col: 6, is360: true, visited: false });
+  landmarks.push({ id: nextLandmarkId++, name: '🌳 فيديو 360 ثاني', type: 'video360', url: bigVideo, file: 'مثال', row: 3, col: 8, is360: true, visited: false });
   
   rebuildMap();
-  showToast('✅ تم تحميل 3 معالم', 'success');
+  showToast('✅ تم تحميل معلمين 360', 'success');
 }
 
 function clearLandmarks() {
@@ -902,11 +932,19 @@ function rebuildMap() {
       if (landmark) {
         if (landmark.type === 'video' || landmark.type === 'video360') {
           const video = document.createElement('video');
-          video.muted = true; video.loop = true; video.playsInline = true;
+          video.muted = true; 
+          video.loop = true; 
+          video.playsInline = true;
+          video.crossOrigin = 'anonymous';
           video.src = landmark.url;
-          video.onloadeddata = () => video.play().catch(() => {});
-          video.load();
+          video.autoplay = true;
+          
+          // محاولة تشغيل الفيديو
+          video.play().catch(e => console.log('Video play error:', e));
+          
           texture = new THREE.VideoTexture(video);
+          texture.minFilter = THREE.LinearFilter;
+          texture.magFilter = THREE.LinearFilter;
         } else {
           const img = new Image();
           img.src = landmark.url;
@@ -1007,7 +1045,7 @@ function create360Spheres() {
 }
 
 // ============================================================
-//  18. وضع 360
+//  18. وضع 360 - المحسّن لتشغيل الفيديو
 // ============================================================
 
 function enter360Mode() {
@@ -1019,8 +1057,13 @@ function enter360Mode() {
   const landmark = landmarks.find(l => l.row === row && l.col === col && l.is360 === true);
   if (!landmark) { showToast('❌ لا يوجد فيديو 360 هنا', 'error'); return; }
   
-  showToast('🌐 جاري الدخول إلى 360...', 'info');
+  // إظهار شاشة التحميل
+  document.getElementById('video-loader').style.display = 'flex';
+  showToast('🌐 جاري تحميل فيديو 360...', 'info');
   
+  current360Landmark = landmark;
+  
+  // إخفاء العناصر العادية
   playerGroup.visible = false;
   tileGroup.visible = false;
   if (gridHelper) gridHelper.visible = false;
@@ -1030,48 +1073,150 @@ function enter360Mode() {
   const centerX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
   const centerZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
   
-  create360Sphere(landmark.url);
+  // إنشاء كرة 360
+  create360Sphere(landmark.url, centerX, centerZ);
+}
+
+function create360Sphere(url, posX, posZ) {
+  // تنظيف الكرة السابقة
+  if (sphere360Mesh) {
+    if (sphere360Mesh.parent) sphere360Mesh.parent.remove(sphere360Mesh);
+    if (sphere360Mesh.material) { 
+      if (sphere360Mesh.material.map) sphere360Mesh.material.map.dispose(); 
+      sphere360Mesh.material.dispose(); 
+    }
+    if (sphere360Mesh.geometry) sphere360Mesh.geometry.dispose();
+    sphere360Mesh = null;
+  }
+  if (sphere360Video) { 
+    try { sphere360Video.pause(); } catch(e) {} 
+    sphere360Video = null; 
+  }
+  if (sphere360Texture) { 
+    try { sphere360Texture.dispose(); } catch(e) {} 
+    sphere360Texture = null; 
+  }
   
-  camera.position.set(centerX, 0, centerZ);
-  lon = 0; lat = 0;
-  update360Camera();
+  videoLoaded = false;
   
-  isIn360Mode = true;
-  document.getElementById('status').textContent = '🌐 وضع 360: ' + landmark.name;
+  // إنشاء عنصر الفيديو
+  sphere360Video = document.createElement('video');
+  sphere360Video.muted = false; // يمكن للمستخدم سماع الصوت
+  sphere360Video.loop = true;
+  sphere360Video.playsInline = true;
+  sphere360Video.crossOrigin = 'anonymous';
+  sphere360Video.preload = 'auto';
+  sphere360Video.src = url;
+  sphere360Video.volume = 0.5;
   
-  // تحديث اللعبة
-  total360Entries++;
-  landmark.visited = true;
-  updateQuestProgress('enter_360');
-  updateQuestProgress('visit_landmarks');
-  checkAchievements();
+  // حدث عند تحميل الفيديو بالكامل
+  sphere360Video.addEventListener('loadeddata', function() {
+    console.log('🎬 فيديو 360 تم تحميله بنجاح');
+    videoLoaded = true;
+    document.getElementById('video-loader').style.display = 'none';
+    
+    // إنشاء النسيج
+    sphere360Texture = new THREE.VideoTexture(sphere360Video);
+    sphere360Texture.minFilter = THREE.LinearFilter;
+    sphere360Texture.magFilter = THREE.LinearFilter;
+    sphere360Texture.format = THREE.RGBAFormat;
+    
+    // إنشاء كرة 360
+    const sphereGeo = new THREE.SphereGeometry(5, 64, 64);
+    const sphereMat = new THREE.MeshBasicMaterial({ 
+      map: sphere360Texture, 
+      side: THREE.BackSide 
+    });
+    sphere360Mesh = new THREE.Mesh(sphereGeo, sphereMat);
+    sphere360Mesh.position.set(posX, 0, posZ);
+    scene.add(sphere360Mesh);
+    
+    // تشغيل الفيديو
+    sphere360Video.play().then(() => {
+      console.log('▶️ تشغيل فيديو 360 بنجاح');
+      showToast('✅ فيديو 360 يعمل! اسحب للنظر حولك', 'success');
+      
+      // تهيئة وضع 360
+      isIn360Mode = true;
+      camera.position.set(posX, 0, posZ);
+      lon = 0; lat = 0;
+      update360Camera();
+      
+      document.getElementById('status').textContent = '🌐 وضع 360: ' + current360Landmark.name;
+      
+      // تحديث اللعبة
+      total360Entries++;
+      current360Landmark.visited = true;
+      updateQuestProgress('enter_360');
+      updateQuestProgress('visit_landmarks');
+      checkAchievements();
+      
+      // إضافة أزرار التحكم
+      setup360Controls();
+      
+    }).catch(err => {
+      console.error('❌ فشل تشغيل الفيديو:', err);
+      showToast('❌ فشل تشغيل الفيديو. حاول مرة أخرى.', 'error');
+      exit360Mode();
+    });
+  });
   
+  // حدث عند حدوث خطأ
+  sphere360Video.addEventListener('error', function(e) {
+    console.error('❌ خطأ في تحميل الفيديو:', e);
+    document.getElementById('video-loader').style.display = 'none';
+    showToast('❌ فشل تحميل فيديو 360. تأكد من صحة الرابط.', 'error');
+    exit360Mode();
+  });
+  
+  // بدء التحميل
+  sphere360Video.load();
+  
+  // حد أقصى للانتظار 15 ثانية
+  setTimeout(() => {
+    if (!videoLoaded) {
+      document.getElementById('video-loader').style.display = 'none';
+      showToast('⏰ انتهت مهلة التحميل. حاول مرة أخرى.', 'warn');
+      exit360Mode();
+    }
+  }, 15000);
+}
+
+// ============================================================
+//  19. تحكم 360
+// ============================================================
+
+function setup360Controls() {
+  // إضافة زر الخروج
+  let exitBtn = document.getElementById('exit360-btn');
+  if (!exitBtn) {
+    exitBtn = document.createElement('button');
+    exitBtn.id = 'exit360-btn';
+    exitBtn.textContent = '🚪 خروج 360';
+    exitBtn.style.cssText = `
+      position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+      background:rgba(255,50,50,0.2); color:#fff; border:1px solid rgba(255,50,50,0.3);
+      padding:8px 20px; border-radius:15px; cursor:pointer; font-size:12px;
+      z-index:300; font-family:inherit;
+    `;
+    exitBtn.onclick = exit360Mode;
+    document.body.appendChild(exitBtn);
+  }
+  
+  // إضافة أحداث الفأرة
   const canvas = document.getElementById('canvas');
   canvas.addEventListener('pointerdown', onPointerDown);
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerup', onPointerUp);
   canvas.addEventListener('pointerleave', onPointerUp);
   
+  // دعم الجيروسكوب
   if (window.DeviceOrientationEvent) {
     window.addEventListener('deviceorientation', onDeviceOrientation);
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
       DeviceOrientationEvent.requestPermission().catch(() => {});
     }
   }
-  
-  const exitBtn = document.createElement('button');
-  exitBtn.id = 'exit360-btn';
-  exitBtn.textContent = '🚪 خروج 360';
-  exitBtn.style.cssText = `
-    position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
-    background:rgba(255,50,50,0.2); color:#fff; border:1px solid rgba(255,50,50,0.3);
-    padding:8px 20px; border-radius:15px; cursor:pointer; font-size:12px;
-    z-index:300; font-family:inherit;
-  `;
-  exitBtn.onclick = exit360Mode;
-  document.body.appendChild(exitBtn);
-  
-  showToast('👆 اسحب للنظر حولك', 'info');
 }
 
 function exit360Mode() {
@@ -1086,6 +1231,13 @@ function exit360Mode() {
   canvas.removeEventListener('pointerleave', onPointerUp);
   window.removeEventListener('deviceorientation', onDeviceOrientation);
   
+  // تنظيف الفيديو
+  if (sphere360Video) {
+    try { sphere360Video.pause(); } catch(e) {}
+    sphere360Video = null;
+  }
+  
+  // تنظيف الكرة
   if (sphere360Mesh) {
     if (sphere360Mesh.parent) sphere360Mesh.parent.remove(sphere360Mesh);
     if (sphere360Mesh.material) { 
@@ -1095,63 +1247,36 @@ function exit360Mode() {
     if (sphere360Mesh.geometry) sphere360Mesh.geometry.dispose();
     sphere360Mesh = null;
   }
-  if (sphere360Video) { try { sphere360Video.pause(); } catch(e) {} sphere360Video = null; }
-  if (sphere360Texture) { try { sphere360Texture.dispose(); } catch(e) {} sphere360Texture = null; }
   
+  if (sphere360Texture) {
+    try { sphere360Texture.dispose(); } catch(e) {}
+    sphere360Texture = null;
+  }
+  
+  videoLoaded = false;
+  isIn360Mode = false;
+  current360Landmark = null;
+  
+  // إظهار العناصر
   playerGroup.visible = true;
   tileGroup.visible = true;
   if (gridHelper) gridHelper.visible = true;
   document.getElementById('dpad').style.display = 'block';
   
-  camera.position.set(0, 6, 10);
-  camera.lookAt(0, 0, 0);
-  
+  // إزالة زر الخروج
   const exitBtn = document.getElementById('exit360-btn');
   if (exitBtn) exitBtn.remove();
   
-  isIn360Mode = false;
+  // إعادة الكاميرا
+  camera.position.set(0, 6, 10);
+  camera.lookAt(0, 0, 0);
+  
   lon = 0; lat = 0; isDragging = false;
   document.getElementById('status').textContent = '🧭 العودة إلى الخريطة';
-  showToast('✅ تم الخروج', 'success');
+  document.getElementById('video-loader').style.display = 'none';
+  
+  showToast('✅ تم الخروج من 360', 'success');
 }
-
-function create360Sphere(url) {
-  if (sphere360Mesh) {
-    if (sphere360Mesh.parent) sphere360Mesh.parent.remove(sphere360Mesh);
-    if (sphere360Mesh.material) { if (sphere360Mesh.material.map) sphere360Mesh.material.map.dispose(); sphere360Mesh.material.dispose(); }
-    if (sphere360Mesh.geometry) sphere360Mesh.geometry.dispose();
-    sphere360Mesh = null;
-  }
-  if (sphere360Video) { try { sphere360Video.pause(); } catch(e) {} sphere360Video = null; }
-  if (sphere360Texture) { try { sphere360Texture.dispose(); } catch(e) {} sphere360Texture = null; }
-  
-  sphere360Video = document.createElement('video');
-  sphere360Video.muted = true; sphere360Video.loop = true; sphere360Video.playsInline = true;
-  sphere360Video.preload = 'auto'; sphere360Video.crossOrigin = 'anonymous';
-  sphere360Video.src = url;
-  
-  sphere360Video.onloadeddata = function() {
-    sphere360Video.play().catch(() => {});
-    sphere360Texture = new THREE.VideoTexture(sphere360Video);
-    sphere360Texture.minFilter = THREE.LinearFilter;
-    sphere360Texture.magFilter = THREE.LinearFilter;
-    sphere360Texture.format = THREE.RGBAFormat;
-    
-    const sphereGeo = new THREE.SphereGeometry(5, 32, 32);
-    const sphereMat = new THREE.MeshBasicMaterial({ map: sphere360Texture, side: THREE.BackSide });
-    sphere360Mesh = new THREE.Mesh(sphereGeo, sphereMat);
-    sphere360Mesh.position.set(playerGroup.position.x, 0, playerGroup.position.z);
-    scene.add(sphere360Mesh);
-    showToast('✅ فيديو 360 جاهز!', 'success');
-  };
-  
-  sphere360Video.onerror = function() { showToast('❌ فشل تحميل فيديو 360', 'error'); };
-  sphere360Video.load();
-}
-
-// ============================================================
-//  19. تحكم 360
-// ============================================================
 
 function onPointerDown(event) {
   isDragging = true;
@@ -1163,7 +1288,7 @@ function onPointerDown(event) {
 }
 
 function onPointerMove(event) {
-  if (!isDragging) return;
+  if (!isDragging || !isIn360Mode) return;
   const deltaX = event.clientX - onPointerDownX;
   const deltaY = event.clientY - onPointerDownY;
   
@@ -1178,7 +1303,7 @@ function onPointerUp() {
 }
 
 function update360Camera() {
-  if (!isIn360Mode) return;
+  if (!isIn360Mode || !sphere360Mesh) return;
   
   const phi = THREE.MathUtils.degToRad(90 - lat);
   const theta = THREE.MathUtils.degToRad(lon);
@@ -1189,11 +1314,12 @@ function update360Camera() {
     Math.sin(phi) * Math.sin(theta)
   );
   
-  camera.lookAt(camera.position.clone().add(target));
+  const pos = camera.position.clone();
+  camera.lookAt(pos.add(target));
 }
 
 function onDeviceOrientation(event) {
-  if (isDragging || !isIn360Mode) return;
+  if (isDragging || !isIn360Mode || !videoLoaded) return;
   
   const alpha = event.alpha || 0;
   const beta = event.beta || 0;
@@ -1211,6 +1337,8 @@ function onDeviceOrientation(event) {
 // ============================================================
 
 function updateActiveTile() {
+  if (isIn360Mode) return;
+  
   const px = playerGroup.position.x + HALF;
   const pz = playerGroup.position.z + HALF;
   const col = Math.floor(px / TILE_SIZE);
@@ -1302,10 +1430,7 @@ function updatePlayer() {
       audioManager.play('move');
     }
     
-    // التحقق من العناصر القابلة للجمع
     collectItem(newRow, newCol);
-    
-    // التحقق من NPC
     interactWithNPC(newRow, newCol);
   }
   
@@ -1379,7 +1504,6 @@ function updateMinimap() {
 
   const scale = w / WORLD_SIZE;
 
-  // رسم العناصر
   for (let y = 0; y < GRID; y++) {
     for (let x = 0; x < GRID; x++) {
       const px = x * TILE_SIZE * scale;
@@ -1482,9 +1606,13 @@ function initThree() {
     if (!isIn360Mode) {
       updatePlayer();
       updateCamera();
+    } else {
+      // تحديث نسيج الفيديو في وضع 360
+      if (sphere360Texture && sphere360Video && videoLoaded) {
+        sphere360Texture.needsUpdate = true;
+      }
     }
     updateMinimap();
-    if (sphere360Texture && isIn360Mode) { sphere360Texture.needsUpdate = true; }
     renderer.render(scene, camera);
   }
   animate();
@@ -1567,7 +1695,7 @@ setTimeout(() => {
   showToast('🎮 مرحباً بك في منصة الألعاب!', 'success');
 }, 500);
 
-console.log('🎮 منصة الألعاب - النسخة النهائية');
+console.log('🎮 منصة الألعاب - النسخة المحسّنة');
 console.log('📋 مهام: ' + activeQuests.length);
 console.log('⭐ عناصر: ' + collectibles.length);
 console.log('🧙 NPCs: ' + npcs.length);
