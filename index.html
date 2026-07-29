@@ -459,6 +459,16 @@ function create360Spheres() {
 //  7. 🌐 الدخول إلى 360 (الزر يعمل)
 // ============================================================
 
+// ========== 🌐 متغيرات 360 ==========
+let lon = 0, lat = 0;
+let isDragging = false;
+let onPointerDownLon = 0, onPointerDownLat = 0;
+let onPointerDownX = 0, onPointerDownY = 0;
+let isGyroAvailable = false;
+let sphere360Mesh = null;
+let sphere360Video = null;
+let sphere360Texture = null;
+
 function enter360Mode() {
   const px = playerGroup.position.x + HALF;
   const pz = playerGroup.position.z + HALF;
@@ -466,30 +476,45 @@ function enter360Mode() {
   const row = Math.floor(pz / TILE_SIZE);
   
   const landmark = landmarks.find(l => l.row === row && l.col === col && l.is360 === true);
-  
-  if (!landmark) {
-    showToast('❌ لا يوجد فيديو 360 هنا', 'error');
-    return;
-  }
+  if (!landmark) { showToast('❌ لا يوجد فيديو 360 هنا', 'error'); return; }
   
   showToast('🌐 جاري الدخول إلى 360...', 'info');
   
-  // إخفاء العناصر
   playerGroup.visible = false;
   tileGroup.visible = false;
+  if (gridHelper) gridHelper.visible = false;
   document.getElementById('enter360-btn').style.display = 'none';
+  document.getElementById('dpad').style.display = 'none';
   
-  // إنشاء كرة 360
-  create360Sphere(landmark.url);
-  
-  // نقل الكاميرا
+  // موقع المربع
   const centerX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
   const centerZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
+  
+  // إنشاء الكرة
+  create360Sphere(landmark.url);
+  
+  // إعادة ضبط الكاميرا
   camera.position.set(centerX, 0, centerZ);
-  camera.lookAt(centerX, 0, centerZ);
+  lon = 0; lat = 0;
+  update360Camera();
   
   isIn360Mode = true;
   document.getElementById('status').textContent = '🌐 وضع 360: ' + landmark.name;
+  
+  // تفعيل اللمس والماوس
+  const canvas = document.getElementById('canvas');
+  canvas.addEventListener('pointerdown', onPointerDown);
+  canvas.addEventListener('pointermove', onPointerMove);
+  canvas.addEventListener('pointerup', onPointerUp);
+  canvas.addEventListener('pointerleave', onPointerUp);
+  
+  // تفعيل الجيروسكوب
+  if (window.DeviceOrientationEvent) {
+    window.addEventListener('deviceorientation', onDeviceOrientation);
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+      DeviceOrientationEvent.requestPermission().catch(() => {});
+    }
+  }
   
   // زر خروج
   const exitBtn = document.createElement('button');
@@ -503,15 +528,56 @@ function enter360Mode() {
   `;
   exitBtn.onclick = exit360Mode;
   document.body.appendChild(exitBtn);
+  
+  showToast('👆 اسحب للنظر حولك', 'info');
+}
+
+function exit360Mode() {
+  if (!isIn360Mode) return;
+  
+  showToast('🚪 الخروج من 360...', 'info');
+  
+  // إزالة مستمعي اللمس
+  const canvas = document.getElementById('canvas');
+  canvas.removeEventListener('pointerdown', onPointerDown);
+  canvas.removeEventListener('pointermove', onPointerMove);
+  canvas.removeEventListener('pointerup', onPointerUp);
+  canvas.removeEventListener('pointerleave', onPointerUp);
+  window.removeEventListener('deviceorientation', onDeviceOrientation);
+  
+  // تنظيف الكرة
+  if (sphere360Mesh) {
+    if (sphere360Mesh.parent) sphere360Mesh.parent.remove(sphere360Mesh);
+    if (sphere360Mesh.material) { 
+      if (sphere360Mesh.material.map) sphere360Mesh.material.map.dispose(); 
+      sphere360Mesh.material.dispose(); 
+    }
+    if (sphere360Mesh.geometry) sphere360Mesh.geometry.dispose();
+    sphere360Mesh = null;
+  }
+  if (sphere360Video) { try { sphere360Video.pause(); } catch(e) {} sphere360Video = null; }
+  if (sphere360Texture) { try { sphere360Texture.dispose(); } catch(e) {} sphere360Texture = null; }
+  
+  playerGroup.visible = true;
+  tileGroup.visible = true;
+  if (gridHelper) gridHelper.visible = true;
+  document.getElementById('dpad').style.display = 'block';
+  
+  camera.position.set(0, 6, 10);
+  camera.lookAt(0, 0, 0);
+  
+  const exitBtn = document.getElementById('exit360-btn');
+  if (exitBtn) exitBtn.remove();
+  
+  isIn360Mode = false;
+  lon = 0; lat = 0; isDragging = false;
+  document.getElementById('status').textContent = '🧭 العودة إلى الخريطة';
+  showToast('✅ تم الخروج', 'success');
 }
 
 // ============================================================
 //  8. 🚪 الخروج من 360
 // ============================================================
-
-let sphere360Mesh = null;
-let sphere360Video = null;
-let sphere360Texture = null;
 
 function create360Sphere(url) {
   if (sphere360Mesh) {
@@ -547,36 +613,69 @@ function create360Sphere(url) {
   sphere360Video.load();
 }
 
-function exit360Mode() {
+// ============================================================
+//  9. 👆 تحكم 360 باللمس والماوس
+// ============================================================
+
+function onPointerDown(event) {
+  isDragging = true;
+  isGyroAvailable = false;
+  onPointerDownX = event.clientX;
+  onPointerDownY = event.clientY;
+  onPointerDownLon = lon;
+  onPointerDownLat = lat;
+}
+
+function onPointerMove(event) {
+  if (!isDragging) return;
+  const deltaX = event.clientX - onPointerDownX;
+  const deltaY = event.clientY - onPointerDownY;
+  
+  lon = onPointerDownLon - deltaX * 0.15;
+  lat = Math.max(-85, Math.min(85, onPointerDownLat + deltaY * 0.15));
+  
+  update360Camera();
+}
+
+function onPointerUp() {
+  isDragging = false;
+}
+
+function update360Camera() {
   if (!isIn360Mode) return;
   
-  showToast('🚪 الخروج من 360...', 'info');
+  const phi = THREE.MathUtils.degToRad(90 - lat);
+  const theta = THREE.MathUtils.degToRad(lon);
   
-  if (sphere360Mesh) {
-    if (sphere360Mesh.parent) sphere360Mesh.parent.remove(sphere360Mesh);
-    if (sphere360Mesh.material) { if (sphere360Mesh.material.map) sphere360Mesh.material.map.dispose(); sphere360Mesh.material.dispose(); }
-    if (sphere360Mesh.geometry) sphere360Mesh.geometry.dispose();
-    sphere360Mesh = null;
-  }
-  if (sphere360Video) { try { sphere360Video.pause(); } catch(e) {} sphere360Video = null; }
-  if (sphere360Texture) { try { sphere360Texture.dispose(); } catch(e) {} sphere360Texture = null; }
+  const target = new THREE.Vector3(
+    Math.sin(phi) * Math.cos(theta),
+    Math.cos(phi),
+    Math.sin(phi) * Math.sin(theta)
+  );
   
-  playerGroup.visible = true;
-  tileGroup.visible = true;
-  
-  camera.position.set(0, 6, 10);
-  camera.lookAt(0, 0, 0);
-  
-  const exitBtn = document.getElementById('exit360-btn');
-  if (exitBtn) exitBtn.remove();
-  
-  isIn360Mode = false;
-  document.getElementById('status').textContent = '🧭 العودة إلى الخريطة';
-  showToast('✅ تم الخروج', 'success');
+  camera.lookAt(camera.position.clone().add(target));
 }
 
 // ============================================================
-//  9. تحديث المربع النشط (updateActiveTile)
+//  10. 📱 جيروسكوب الهاتف
+// ============================================================
+
+function onDeviceOrientation(event) {
+  if (isDragging || !isIn360Mode) return;
+  
+  const alpha = event.alpha || 0;
+  const beta = event.beta || 0;
+  const gamma = event.gamma || 0;
+  
+  lon = -alpha;
+  lat = Math.max(-85, Math.min(85, beta - 90));
+  
+  isGyroAvailable = true;
+  update360Camera();
+}
+
+// ============================================================
+//  11. تحديث المربع النشط (updateActiveTile)
 // ============================================================
 
 function updateActiveTile() {
@@ -614,7 +713,7 @@ function updateActiveTile() {
 }
 
 // ============================================================
-//  10. باقي الدوال (حركة، كاميرا، شبكة، خريطة مصغرة)
+//  12. باقي الدوال (حركة، كاميرا، شبكة، خريطة مصغرة)
 // ============================================================
 
 function updatePlayer() {
@@ -677,7 +776,7 @@ function toggleGrid() {
 }
 
 // ============================================================
-//  11. Three.js + بدء التشغيل
+//  13. Three.js + بدء التشغيل
 // ============================================================
 
 function setupMinimap() {
@@ -686,6 +785,8 @@ function setupMinimap() {
   canvas.width = 120; canvas.height = 120;
   frame.appendChild(canvas);
   minimapCtx = canvas.getContext('2d');
+  document.getElementById('minimap-frame').style.display = 'block';
+  document.getElementById('minimap-label').style.display = 'block';
 }
 
 function updateMinimap() {
@@ -787,8 +888,10 @@ function initThree() {
 
   function animate() {
     requestAnimationFrame(animate);
-    updatePlayer();
-    updateCamera();
+    if (!isIn360Mode) {
+      updatePlayer();
+      updateCamera();
+    }
     updateMinimap();
     if (sphere360Texture && isIn360Mode) { sphere360Texture.needsUpdate = true; }
     renderer.render(scene, camera);
@@ -797,7 +900,7 @@ function initThree() {
 }
 
 // ============================================================
-//  12. تحكم
+//  14. تحكم
 // ============================================================
 
 function setupTouchControls() {
@@ -847,7 +950,7 @@ function showToast(message, type) {
 }
 
 // ============================================================
-//  13. بدء التشغيل
+//  15. بدء التشغيل
 // ============================================================
 
 window.addEventListener('resize', () => {
@@ -869,6 +972,7 @@ setTimeout(() => {
 
 console.log('🌍 الملف النهائي - خريطة + 360');
 console.log('📌 جميع المراحل تم إنجازها بنجاح!');
+console.log('✨ الميزات: خريطة تفاعلية + معالم + وضع 360 مع جيروسكوب');
 </script>
 </body>
 </html>
