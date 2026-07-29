@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🌍 خريطة + 360 - الملف النهائي</title>
+<title>🎮 منصة الألعاب - خريطة + 360</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -26,13 +26,22 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
   border:1px solid rgba(74,222,128,0.2);
 }
 
+#game-stats {
+  position:fixed; top:90px; left:50%; transform:translateX(-50%);
+  display:flex; gap:8px; z-index:100;
+  background:rgba(0,0,0,0.8); padding:5px 12px;
+  border-radius:12px; border:1px solid rgba(255,215,0,0.15);
+  font-size:11px; color:#fff; backdrop-filter:blur(8px);
+}
+#game-stats div { padding:0 4px; }
+
 #controls {
   position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
-  display:flex; gap:6px; z-index:100; flex-wrap:wrap; justify-content:center;
+  display:flex; gap:5px; z-index:100; flex-wrap:wrap; justify-content:center;
 }
 #controls button {
   background:rgba(139,92,246,0.15); color:#fff; border:1px solid rgba(139,92,246,0.2);
-  padding:5px 12px; border-radius:12px; cursor:pointer; font-size:10px;
+  padding:4px 10px; border-radius:12px; cursor:pointer; font-size:10px;
   transition:all 0.3s; font-family:inherit;
 }
 #controls button:hover { background:rgba(139,92,246,0.3); border-color:#8b5cf6; }
@@ -114,39 +123,56 @@ canvas { display:block; width:100%; height:100%; background:#0a0a1a; }
   background:rgba(10,10,30,0.95);
   border:1px solid rgba(255,215,0,0.2);
   border-radius:16px;
-  padding:24px;
-  max-width:400px;
+  padding:20px;
+  max-width:380px;
   width:90%;
 }
-#upload-modal .modal-title { color:#ffd700; font-size:18px; font-weight:700; text-align:center; margin-bottom:16px; }
-#upload-modal .modal-field { margin-bottom:12px; }
-#upload-modal .modal-field label { display:block; color:#888; font-size:11px; margin-bottom:4px; }
+#upload-modal .modal-title { color:#ffd700; font-size:16px; font-weight:700; text-align:center; margin-bottom:12px; }
+#upload-modal .modal-field { margin-bottom:10px; }
+#upload-modal .modal-field label { display:block; color:#888; font-size:10px; margin-bottom:3px; }
 #upload-modal .modal-field input, #upload-modal .modal-field select {
-  width:100%; padding:8px 12px; border-radius:8px;
+  width:100%; padding:6px 10px; border-radius:8px;
   border:1px solid rgba(255,215,0,0.1); background:#0a0a1a;
   color:#fff; font-size:12px; font-family:inherit;
 }
 #upload-modal .file-upload-area {
   border:2px dashed rgba(255,215,0,0.15); border-radius:8px;
-  padding:20px; text-align:center; cursor:pointer;
-  transition:all 0.3s; margin-bottom:12px;
+  padding:15px; text-align:center; cursor:pointer;
+  transition:all 0.3s; margin-bottom:10px;
 }
 #upload-modal .file-upload-area:hover { border-color:#8b5cf6; background:rgba(139,92,246,0.05); }
-#upload-modal .file-upload-area .icon { font-size:36px; display:block; margin-bottom:8px; }
-#upload-modal .file-upload-area .text { color:#666; font-size:12px; }
-#upload-modal .file-upload-area .file-name { color:#4ade80; font-size:11px; display:none; }
-#upload-modal .modal-actions { display:flex; gap:10px; margin-top:16px; }
-#upload-modal .modal-actions button { flex:1; padding:8px; border:none; border-radius:8px; font-weight:700; font-size:12px; cursor:pointer; font-family:inherit; transition:all 0.3s; }
+#upload-modal .file-upload-area .icon { font-size:30px; display:block; margin-bottom:4px; }
+#upload-modal .file-upload-area .text { color:#666; font-size:11px; }
+#upload-modal .file-upload-area .file-name { color:#4ade80; font-size:10px; display:none; }
+#upload-modal .modal-actions { display:flex; gap:8px; margin-top:12px; }
+#upload-modal .modal-actions button { flex:1; padding:6px; border:none; border-radius:8px; font-weight:700; font-size:11px; cursor:pointer; font-family:inherit; transition:all 0.3s; }
 #upload-modal .modal-actions button:hover { transform:scale(1.02); }
 .btn-secondary { background:rgba(255,255,255,0.05); color:#888; }
 .btn-success { background:#4ade80; color:#111; }
+
+#interact-btn {
+  position:fixed; bottom:140px; left:50%; transform:translateX(-50%);
+  background:rgba(139,92,246,0.25); color:#fff;
+  border:1px solid rgba(139,92,246,0.4);
+  padding:6px 18px; border-radius:14px;
+  cursor:pointer; font-size:12px; z-index:100;
+  font-family:inherit; display:none;
+  animation:pulse 1.5s infinite;
+}
 </style>
 </head>
 <body>
 
-<div id="info">🌍 <span>خريطة + 360</span> - الملف النهائي</div>
+<div id="info">🎮 <span>منصة الألعاب</span> - خريطة + 360</div>
 <div id="status">🧭 جاري التحميل...</div>
 <div id="tile-info">🧩 المربع: -</div>
+
+<div id="game-stats">
+  <div>🏆 <span id="score-display">0</span></div>
+  <div>⭐ <span id="level-display">1</span></div>
+  <div>📊 <span id="xp-display">0</span> XP</div>
+  <div>📋 <span id="quest-count">0</span></div>
+</div>
 
 <div id="controls">
   <button onclick="generateMap()">🗺️ خريطة</button>
@@ -155,6 +181,7 @@ canvas { display:block; width:100%; height:100%; background:#0a0a1a; }
   <button onclick="openUploadModal()">📍 إضافة معلم</button>
   <button onclick="loadExampleLandmarks()">📌 معالم تجريبية</button>
   <button onclick="clearLandmarks()">🗑️ حذف الكل</button>
+  <button onclick="resetGame()">🔄 إعادة اللعبة</button>
   <button id="enter360-btn" class="enter360" onclick="enter360Mode()">🌐 دخول 360</button>
 </div>
 
@@ -164,6 +191,8 @@ canvas { display:block; width:100%; height:100%; background:#0a0a1a; }
   <div class="dpad-btn dpad-left" data-dir="left">◀</div>
   <div class="dpad-btn dpad-right" data-dir="right">▶</div>
 </div>
+
+<button id="interact-btn" onclick="interact()">🔄 تفاعل</button>
 
 <div id="minimap-frame"></div>
 <div id="minimap-label">🗺️</div>
@@ -208,7 +237,7 @@ canvas { display:block; width:100%; height:100%; background:#0a0a1a; }
 
 <script>
 // ============================================================
-//  🌍 الملف النهائي - خريطة + 360
+//  🎮 منصة الألعاب - الكود الكامل
 // ============================================================
 
 // ============================================================
@@ -232,7 +261,30 @@ let touchDirs = { up: false, down: false, left: false, right: false };
 let isIn360Mode = false;
 
 // ============================================================
-//  2. المعالم (Landmarks)
+//  2. نظام اللعبة
+// ============================================================
+
+let playerScore = 0;
+let playerLevel = 1;
+let playerXP = 0;
+const XP_PER_LEVEL = 100;
+
+let activeQuests = [];
+let completedQuests = [];
+let questIdCounter = 1;
+let collectedCount = 0;
+let visitedTiles = new Set();
+let totalMoves = 0;
+let total360Entries = 0;
+
+let collectibles = [];
+let collectibleIdCounter = 1;
+let npcs = [];
+let achievements = [];
+let unlockedAchievements = [];
+
+// ============================================================
+//  3. المعالم
 // ============================================================
 
 let landmarks = [];
@@ -240,7 +292,510 @@ let nextLandmarkId = 1;
 let pendingFile = null;
 
 // ============================================================
-//  3. نافذة رفع الملفات
+//  4. متغيرات 360
+// ============================================================
+
+let lon = 0, lat = 0;
+let isDragging = false;
+let onPointerDownLon = 0, onPointerDownLat = 0;
+let onPointerDownX = 0, onPointerDownY = 0;
+let isGyroAvailable = false;
+let sphere360Mesh = null;
+let sphere360Video = null;
+let sphere360Texture = null;
+
+// ============================================================
+//  5. نظام الصوت
+// ============================================================
+
+class AudioManager {
+  constructor() {
+    try {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) {
+      this.ctx = null;
+    }
+  }
+  
+  play(type) {
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      const now = this.ctx.currentTime;
+      
+      switch(type) {
+        case 'collect':
+          osc.frequency.setValueAtTime(523, now);
+          osc.frequency.setValueAtTime(659, now + 0.08);
+          osc.frequency.setValueAtTime(784, now + 0.16);
+          osc.frequency.setValueAtTime(1047, now + 0.24);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+          osc.start(now); osc.stop(now + 0.5);
+          break;
+        case 'quest':
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.setValueAtTime(554, now + 0.1);
+          osc.frequency.setValueAtTime(659, now + 0.2);
+          gain.gain.setValueAtTime(0.07, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+          osc.start(now); osc.stop(now + 0.4);
+          break;
+        case 'achievement':
+          osc.frequency.setValueAtTime(523, now);
+          osc.frequency.setValueAtTime(659, now + 0.1);
+          osc.frequency.setValueAtTime(784, now + 0.2);
+          osc.frequency.setValueAtTime(1047, now + 0.3);
+          osc.frequency.setValueAtTime(1318, now + 0.4);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          osc.start(now); osc.stop(now + 0.6);
+          break;
+        case 'move':
+          osc.frequency.setValueAtTime(200, now);
+          gain.gain.setValueAtTime(0.04, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+          osc.start(now); osc.stop(now + 0.05);
+          break;
+        case 'levelup':
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.setValueAtTime(554, now + 0.1);
+          osc.frequency.setValueAtTime(659, now + 0.2);
+          osc.frequency.setValueAtTime(880, now + 0.3);
+          osc.frequency.setValueAtTime(1108, now + 0.4);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+          osc.start(now); osc.stop(now + 0.6);
+          break;
+      }
+    } catch(e) {}
+  }
+}
+
+let audioManager = null;
+
+function playSound(type) {
+  if (!audioManager) audioManager = new AudioManager();
+  audioManager.play(type);
+}
+
+// ============================================================
+//  6. نظام المهام
+// ============================================================
+
+const QUEST_TEMPLATES = [
+  { name: '🔍 مستكشف', desc: 'زر 5 مربعات مختلفة', objective: { type: 'visit_tiles', count: 5 }, reward: { xp: 30, score: 10 }, icon: '🔍' },
+  { name: '📸 مصور معالم', desc: 'زر 3 معالم', objective: { type: 'visit_landmarks', count: 3 }, reward: { xp: 50, score: 20 }, icon: '📸' },
+  { name: '🌐 مستكشف 360', desc: 'ادخل وضع 360 مرة', objective: { type: 'enter_360', count: 1 }, reward: { xp: 40, score: 15 }, icon: '🌐' },
+  { name: '👣 متجول', desc: 'تحرك 20 خطوة', objective: { type: 'move_steps', count: 20 }, reward: { xp: 25, score: 10 }, icon: '👣' },
+  { name: '⭐ جامع نجوم', desc: 'اجمع 5 عناصر', objective: { type: 'collect_items', count: 5 }, reward: { xp: 60, score: 25 }, icon: '⭐' },
+  { name: '🏆 محترف', desc: 'وصل للمستوى 3', objective: { type: 'level', count: 3 }, reward: { xp: 80, score: 30 }, icon: '🏆' }
+];
+
+function generateQuests() {
+  const shuffled = [...QUEST_TEMPLATES].sort(() => Math.random() - 0.5);
+  const newQuests = shuffled.slice(0, 3).map(t => ({
+    id: questIdCounter++,
+    ...t,
+    progress: 0,
+    completed: false,
+    started: Date.now()
+  }));
+  activeQuests = newQuests;
+  updateQuestsUI();
+}
+
+function updateQuestProgress(type, data = {}) {
+  activeQuests.forEach(q => {
+    if (q.completed) return;
+    let completed = false;
+    
+    switch(q.objective.type) {
+      case 'visit_tiles':
+        q.progress = Math.min(q.progress + 1, q.objective.count);
+        if (q.progress >= q.objective.count) completed = true;
+        break;
+      case 'visit_landmarks':
+        q.progress = Math.min(q.progress + 1, q.objective.count);
+        if (q.progress >= q.objective.count) completed = true;
+        break;
+      case 'enter_360':
+        q.progress = Math.min(q.progress + 1, q.objective.count);
+        if (q.progress >= q.objective.count) completed = true;
+        break;
+      case 'move_steps':
+        q.progress = Math.min(q.progress + 1, q.objective.count);
+        if (q.progress >= q.objective.count) completed = true;
+        break;
+      case 'collect_items':
+        q.progress = Math.min(q.progress + 1, q.objective.count);
+        if (q.progress >= q.objective.count) completed = true;
+        break;
+      case 'level':
+        if (playerLevel >= q.objective.count) completed = true;
+        break;
+    }
+    
+    if (completed) {
+      q.completed = true;
+      completedQuests.push(q);
+      addXP(q.reward.xp);
+      playerScore += q.reward.score;
+      playSound('quest');
+      showToast(`✅ ${q.icon} إكمال: ${q.name}! +${q.reward.xp} XP`, 'success');
+      updateStatsUI();
+      checkAchievements();
+    }
+    updateQuestsUI();
+  });
+}
+
+// ============================================================
+//  7. نظام الإنجازات
+// ============================================================
+
+const ACHIEVEMENT_DEFS = [
+  { id: 'first_step', name: '🚶 أول خطوة', desc: 'تحرك لأول مرة', icon: '🚶' },
+  { id: 'explorer', name: '🗺️ مستكشف', desc: 'زر 10 مربعات مختلفة', icon: '🗺️' },
+  { id: 'collector', name: '⭐ جامع', desc: 'اجمع 10 عناصر', icon: '⭐' },
+  { id: 'quest_master', name: '📋 سيد المهام', desc: 'أكمل 5 مهام', icon: '📋' },
+  { id: 'level_5', name: '🌟 المستوى 5', desc: 'وصل للمستوى 5', icon: '🌟' },
+  { id: 'landmark_hunter', name: '📸 صياد معالم', desc: 'زر 5 معالم', icon: '📸' },
+  { id: 'three_sixty', name: '🌐 مستكشف 360', desc: 'ادخل 360 3 مرات', icon: '🌐' },
+  { id: 'rich', name: '💰 ثري', desc: 'اجمع 500 نقطة', icon: '💰' },
+  { id: 'legendary', name: '🐉 أسطوري', desc: 'وصل للمستوى 10', icon: '🐉' },
+  { id: 'completionist', name: '🏆 مكتمل', desc: 'أكمل كل المهام', icon: '🏆' }
+];
+
+function checkAchievements() {
+  ACHIEVEMENT_DEFS.forEach(def => {
+    if (unlockedAchievements.includes(def.id)) return;
+    let unlock = false;
+    
+    switch(def.id) {
+      case 'first_step': if (totalMoves >= 1) unlock = true; break;
+      case 'explorer': if (visitedTiles.size >= 10) unlock = true; break;
+      case 'collector': if (collectedCount >= 10) unlock = true; break;
+      case 'quest_master': if (completedQuests.length >= 5) unlock = true; break;
+      case 'level_5': if (playerLevel >= 5) unlock = true; break;
+      case 'landmark_hunter': if (landmarks.filter(l => l.visited).length >= 5) unlock = true; break;
+      case 'three_sixty': if (total360Entries >= 3) unlock = true; break;
+      case 'rich': if (playerScore >= 500) unlock = true; break;
+      case 'legendary': if (playerLevel >= 10) unlock = true; break;
+      case 'completionist': if (activeQuests.every(q => q.completed) && activeQuests.length > 0) unlock = true; break;
+    }
+    
+    if (unlock) {
+      unlockedAchievements.push(def.id);
+      addXP(50);
+      playerScore += 25;
+      playSound('achievement');
+      showToast(`🏆 إنجاز: ${def.icon} ${def.name}!`, 'success');
+      updateAchievementsUI();
+      createCelebration();
+    }
+  });
+}
+
+function createCelebration() {
+  for (let i = 0; i < 5; i++) {
+    setTimeout(() => {
+      const pos = new THREE.Vector3(
+        (Math.random() - 0.5) * 8,
+        Math.random() * 3 + 1,
+        (Math.random() - 0.5) * 8
+      );
+      createCollectEffect(pos);
+    }, i * 150);
+  }
+}
+
+// ============================================================
+//  8. نظام العناصر القابلة للجمع
+// ============================================================
+
+const COLLECTIBLE_TYPES = [
+  { name: '⭐ نجمة', icon: '⭐', color: '#fbbf24', value: 10, xp: 5 },
+  { name: '💎 جوهرة', icon: '💎', color: '#60a5fa', value: 25, xp: 15 },
+  { name: '🏆 كأس', icon: '🏆', color: '#f472b6', value: 50, xp: 30 },
+  { name: '🔮 كرة سحرية', icon: '🔮', color: '#a78bfa', value: 40, xp: 20 },
+  { name: '⚡ صاعقة', icon: '⚡', color: '#fbbf24', value: 30, xp: 15 }
+];
+
+function generateCollectibles() {
+  collectibles = [];
+  const numItems = 5 + Math.floor(Math.random() * 5);
+  
+  for (let i = 0; i < numItems; i++) {
+    let row, col, occupied;
+    do {
+      row = Math.floor(Math.random() * GRID);
+      col = Math.floor(Math.random() * GRID);
+      occupied = landmarks.some(l => l.row === row && l.col === col) ||
+                 collectibles.some(c => c.row === row && c.col === col) ||
+                 npcs.some(n => n.row === row && n.col === col);
+    } while (occupied);
+    
+    const type = COLLECTIBLE_TYPES[Math.floor(Math.random() * COLLECTIBLE_TYPES.length)];
+    collectibles.push({
+      id: collectibleIdCounter++,
+      ...type,
+      row, col,
+      collected: false
+    });
+  }
+}
+
+function collectItem(row, col) {
+  const item = collectibles.find(c => c.row === row && c.col === col && !c.collected);
+  if (item) {
+    item.collected = true;
+    collectedCount++;
+    playerScore += item.value;
+    addXP(item.xp);
+    playSound('collect');
+    createCollectEffect(getPositionFromGrid(row, col));
+    showToast(`🎉 ${item.icon} ${item.name}! +${item.value} نقطة`, 'success');
+    updateStatsUI();
+    updateQuestProgress('collect_items');
+    checkAchievements();
+    return true;
+  }
+  return false;
+}
+
+function getPositionFromGrid(row, col) {
+  const posX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
+  const posZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
+  return new THREE.Vector3(posX, 0.2, posZ);
+}
+
+function createCollectEffect(position) {
+  const particleCount = 25;
+  const geometry = new THREE.BufferGeometry();
+  const positions = new Float32Array(particleCount * 3);
+  const colors = new Float32Array(particleCount * 3);
+  
+  for (let i = 0; i < particleCount; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = Math.random() * 1.2;
+    positions[i*3] = Math.cos(angle) * radius;
+    positions[i*3+1] = Math.random() * 1.2;
+    positions[i*3+2] = Math.sin(angle) * radius;
+    colors[i*3] = Math.random();
+    colors[i*3+1] = Math.random() * 0.5 + 0.5;
+    colors[i*3+2] = Math.random() * 0.5 + 0.5;
+  }
+  
+  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  
+  const material = new THREE.PointsMaterial({
+    size: 0.12,
+    vertexColors: true,
+    transparent: true,
+    opacity: 1,
+    blending: THREE.AdditiveBlending
+  });
+  
+  const particles = new THREE.Points(geometry, material);
+  particles.position.copy(position);
+  particles.position.y = 0.5;
+  scene.add(particles);
+  
+  let opacity = 1;
+  const fadeInterval = setInterval(() => {
+    opacity -= 0.02;
+    material.opacity = opacity;
+    particles.position.y += 0.01;
+    if (opacity <= 0) {
+      clearInterval(fadeInterval);
+      scene.remove(particles);
+      geometry.dispose();
+      material.dispose();
+    }
+  }, 16);
+}
+
+// ============================================================
+//  9. نظام NPC
+// ============================================================
+
+function generateNPCs() {
+  const npcTemplates = [
+    { name: '🧙 الحكيم', color: '#a78bfa', dialogs: ['مرحباً أيها المغامر!', 'ابحث عن الكنز في الشمال', 'هناك جوهرة مخفية...', 'لقد كنت أنتظرك!'] },
+    { name: '🧝 الجنية', color: '#60a5fa', dialogs: ['أهلاً بك في عالمنا!', 'اجمع النجوم لتصبح أقوى', 'هل تريد مساعدتي؟', 'الغابة تحمل أسراراً'] },
+    { name: '⚔️ المحارب', color: '#f472b6', dialogs: ['استعد للمعركة!', 'قوتك في إصرارك', 'لقد تدربت لسنوات', 'الخطر قادم من الشرق'] },
+    { name: '🧪 الكيميائي', color: '#34d399', dialogs: ['أنا أصنع الجرعات', 'هذا المكون نادر', 'هل تريد جرعة قوة؟', 'الذهب السائل... مذهل!'] }
+  ];
+  
+  npcs = [];
+  const numNPCs = 3 + Math.floor(Math.random() * 3);
+  
+  for (let i = 0; i < numNPCs; i++) {
+    let row, col, occupied;
+    do {
+      row = Math.floor(Math.random() * GRID);
+      col = Math.floor(Math.random() * GRID);
+      occupied = landmarks.some(l => l.row === row && l.col === col) ||
+                 collectibles.some(c => c.row === row && c.col === col && !c.collected) ||
+                 npcs.some(n => n.row === row && n.col === col);
+    } while (occupied);
+    
+    const template = npcTemplates[i % npcTemplates.length];
+    npcs.push({
+      id: i + 1,
+      ...template,
+      row, col,
+      dialogIndex: 0,
+      lastInteraction: 0
+    });
+  }
+}
+
+function interactWithNPC(row, col) {
+  const npc = npcs.find(n => n.row === row && n.col === col);
+  if (!npc) return false;
+  if (Date.now() - npc.lastInteraction < 2000) return false;
+  
+  npc.lastInteraction = Date.now();
+  const dialog = npc.dialogs[npc.dialogIndex % npc.dialogs.length];
+  npc.dialogIndex++;
+  
+  showDialog(npc.name, dialog);
+  
+  if (Math.random() < 0.3) {
+    addXP(5);
+    showToast(`💬 ${npc.name} يمنحك +5 XP`, 'info');
+  }
+  return true;
+}
+
+function showDialog(name, message) {
+  const container = document.createElement('div');
+  container.style.cssText = `
+    position:fixed; bottom:180px; left:50%; transform:translateX(-50%);
+    background:rgba(0,0,0,0.9); border:1px solid rgba(255,215,0,0.3);
+    border-radius:16px; padding:14px 20px; max-width:320px; width:90%;
+    z-index:400; text-align:center; animation: slideUp 0.3s;
+  `;
+  container.innerHTML = `
+    <div style="font-size:13px; color:#ffd700; margin-bottom:6px;">${name}</div>
+    <div style="font-size:12px; color:#fff; line-height:1.6;">${message}</div>
+    <div style="margin-top:10px; font-size:9px; color:#666;">اضغط للإغلاق</div>
+  `;
+  document.body.appendChild(container);
+  
+  const close = () => {
+    container.style.animation = 'slideDown 0.3s forwards';
+    setTimeout(() => container.remove(), 300);
+    document.removeEventListener('click', close);
+  };
+  document.addEventListener('click', close);
+  
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes slideUp { from { transform:translateX(-50%) translateY(50px); opacity:0; } to { transform:translateX(-50%) translateY(0); opacity:1; } }
+    @keyframes slideDown { from { transform:translateX(-50%) translateY(0); opacity:1; } to { transform:translateX(-50%) translateY(50px); opacity:0; } }
+  `;
+  document.head.appendChild(style);
+}
+
+// ============================================================
+//  10. نظام التطور
+// ============================================================
+
+function addXP(amount) {
+  playerXP += amount;
+  while (playerXP >= XP_PER_LEVEL) {
+    playerXP -= XP_PER_LEVEL;
+    playerLevel++;
+    playSound('levelup');
+    showToast(`🎊 ترقية! المستوى ${playerLevel}`, 'success');
+    updateQuestProgress('level');
+    checkAchievements();
+    createCelebration();
+  }
+  updateStatsUI();
+}
+
+function getLevelName() {
+  const names = ['🌱 مبتدئ', '🌟 مغامر', '⚔️ محارب', '🧙 حكيم', '👑 بطل', '🐉 أسطوري', '✨ خرافي', '👾 محترف', '🏆 خارق', '🌌 أسطوري'];
+  return names[Math.min(playerLevel - 1, names.length - 1)] || '🌟 مغامر';
+}
+
+// ============================================================
+//  11. وظائف التفاعل
+// ============================================================
+
+function interact() {
+  const px = playerGroup.position.x + HALF;
+  const pz = playerGroup.position.z + HALF;
+  const col = Math.floor(px / TILE_SIZE);
+  const row = Math.floor(pz / TILE_SIZE);
+  
+  if (collectItem(row, col)) return;
+  if (interactWithNPC(row, col)) return;
+  
+  showToast('ℹ️ لا يوجد شيء للتفاعل هنا', 'info');
+}
+
+// ============================================================
+//  12. إعادة تعيين اللعبة
+// ============================================================
+
+function resetGame() {
+  if (!confirm('🔄 إعادة تعيين اللعبة؟ سيتم فقدان التقدم!')) return;
+  
+  playerScore = 0;
+  playerLevel = 1;
+  playerXP = 0;
+  collectedCount = 0;
+  visitedTiles = new Set();
+  totalMoves = 0;
+  total360Entries = 0;
+  completedQuests = [];
+  unlockedAchievements = [];
+  questIdCounter = 1;
+  collectibleIdCounter = 1;
+  
+  generateQuests();
+  generateCollectibles();
+  generateNPCs();
+  updateStatsUI();
+  updateQuestsUI();
+  updateAchievementsUI();
+  
+  playerGroup.position.set(0, 0, 0);
+  resetCamera();
+  
+  showToast('🔄 تم إعادة تعيين اللعبة', 'info');
+}
+
+// ============================================================
+//  13. واجهة المستخدم
+// ============================================================
+
+function updateStatsUI() {
+  document.getElementById('score-display').textContent = playerScore;
+  document.getElementById('level-display').textContent = `${playerLevel} ${getLevelName()}`;
+  document.getElementById('xp-display').textContent = `${playerXP}/${XP_PER_LEVEL}`;
+  document.getElementById('quest-count').textContent = activeQuests.filter(q => !q.completed).length;
+}
+
+function updateQuestsUI() {
+  // تحديث المهام في الخلفية
+}
+
+function updateAchievementsUI() {
+  // تحديث الإنجازات في الخلفية
+}
+
+// ============================================================
+//  14. نافذة رفع الملفات
 // ============================================================
 
 function openUploadModal() {
@@ -291,7 +846,8 @@ function addLandmarkFromModal() {
     file: pendingFile.name,
     row: row,
     col: col,
-    is360: is360
+    is360: is360,
+    visited: false
   });
   
   closeUploadModal();
@@ -300,19 +856,19 @@ function addLandmarkFromModal() {
 }
 
 // ============================================================
-//  4. معالم تجريبية (فيديو حقيقي يعمل)
+//  15. المعالم التجريبية
 // ============================================================
 
 function loadExampleLandmarks() {
   const realVideo = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm';
   
   landmarks = [];
-  landmarks.push({ id: nextLandmarkId++, name: '🏟️ الملعب', type: 'video', url: realVideo, file: 'مثال', row: 2, col: 3, is360: false });
-  landmarks.push({ id: nextLandmarkId++, name: '🌳 الحديقة', type: 'image', url: 'https://picsum.photos/200/200', file: 'مثال', row: 8, col: 1, is360: false });
-  landmarks.push({ id: nextLandmarkId++, name: '🌐 غرفة 360', type: 'video360', url: realVideo, file: 'مثال', row: 6, col: 6, is360: true });
+  landmarks.push({ id: nextLandmarkId++, name: '🏟️ الملعب', type: 'video', url: realVideo, file: 'مثال', row: 2, col: 3, is360: false, visited: false });
+  landmarks.push({ id: nextLandmarkId++, name: '🌳 الحديقة', type: 'image', url: 'https://picsum.photos/200/200', file: 'مثال', row: 8, col: 1, is360: false, visited: false });
+  landmarks.push({ id: nextLandmarkId++, name: '🌐 غرفة 360', type: 'video360', url: realVideo, file: 'مثال', row: 6, col: 6, is360: true, visited: false });
   
   rebuildMap();
-  showToast('✅ تم تحميل 3 معالم (بما فيها 360)', 'success');
+  showToast('✅ تم تحميل 3 معالم', 'success');
 }
 
 function clearLandmarks() {
@@ -325,13 +881,12 @@ function clearLandmarks() {
 }
 
 // ============================================================
-//  5. بناء الخريطة (generateMap)
+//  16. بناء الخريطة
 // ============================================================
 
 function generateMap() { rebuildMap(); }
 
 function rebuildMap() {
-  // تنظيف
   tileMeshes.forEach(m => {
     if (m.parent) m.parent.remove(m);
     if (m.material) { if (m.material.map) m.material.map.dispose(); m.material.dispose(); }
@@ -396,18 +951,16 @@ function rebuildMap() {
     }
   }
 
-  // عرض كرات 360
   create360Spheres();
-
   addGrid();
   isReady = true;
   document.getElementById('tile-info').style.display = 'block';
   document.getElementById('tile-info').textContent = '🧩 خريطة ' + GRID + '×' + GRID + ' | معالم: ' + landmarks.length;
-  document.getElementById('status').textContent = '✅ خريطة جاهزة | ' + landmarks.length + ' معلم';
+  document.getElementById('status').textContent = '✅ جاهز | ' + landmarks.length + ' معلم';
 }
 
 // ============================================================
-//  6. كرات 360 وأيقونة 🌐
+//  17. كرات 360
 // ============================================================
 
 function create360Spheres() {
@@ -424,7 +977,6 @@ function create360Spheres() {
     const posX = l.col * TILE_SIZE - HALF + TILE_SIZE / 2;
     const posZ = l.row * TILE_SIZE - HALF + TILE_SIZE / 2;
     
-    // كرة شفافة
     const sphere = new THREE.Mesh(
       new THREE.SphereGeometry(0.4, 16, 16),
       new THREE.MeshStandardMaterial({
@@ -436,7 +988,6 @@ function create360Spheres() {
     scene.add(sphere);
     window.sphereMeshes.push(sphere);
     
-    // أيقونة 🌐
     const canvas = document.createElement('canvas');
     canvas.width = 64; canvas.height = 64;
     const ctx = canvas.getContext('2d');
@@ -456,18 +1007,8 @@ function create360Spheres() {
 }
 
 // ============================================================
-//  7. 🌐 الدخول إلى 360 (الزر يعمل)
+//  18. وضع 360
 // ============================================================
-
-// ========== 🌐 متغيرات 360 ==========
-let lon = 0, lat = 0;
-let isDragging = false;
-let onPointerDownLon = 0, onPointerDownLat = 0;
-let onPointerDownX = 0, onPointerDownY = 0;
-let isGyroAvailable = false;
-let sphere360Mesh = null;
-let sphere360Video = null;
-let sphere360Texture = null;
 
 function enter360Mode() {
   const px = playerGroup.position.x + HALF;
@@ -486,14 +1027,11 @@ function enter360Mode() {
   document.getElementById('enter360-btn').style.display = 'none';
   document.getElementById('dpad').style.display = 'none';
   
-  // موقع المربع
   const centerX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
   const centerZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
   
-  // إنشاء الكرة
   create360Sphere(landmark.url);
   
-  // إعادة ضبط الكاميرا
   camera.position.set(centerX, 0, centerZ);
   lon = 0; lat = 0;
   update360Camera();
@@ -501,14 +1039,19 @@ function enter360Mode() {
   isIn360Mode = true;
   document.getElementById('status').textContent = '🌐 وضع 360: ' + landmark.name;
   
-  // تفعيل اللمس والماوس
+  // تحديث اللعبة
+  total360Entries++;
+  landmark.visited = true;
+  updateQuestProgress('enter_360');
+  updateQuestProgress('visit_landmarks');
+  checkAchievements();
+  
   const canvas = document.getElementById('canvas');
   canvas.addEventListener('pointerdown', onPointerDown);
   canvas.addEventListener('pointermove', onPointerMove);
   canvas.addEventListener('pointerup', onPointerUp);
   canvas.addEventListener('pointerleave', onPointerUp);
   
-  // تفعيل الجيروسكوب
   if (window.DeviceOrientationEvent) {
     window.addEventListener('deviceorientation', onDeviceOrientation);
     if (typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -516,7 +1059,6 @@ function enter360Mode() {
     }
   }
   
-  // زر خروج
   const exitBtn = document.createElement('button');
   exitBtn.id = 'exit360-btn';
   exitBtn.textContent = '🚪 خروج 360';
@@ -537,7 +1079,6 @@ function exit360Mode() {
   
   showToast('🚪 الخروج من 360...', 'info');
   
-  // إزالة مستمعي اللمس
   const canvas = document.getElementById('canvas');
   canvas.removeEventListener('pointerdown', onPointerDown);
   canvas.removeEventListener('pointermove', onPointerMove);
@@ -545,7 +1086,6 @@ function exit360Mode() {
   canvas.removeEventListener('pointerleave', onPointerUp);
   window.removeEventListener('deviceorientation', onDeviceOrientation);
   
-  // تنظيف الكرة
   if (sphere360Mesh) {
     if (sphere360Mesh.parent) sphere360Mesh.parent.remove(sphere360Mesh);
     if (sphere360Mesh.material) { 
@@ -574,10 +1114,6 @@ function exit360Mode() {
   document.getElementById('status').textContent = '🧭 العودة إلى الخريطة';
   showToast('✅ تم الخروج', 'success');
 }
-
-// ============================================================
-//  8. 🚪 الخروج من 360
-// ============================================================
 
 function create360Sphere(url) {
   if (sphere360Mesh) {
@@ -614,7 +1150,7 @@ function create360Sphere(url) {
 }
 
 // ============================================================
-//  9. 👆 تحكم 360 باللمس والماوس
+//  19. تحكم 360
 // ============================================================
 
 function onPointerDown(event) {
@@ -656,10 +1192,6 @@ function update360Camera() {
   camera.lookAt(camera.position.clone().add(target));
 }
 
-// ============================================================
-//  10. 📱 جيروسكوب الهاتف
-// ============================================================
-
 function onDeviceOrientation(event) {
   if (isDragging || !isIn360Mode) return;
   
@@ -675,7 +1207,7 @@ function onDeviceOrientation(event) {
 }
 
 // ============================================================
-//  11. تحديث المربع النشط (updateActiveTile)
+//  20. تحديث المربع النشط
 // ============================================================
 
 function updateActiveTile() {
@@ -686,6 +1218,7 @@ function updateActiveTile() {
 
   let is360 = false;
   let landmarkName = '';
+  let hasLandmark = false;
 
   tileMeshes.forEach(mesh => {
     const data = mesh.userData;
@@ -694,13 +1227,13 @@ function updateActiveTile() {
       mesh.material.emissiveIntensity = 0.3;
       is360 = data.is360;
       landmarkName = data.landmarkName;
+      hasLandmark = data.hasLandmark;
     } else {
       mesh.material.emissive = new THREE.Color(0x000000);
       mesh.material.emissiveIntensity = 0;
     }
   });
 
-  // إظهار/إخفاء زر 360
   const enterBtn = document.getElementById('enter360-btn');
   if (is360 && !isIn360Mode) {
     enterBtn.style.display = 'block';
@@ -710,32 +1243,78 @@ function updateActiveTile() {
     enterBtn.style.display = 'none';
     document.getElementById('tile-info').textContent = '🧩 (' + col + ',' + row + ')';
   }
+  
+  // تحديث التقدم في اللعبة
+  const tileKey = row + ',' + col;
+  if (!visitedTiles.has(tileKey)) {
+    visitedTiles.add(tileKey);
+    updateQuestProgress('visit_tiles');
+    checkAchievements();
+  }
+  
+  if (hasLandmark) {
+    const landmark = landmarks.find(l => l.row === row && l.col === col);
+    if (landmark && !landmark.visited) {
+      landmark.visited = true;
+      updateQuestProgress('visit_landmarks');
+      checkAchievements();
+    }
+  }
 }
 
 // ============================================================
-//  12. باقي الدوال (حركة، كاميرا، شبكة، خريطة مصغرة)
+//  21. حركة اللاعب
 // ============================================================
 
 function updatePlayer() {
   if (isIn360Mode) return;
   let dx = 0, dz = 0;
-  if (touchDirs.up) dz = -PLAYER_SPEED;
-  if (touchDirs.down) dz = PLAYER_SPEED;
-  if (touchDirs.left) dx = -PLAYER_SPEED;
-  if (touchDirs.right) dx = PLAYER_SPEED;
+  let moving = false;
+  
+  if (touchDirs.up) { dz = -PLAYER_SPEED; moving = true; }
+  if (touchDirs.down) { dz = PLAYER_SPEED; moving = true; }
+  if (touchDirs.left) { dx = -PLAYER_SPEED; moving = true; }
+  if (touchDirs.right) { dx = PLAYER_SPEED; moving = true; }
 
   const newX = playerGroup.position.x + dx;
   const newZ = playerGroup.position.z + dz;
   const limit = HALF - TILE_SIZE/2;
 
+  const oldRow = Math.floor((playerGroup.position.z + HALF) / TILE_SIZE);
+  const oldCol = Math.floor((playerGroup.position.x + HALF) / TILE_SIZE);
+  
   playerGroup.position.x = Math.max(-limit, Math.min(limit, newX));
   playerGroup.position.z = Math.max(-limit, Math.min(limit, newZ));
 
   if (dx !== 0 || dz !== 0) {
     playerGroup.rotation.y = Math.atan2(dx, dz);
   }
+  
+  const newRow = Math.floor((playerGroup.position.z + HALF) / TILE_SIZE);
+  const newCol = Math.floor((playerGroup.position.x + HALF) / TILE_SIZE);
+  
+  if (moving && (newRow !== oldRow || newCol !== oldCol)) {
+    totalMoves++;
+    updateQuestProgress('move_steps');
+    checkAchievements();
+    
+    if (Math.random() < 0.1 && audioManager) {
+      audioManager.play('move');
+    }
+    
+    // التحقق من العناصر القابلة للجمع
+    collectItem(newRow, newCol);
+    
+    // التحقق من NPC
+    interactWithNPC(newRow, newCol);
+  }
+  
   updateActiveTile();
 }
+
+// ============================================================
+//  22. الكاميرا
+// ============================================================
 
 function updateCamera() {
   if (isIn360Mode) return;
@@ -760,6 +1339,10 @@ function resetCamera() {
   playerGroup.position.set(0, 0, 0);
 }
 
+// ============================================================
+//  23. الشبكة والخريطة المصغرة
+// ============================================================
+
 function addGrid() {
   if (gridHelper) { tileGroup.remove(gridHelper); gridHelper = null; }
   gridHelper = new THREE.GridHelper(WORLD_SIZE, GRID, 0x8b5cf6, 0x2a2a4a);
@@ -774,10 +1357,6 @@ function toggleGrid() {
   if (gridHelper) gridHelper.material.opacity = gridVisible ? 0.15 : 0;
   showToast(gridVisible ? '📐 شبكة ظاهرة' : '📐 شبكة مخفية', 'info');
 }
-
-// ============================================================
-//  13. Three.js + بدء التشغيل
-// ============================================================
 
 function setupMinimap() {
   const frame = document.getElementById('minimap-frame');
@@ -800,6 +1379,7 @@ function updateMinimap() {
 
   const scale = w / WORLD_SIZE;
 
+  // رسم العناصر
   for (let y = 0; y < GRID; y++) {
     for (let x = 0; x < GRID; x++) {
       const px = x * TILE_SIZE * scale;
@@ -807,8 +1387,13 @@ function updateMinimap() {
       const size = TILE_SIZE * scale * 0.9;
       
       const landmark = landmarks.find(l => l.row === y && l.col === x);
+      const collectible = collectibles.find(c => c.row === y && c.col === x && !c.collected);
+      const npc = npcs.find(n => n.row === y && n.col === x);
+      
       if (landmark && landmark.is360) { ctx.fillStyle = '#00f2ff'; }
       else if (landmark) { ctx.fillStyle = '#ffd700'; }
+      else if (collectible) { ctx.fillStyle = '#fbbf24'; }
+      else if (npc) { ctx.fillStyle = '#a78bfa'; }
       else { ctx.fillStyle = ((x + y) % 2 === 0) ? '#2a2a4a' : '#1a1a2e'; }
       ctx.fillRect(px, py, size, size);
     }
@@ -830,6 +1415,10 @@ function updateMinimap() {
   ctx.strokeRect(0, 0, w, h);
 }
 
+// ============================================================
+//  24. Three.js
+// ============================================================
+
 function initThree() {
   const canvas = document.getElementById('canvas');
 
@@ -839,7 +1428,6 @@ function initThree() {
 
   camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
   camera.position.set(0, 6, 10);
-  camera.lookAt(0, 0, 0);
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
@@ -857,21 +1445,24 @@ function initThree() {
   fillLight.position.set(-10, 10, -10);
   scene.add(fillLight);
 
-  // لاعب
+  // اللاعب
   playerGroup = new THREE.Group();
   scene.add(playerGroup);
+  
   const body = new THREE.Mesh(
     new THREE.CylinderGeometry(0.35, 0.4, 0.8, 8),
     new THREE.MeshStandardMaterial({ color: 0x8b5cf6, emissive: 0x6d28d9, emissiveIntensity: 0.2, roughness: 0.4, metalness: 0.3 })
   );
   body.position.y = 0.4; body.castShadow = true;
   playerGroup.add(body);
+  
   const head = new THREE.Mesh(
     new THREE.SphereGeometry(0.2, 8, 8),
     new THREE.MeshStandardMaterial({ color: 0x8b5cf6, roughness: 0.3, metalness: 0.2 })
   );
   head.position.y = 0.9; head.castShadow = true;
   playerGroup.add(head);
+  
   const shadow = new THREE.Mesh(
     new THREE.PlaneGeometry(0.8, 0.8),
     new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.2 })
@@ -900,7 +1491,7 @@ function initThree() {
 }
 
 // ============================================================
-//  14. تحكم
+//  25. التحكم
 // ============================================================
 
 function setupTouchControls() {
@@ -932,6 +1523,7 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowLeft') touchDirs.left = true;
   if (e.key === 'ArrowRight') touchDirs.right = true;
   if (e.key === 'Escape' && isIn360Mode) exit360Mode();
+  if (e.key === 'e' || e.key === 'E') interact();
 });
 document.addEventListener('keyup', e => {
   if (e.key === 'ArrowUp') touchDirs.up = false;
@@ -950,7 +1542,7 @@ function showToast(message, type) {
 }
 
 // ============================================================
-//  15. بدء التشغيل
+//  26. بدء التشغيل
 // ============================================================
 
 window.addEventListener('resize', () => {
@@ -967,13 +1559,21 @@ initThree();
 setTimeout(() => {
   generateMap();
   loadExampleLandmarks();
-  document.getElementById('status').textContent = '✅ جاهز! تحرك واستكشف';
+  generateQuests();
+  generateCollectibles();
+  generateNPCs();
+  updateStatsUI();
+  document.getElementById('status').textContent = '🎮 جاهز! استكشف واجمع';
+  showToast('🎮 مرحباً بك في منصة الألعاب!', 'success');
 }, 500);
 
-console.log('🌍 الملف النهائي - خريطة + 360');
-console.log('📌 جميع المراحل تم إنجازها بنجاح!');
-console.log('✨ الميزات: خريطة تفاعلية + معالم + وضع 360 مع جيروسكوب');
+console.log('🎮 منصة الألعاب - النسخة النهائية');
+console.log('📋 مهام: ' + activeQuests.length);
+console.log('⭐ عناصر: ' + collectibles.length);
+console.log('🧙 NPCs: ' + npcs.length);
+console.log('🏆 إنجازات: ' + ACHIEVEMENT_DEFS.length);
 </script>
 </body>
 </html>
 
+  
