@@ -3,9 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🗺️ خريطة بمحتوى متنوع</title>
+<title>🏆 PUBG Style - العالم النهائي</title>
 
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
@@ -24,6 +27,7 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
   cursor:pointer; transition:all .3s; font-weight:700; font-family:inherit;
 }
 .start-btn:hover { transform:scale(1.05); background:#00f2ff; color:#000; box-shadow:0 0 50px rgba(0,242,255,0.4); }
+.user-info { color:#00f2ff; font-size:13px; background:rgba(0,0,0,0.6); padding:8px 24px; border-radius:30px; }
 .version-tag { position:absolute; bottom:15px; font-size:11px; color:#444; }
 @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-10px); } }
 
@@ -58,16 +62,44 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 .dpad-left { top:40px; left:0; }
 .dpad-right { top:40px; right:0; }
 
-#controls {
-  position:fixed; bottom:160px; left:50%; transform:translateX(-50%);
-  display:flex; gap:8px; z-index:210; flex-wrap:wrap; justify-content:center;
+.tg-toggle {
+  position:fixed; bottom:155px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,0.6); border:1px solid rgba(255,215,0,0.1);
+  border-radius:20px; padding:3px 14px;
+  z-index:210; font-size:11px; color:#888; cursor:pointer; display:none;
 }
-#controls button {
-  background:rgba(139,92,246,0.15); color:#fff; border:1px solid rgba(139,92,246,0.2);
-  padding:6px 14px; border-radius:15px; cursor:pointer; font-size:11px; font-family:inherit;
-  transition:all 0.3s;
+.tg-toggle:hover { color:#ffd700; }
+
+.tg-dropdown {
+  position:fixed; bottom:170px; left:50%; transform:translateX(-50%);
+  background:rgba(10,10,30,0.95); border:1px solid rgba(255,215,0,0.15);
+  border-radius:14px; padding:10px 14px; z-index:250;
+  min-width:320px; max-width:92%; display:none; backdrop-filter:blur(12px);
+  max-height:350px; overflow-y:auto;
 }
-#controls button:hover { background:rgba(139,92,246,0.3); border-color:#8b5cf6; }
+.tg-dropdown.show { display:block; }
+.tg-dropdown .row { display:flex; gap:5px; margin-bottom:6px; flex-wrap:wrap; }
+.tg-dropdown input[type="text"] {
+  flex:1; padding:6px 10px; border-radius:8px;
+  border:1px solid rgba(255,215,0,0.15); background:#0a0a1a;
+  color:#fff; font-size:11px; font-family:inherit; min-width:50px;
+}
+.tg-dropdown input[type="text"]::placeholder { color:#555; }
+.tg-dropdown .btn {
+  padding:6px 12px; border:none; border-radius:8px;
+  font-weight:700; font-size:11px; cursor:pointer; font-family:inherit;
+  transition:all .2s;
+}
+.tg-dropdown .btn:hover { transform:scale(1.05); }
+.btn-accent { background:#00f2ff; color:#111; }
+.btn-purple { background:#8b5cf6; color:#fff; }
+.btn-gold { background:#ffd700; color:#111; }
+.btn-green { background:#4ade80; color:#111; }
+.btn-red { background:#f87171; color:#fff; }
+.btn-pink { background:#ec4899; color:#fff; }
+.btn-blue { background:#3b82f6; color:#fff; }
+.btn-orange { background:#fb923c; color:#111; }
+#tg-status { font-size:10px; color:#888; margin-top:4px; text-align:center; }
 
 #minimap-frame {
   position:fixed; top:50px; left:10px;
@@ -96,9 +128,11 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 .toast.success { border-color:#4ade80; color:#4ade80; }
 .toast.error { border-color:#f87171; color:#f87171; }
 .toast.info { border-color:#60a5fa; color:#60a5fa; }
+.toast.warn { border-color:#fb923c; color:#fb923c; }
 @keyframes toastIn { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
 @keyframes toastOut { from { opacity:1; transform:translateY(0); } to { opacity:0; transform:translateY(-20px); } }
 
+#video-input, #sticker-input { display:none; }
 #status-bar {
   position:fixed; bottom:140px; left:50%; transform:translateX(-50%);
   background:rgba(0,0,0,0.7); padding:4px 16px;
@@ -106,7 +140,6 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
   z-index:95; border:1px solid rgba(74,222,128,0.2);
   display:none; text-align:center;
 }
-
 #tile-info {
   position:fixed; top:36px; left:50%; transform:translateX(-50%);
   background:rgba(0,0,0,0.7); padding:3px 14px;
@@ -120,10 +153,11 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 
 <!-- شاشة البداية -->
 <div id="start-screen">
-  <div class="start-logo">🗺️ خريطة متنوعة</div>
-  <div class="start-subtitle">كل مربع له محتواه الخاص · فيديو · صورة · ملصق</div>
-  <button class="start-btn" onclick="enterApp()">🚀 دخول</button>
-  <div class="version-tag">v55.0 | Rich Content Tiles</div>
+  <div class="start-logo">🏆 PUBG Style</div>
+  <div class="start-subtitle">أرضية فيديو · معالم ملصقات · شخصية متحركة</div>
+  <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
+  <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
+  <div class="version-tag">v57.0 | النهائي</div>
 </div>
 
 <!-- اللعبة -->
@@ -134,18 +168,40 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
   <div id="minimap-label">🗺️</div>
 
   <div id="tile-info">🧩 المربع: -</div>
-  <div id="status-bar">🌍 جاري بناء الخريطة...</div>
+  <div id="status-bar">🌍 جاري التحميل...</div>
 
   <div class="hud">
-    <div class="title">🗺️ خريطة متنوعة</div>
+    <div class="title">🏆 PUBG Style</div>
     <div class="info" id="char-name">جاري التحميل...</div>
   </div>
 
-  <div id="controls">
-    <button onclick="generateMap()">🗺️ توليد خريطة</button>
+  <div id="controls" style="position:fixed;bottom:160px;left:50%;transform:translateX(-50%);display:flex;gap:6px;z-index:210;flex-wrap:wrap;justify-content:center;">
+    <button onclick="generateMap()">🗺️ خريطة</button>
     <button onclick="toggleGrid()">📐 شبكة</button>
     <button onclick="resetCamera()">🔄 إعادة</button>
+    <button onclick="document.getElementById('video-input').click()">📁 فيديو</button>
+    <button onclick="document.getElementById('sticker-input').click()">📌 ملصق</button>
   </div>
+
+  <button class="tg-toggle" id="tg-toggle" onclick="toggleTG()">📡 القناة</button>
+
+  <div class="tg-dropdown" id="tg-dropdown">
+    <div class="row">
+      <input type="text" id="bot-token" placeholder="Bot Token">
+      <input type="text" id="chat-id" placeholder="Channel ID">
+    </div>
+    <div class="row">
+      <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
+      <button class="btn btn-purple" onclick="addChannel()">➕ إضافة قناة</button>
+      <button class="btn btn-gold" onclick="fetchVideoFromTelegram()">🎬 جلب فيديو</button>
+      <button class="btn btn-pink" onclick="fetchStickerFromTelegram()">📌 جلب ملصق</button>
+      <button class="btn btn-red" onclick="toggleTG()">✖</button>
+    </div>
+    <div id="tg-status">⭕ غير متصل</div>
+  </div>
+
+  <input type="file" id="video-input" accept="video/*,.webm,.mp4,.mov" onchange="handleVideo(event)">
+  <input type="file" id="sticker-input" accept="image/*,.webp,.png,.jpg,.gif" onchange="handleSticker(event)">
 
   <div class="dpad" id="dpad">
     <div class="dpad-btn dpad-up" data-dir="up">▲</div>
@@ -159,277 +215,359 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 
 <script>
 // ============================================================
-//  🗺️ خريطة بمحتوى متنوع - كل مربع له هويته
+//  🏆 الملف النهائي - كل نقاط التفوق
 // ============================================================
 
 // ============================================================
-//  1. أنواع المحتوى
+//  1. التهيئة + Telegram
 // ============================================================
 
-const CONTENT_TYPES = {
-    VIDEO: 'video',
-    IMAGE: 'image',
-    STICKER: 'sticker',
-    TEXT: 'text'
-};
+const tg = window.Telegram?.WebApp;
+let userData = null;
+let botToken = '', connected = false, lastUpdateId = 0;
+let channels = [];
+let loadedVideos = {};
+let loadedStickers = {};
 
-// ============================================================
-//  2. تعريف المعالم (كل مربع له محتواه)
-// ============================================================
+function initTelegram() {
+  try {
+    if (tg) { tg.ready(); tg.expand(); }
+    userData = tg?.initDataUnsafe?.user || { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+    document.getElementById('userInfoDisplay').innerHTML = '👤 ' + (userData.first_name || 'مستخدم');
+  } catch(e) {
+    userData = { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+    document.getElementById('userInfoDisplay').innerHTML = '👤 مستخدم';
+  }
+  loadChannels();
+}
 
-const MAP_SIZE = 8; // 8×8 = 64 مربع (للاختبار، يمكن تغيير إلى 16×16)
-const TILE_SIZE = 3.5;
-const WORLD_SIZE = MAP_SIZE * TILE_SIZE;
-const HALF = WORLD_SIZE / 2;
-const PLAYER_SPEED = 0.08;
+function loadChannels() {
+  try {
+    const saved = localStorage.getItem('channels_v57');
+    if (saved) { channels = JSON.parse(saved); }
+  } catch(e) {}
+}
 
-// تعريف المحتوى لكل مربع
-const TILE_CONTENT = [];
+function saveChannels() {
+  try { localStorage.setItem('channels_v57', JSON.stringify(channels)); } catch(e) {}
+}
 
-// توليد محتوى عشوائي للمربعات
-function generateTileContent() {
-    const types = ['video', 'image', 'sticker', 'text'];
-    const names = ['🏙️ مدينة', '🌲 غابة', '🌊 بحيرة', '⛰️ جبل', '🏜️ صحراء', '🌾 سهول', '🏗️ بناء', '🌳 شجرة', '🏠 منزل', '🚗 طريق'];
-    const colors = ['#4a4a7a', '#1a4a1a', '#1a3a6a', '#5a4a3a', '#8a7a5a', '#3a5a2a', '#6a4a7a', '#2a6a4a', '#7a4a3a', '#4a6a7a'];
-    
-    for (let y = 0; y < MAP_SIZE; y++) {
-        TILE_CONTENT[y] = [];
-        for (let x = 0; x < MAP_SIZE; x++) {
-            const type = types[Math.floor(Math.random() * types.length)];
-            const nameIndex = Math.floor(Math.random() * names.length);
-            TILE_CONTENT[y][x] = {
-                type: type,
-                name: names[nameIndex % names.length],
-                color: colors[nameIndex % colors.length],
-                emoji: names[nameIndex % names.length].split(' ')[0] || '📍'
-            };
-        }
+function addChannel() {
+  const id = document.getElementById('chat-id').value.trim();
+  if (!id) { showToast('⚠️ ادخل معرف القناة', 'error'); return; }
+  if (channels.some(c => c.id === id)) { showToast('⚠️ القناة مضافة', 'error'); return; }
+  channels.push({ id: id, name: 'قناة #' + (channels.length + 1) });
+  saveChannels();
+  document.getElementById('chat-id').value = '';
+  showToast('✅ تم إضافة القناة', 'success');
+}
+
+async function testTelegram() {
+  botToken = document.getElementById('bot-token').value.trim();
+  if (!botToken) { setTGStatus('❌ ادخل Token', 'error'); return; }
+  setTGStatus('🔄 جاري...', '');
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getMe');
+    const data = await res.json();
+    if (data.ok) {
+      connected = true;
+      setTGStatus('✅ متصل بـ @' + data.result.username, 'success');
+      localStorage.setItem('bot_token', botToken);
+      showToast('✅ تم الاتصال!', 'success');
+    } else {
+      setTGStatus('❌ ' + data.description, 'error');
     }
-    
-    // مربعات خاصة (معالم محددة)
-    // مدينة في الزاوية (0,0)
-    TILE_CONTENT[0][0] = { type: 'video', name: '🏙️ المركز', color: '#6a4a9a', emoji: '🏙️' };
-    // بحيرة في المنتصف
-    const center = Math.floor(MAP_SIZE/2);
-    TILE_CONTENT[center][center] = { type: 'sticker', name: '🌊 البحيرة', color: '#1a5a8a', emoji: '🌊' };
-    // جبل
-    TILE_CONTENT[MAP_SIZE-1][MAP_SIZE-1] = { type: 'image', name: '⛰️ القمة', color: '#7a5a3a', emoji: '⛰️' };
+  } catch(e) {
+    setTGStatus('❌ فشل الاتصال (CORS)', 'error');
+  }
+}
+
+function setTGStatus(msg, type) {
+  const el = document.getElementById('tg-status');
+  el.textContent = msg;
+  el.style.color = type === 'success' ? '#4ade80' : type === 'error' ? '#f87171' : '#888';
+}
+
+function toggleTG() {
+  document.getElementById('tg-dropdown').classList.toggle('show');
 }
 
 // ============================================================
-//  3. Three.js
+//  2. جلب فيديو من Telegram
+// ============================================================
+
+async function fetchVideoFromTelegram() {
+  if (!connected) { showToast('⚠️ اتصل أولاً', 'error'); return; }
+  if (channels.length === 0) { showToast('⚠️ أضف قناة', 'error'); return; }
+
+  setTGStatus('🔍 جاري البحث عن فيديو...', '');
+  showToast('📥 جاري جلب الفيديو...', 'info');
+
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
+    const data = await res.json();
+    if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
+
+    for (const update of (data.result || [])) {
+      lastUpdateId = Math.max(lastUpdateId, update.update_id);
+      const msg = update.channel_post || update.message;
+      if (!msg) continue;
+
+      const msgChannelId = msg.chat.id.toString();
+      if (!channels.some(c => c.id === msgChannelId)) continue;
+
+      let fileId = null, name = 'فيديو';
+
+      if (msg.sticker && msg.sticker.is_video) {
+        fileId = msg.sticker.file_id;
+        const caption = msg.caption || '';
+        const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+        name = nameMatch ? nameMatch[1].trim() : 'ملصق WebM';
+      }
+
+      if (!fileId && msg.video) {
+        fileId = msg.video.file_id;
+        const caption = msg.caption || '';
+        const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+        name = nameMatch ? nameMatch[1].trim() : 'فيديو';
+      }
+
+      if (!fileId) continue;
+
+      const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+      const fileData = await fileRes.json();
+
+      if (fileData.ok && fileData.result.file_path) {
+        const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+        try {
+          const videoRes = await fetch(url);
+          const blob = await videoRes.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          loadedVideos[name] = blobUrl;
+          showToast('✅ فيديو جاهز: ' + name, 'success');
+          setTGStatus('✅ تم جلب: ' + name, 'success');
+          rebuildMapWithContent();
+          return;
+        } catch (e) {
+          setTGStatus('⚠️ فشل التحميل', 'warn');
+          showToast('⚠️ فشل تحميل الفيديو', 'warn');
+        }
+      }
+    }
+    setTGStatus('📭 لا يوجد فيديو', '');
+  } catch (e) {
+    setTGStatus('❌ خطأ', 'error');
+  }
+}
+
+// ============================================================
+//  3. جلب ملصق من Telegram
+// ============================================================
+
+async function fetchStickerFromTelegram() {
+  if (!connected) { showToast('⚠️ اتصل أولاً', 'error'); return; }
+  if (channels.length === 0) { showToast('⚠️ أضف قناة', 'error'); return; }
+
+  setTGStatus('🔍 جاري البحث عن ملصق...', '');
+  showToast('📥 جاري جلب الملصق...', 'info');
+
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
+    const data = await res.json();
+    if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
+
+    for (const update of (data.result || [])) {
+      lastUpdateId = Math.max(lastUpdateId, update.update_id);
+      const msg = update.channel_post || update.message;
+      if (!msg) continue;
+
+      const msgChannelId = msg.chat.id.toString();
+      if (!channels.some(c => c.id === msgChannelId)) continue;
+
+      let fileId = null, name = 'ملصق';
+
+      // ملصق عادي (صورة)
+      if (msg.sticker && !msg.sticker.is_animated && !msg.sticker.is_video) {
+        fileId = msg.sticker.file_id;
+        const caption = msg.caption || '';
+        const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+        name = nameMatch ? nameMatch[1].trim() : 'ملصق';
+      }
+
+      if (!fileId && msg.photo) {
+        fileId = msg.photo[msg.photo.length - 1].file_id;
+        const caption = msg.caption || '';
+        const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+        name = nameMatch ? nameMatch[1].trim() : 'صورة';
+      }
+
+      if (!fileId) continue;
+
+      const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+      const fileData = await fileRes.json();
+
+      if (fileData.ok && fileData.result.file_path) {
+        const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+        try {
+          const imgRes = await fetch(url);
+          const blob = await imgRes.blob();
+          const blobUrl = URL.createObjectURL(blob);
+          loadedStickers[name] = blobUrl;
+          showToast('✅ ملصق جاهز: ' + name, 'success');
+          setTGStatus('✅ تم جلب: ' + name, 'success');
+          rebuildMapWithContent();
+          return;
+        } catch (e) {
+          setTGStatus('⚠️ فشل التحميل', 'warn');
+        }
+      }
+    }
+    setTGStatus('📭 لا يوجد ملصق', '');
+  } catch (e) {
+    setTGStatus('❌ خطأ', 'error');
+  }
+}
+
+// ============================================================
+//  4. رفع فيديو وملصق محلي
+// ============================================================
+
+function handleVideo(event) {
+  const file = event.target.files[0];
+  if (!file || !file.type.startsWith('video/')) {
+    showToast('❌ ملف غير صالح', 'error');
+    return;
+  }
+  const url = URL.createObjectURL(file);
+  const name = file.name.replace(/\.[^/.]+$/, '') || 'فيديو محلي';
+  loadedVideos[name] = url;
+  showToast('📁 تم رفع فيديو: ' + name, 'success');
+  rebuildMapWithContent();
+  event.target.value = '';
+}
+
+function handleSticker(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const name = file.name.replace(/\.[^/.]+$/, '') || 'ملصق محلي';
+  loadedStickers[name] = url;
+  showToast('📌 تم رفع ملصق: ' + name, 'success');
+  rebuildMapWithContent();
+  event.target.value = '';
+}
+
+// ============================================================
+//  5. إعادة بناء الخريطة بالمحتوى
+// ============================================================
+
+function rebuildMapWithContent() {
+  if (Object.keys(loadedVideos).length > 0 || Object.keys(loadedStickers).length > 0) {
+    generateMap();
+    showToast('🗺️ تم تحديث الخريطة بالمحتوى الجديد', 'success');
+  }
+}
+
+// ============================================================
+//  6. Three.js - المحرك الأساسي
 // ============================================================
 
 let scene, camera, renderer;
 let playerGroup, tileGroup;
 let tileMeshes = [];
-let tileData = [];
 let gridHelper = null;
 let gridVisible = true;
 let isReady = false;
+
+const GRID = 12;
+const TILE_SIZE = 3;
+const WORLD_SIZE = GRID * TILE_SIZE;
+const HALF = WORLD_SIZE / 2;
+const PLAYER_SPEED = 0.12;
 let touchDirs = { up: false, down: false, left: false, right: false };
+let minimapCtx;
 
 function initThree() {
-    const canvas = document.getElementById('game-canvas');
+  const canvas = document.getElementById('game-canvas');
 
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a1a);
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x0a0a1a);
+  scene.fog = new THREE.Fog(0x0a0a1a, 20, 50);
 
-    camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
-    camera.position.set(0, 8, 12);
-    camera.lookAt(0, 0, 0);
+  camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+  camera.position.set(0, 6, 10);
+  camera.lookAt(0, 0, 0);
 
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    const ambient = new THREE.AmbientLight(0x8b5cf6, 0.5);
-    scene.add(ambient);
-    const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    dirLight.position.set(10, 20, 10);
-    dirLight.castShadow = true;
-    scene.add(dirLight);
+  // إضاءة
+  const ambient = new THREE.AmbientLight(0x8b5cf6, 0.4);
+  scene.add(ambient);
 
-    // لاعب
-    playerGroup = new THREE.Group();
-    scene.add(playerGroup);
+  const dirLight = new THREE.DirectionalLight(0xffeedd, 1.0);
+  dirLight.position.set(10, 20, 10);
+  dirLight.castShadow = true;
+  scene.add(dirLight);
 
-    const bodyGeo = new THREE.SphereGeometry(0.3, 16, 16);
-    const bodyMat = new THREE.MeshStandardMaterial({
-        color: 0x8b5cf6, emissive: 0x6d28d9, emissiveIntensity: 0.3
-    });
-    const body = new THREE.Mesh(bodyGeo, bodyMat);
-    body.position.y = 0.3;
-    body.castShadow = true;
-    playerGroup.add(body);
+  const fillLight = new THREE.DirectionalLight(0x4466ff, 0.3);
+  fillLight.position.set(-10, 10, -10);
+  scene.add(fillLight);
 
-    const crownGeo = new THREE.ConeGeometry(0.15, 0.2, 6);
-    const crownMat = new THREE.MeshStandardMaterial({
-        color: 0xffd700, emissive: 0xffa500, emissiveIntensity: 0.2, metalness: 0.9
-    });
-    const crown = new THREE.Mesh(crownGeo, crownMat);
-    crown.position.y = 0.6;
-    playerGroup.add(crown);
+  // شخصية PUBG
+  playerGroup = new THREE.Group();
+  scene.add(playerGroup);
 
-    playerGroup.position.set(0, 0, 0);
+  // جسم
+  const bodyGeo = new THREE.CylinderGeometry(0.35, 0.4, 0.8, 8);
+  const bodyMat = new THREE.MeshStandardMaterial({
+    color: 0x8b5cf6, emissive: 0x6d28d9, emissiveIntensity: 0.2,
+    roughness: 0.4, metalness: 0.3
+  });
+  const body = new THREE.Mesh(bodyGeo, bodyMat);
+  body.position.y = 0.4;
+  body.castShadow = true;
+  playerGroup.add(body);
 
-    tileGroup = new THREE.Group();
-    scene.add(tileGroup);
+  // رأس
+  const headGeo = new THREE.SphereGeometry(0.2, 8, 8);
+  const headMat = new THREE.MeshStandardMaterial({
+    color: 0x8b5cf6, roughness: 0.3, metalness: 0.2
+  });
+  const head = new THREE.Mesh(headGeo, headMat);
+  head.position.y = 0.9;
+  head.castShadow = true;
+  playerGroup.add(head);
 
-    setupMinimap();
-    animate();
-}
+  // ظل
+  const shadowGeo = new THREE.PlaneGeometry(0.8, 0.8);
+  const shadowMat = new THREE.MeshBasicMaterial({
+    color: 0x000000, transparent: true, opacity: 0.2
+  });
+  const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.02;
+  playerGroup.add(shadow);
 
-// ============================================================
-//  4. إنشاء محتوى لكل مربع
-// ============================================================
+  // تاج
+  const crownGeo = new THREE.ConeGeometry(0.15, 0.2, 6);
+  const crownMat = new THREE.MeshStandardMaterial({
+    color: 0xffd700, emissive: 0xffa500, emissiveIntensity: 0.2, metalness: 0.9
+  });
+  const crown = new THREE.Mesh(crownGeo, crownMat);
+  crown.position.y = 1.1;
+  playerGroup.add(crown);
 
-function createTileContent(content, x, y) {
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d');
+  playerGroup.position.set(0, 0, 0);
 
-    const color = content.color || '#2a2a4a';
-    const name = content.name || 'مربع';
-    const emoji = content.emoji || '📍';
-    const type = content.type || 'text';
+  tileGroup = new THREE.Group();
+  scene.add(tileGroup);
 
-    // خلفية
-    const grad = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
-    const c = new THREE.Color(color);
-    const r = Math.floor(c.r * 255);
-    const g = Math.floor(c.g * 255);
-    const b = Math.floor(c.b * 255);
-    grad.addColorStop(0, `rgb(${r+40},${g+40},${b+40})`);
-    grad.addColorStop(1, `rgb(${r-20},${g-20},${b-20})`);
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 256, 256);
-
-    // حدود
-    ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(0, 0, 256, 256);
-
-    // أيقونة كبيرة
-    ctx.font = '80px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillStyle = 'rgba(255,255,255,0.3)';
-    ctx.fillText(emoji, 128, 110);
-
-    // اسم
-    ctx.font = '24px Cairo, Arial';
-    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-    ctx.fillText(name, 128, 200);
-
-    // نوع المحتوى
-    const typeLabels = {
-        'video': '🎬 فيديو',
-        'image': '🖼️ صورة',
-        'sticker': '📌 ملصق',
-        'text': '📝 نص'
-    };
-    ctx.font = '16px Arial';
-    ctx.fillStyle = 'rgba(255,255,255,0.2)';
-    ctx.fillText(typeLabels[type] || '📦 محتوى', 128, 235);
-
-    return canvas;
-}
-
-// ============================================================
-//  5. بناء الخريطة
-// ============================================================
-
-function buildMap() {
-    // تنظيف القديم
-    tileMeshes.forEach(mesh => {
-        if (mesh.parent) mesh.parent.remove(mesh);
-        if (mesh.material) {
-            if (mesh.material.map) mesh.material.map.dispose();
-            mesh.material.dispose();
-        }
-        if (mesh.geometry) mesh.geometry.dispose();
-    });
-    tileMeshes = [];
-    tileData = [];
-
-    generateTileContent();
-
-    for (let y = 0; y < MAP_SIZE; y++) {
-        for (let x = 0; x < MAP_SIZE; x++) {
-            const content = TILE_CONTENT[y][x];
-            
-            // إنشاء Canvas المحتوى
-            const canvas = createTileContent(content, x, y);
-            
-            // تحويل Canvas إلى Texture
-            const texture = new THREE.CanvasTexture(canvas);
-            texture.minFilter = THREE.LinearFilter;
-            texture.magFilter = THREE.LinearFilter;
-            
-            // إنشاء المربع
-            const geometry = new THREE.PlaneGeometry(TILE_SIZE * 0.95, TILE_SIZE * 0.95);
-            const material = new THREE.MeshStandardMaterial({
-                map: texture,
-                side: THREE.DoubleSide,
-                transparent: true,
-                roughness: 0.4,
-                metalness: 0.1
-            });
-
-            const mesh = new THREE.Mesh(geometry, material);
-            const posX = x * TILE_SIZE - HALF + TILE_SIZE / 2;
-            const posZ = y * TILE_SIZE - HALF + TILE_SIZE / 2;
-            mesh.position.set(posX, 0, posZ);
-            mesh.rotation.x = -Math.PI / 2;
-            mesh.receiveShadow = true;
-
-            mesh.userData = {
-                gridX: x,
-                gridY: y,
-                content: content,
-                index: y * MAP_SIZE + x
-            };
-
-            tileGroup.add(mesh);
-            tileMeshes.push(mesh);
-            tileData.push({ mesh, content, x, y });
-        }
-    }
-
-    addGrid();
-
-    isReady = true;
-    document.getElementById('status-bar').style.display = 'none';
-    document.getElementById('char-name').textContent = '🗺️ ' + MAP_SIZE + '×' + MAP_SIZE + ' = ' + (MAP_SIZE * MAP_SIZE) + ' مربع';
-    showToast('✅ خريطة ' + MAP_SIZE + '×' + MAP_SIZE + ' بمحتوى متنوع', 'success');
-}
-
-// ============================================================
-//  6. شبكة إرشادية
-// ============================================================
-
-function addGrid() {
-    if (gridHelper) {
-        tileGroup.remove(gridHelper);
-        gridHelper = null;
-    }
-    gridHelper = new THREE.GridHelper(WORLD_SIZE, MAP_SIZE, 0x8b5cf6, 0x2a2a4a);
-    gridHelper.position.y = 0.05;
-    gridHelper.material.transparent = true;
-    gridHelper.material.opacity = gridVisible ? 0.15 : 0;
-    tileGroup.add(gridHelper);
-}
-
-function toggleGrid() {
-    gridVisible = !gridVisible;
-    if (gridHelper) {
-        gridHelper.material.opacity = gridVisible ? 0.15 : 0;
-    }
-    showToast(gridVisible ? '📐 شبكة ظاهرة' : '📐 شبكة مخفية', 'info');
+  setupMinimap();
+  animate();
 }
 
 // ============================================================
@@ -437,260 +575,390 @@ function toggleGrid() {
 // ============================================================
 
 function generateMap() {
-    document.getElementById('status-bar').style.display = 'block';
-    document.getElementById('status-bar').textContent = '🔄 جاري توليد الخريطة...';
-    document.getElementById('tile-info').style.display = 'block';
-    
-    setTimeout(() => {
-        buildMap();
-        document.getElementById('tile-info').textContent = '🧩 ' + MAP_SIZE + '×' + MAP_SIZE + ' = ' + (MAP_SIZE * MAP_SIZE) + ' مربع';
-    }, 100);
+  tileMeshes.forEach(mesh => {
+    if (mesh.parent) mesh.parent.remove(mesh);
+    if (mesh.material) {
+      if (mesh.material.map) mesh.material.map.dispose();
+      mesh.material.dispose();
+    }
+    if (mesh.geometry) mesh.geometry.dispose();
+  });
+  tileMeshes = [];
+
+  // استخدام فيديوهات محملة أو إنشاء فيديو تجريبي
+  const videoSources = Object.values(loadedVideos);
+  const stickerSources = Object.values(loadedStickers);
+
+  for (let row = 0; row < GRID; row++) {
+    for (let col = 0; col < GRID; col++) {
+      let texture;
+
+      // اختيار محتوى عشوائي
+      const useVideo = videoSources.length > 0 && Math.random() > 0.3;
+      const useSticker = stickerSources.length > 0 && !useVideo;
+
+      if (useVideo) {
+        const src = videoSources[Math.floor(Math.random() * videoSources.length)];
+        const video = document.createElement('video');
+        video.muted = true;
+        video.loop = true;
+        video.playsInline = true;
+        video.src = src;
+        video.onloadeddata = function() { video.play().catch(() => {}); };
+        video.load();
+        texture = new THREE.VideoTexture(video);
+      } else if (useSticker) {
+        const src = stickerSources[Math.floor(Math.random() * stickerSources.length)];
+        const img = new Image();
+        img.src = src;
+        texture = new THREE.CanvasTexture(img);
+      } else {
+        // فيديو تجريبي
+        const canvas = createTestTile(col, row);
+        const stream = canvas.captureStream(30);
+        const video = document.createElement('video');
+        video.muted = true;
+        video.loop = true;
+        video.srcObject = stream;
+        video.onloadeddata = function() { video.play().catch(() => {}); };
+        video.load();
+        texture = new THREE.VideoTexture(video);
+      }
+
+      texture.minFilter = THREE.LinearFilter;
+      texture.magFilter = THREE.LinearFilter;
+
+      const geometry = new THREE.PlaneGeometry(TILE_SIZE * 0.95, TILE_SIZE * 0.95);
+      const material = new THREE.MeshStandardMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        transparent: true,
+        roughness: 0.3,
+        metalness: 0.1
+      });
+
+      const mesh = new THREE.Mesh(geometry, material);
+      const posX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
+      const posZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
+      mesh.position.set(posX, 0, posZ);
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.receiveShadow = true;
+      mesh.userData = { row, col, index: row * GRID + col };
+
+      tileGroup.add(mesh);
+      tileMeshes.push(mesh);
+    }
+  }
+
+  addGrid();
+  isReady = true;
+  document.getElementById('status-bar').style.display = 'none';
+  document.getElementById('char-name').textContent = '🎯 ' + GRID + '×' + GRID + ' = ' + (GRID * GRID) + ' مربع';
+  document.getElementById('tile-info').style.display = 'block';
+  document.getElementById('tile-info').textContent = '🧩 خريطة ' + GRID + '×' + GRID + ' مع ' + (Object.keys(loadedVideos).length + Object.keys(loadedStickers).length) + ' محتوى';
+  showToast('✅ خريطة ' + GRID + '×' + GRID + ' جاهزة', 'success');
+}
+
+function createTestTile(col, row) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  const colors = ['#1a1a2e', '#16213e', '#0f3460', '#533483', '#e94560'];
+  const c = colors[(col + row) % colors.length];
+  ctx.fillStyle = c;
+  ctx.fillRect(0, 0, 256, 256);
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  ctx.font = '20px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('(' + col + ',' + row + ')', 128, 128);
+  return canvas;
 }
 
 // ============================================================
-//  8. تحديث اللاعب
+//  8. شبكة
+// ============================================================
+
+function addGrid() {
+  if (gridHelper) {
+    tileGroup.remove(gridHelper);
+    gridHelper = null;
+  }
+  gridHelper = new THREE.GridHelper(WORLD_SIZE, GRID, 0x8b5cf6, 0x2a2a4a);
+  gridHelper.position.y = 0.05;
+  gridHelper.material.transparent = true;
+  gridHelper.material.opacity = gridVisible ? 0.15 : 0;
+  tileGroup.add(gridHelper);
+}
+
+function toggleGrid() {
+  gridVisible = !gridVisible;
+  if (gridHelper) {
+    gridHelper.material.opacity = gridVisible ? 0.15 : 0;
+  }
+  showToast(gridVisible ? '📐 شبكة ظاهرة' : '📐 شبكة مخفية', 'info');
+}
+
+// ============================================================
+//  9. حركة الشخصية
 // ============================================================
 
 function updatePlayer() {
-    let dx = 0, dz = 0;
-    if (touchDirs.up) dz = -PLAYER_SPEED;
-    if (touchDirs.down) dz = PLAYER_SPEED;
-    if (touchDirs.left) dx = -PLAYER_SPEED;
-    if (touchDirs.right) dx = PLAYER_SPEED;
+  let dx = 0, dz = 0;
+  if (touchDirs.up) dz = -PLAYER_SPEED;
+  if (touchDirs.down) dz = PLAYER_SPEED;
+  if (touchDirs.left) dx = -PLAYER_SPEED;
+  if (touchDirs.right) dx = PLAYER_SPEED;
 
-    const newX = playerGroup.position.x + dx;
-    const newZ = playerGroup.position.z + dz;
-    const limit = HALF - TILE_SIZE / 2;
+  const newX = playerGroup.position.x + dx;
+  const newZ = playerGroup.position.z + dz;
+  const limit = HALF - TILE_SIZE/2;
 
-    playerGroup.position.x = Math.max(-limit, Math.min(limit, newX));
-    playerGroup.position.z = Math.max(-limit, Math.min(limit, newZ));
+  playerGroup.position.x = Math.max(-limit, Math.min(limit, newX));
+  playerGroup.position.z = Math.max(-limit, Math.min(limit, newZ));
 
-    if (dx !== 0 || dz !== 0) {
-        playerGroup.rotation.y = Math.atan2(dx, dz);
+  if (dx !== 0 || dz !== 0) {
+    const angle = Math.atan2(dx, dz);
+    playerGroup.rotation.y = angle;
+  }
+
+  // تحديث المربع النشط
+  updateActiveTile();
+
+  // سرعة الفيديو
+  const speed = Math.sqrt(dx*dx + dz*dz);
+  tileMeshes.forEach(mesh => {
+    if (mesh.material && mesh.material.map && mesh.material.map.isVideoTexture) {
+      // محاولة تغيير السرعة (إذا كان فيديو)
     }
-
-    updateActiveTile();
+  });
 }
 
 function updateActiveTile() {
-    const px = playerGroup.position.x + HALF;
-    const pz = playerGroup.position.z + HALF;
-    const col = Math.floor(px / TILE_SIZE);
-    const row = Math.floor(pz / TILE_SIZE);
+  const px = playerGroup.position.x + HALF;
+  const pz = playerGroup.position.z + HALF;
+  const col = Math.floor(px / TILE_SIZE);
+  const row = Math.floor(pz / TILE_SIZE);
 
-    if (col >= 0 && col < MAP_SIZE && row >= 0 && row < MAP_SIZE) {
-        const content = TILE_CONTENT[row][col];
-        
-        // تمييز المربع النشط
-        tileMeshes.forEach((mesh, i) => {
-            const r = Math.floor(i / MAP_SIZE);
-            const c = i % MAP_SIZE;
-            if (r === row && c === col) {
-                mesh.material.emissive = new THREE.Color(0x8b5cf6);
-                mesh.material.emissiveIntensity = 0.15;
-                mesh.scale.set(1.02, 1.02, 1);
-            } else {
-                mesh.material.emissive = new THREE.Color(0x000000);
-                mesh.material.emissiveIntensity = 0;
-                mesh.scale.set(1, 1, 1);
-            }
-        });
-
-        // تحديث معلومات المربع
-        const typeLabels = {
-            'video': '🎬 فيديو',
-            'image': '🖼️ صورة',
-            'sticker': '📌 ملصق',
-            'text': '📝 نص'
-        };
-        document.getElementById('tile-info').textContent = 
-            '🧩 ' + content.emoji + ' ' + content.name + 
-            ' (' + (typeLabels[content.type] || '📦 محتوى') + ')';
+  tileMeshes.forEach((mesh, i) => {
+    const r = Math.floor(i / GRID);
+    const c = i % GRID;
+    if (r === row && c === col) {
+      mesh.material.emissive = new THREE.Color(0x8b5cf6);
+      mesh.material.emissiveIntensity = 0.15;
+    } else {
+      mesh.material.emissive = new THREE.Color(0x000000);
+      mesh.material.emissiveIntensity = 0;
     }
+  });
+
+  if (col >= 0 && col < GRID && row >= 0 && row < GRID) {
+    document.getElementById('tile-info').textContent = '🧩 (' + col + ', ' + row + ')';
+  }
 }
 
 // ============================================================
-//  9. خريطة مصغرة
-// ============================================================
-
-let minimapCtx;
-
-function setupMinimap() {
-    const minimapFrame = document.getElementById('minimap-frame');
-    const canvas = document.createElement('canvas');
-    canvas.width = 140;
-    canvas.height = 140;
-    minimapFrame.appendChild(canvas);
-    minimapCtx = canvas.getContext('2d');
-}
-
-function updateMinimap() {
-    if (!minimapCtx) return;
-    const ctx = minimapCtx;
-    const w = 140, h = 140;
-
-    ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = 'rgba(10,10,26,0.9)';
-    ctx.fillRect(0, 0, w, h);
-
-    const scale = w / WORLD_SIZE;
-
-    for (let y = 0; y < MAP_SIZE; y++) {
-        for (let x = 0; x < MAP_SIZE; x++) {
-            const px = x * TILE_SIZE * scale;
-            const py = y * TILE_SIZE * scale;
-            const size = TILE_SIZE * scale * 0.9;
-            
-            const content = TILE_CONTENT[y]?.[x] || { color: '#2a2a4a' };
-            const color = new THREE.Color(content.color || '#2a2a4a');
-            ctx.fillStyle = `rgb(${color.r*255|0},${color.g*255|0},${color.b*255|0})`;
-            ctx.fillRect(px, py, size, size);
-            
-            // إضافة رمز صغير
-            if (content.emoji) {
-                ctx.font = '10px Arial';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillStyle = 'rgba(255,255,255,0.3)';
-                ctx.fillText(content.emoji, px + size/2, py + size/2);
-            }
-        }
-    }
-
-    // اللاعب
-    const px = (playerGroup.position.x + HALF) * scale;
-    const py = (playerGroup.position.z + HALF) * scale;
-
-    ctx.fillStyle = '#8b5cf6';
-    ctx.shadowColor = '#8b5cf6';
-    ctx.shadowBlur = 6;
-    ctx.beginPath();
-    ctx.arc(px, py, 4, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.strokeStyle = '#ffd700';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(0, 0, w, h);
-}
-
-// ============================================================
-//  10. كاميرا
+//  10. كاميرا PUBG
 // ============================================================
 
 function updateCamera() {
-    const target = playerGroup.position.clone();
-    camera.position.x += (target.x - camera.position.x) * 0.05;
-    camera.position.z += (target.z + 10 - camera.position.z) * 0.05;
-    camera.position.y += (8 - camera.position.y) * 0.05;
-    camera.lookAt(target.x, 0, target.z);
+  const target = playerGroup.position.clone();
+  const angle = playerGroup.rotation.y;
+  const distance = 8;
+  const height = 5;
+
+  const camX = target.x - Math.sin(angle) * distance;
+  const camZ = target.z - Math.cos(angle) * distance;
+  const camY = target.y + height;
+
+  camera.position.x += (camX - camera.position.x) * 0.08;
+  camera.position.z += (camZ - camera.position.z) * 0.08;
+  camera.position.y += (camY - camera.position.y) * 0.08;
+
+  camera.lookAt(target.x, target.y + 1, target.z);
 }
 
 function resetCamera() {
-    camera.position.set(0, 8, 12);
-    camera.lookAt(0, 0, 0);
-    playerGroup.position.set(0, 0, 0);
+  camera.position.set(0, 6, 10);
+  camera.lookAt(0, 0, 0);
+  playerGroup.position.set(0, 0, 0);
 }
 
 // ============================================================
-//  11. حلقة الرسم
+//  11. خريطة مصغرة
+// ============================================================
+
+function setupMinimap() {
+  const frame = document.getElementById('minimap-frame');
+  const canvas = document.createElement('canvas');
+  canvas.width = 140;
+  canvas.height = 140;
+  frame.appendChild(canvas);
+  minimapCtx = canvas.getContext('2d');
+}
+
+function updateMinimap() {
+  if (!minimapCtx) return;
+  const ctx = minimapCtx;
+  const w = 140, h = 140;
+
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = 'rgba(10,10,26,0.9)';
+  ctx.fillRect(0, 0, w, h);
+
+  const scale = w / WORLD_SIZE;
+
+  for (let y = 0; y < GRID; y++) {
+    for (let x = 0; x < GRID; x++) {
+      const px = x * TILE_SIZE * scale;
+      const py = y * TILE_SIZE * scale;
+      const size = TILE_SIZE * scale * 0.9;
+      ctx.fillStyle = ((x + y) % 2 === 0) ? '#2a2a4a' : '#1a1a2e';
+      ctx.fillRect(px, py, size, size);
+    }
+  }
+
+  const px = (playerGroup.position.x + HALF) * scale;
+  const py = (playerGroup.position.z + HALF) * scale;
+
+  ctx.fillStyle = '#8b5cf6';
+  ctx.shadowColor = '#8b5cf6';
+  ctx.shadowBlur = 8;
+  ctx.beginPath();
+  ctx.arc(px, py, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  const angle = playerGroup.rotation.y;
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(px, py);
+  ctx.lineTo(px + Math.sin(angle) * 10, py - Math.cos(angle) * 10);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#ffd700';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(0, 0, w, h);
+}
+
+// ============================================================
+//  12. حلقة الرسم
 // ============================================================
 
 function animate() {
-    requestAnimationFrame(animate);
+  requestAnimationFrame(animate);
 
-    updatePlayer();
-    updateCamera();
-    updateMinimap();
+  updatePlayer();
+  updateCamera();
+  updateMinimap();
 
-    renderer.render(scene, camera);
+  renderer.render(scene, camera);
 }
 
 // ============================================================
-//  12. تحكم
+//  13. تحكم
 // ============================================================
 
 function setupTouchControls() {
-    document.querySelectorAll('.dpad-btn').forEach(btn => {
-        const dir = btn.getAttribute('data-dir');
-        btn.addEventListener('touchstart', e => {
-            e.preventDefault();
-            touchDirs[dir] = true;
-            btn.style.background = 'rgba(139,92,246,0.2)';
-            btn.style.borderColor = '#8b5cf6';
-        }, { passive: false });
-        btn.addEventListener('touchend', e => {
-            e.preventDefault();
-            touchDirs[dir] = false;
-            btn.style.background = '';
-            btn.style.borderColor = '';
-        }, { passive: false });
-        btn.addEventListener('touchcancel', () => {
-            touchDirs[dir] = false;
-            btn.style.background = '';
-            btn.style.borderColor = '';
-        });
+  document.querySelectorAll('.dpad-btn').forEach(btn => {
+    const dir = btn.getAttribute('data-dir');
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      touchDirs[dir] = true;
+      btn.style.background = 'rgba(139,92,246,0.2)';
+      btn.style.borderColor = '#8b5cf6';
+    }, { passive: false });
+    btn.addEventListener('touchend', e => {
+      e.preventDefault();
+      touchDirs[dir] = false;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    }, { passive: false });
+    btn.addEventListener('touchcancel', () => {
+      touchDirs[dir] = false;
+      btn.style.background = '';
+      btn.style.borderColor = '';
     });
+  });
 }
 
 document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowUp') touchDirs.up = true;
-    if (e.key === 'ArrowDown') touchDirs.down = true;
-    if (e.key === 'ArrowLeft') touchDirs.left = true;
-    if (e.key === 'ArrowRight') touchDirs.right = true;
+  if (e.key === 'ArrowUp') touchDirs.up = true;
+  if (e.key === 'ArrowDown') touchDirs.down = true;
+  if (e.key === 'ArrowLeft') touchDirs.left = true;
+  if (e.key === 'ArrowRight') touchDirs.right = true;
 });
 document.addEventListener('keyup', e => {
-    if (e.key === 'ArrowUp') touchDirs.up = false;
-    if (e.key === 'ArrowDown') touchDirs.down = false;
-    if (e.key === 'ArrowLeft') touchDirs.left = false;
-    if (e.key === 'ArrowRight') touchDirs.right = false;
+  if (e.key === 'ArrowUp') touchDirs.up = false;
+  if (e.key === 'ArrowDown') touchDirs.down = false;
+  if (e.key === 'ArrowLeft') touchDirs.left = false;
+  if (e.key === 'ArrowRight') touchDirs.right = false;
 });
 
 function showToast(message, type) {
-    const container = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = 'toast ' + (type || '');
-    toast.textContent = message;
-    container.appendChild(toast);
-    setTimeout(() => toast.remove(), 3500);
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + (type || '');
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3500);
 }
 
 // ============================================================
-//  13. الدخول
+//  14. الدخول
 // ============================================================
 
 function enterApp() {
-    document.getElementById('start-screen').style.display = 'none';
-    document.getElementById('game-container').style.display = 'block';
-    document.getElementById('minimap-frame').style.display = 'block';
-    document.getElementById('minimap-label').style.display = 'block';
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('game-container').style.display = 'block';
+  document.getElementById('tg-toggle').style.display = 'block';
+  document.getElementById('minimap-frame').style.display = 'block';
+  document.getElementById('minimap-label').style.display = 'block';
+  document.getElementById('status-bar').style.display = 'block';
 
-    initThree();
+  initThree();
 
-    window.addEventListener('resize', () => {
-        if (camera) {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-    });
+  window.addEventListener('resize', () => {
+    if (camera) {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+  });
 
-    setTimeout(generateMap, 500);
+  const savedToken = localStorage.getItem('bot_token');
+  if (savedToken) {
+    document.getElementById('bot-token').value = savedToken;
+    setTimeout(testTelegram, 600);
+  }
+
+  setTimeout(generateMap, 500);
+  showToast('📁 حمل فيديو أو ملصق أو جلب من القناة', 'info');
 }
 
 // ============================================================
-//  14. بدء التشغيل
+//  15. بدء التشغيل
 // ============================================================
 
+initTelegram();
 setupTouchControls();
 
-console.log('🗺️ v55.0 — خريطة بمحتوى متنوع');
-console.log('📌 المميزات:');
-console.log('  ✅ ' + MAP_SIZE + '×' + MAP_SIZE + ' = ' + (MAP_SIZE * MAP_SIZE) + ' مربع');
-console.log('  ✅ كل مربع له محتواه الخاص');
-console.log('  ✅ أنواع المحتوى: فيديو، صورة، ملصق، نص');
-console.log('  ✅ كل مربع له اسم ورمز ولون');
-console.log('  ✅ تمييز المربع النشط');
-console.log('  ✅ خريطة مصغرة ملونة');
+setTimeout(() => {
+  document.getElementById('start-btn').style.display = 'block';
+}, 400);
+
+console.log('🏆 v57.0 — الملف النهائي');
+console.log('📌 نقاط التفوق:');
+console.log('  ✅ أرضية فيديو (مربعات)');
+console.log('  ✅ معالم ملصقات');
+console.log('  ✅ شخصية PUBG');
+console.log('  ✅ كاميرا خلفية');
+console.log('  ✅ خريطة 12×12 = 144 مربع');
+console.log('  ✅ تحميل فيديوهات وملصقات');
+console.log('  ✅ جلب من Telegram');
+console.log('  ✅ خريطة مصغرة');
+console.log('  ✅ إضاءة وظلال');
 </script>
 </body>
 </html>
+
