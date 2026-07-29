@@ -3,12 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🌍 بيئة حية - سماء وأرضية متحركة + 360</title>
+<title>👤 الشخصية المتكاملة (منظّفة)</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
 * { margin:0; padding:0; box-sizing:border-box; }
-body { font-family: 'Cairo', sans-serif; background:#050510; color:#fff; overflow:hidden; }
-canvas { display:block; width:100%; height:100%; }
+body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:hidden; }
+canvas { display:block; width:100%; height:100%; background:#0a0a1a; }
 
 #info {
   position:fixed; top:10px; left:50%; transform:translateX(-50%);
@@ -23,88 +23,111 @@ canvas { display:block; width:100%; height:100%; }
   z-index:100; font-size:12px; color:#4ade80;
 }
 
-#controls {
+#hud {
   position:fixed; bottom:18px; left:50%; transform:translateX(-50%);
+  display:flex; gap:14px; z-index:100;
+  background:rgba(0,0,0,0.7); padding:8px 18px; border-radius:14px;
+  border:1px solid rgba(255,255,255,0.06);
+}
+#hud .stat { text-align:center; min-width:50px; }
+#hud .stat .value { color:#4ade80; font-weight:700; font-size:14px; }
+#hud .stat .label { color:#777; font-size:10px; margin-top:2px; }
+
+#controls {
+  position:fixed; bottom:85px; left:50%; transform:translateX(-50%);
   display:flex; gap:6px; z-index:100; flex-wrap:wrap; justify-content:center;
 }
 #controls button {
-  background:rgba(139,92,246,0.2); color:#fff; border:1px solid rgba(139,92,246,0.35);
-  padding:6px 14px; border-radius:12px; cursor:pointer; font-size:12px; font-family:inherit;
+  background:rgba(139,92,246,0.18); color:#fff;
+  border:1px solid rgba(139,92,246,0.3);
+  padding:5px 12px; border-radius:12px; cursor:pointer;
+  font-size:11px; font-family:inherit;
 }
-#controls button:hover { background:rgba(139,92,246,0.4); }
+#controls button:hover { background:rgba(139,92,246,0.35); }
+#controls button.active { background:#8b5cf6; border-color:#a78bfa; }
+
+#upload-area {
+  position:fixed; bottom:130px; left:50%; transform:translateX(-50%);
+  display:flex; gap:6px; z-index:100;
+}
+#upload-area button {
+  background:rgba(60,60,120,0.25); color:#bbb;
+  border:1px solid rgba(255,255,255,0.08);
+  padding:4px 12px; border-radius:10px; cursor:pointer;
+  font-size:11px; font-family:inherit;
+}
+#upload-area button:hover { background:rgba(139,92,246,0.25); color:#fff; }
 
 .dpad {
-  position:fixed; bottom:90px; left:16px; width:110px; height:110px; z-index:200;
+  position:fixed; bottom:90px; left:14px; width:105px; height:105px; z-index:200;
 }
 .dpad-btn {
-  position:absolute; width:36px; height:36px; border-radius:50%;
-  background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);
-  display:flex; align-items:center; justify-content:center; font-size:14px;
-  color:rgba(255,255,255,0.4); cursor:pointer;
+  position:absolute; width:34px; height:34px; border-radius:50%;
+  background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.1);
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; color:rgba(255,255,255,0.35); cursor:pointer;
 }
-.dpad-btn:active { background:rgba(139,92,246,0.35); color:#c4b5fd; }
-.dpad-up { top:0; left:37px; }
-.dpad-down { bottom:0; left:37px; }
-.dpad-left { top:37px; left:0; }
-.dpad-right { top:37px; right:0; }
+.dpad-btn:active { background:rgba(139,92,246,0.3); color:#c4b5fd; }
+.dpad-up { top:0; left:35px; }
+.dpad-down { bottom:0; left:35px; }
+.dpad-left { top:35px; left:0; }
+.dpad-right { top:35px; right:0; }
 
-#enter360-btn {
-  position:fixed; bottom:160px; left:50%; transform:translateX(-50%);
-  background:rgba(0,242,255,0.25); color:#fff; border:1px solid rgba(0,242,255,0.45);
-  padding:8px 22px; border-radius:16px; font-size:13px; font-family:inherit;
-  cursor:pointer; z-index:150; display:none; animation: pulse 1.4s infinite;
+#timer-bar {
+  position:fixed; bottom:70px; left:50%; transform:translateX(-50%);
+  width:140px; height:3px; background:rgba(255,255,255,0.08);
+  border-radius:2px; z-index:100; overflow:hidden; display:none;
 }
-@keyframes pulse {
-  0%,100% { transform:translateX(-50%) scale(1); }
-  50% { transform:translateX(-50%) scale(1.05); }
-}
-
-#exit360-btn {
-  position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
-  background:rgba(248,113,113,0.3); color:#fff; border:1px solid rgba(248,113,113,0.5);
-  padding:8px 22px; border-radius:16px; font-size:13px; font-family:inherit;
-  cursor:pointer; z-index:300; display:none;
+#timer-bar .fill {
+  height:100%; width:100%;
+  background:linear-gradient(90deg,#8b5cf6,#00f2ff);
+  border-radius:2px; transition:width 0.05s linear;
 }
 
 #toast-container {
-  position:fixed; bottom:120px; left:50%; transform:translateX(-50%);
-  z-index:1000; display:flex; flex-direction:column; gap:6px; align-items:center;
+  position:fixed; bottom:175px; left:50%; transform:translateX(-50%);
+  z-index:1000; display:flex; flex-direction:column; gap:5px; align-items:center;
   pointer-events:none;
 }
 .toast {
-  background:rgba(0,0,0,0.9); color:#fff; padding:6px 16px;
-  border-radius:18px; font-size:12px; border:1px solid rgba(255,255,255,0.08);
+  background:rgba(0,0,0,0.9); color:#fff; padding:5px 14px;
+  border-radius:16px; font-size:11px; border:1px solid rgba(255,255,255,0.06);
 }
 .toast.success { border-color:#4ade80; }
-.toast.info { border-color:#60a5fa; }
 .toast.error { border-color:#f87171; }
+.toast.warn { border-color:#fb923c; }
+.toast.info { border-color:#60a5fa; }
 
-#loader {
-  position:fixed; inset:0; z-index:2000; background:#050510;
-  display:flex; flex-direction:column; justify-content:center; align-items:center; gap:16px;
-}
-#loader .spin {
-  width:48px; height:48px; border:4px solid rgba(255,215,0,0.15);
-  border-top-color:#ffd700; border-radius:50%; animation: spin 0.9s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
+.hidden { display:none; }
 </style>
 </head>
 <body>
 
-<div id="loader">
-  <div class="spin"></div>
-  <div style="color:#ffd700;font-size:14px;">جاري تحميل البيئة...</div>
+<div id="info">👤 <span>الشخصية المتكاملة</span></div>
+<div id="status">🧍 وقوف</div>
+
+<div id="hud">
+  <div class="stat"><div class="value" id="health">100</div><div class="label">❤️ صحة</div></div>
+  <div class="stat"><div class="value" id="shield">50</div><div class="label">🛡️ درع</div></div>
+  <div class="stat"><div class="value" id="ammo">30</div><div class="label">🔫 ذخيرة</div></div>
+  <div class="stat"><div class="value" id="kills">0</div><div class="label">💀 قتلى</div></div>
 </div>
 
-<div id="info">🌍 <span>بيئة حية</span> — سماء + أرضية متحركة</div>
-<div id="status">جاري التهيئة...</div>
+<div id="upload-area">
+  <button onclick="document.getElementById('char-input').click()">📁 رفع شخصية</button>
+  <button onclick="loadTestCharacter()">🧪 شخصية تجريبية</button>
+</div>
 
 <div id="controls">
-  <button onclick="resetCamera()">🔄 كاميرا</button>
-  <button onclick="toggleGround()">地板 أرضية</button>
-  <button onclick="toggleSky()">🌌 سماء</button>
+  <button class="active" data-action="idle"   onclick="setAction('idle', 0)">🧍 وقوف</button>
+  <button data-action="walk"   onclick="setAction('walk', 0.8)">🚶 مشي</button>
+  <button data-action="run"    onclick="setAction('run', 0.5)">🏃 جري</button>
+  <button data-action="fight"  onclick="setAction('fight', 1.0)">⚔️ قتال</button>
+  <button data-action="shoot"  onclick="setAction('shoot', 0.3)">🔫 إطلاق</button>
+  <button data-action="shield" onclick="setAction('shield', 1.5)">🛡️ دفاع</button>
 </div>
+
+<div id="timer-bar"><div class="fill" id="timer-fill"></div></div>
 
 <div class="dpad" id="dpad">
   <div class="dpad-btn dpad-up" data-dir="up">▲</div>
@@ -113,49 +136,45 @@ canvas { display:block; width:100%; height:100%; }
   <div class="dpad-btn dpad-right" data-dir="right">▶</div>
 </div>
 
-<button id="enter360-btn" onclick="enter360()">🌐 دخول 360</button>
-<button id="exit360-btn" onclick="exit360()">🚪 خروج من 360</button>
-
 <div id="toast-container"></div>
+<input type="file" id="char-input" class="hidden" accept="video/*,.webm,.mp4,.mov">
 <canvas id="canvas"></canvas>
 
 <script>
 // ============================================================
-//  بيئة حية: سماء متحركة + أرضية متحركة + دخول 360
+//  👤 الشخصية المتكاملة — نسخة منظّفة
 // ============================================================
 
-const PLAYER_SPEED = 0.13;
-const GROUND_SIZE = 80;
+const PLAYER_SPEED = 0.09;
+const ACTION_NAMES = {
+  idle: 'وقوف', walk: 'مشي', run: 'جري',
+  fight: 'قتال', shoot: 'إطلاق', shield: 'دفاع'
+};
+const ACTION_SPEEDS = {
+  idle: 0.35, walk: 0.7, run: 1.25,
+  fight: 0.9, shoot: 1.8, shield: 0.45
+};
 
 let scene, camera, renderer;
-let playerGroup;
-let groundMesh, skyMesh;
-let groundVideo, skyVideo;
-let groundTexture, skyTexture;
-
+let playerGroup, ringGroup, characterSprite;
+let characterVideo = null;
+let characterTexture = null;
+let isReady = false;
+let currentAction = 'idle';
+let actionTimer = null;
+let timerInterval = null;
+let time = 0;
 let touchDirs = { up:false, down:false, left:false, right:false };
-let isIn360 = false;
-let groundVisible = true;
-let skyVisible = true;
-
-// 360
-let lon = 0, lat = 0;
-let isDragging = false;
-let ptrX = 0, ptrY = 0, ptrLon = 0, ptrLat = 0;
-
-// فيديوهات تجريبية (يمكن استبدالها لاحقاً)
-const GROUND_VIDEO = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm';
-const SKY_VIDEO    = 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm';
 
 // ============================================================
 //  واجهة
 // ============================================================
-function showToast(msg, type='info') {
-  const c = document.getElementById('toast-container');
+function showToast(msg, type = 'info') {
+  const box = document.getElementById('toast-container');
   const t = document.createElement('div');
   t.className = 'toast ' + type;
   t.textContent = msg;
-  c.appendChild(t);
+  box.appendChild(t);
   setTimeout(() => t.remove(), 2800);
 }
 
@@ -164,319 +183,401 @@ function setStatus(text) {
 }
 
 // ============================================================
-//  إنشاء فيديو كـ Texture
+//  تحميل الشخصية من ملف
 // ============================================================
-function createVideoTexture(url, onReady) {
+document.getElementById('char-input').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+
+  if (!file.type.startsWith('video/')) {
+    showToast('❌ الملف ليس فيديو', 'error');
+    return;
+  }
+  if (file.size > 50 * 1024 * 1024) {
+    showToast('❌ الحد الأقصى 50MB', 'error');
+    return;
+  }
+
+  const url = URL.createObjectURL(file);
+  const name = file.name.replace(/\.[^/.]+$/, '') || 'شخصية محلية';
+  loadCharacter(url, name);
+});
+
+function clearCharacter() {
+  if (characterSprite) {
+    scene.remove(characterSprite);
+    if (characterSprite.material?.map) characterSprite.material.map.dispose();
+    if (characterSprite.material) characterSprite.material.dispose();
+    characterSprite = null;
+  }
+  if (characterVideo) {
+    try { characterVideo.pause(); } catch(e) {}
+    characterVideo = null;
+  }
+  if (characterTexture) {
+    try { characterTexture.dispose(); } catch(e) {}
+    characterTexture = null;
+  }
+  isReady = false;
+}
+
+function loadCharacter(url, name) {
+  clearCharacter();
+  setStatus('⏳ تحميل: ' + name);
+  showToast('📥 جاري تحميل الشخصية...', 'info');
+
+  characterVideo = document.createElement('video');
+  characterVideo.muted = true;
+  characterVideo.loop = true;
+  characterVideo.playsInline = true;
+  characterVideo.preload = 'auto';
+  characterVideo.crossOrigin = 'anonymous';
+  characterVideo.src = url;
+
+  characterVideo.onloadeddata = function() {
+    characterVideo.play().catch(() => {});
+
+    characterTexture = new THREE.VideoTexture(characterVideo);
+    characterTexture.minFilter = THREE.LinearFilter;
+    characterTexture.magFilter = THREE.LinearFilter;
+    characterTexture.format = THREE.RGBAFormat;
+
+    const mat = new THREE.SpriteMaterial({
+      map: characterTexture,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false
+    });
+
+    characterSprite = new THREE.Sprite(mat);
+    characterSprite.scale.set(2.4, 2.4, 1);
+    characterSprite.position.y = 1.2;
+    scene.add(characterSprite);
+
+    isReady = true;
+    setStatus('✅ ' + name);
+    showToast('✅ الشخصية جاهزة', 'success');
+    setAction('idle', 0);
+  };
+
+  characterVideo.onerror = function() {
+    setStatus('❌ فشل التحميل');
+    showToast('❌ فشل تحميل الشخصية', 'error');
+  };
+
+  characterVideo.load();
+}
+
+// ============================================================
+//  شخصية تجريبية (Canvas متحرك)
+// ============================================================
+function loadTestCharacter() {
+  const c = document.createElement('canvas');
+  c.width = 256;
+  c.height = 256;
+  const ctx = c.getContext('2d');
+  let frame = 0;
+
+  function draw() {
+    frame++;
+    ctx.clearRect(0, 0, 256, 256);
+
+    // جسم
+    const hue = (frame * 0.5) % 360;
+    const grad = ctx.createRadialGradient(128, 145, 0, 128, 145, 72);
+    grad.addColorStop(0, `hsl(${hue}, 80%, 60%)`);
+    grad.addColorStop(1, `hsl(${(hue + 80) % 360}, 80%, 28%)`);
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(128, 145, 68, 0, Math.PI * 2);
+    ctx.fill();
+
+    // رأس
+    ctx.fillStyle = `hsl(${(hue + 40) % 360}, 70%, 68%)`;
+    ctx.beginPath();
+    ctx.arc(128, 78, 38, 0, Math.PI * 2);
+    ctx.fill();
+
+    // عيون
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(114, 74, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(142, 74, 9, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#1a1a2e';
+    ctx.beginPath(); ctx.arc(116, 76, 4, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(144, 76, 4, 0, Math.PI * 2); ctx.fill();
+
+    // تاج
+    ctx.fillStyle = '#ffd700';
+    ctx.beginPath();
+    ctx.moveTo(105, 48);
+    ctx.lineTo(128, 28);
+    ctx.lineTo(151, 48);
+    ctx.closePath();
+    ctx.fill();
+
+    // اسم الحركة
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = '15px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(ACTION_NAMES[currentAction] || '', 128, 230);
+
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  // تحويل Canvas إلى فيديو عبر captureStream
+  const stream = c.captureStream(30);
   const video = document.createElement('video');
-  video.src = url;
-  video.crossOrigin = 'anonymous';
-  video.loop = true;
   video.muted = true;
+  video.loop = true;
   video.playsInline = true;
-  video.preload = 'auto';
+  video.srcObject = stream;
 
-  video.addEventListener('loadeddata', () => {
+  video.onloadeddata = function() {
     video.play().catch(() => {});
-    const tex = new THREE.VideoTexture(video);
-    tex.minFilter = THREE.LinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    tex.format = THREE.RGBAFormat;
-    if (onReady) onReady(video, tex);
-  });
+    // نمرر عنصر الفيديو مباشرة عبر ObjectURL من canvas كحل بديل:
+    // الأفضل: نستخدم texture من canvas مباشرة، لكن للحفاظ على نفس المسار:
+    clearCharacter();
 
-  video.addEventListener('error', () => {
-    showToast('⚠️ فشل تحميل فيديو', 'error');
-    if (onReady) onReady(null, null);
-  });
+    characterVideo = video;
+    characterTexture = new THREE.CanvasTexture(c);
+    characterTexture.minFilter = THREE.LinearFilter;
+    characterTexture.magFilter = THREE.LinearFilter;
 
-  video.load();
-  return video;
-}
+    // تحديث الـ texture كل إطار
+    const updateTex = () => {
+      if (characterTexture) characterTexture.needsUpdate = true;
+      requestAnimationFrame(updateTex);
+    };
+    updateTex();
 
-// ============================================================
-//  الأرضية المتحركة
-// ============================================================
-function createGround() {
-  createVideoTexture(GROUND_VIDEO, (video, tex) => {
-    if (!tex) {
-      // احتياطي: لون ثابت
-      const mat = new THREE.MeshStandardMaterial({ color: 0x1a3a2a, roughness: 0.9 });
-      groundMesh = new THREE.Mesh(new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE), mat);
-      groundMesh.rotation.x = -Math.PI / 2;
-      groundMesh.position.y = 0;
-      scene.add(groundMesh);
-      return;
-    }
-
-    groundVideo = video;
-    groundTexture = tex;
-    groundTexture.wrapS = THREE.RepeatWrapping;
-    groundTexture.wrapT = THREE.RepeatWrapping;
-    groundTexture.repeat.set(6, 6); // تكرار ليعطي امتداد
-
-    const geo = new THREE.PlaneGeometry(GROUND_SIZE, GROUND_SIZE);
-    const mat = new THREE.MeshStandardMaterial({
-      map: groundTexture,
-      roughness: 0.85,
-      metalness: 0.05
+    const mat = new THREE.SpriteMaterial({
+      map: characterTexture,
+      transparent: true,
+      depthTest: true,
+      depthWrite: false
     });
-    groundMesh = new THREE.Mesh(geo, mat);
-    groundMesh.rotation.x = -Math.PI / 2;
-    groundMesh.position.y = 0;
-    groundMesh.receiveShadow = true;
-    scene.add(groundMesh);
+    characterSprite = new THREE.Sprite(mat);
+    characterSprite.scale.set(2.4, 2.4, 1);
+    characterSprite.position.y = 1.2;
+    scene.add(characterSprite);
 
-    showToast('✅ الأرضية المتحركة جاهزة', 'success');
-    checkReady();
-  });
+    isReady = true;
+    setStatus('✅ شخصية تجريبية');
+    showToast('✅ الشخصية التجريبية جاهزة', 'success');
+    setAction('idle', 0);
+  };
+  video.play().catch(() => {});
 }
 
 // ============================================================
-//  السماء المتحركة
+//  الحركات
 // ============================================================
-function createSky() {
-  createVideoTexture(SKY_VIDEO, (video, tex) => {
-    if (!tex) {
-      scene.background = new THREE.Color(0x0a0a2a);
-      checkReady();
-      return;
+function setAction(action, duration) {
+  currentAction = action;
+
+  // تحديث الأزرار
+  document.querySelectorAll('#controls button').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.action === action);
+  });
+
+  setStatus('🎯 ' + (ACTION_NAMES[action] || action));
+
+  // سرعة التشغيل
+  if (characterVideo && isReady && characterVideo.playbackRate !== undefined) {
+    characterVideo.playbackRate = ACTION_SPEEDS[action] || 0.5;
+  }
+
+  // مؤقت العودة للوقوف
+  if (actionTimer) {
+    clearTimeout(actionTimer);
+    actionTimer = null;
+  }
+  hideTimer();
+
+  if (duration > 0) {
+    showTimer(duration);
+    actionTimer = setTimeout(() => {
+      setAction('idle', 0);
+      setStatus('🧍 عودة إلى الوقوف');
+    }, duration * 1000);
+  }
+}
+
+function showTimer(duration) {
+  const bar = document.getElementById('timer-bar');
+  const fill = document.getElementById('timer-fill');
+  bar.style.display = 'block';
+  fill.style.width = '100%';
+
+  if (timerInterval) clearInterval(timerInterval);
+  let p = 1;
+  const step = 1 / (duration * 20);
+  timerInterval = setInterval(() => {
+    p -= step;
+    if (p <= 0) {
+      p = 0;
+      clearInterval(timerInterval);
     }
-
-    skyVideo = video;
-    skyTexture = tex;
-
-    // كرة كبيرة من الداخل = سماء محيطة
-    const geo = new THREE.SphereGeometry(90, 48, 32);
-    const mat = new THREE.MeshBasicMaterial({
-      map: skyTexture,
-      side: THREE.BackSide
-    });
-    skyMesh = new THREE.Mesh(geo, mat);
-    scene.add(skyMesh);
-
-    showToast('✅ السماء المتحركة جاهزة', 'success');
-    checkReady();
-  });
+    fill.style.width = (p * 100) + '%';
+  }, 50);
 }
 
-let readyCount = 0;
-function checkReady() {
-  readyCount++;
-  if (readyCount >= 2) {
-    document.getElementById('loader').style.display = 'none';
-    setStatus('✅ البيئة جاهزة — تحرك بحرية');
-    showToast('🌍 مرحباً في البيئة الحية', 'success');
-    document.getElementById('enter360-btn').style.display = 'block';
+function hideTimer() {
+  document.getElementById('timer-bar').style.display = 'none';
+  if (timerInterval) {
+    clearInterval(timerInterval);
+    timerInterval = null;
   }
 }
 
 // ============================================================
-//  اللاعب
+//  Three.js
 // ============================================================
-function createPlayer() {
-  playerGroup = new THREE.Group();
-
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.35, 0.4, 0.9, 10),
-    new THREE.MeshStandardMaterial({
-      color: 0x8b5cf6, emissive: 0x5b21b6, emissiveIntensity: 0.25, roughness: 0.4
-    })
-  );
-  body.position.y = 0.45;
-  body.castShadow = true;
-  playerGroup.add(body);
-
-  const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.22, 10, 10),
-    new THREE.MeshStandardMaterial({ color: 0xa78bfa, roughness: 0.3 })
-  );
-  head.position.y = 1.05;
-  head.castShadow = true;
-  playerGroup.add(head);
-
-  // ظل بسيط
-  const shadow = new THREE.Mesh(
-    new THREE.CircleGeometry(0.5, 16),
-    new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.25 })
-  );
-  shadow.rotation.x = -Math.PI / 2;
-  shadow.position.y = 0.02;
-  playerGroup.add(shadow);
-
-  playerGroup.position.set(0, 0, 0);
-  scene.add(playerGroup);
-}
-
-// ============================================================
-//  الحركة والكاميرا (وضع اللعب العادي)
-// ============================================================
-function updatePlayer() {
-  if (isIn360) return;
-
-  let dx = 0, dz = 0;
-  if (touchDirs.up)    dz = -PLAYER_SPEED;
-  if (touchDirs.down)  dz =  PLAYER_SPEED;
-  if (touchDirs.left)  dx = -PLAYER_SPEED;
-  if (touchDirs.right) dx =  PLAYER_SPEED;
-
-  const limit = GROUND_SIZE / 2 - 2;
-  playerGroup.position.x = Math.max(-limit, Math.min(limit, playerGroup.position.x + dx));
-  playerGroup.position.z = Math.max(-limit, Math.min(limit, playerGroup.position.z + dz));
-
-  if (dx !== 0 || dz !== 0) {
-    playerGroup.rotation.y = Math.atan2(dx, dz);
-  }
-}
-
-function updateCamera() {
-  if (isIn360) return;
-
-  const target = playerGroup.position.clone();
-  const angle = playerGroup.rotation.y;
-  const dist = 8;
-  const height = 5.5;
-
-  const desired = new THREE.Vector3(
-    target.x - Math.sin(angle) * dist,
-    target.y + height,
-    target.z - Math.cos(angle) * dist
-  );
-
-  camera.position.lerp(desired, 0.08);
-  camera.lookAt(target.x, target.y + 1.0, target.z);
-}
-
-// ============================================================
-//  وضع 360
-// ============================================================
-function enter360() {
-  if (isIn360) return;
-  isIn360 = true;
-
-  // إخفاء اللاعب والأرضية مؤقتاً لتعزيز الإحساس
-  playerGroup.visible = false;
-  if (groundMesh) groundMesh.visible = false;
-
-  // وضع الكاميرا في المركز
-  camera.position.set(playerGroup.position.x, 1.6, playerGroup.position.z);
-  lon = 0; lat = 0;
-  update360Camera();
-
-  document.getElementById('enter360-btn').style.display = 'none';
-  document.getElementById('exit360-btn').style.display = 'block';
-  document.getElementById('dpad').style.display = 'none';
-  setStatus('🌐 وضع 360 — اسحب للنظر حولك');
-  showToast('🌐 دخلت وضع 360', 'success');
-}
-
-function exit360() {
-  if (!isIn360) return;
-  isIn360 = false;
-
-  playerGroup.visible = true;
-  if (groundMesh) groundMesh.visible = groundVisible;
-
-  document.getElementById('enter360-btn').style.display = 'block';
-  document.getElementById('exit360-btn').style.display = 'none';
-  document.getElementById('dpad').style.display = 'block';
-  setStatus('✅ عدت للوضع العادي');
-  showToast('خرجت من 360', 'info');
-}
-
-function update360Camera() {
-  const phi = THREE.MathUtils.degToRad(90 - lat);
-  const theta = THREE.MathUtils.degToRad(lon);
-  const target = new THREE.Vector3(
-    Math.sin(phi) * Math.cos(theta),
-    Math.cos(phi),
-    Math.sin(phi) * Math.sin(theta)
-  );
-  const pos = camera.position.clone();
-  camera.lookAt(pos.add(target));
-}
-
-// سحب للنظر في 360
-document.addEventListener('pointerdown', e => {
-  if (!isIn360) return;
-  isDragging = true;
-  ptrX = e.clientX; ptrY = e.clientY;
-  ptrLon = lon; ptrLat = lat;
-});
-document.addEventListener('pointermove', e => {
-  if (!isDragging || !isIn360) return;
-  lon = ptrLon - (e.clientX - ptrX) * 0.15;
-  lat = Math.max(-85, Math.min(85, ptrLat + (e.clientY - ptrY) * 0.15));
-  update360Camera();
-});
-document.addEventListener('pointerup', () => { isDragging = false; });
-document.addEventListener('pointerleave', () => { isDragging = false; });
-
-// ============================================================
-//  أزرار إضافية
-// ============================================================
-function resetCamera() {
-  if (isIn360) {
-    lon = 0; lat = 0;
-    update360Camera();
-  } else {
-    camera.position.set(0, 6, 10);
-    camera.lookAt(0, 0, 0);
-  }
-}
-
-function toggleGround() {
-  groundVisible = !groundVisible;
-  if (groundMesh && !isIn360) groundMesh.visible = groundVisible;
-  showToast(groundVisible ? 'الأرضية ظاهرة' : 'الأرضية مخفية', 'info');
-}
-
-function toggleSky() {
-  skyVisible = !skyVisible;
-  if (skyMesh) skyMesh.visible = skyVisible;
-  showToast(skyVisible ? 'السماء ظاهرة' : 'السماء مخفية', 'info');
-}
-
-// ============================================================
-//  تهيئة Three.js
-// ============================================================
-function init() {
+function initScene() {
   const canvas = document.getElementById('canvas');
 
   scene = new THREE.Scene();
-  scene.fog = new THREE.FogExp2(0x0a0a1a, 0.012);
+  scene.background = new THREE.Color(0x0a0a1a);
+  scene.fog = new THREE.Fog(0x0a0a1a, 16, 32);
 
-  camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 200);
-  camera.position.set(0, 6, 10);
+  camera = new THREE.PerspectiveCamera(48, innerWidth / innerHeight, 0.1, 40);
+  camera.position.set(3.5, 3.2, 5.5);
 
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setSize(innerWidth, innerHeight);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
 
-  // إضاءة
-  scene.add(new THREE.AmbientLight(0x8899cc, 0.55));
-  const sun = new THREE.DirectionalLight(0xfff5e0, 0.9);
-  sun.position.set(20, 40, 15);
+  scene.add(new THREE.AmbientLight(0x8b5cf6, 0.45));
+  const sun = new THREE.DirectionalLight(0xffeedd, 1.0);
+  sun.position.set(5, 12, 6);
   sun.castShadow = true;
   scene.add(sun);
+  const rim = new THREE.DirectionalLight(0x4466ff, 0.35);
+  rim.position.set(-4, 6, -5);
+  scene.add(rim);
 
-  createPlayer();
-  createGround();
-  createSky();
+  // مجموعة اللاعب + الدائرة
+  playerGroup = new THREE.Group();
+  scene.add(playerGroup);
 
-  // حلقة الرسم
-  function loop() {
-    requestAnimationFrame(loop);
+  ringGroup = new THREE.Group();
+  scene.add(ringGroup);
 
-    if (groundTexture) groundTexture.needsUpdate = true;
-    if (skyTexture) skyTexture.needsUpdate = true;
+  // حلقة رئيسية
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(1.0, 1.28, 40),
+    new THREE.MeshBasicMaterial({
+      color: 0x00f2ff, transparent: true, opacity: 0.18,
+      side: THREE.DoubleSide, depthWrite: false
+    })
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.02;
+  ringGroup.add(ring);
 
-    updatePlayer();
-    updateCamera();
+  // حلقة خارجية
+  const glow = new THREE.Mesh(
+    new THREE.RingGeometry(1.28, 1.48, 40),
+    new THREE.MeshBasicMaterial({
+      color: 0x8b5cf6, transparent: true, opacity: 0.1,
+      side: THREE.DoubleSide, depthWrite: false
+    })
+  );
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.y = 0.015;
+  ringGroup.add(glow);
 
-    renderer.render(scene, camera);
+  // نقاط متحركة
+  for (let i = 0; i < 12; i++) {
+    const dot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.025, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.4 })
+    );
+    const a = (i / 12) * Math.PI * 2;
+    dot.position.set(Math.cos(a) * 1.38, 0.03, Math.sin(a) * 1.38);
+    dot.userData.baseAngle = a;
+    ringGroup.add(dot);
   }
-  loop();
+
+  // أرضية
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(22, 22),
+    new THREE.MeshStandardMaterial({ color: 0x15152a, roughness: 0.9, metalness: 0.08 })
+  );
+  ground.rotation.x = -Math.PI / 2;
+  ground.position.y = -0.04;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  const grid = new THREE.GridHelper(22, 22, 0x333366, 0x1a1a3e);
+  grid.position.y = 0.01;
+  scene.add(grid);
+
+  animate();
+}
+
+// ============================================================
+//  حركة
+// ============================================================
+function updatePlayer() {
+  let dx = 0, dz = 0;
+  if (touchDirs.up)    dz = -PLAYER_SPEED;
+  if (touchDirs.down)  dz =  PLAYER_SPEED;
+  if (touchDirs.left)  dx = -PLAYER_SPEED;
+  if (touchDirs.right) dx =  PLAYER_SPEED;
+
+  const limit = 9;
+  playerGroup.position.x = Math.max(-limit, Math.min(limit, playerGroup.position.x + dx));
+  playerGroup.position.z = Math.max(-limit, Math.min(limit, playerGroup.position.z + dz));
+
+  if (dx !== 0 || dz !== 0) {
+    playerGroup.rotation.y = Math.atan2(dx, dz);
+    // أثناء الحركة نفضّل وضع المشي إن كان واقفًا
+    if (currentAction === 'idle') setAction('walk', 0);
+  } else if (currentAction === 'walk') {
+    setAction('idle', 0);
+  }
+
+  // مزامنة موقع الشخصية والدائرة
+  if (characterSprite) {
+    characterSprite.position.x = playerGroup.position.x;
+    characterSprite.position.z = playerGroup.position.z;
+  }
+  ringGroup.position.x = playerGroup.position.x;
+  ringGroup.position.z = playerGroup.position.z;
+}
+
+function animate() {
+  requestAnimationFrame(animate);
+  time += 0.016;
+
+  updatePlayer();
+
+  // تحريك نقاط الدائرة
+  ringGroup.children.forEach(child => {
+    if (child.userData.baseAngle !== undefined) {
+      const a = child.userData.baseAngle + time * 0.55;
+      child.position.x = Math.cos(a) * 1.38;
+      child.position.z = Math.sin(a) * 1.38;
+    }
+  });
+  ringGroup.rotation.y += 0.004;
+
+  if (characterTexture && isReady) {
+    characterTexture.needsUpdate = true;
+  }
+
+  // كاميرا ناعمة
+  const target = playerGroup.position;
+  camera.position.x += (target.x + 3.2 - camera.position.x) * 0.06;
+  camera.position.z += (target.z + 5.0 - camera.position.z) * 0.06;
+  camera.position.y += (3.0 - camera.position.y) * 0.06;
+  camera.lookAt(target.x, 1.2, target.z);
+
+  renderer.render(scene, camera);
 }
 
 // ============================================================
@@ -485,8 +586,15 @@ function init() {
 function setupControls() {
   document.querySelectorAll('.dpad-btn').forEach(btn => {
     const dir = btn.dataset.dir;
-    btn.addEventListener('touchstart', e => { e.preventDefault(); touchDirs[dir] = true; }, { passive:false });
-    btn.addEventListener('touchend',   e => { e.preventDefault(); touchDirs[dir] = false; }, { passive:false });
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      touchDirs[dir] = true;
+    }, { passive: false });
+    btn.addEventListener('touchend', e => {
+      e.preventDefault();
+      touchDirs[dir] = false;
+    }, { passive: false });
+    btn.addEventListener('touchcancel', () => { touchDirs[dir] = false; });
   });
 
   window.addEventListener('keydown', e => {
@@ -494,8 +602,6 @@ function setupControls() {
     if (e.key === 'ArrowDown') touchDirs.down = true;
     if (e.key === 'ArrowLeft') touchDirs.left = true;
     if (e.key === 'ArrowRight') touchDirs.right = true;
-    if (e.key === 'Escape' && isIn360) exit360();
-    if ((e.key === 'Enter' || e.key === ' ') && !isIn360) enter360();
   });
   window.addEventListener('keyup', e => {
     if (e.key === 'ArrowUp') touchDirs.up = false;
@@ -506,13 +612,18 @@ function setupControls() {
 }
 
 window.addEventListener('resize', () => {
+  if (!camera || !renderer) return;
   camera.aspect = innerWidth / innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 });
 
 setupControls();
-init();
+initScene();
+setTimeout(loadTestCharacter, 400);
+
+console.log('👤 الشخصية المتكاملة — نسخة منظّفة جاهزة');
 </script>
 </body>
 </html>
+
