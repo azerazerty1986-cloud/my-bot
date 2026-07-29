@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🏆  Style - العالم النهائي</title>
+<title>🏆 PUBG Style - العالم النهائي</title>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -157,7 +157,7 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
   <div class="start-subtitle">أرضية فيديو · معالم ملصقات · شخصية متحركة</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v57.0 | النهائي</div>
+  <div class="version-tag">v58.0 | Fix Upload</div>
 </div>
 
 <!-- اللعبة -->
@@ -200,8 +200,8 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
     <div id="tg-status">⭕ غير متصل</div>
   </div>
 
-  <input type="file" id="video-input" accept="video/*,.webm,.mp4,.mov" onchange="handleVideo(event)">
-  <input type="file" id="sticker-input" accept="image/*,.webp,.png,.jpg,.gif" onchange="handleSticker(event)">
+  <input type="file" id="video-input" accept="video/*,.webm,.mp4,.mov" onchange="handleVideoUpload(event)">
+  <input type="file" id="sticker-input" accept="image/*,.webp,.png,.jpg,.gif" onchange="handleStickerUpload(event)">
 
   <div class="dpad" id="dpad">
     <div class="dpad-btn dpad-up" data-dir="up">▲</div>
@@ -215,7 +215,7 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 
 <script>
 // ============================================================
-//  🏆 الملف النهائي - كل نقاط التفوق
+//  🏆 الملف النهائي - مع إصلاح رفع الفيديو
 // ============================================================
 
 // ============================================================
@@ -243,13 +243,13 @@ function initTelegram() {
 
 function loadChannels() {
   try {
-    const saved = localStorage.getItem('channels_v57');
+    const saved = localStorage.getItem('channels_v58');
     if (saved) { channels = JSON.parse(saved); }
   } catch(e) {}
 }
 
 function saveChannels() {
-  try { localStorage.setItem('channels_v57', JSON.stringify(channels)); } catch(e) {}
+  try { localStorage.setItem('channels_v58', JSON.stringify(channels)); } catch(e) {}
 }
 
 function addChannel() {
@@ -386,7 +386,6 @@ async function fetchStickerFromTelegram() {
 
       let fileId = null, name = 'ملصق';
 
-      // ملصق عادي (صورة)
       if (msg.sticker && !msg.sticker.is_animated && !msg.sticker.is_video) {
         fileId = msg.sticker.file_id;
         const caption = msg.caption || '';
@@ -429,47 +428,106 @@ async function fetchStickerFromTelegram() {
 }
 
 // ============================================================
-//  4. رفع فيديو وملصق محلي
+//  4. 🔥 رفع فيديو محلي (تم الإصلاح)
 // ============================================================
 
-function handleVideo(event) {
+function handleVideoUpload(event) {
   const file = event.target.files[0];
-  if (!file || !file.type.startsWith('video/')) {
-    showToast('❌ ملف غير صالح', 'error');
+  
+  // التحقق من وجود ملف
+  if (!file) {
+    showToast('⚠️ لم يتم اختيار ملف', 'warn');
     return;
   }
-  const url = URL.createObjectURL(file);
-  const name = file.name.replace(/\.[^/.]+$/, '') || 'فيديو محلي';
-  loadedVideos[name] = url;
-  showToast('📁 تم رفع فيديو: ' + name, 'success');
-  rebuildMapWithContent();
-  event.target.value = '';
-}
 
-function handleSticker(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const url = URL.createObjectURL(file);
-  const name = file.name.replace(/\.[^/.]+$/, '') || 'ملصق محلي';
-  loadedStickers[name] = url;
-  showToast('📌 تم رفع ملصق: ' + name, 'success');
-  rebuildMapWithContent();
+  // التحقق من نوع الملف
+  if (!file.type.startsWith('video/')) {
+    showToast('❌ الملف ليس فيديو: ' + file.type, 'error');
+    event.target.value = '';
+    return;
+  }
+
+  // التحقق من الحجم (حد أقصى 50MB)
+  if (file.size > 50 * 1024 * 1024) {
+    showToast('❌ الفيديو كبير جداً (الحد 50MB)', 'error');
+    event.target.value = '';
+    return;
+  }
+
+  try {
+    // إنشاء رابط محلي للملف
+    const url = URL.createObjectURL(file);
+    const name = file.name.replace(/\.[^/.]+$/, '') || 'فيديو محلي';
+    
+    // تخزين الفيديو
+    loadedVideos[name] = url;
+    
+    // عرض رسالة نجاح
+    showToast('📁 تم رفع فيديو: ' + name + ' (' + (file.size / 1024 / 1024).toFixed(1) + 'MB)', 'success');
+    
+    // إعادة بناء الخريطة
+    rebuildMapWithContent();
+    
+  } catch (error) {
+    console.error('خطأ في رفع الفيديو:', error);
+    showToast('❌ خطأ في رفع الفيديو: ' + error.message, 'error');
+  }
+
+  // إعادة تعيين حقل الإدخال
   event.target.value = '';
 }
 
 // ============================================================
-//  5. إعادة بناء الخريطة بالمحتوى
+//  5. 🔥 رفع ملصق محلي (تم الإصلاح)
+// ============================================================
+
+function handleStickerUpload(event) {
+  const file = event.target.files[0];
+  
+  if (!file) {
+    showToast('⚠️ لم يتم اختيار ملف', 'warn');
+    return;
+  }
+
+  // التحقق من نوع الملف (صور)
+  const validTypes = ['image/png', 'image/jpeg', 'image/webp', 'image/gif'];
+  if (!validTypes.includes(file.type)) {
+    showToast('❌ الملف ليس صورة صالحة: ' + file.type, 'error');
+    event.target.value = '';
+    return;
+  }
+
+  try {
+    const url = URL.createObjectURL(file);
+    const name = file.name.replace(/\.[^/.]+$/, '') || 'ملصق محلي';
+    
+    loadedStickers[name] = url;
+    showToast('📌 تم رفع ملصق: ' + name, 'success');
+    rebuildMapWithContent();
+    
+  } catch (error) {
+    console.error('خطأ في رفع الملصق:', error);
+    showToast('❌ خطأ في رفع الملصق: ' + error.message, 'error');
+  }
+
+  event.target.value = '';
+}
+
+// ============================================================
+//  6. إعادة بناء الخريطة بالمحتوى
 // ============================================================
 
 function rebuildMapWithContent() {
   if (Object.keys(loadedVideos).length > 0 || Object.keys(loadedStickers).length > 0) {
     generateMap();
     showToast('🗺️ تم تحديث الخريطة بالمحتوى الجديد', 'success');
+  } else {
+    showToast('⚠️ لا يوجد محتوى لعرضه', 'warn');
   }
 }
 
 // ============================================================
-//  6. Three.js - المحرك الأساسي
+//  7. Three.js - المحرك الأساسي
 // ============================================================
 
 let scene, camera, renderer;
@@ -571,7 +629,7 @@ function initThree() {
 }
 
 // ============================================================
-//  7. توليد الخريطة
+//  8. توليد الخريطة
 // ============================================================
 
 function generateMap() {
@@ -585,7 +643,6 @@ function generateMap() {
   });
   tileMeshes = [];
 
-  // استخدام فيديوهات محملة أو إنشاء فيديو تجريبي
   const videoSources = Object.values(loadedVideos);
   const stickerSources = Object.values(loadedStickers);
 
@@ -613,7 +670,6 @@ function generateMap() {
         img.src = src;
         texture = new THREE.CanvasTexture(img);
       } else {
-        // فيديو تجريبي
         const canvas = createTestTile(col, row);
         const stream = canvas.captureStream(30);
         const video = document.createElement('video');
@@ -676,7 +732,7 @@ function createTestTile(col, row) {
 }
 
 // ============================================================
-//  8. شبكة
+//  9. شبكة
 // ============================================================
 
 function addGrid() {
@@ -700,7 +756,7 @@ function toggleGrid() {
 }
 
 // ============================================================
-//  9. حركة الشخصية
+//  10. حركة الشخصية
 // ============================================================
 
 function updatePlayer() {
@@ -722,16 +778,7 @@ function updatePlayer() {
     playerGroup.rotation.y = angle;
   }
 
-  // تحديث المربع النشط
   updateActiveTile();
-
-  // سرعة الفيديو
-  const speed = Math.sqrt(dx*dx + dz*dz);
-  tileMeshes.forEach(mesh => {
-    if (mesh.material && mesh.material.map && mesh.material.map.isVideoTexture) {
-      // محاولة تغيير السرعة (إذا كان فيديو)
-    }
-  });
 }
 
 function updateActiveTile() {
@@ -758,7 +805,7 @@ function updateActiveTile() {
 }
 
 // ============================================================
-//  10. كاميرا PUBG
+//  11. كاميرا PUBG
 // ============================================================
 
 function updateCamera() {
@@ -785,7 +832,7 @@ function resetCamera() {
 }
 
 // ============================================================
-//  11. خريطة مصغرة
+//  12. خريطة مصغرة
 // ============================================================
 
 function setupMinimap() {
@@ -842,7 +889,7 @@ function updateMinimap() {
 }
 
 // ============================================================
-//  12. حلقة الرسم
+//  13. حلقة الرسم
 // ============================================================
 
 function animate() {
@@ -856,7 +903,7 @@ function animate() {
 }
 
 // ============================================================
-//  13. تحكم
+//  14. تحكم
 // ============================================================
 
 function setupTouchControls() {
@@ -905,7 +952,7 @@ function showToast(message, type) {
 }
 
 // ============================================================
-//  14. الدخول
+//  15. الدخول
 // ============================================================
 
 function enterApp() {
@@ -937,7 +984,7 @@ function enterApp() {
 }
 
 // ============================================================
-//  15. بدء التشغيل
+//  16. بدء التشغيل
 // ============================================================
 
 initTelegram();
@@ -947,17 +994,13 @@ setTimeout(() => {
   document.getElementById('start-btn').style.display = 'block';
 }, 400);
 
-console.log('🏆 v57.0 — الملف النهائي');
-console.log('📌 نقاط التفوق:');
-console.log('  ✅ أرضية فيديو (مربعات)');
-console.log('  ✅ معالم ملصقات');
-console.log('  ✅ شخصية PUBG');
-console.log('  ✅ كاميرا خلفية');
-console.log('  ✅ خريطة 12×12 = 144 مربع');
-console.log('  ✅ تحميل فيديوهات وملصقات');
-console.log('  ✅ جلب من Telegram');
-console.log('  ✅ خريطة مصغرة');
-console.log('  ✅ إضاءة وظلال');
+console.log('🏆 v58.0 — إصلاح رفع الفيديو');
+console.log('📌 التغييرات:');
+console.log('  ✅ تحقق من وجود الملف');
+console.log('  ✅ تحقق من نوع الملف');
+console.log('  ✅ تحقق من حجم الملف (حد 50MB)');
+console.log('  ✅ رسائل خطأ واضحة');
+console.log('  ✅ إعادة تعيين حقل الإدخال');
 </script>
 </body>
 </html>
