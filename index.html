@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🌍 خريطة + معالم + 360</title>
+<title>🌍 معالم حقيقية - خريطة</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -100,14 +100,35 @@ body { font-family:'Cairo',sans-serif; background:#050510; color:#fff; overflow:
 .toast.warn { border-color:#fb923c; }
 .toast.info { border-color:#60a5fa; }
 
-#file-input { display:none; }
+#file-input, #file-input-360 { display:none; }
 
 canvas { display:block; width:100%; height:100%; background:#0a0a1a; }
+
+#landmark-form {
+  position:fixed; bottom:150px; left:50%; transform:translateX(-50%);
+  background:rgba(10,10,30,0.95); border:1px solid rgba(255,215,0,0.15);
+  border-radius:14px; padding:12px; z-index:300;
+  display:none; backdrop-filter:blur(12px);
+  min-width:280px; max-width:90%;
+}
+#landmark-form .row { display:flex; gap:5px; margin-bottom:5px; flex-wrap:wrap; }
+#landmark-form input, #landmark-form select {
+  flex:1; padding:5px 8px; border-radius:6px;
+  border:1px solid rgba(255,215,0,0.1); background:#0a0a1a;
+  color:#fff; font-size:10px; font-family:inherit; min-width:50px;
+}
+#landmark-form .btn {
+  padding:5px 12px; border:none; border-radius:6px;
+  font-weight:700; font-size:10px; cursor:pointer; font-family:inherit;
+}
+.btn-success { background:#4ade80; color:#111; }
+.btn-danger { background:#f87171; color:#fff; }
+.btn-accent { background:#00f2ff; color:#111; }
 </style>
 </head>
 <body>
 
-<div id="info">🌍 <span>خريطة + معالم + 360</span></div>
+<div id="info">🌍 <span>معالم حقيقية</span> - خريطة تفاعلية</div>
 <div id="status">🧭 جاري التحميل...</div>
 <div id="tile-info">🧩 المربع: -</div>
 
@@ -115,9 +136,9 @@ canvas { display:block; width:100%; height:100%; background:#0a0a1a; }
   <button onclick="generateMap()">🗺️ خريطة</button>
   <button onclick="toggleGrid()">📐 شبكة</button>
   <button onclick="resetCamera()">🔄 إعادة</button>
-  <button onclick="document.getElementById('file-input').click()">📁 رفع فيديو 360</button>
-  <button onclick="showLandmarkManager()">📍 معالم</button>
-  <button onclick="loadDefaultLandmarks()">🏷️ معالم افتراضية</button>
+  <button onclick="showLandmarkForm()">📍 إضافة معلم</button>
+  <button onclick="loadExampleLandmarks()">📌 معالم تجريبية</button>
+  <button onclick="clearLandmarks()">🗑️ حذف الكل</button>
   <button id="enter360-btn" class="enter360" style="display:none;" onclick="enter360Mode()">🌐 دخول 360</button>
 </div>
 
@@ -131,13 +152,33 @@ canvas { display:block; width:100%; height:100%; background:#0a0a1a; }
 <div id="minimap-frame"></div>
 <div id="minimap-label">🗺️</div>
 
-<input type="file" id="file-input" accept="video/*,.webm,.mp4,.mov" onchange="handle360Video(event)">
+<!-- نموذج إضافة معلم -->
+<div id="landmark-form">
+  <div class="row"><input type="text" id="lm-name" placeholder="اسم المعلم"></div>
+  <div class="row">
+    <select id="lm-type">
+      <option value="video">🎬 فيديو</option>
+      <option value="image">🖼️ صورة</option>
+      <option value="video360">🌐 فيديو 360</option>
+    </select>
+    <input type="number" id="lm-row" placeholder="الصف (0-11)" min="0" max="11">
+    <input type="number" id="lm-col" placeholder="العمود (0-11)" min="0" max="11">
+  </div>
+  <div class="row">
+    <button class="btn btn-accent" onclick="document.getElementById('file-input').click()">📁 رفع ملف</button>
+    <button class="btn btn-success" onclick="addLandmarkFromForm()">✅ إضافة</button>
+    <button class="btn btn-danger" onclick="hideLandmarkForm()">✖ إلغاء</button>
+  </div>
+  <div style="font-size:9px;color:#555;text-align:center;margin-top:4px;" id="file-status">لم يتم اختيار ملف</div>
+</div>
+
+<input type="file" id="file-input" accept="video/*,.webm,.mp4,.mov,image/*,.png,.jpg,.jpeg,.gif,.webp" onchange="handleLandmarkFile(event)">
 
 <canvas id="canvas"></canvas>
 
 <script>
 // ============================================================
-//  🌍 خريطة + معالم + فيديو 360
+//  🌍 معالم حقيقية - خريطة تفاعلية
 // ============================================================
 
 // ============================================================
@@ -160,87 +201,150 @@ let minimapCtx;
 let touchDirs = { up: false, down: false, left: false, right: false };
 
 // ============================================================
-//  2. 🏷️ المعالم (Landmarks)
+//  2. 🏷️ المعالم (Landmarks) - حقيقية
 // ============================================================
 
-let landmarks = []; // كل عنصر = { name, type, url, row, col, is360 }
-
-// فيديوهات 360 المحملة
-let loaded360Videos = {};
-
-function addLandmark(name, type, url, row, col, is360 = false) {
-    if (row < 0 || row >= GRID || col < 0 || col >= GRID) {
-        showToast('❌ إحداثيات خارج الخريطة', 'error');
-        return;
-    }
-    landmarks.push({ name, type, url, row, col, is360 });
-    showToast('✅ تم إضافة معلم: ' + name + (is360 ? ' 🌐' : ''), 'success');
-}
-
-function loadDefaultLandmarks() {
-    landmarks = [];
-    // معالم عادية
-    addLandmark('🏟️ الملعب', 'video', 'https://example.com/stadium.mp4', 2, 3);
-    addLandmark('🏢 البرج', 'image', 'https://example.com/tower.png', 5, 7);
-    addLandmark('🌳 الحديقة', 'image', 'https://example.com/park.jpg', 8, 1);
-    addLandmark('🏪 السوق', 'video', 'https://example.com/market.mp4', 10, 9);
-    
-    // معالم 360
-    addLandmark('🌐 غرفة 360', 'video360', 'https://example.com/360.mp4', 6, 6, true);
-    addLandmark('🌐 بانوراما', 'video360', 'https://example.com/panorama.mp4', 3, 9, true);
-    
-    rebuildMap();
-    showToast('✅ تم تحميل المعالم الافتراضية', 'success');
-}
-
-function showLandmarkManager() {
-    const name = prompt('📍 اسم المعلم:');
-    if (!name) return;
-    
-    const is360 = confirm('هل هو فيديو 360؟\n(موافق = 360, إلغاء = عادي)');
-    const type = is360 ? 'video360' : (confirm('هل هو فيديو عادي؟\n(موافق = فيديو, إلغاء = صورة)') ? 'video' : 'image');
-    
-    const url = prompt('🔗 رابط الملف:');
-    if (!url) return;
-    
-    const row = parseInt(prompt('📍 الصف (0-' + (GRID-1) + '):'));
-    const col = parseInt(prompt('📍 العمود (0-' + (GRID-1) + '):'));
-    
-    if (isNaN(row) || isNaN(col)) {
-        showToast('❌ إحداثيات غير صالحة', 'error');
-        return;
-    }
-    
-    addLandmark(name, type, url, row, col, is360);
-    rebuildMap();
-}
+let landmarks = []; // كل عنصر = { id, name, type, data, row, col, is360, file }
+let nextLandmarkId = 1;
+let pendingFile = null;
+let pendingFileType = '';
 
 // ============================================================
-//  3. 📁 رفع فيديو 360
+//  3. 📁 رفع ملف للمعلم
 // ============================================================
 
-function handle360Video(event) {
+function handleLandmarkFile(event) {
     const file = event.target.files[0];
     if (!file) {
-        showToast('⚠️ لم يتم اختيار ملف', 'warn');
-        return;
-    }
-    if (!file.type.startsWith('video/')) {
-        showToast('❌ الملف ليس فيديو', 'error');
-        event.target.value = '';
+        document.getElementById('file-status').textContent = '⚠️ لم يتم اختيار ملف';
         return;
     }
     
-    const url = URL.createObjectURL(file);
-    const name = file.name.replace(/\.[^/.]+$/, '') || 'فيديو 360';
-    loaded360Videos[name] = url;
-    
-    showToast('📁 تم رفع فيديو 360: ' + name, 'success');
+    pendingFile = file;
+    pendingFileType = file.type.startsWith('video/') ? 'video' : 'image';
+    document.getElementById('file-status').textContent = '✅ ' + file.name + ' (' + (file.size/1024).toFixed(1) + 'KB)';
     event.target.value = '';
 }
 
 // ============================================================
-//  4. 🗺️ توليد الخريطة
+//  4. 📍 إضافة معلم من النموذج
+// ============================================================
+
+function showLandmarkForm() {
+    document.getElementById('landmark-form').style.display = 'block';
+    document.getElementById('file-status').textContent = 'لم يتم اختيار ملف';
+    pendingFile = null;
+}
+
+function hideLandmarkForm() {
+    document.getElementById('landmark-form').style.display = 'none';
+    pendingFile = null;
+}
+
+function addLandmarkFromForm() {
+    const name = document.getElementById('lm-name').value.trim();
+    const type = document.getElementById('lm-type').value;
+    const row = parseInt(document.getElementById('lm-row').value);
+    const col = parseInt(document.getElementById('lm-col').value);
+    
+    if (!name) {
+        showToast('⚠️ أدخل اسم المعلم', 'warn');
+        return;
+    }
+    
+    if (!pendingFile) {
+        showToast('⚠️ اختر ملفاً للمعلم', 'warn');
+        return;
+    }
+    
+    if (isNaN(row) || isNaN(col) || row < 0 || row >= GRID || col < 0 || col >= GRID) {
+        showToast('❌ إحداثيات غير صالحة (0-' + (GRID-1) + ')', 'error');
+        return;
+    }
+    
+    // إنشاء رابط محلي للملف
+    const url = URL.createObjectURL(pendingFile);
+    const is360 = (type === 'video360');
+    
+    const landmark = {
+        id: nextLandmarkId++,
+        name: name,
+        type: type,
+        url: url,
+        file: pendingFile.name,
+        row: row,
+        col: col,
+        is360: is360
+    };
+    
+    landmarks.push(landmark);
+    hideLandmarkForm();
+    rebuildMap();
+    showToast('✅ تم إضافة معلم: ' + name + (is360 ? ' 🌐' : ''), 'success');
+    
+    // تنظيف
+    document.getElementById('lm-name').value = '';
+    document.getElementById('lm-row').value = '';
+    document.getElementById('lm-col').value = '';
+    pendingFile = null;
+    document.getElementById('file-status').textContent = 'لم يتم اختيار ملف';
+}
+
+// ============================================================
+//  5. 📌 معالم تجريبية (بدون روابط)
+// ============================================================
+
+function loadExampleLandmarks() {
+    // استخدام فيديوهات تجريبية من الإنترنت
+    const exampleVideos = [
+        'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
+        'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
+        'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm'
+    ];
+    
+    const examples = [
+        { name: '🏟️ الملعب', type: 'video', row: 2, col: 3 },
+        { name: '🌐 غرفة 360', type: 'video360', row: 6, col: 6 },
+        { name: '🌳 الحديقة', type: 'image', row: 8, col: 1 }
+    ];
+    
+    examples.forEach((ex, i) => {
+        const url = exampleVideos[i % exampleVideos.length];
+        landmarks.push({
+            id: nextLandmarkId++,
+            name: ex.name,
+            type: ex.type,
+            url: url,
+            file: 'مثال',
+            row: ex.row,
+            col: ex.col,
+            is360: (ex.type === 'video360')
+        });
+    });
+    
+    rebuildMap();
+    showToast('✅ تم تحميل ' + examples.length + ' معالم تجريبية', 'success');
+}
+
+// ============================================================
+//  6. 🗑️ حذف جميع المعالم
+// ============================================================
+
+function clearLandmarks() {
+    if (landmarks.length === 0) {
+        showToast('⚠️ لا توجد معالم لحذفها', 'warn');
+        return;
+    }
+    
+    if (confirm('🗑️ هل أنت متأكد من حذف جميع المعالم؟')) {
+        landmarks = [];
+        rebuildMap();
+        showToast('🗑️ تم حذف جميع المعالم', 'info');
+    }
+}
+
+// ============================================================
+//  7. 🗺️ توليد الخريطة
 // ============================================================
 
 function generateMap() {
@@ -259,6 +363,19 @@ function rebuildMap() {
     });
     tileMeshes = [];
 
+    // تنظيف كرات 360 القديمة
+    if (window.sphere360Meshes) {
+        window.sphere360Meshes.forEach(mesh => {
+            if (mesh.parent) mesh.parent.remove(mesh);
+            if (mesh.material) {
+                if (mesh.material.map) mesh.material.map.dispose();
+                mesh.material.dispose();
+            }
+            if (mesh.geometry) mesh.geometry.dispose();
+        });
+    }
+    window.sphere360Meshes = [];
+
     for (let row = 0; row < GRID; row++) {
         for (let col = 0; col < GRID; col++) {
             
@@ -270,9 +387,8 @@ function rebuildMap() {
                 landmarkName = landmark.name;
                 is360 = landmark.is360 || false;
                 
-                if (landmark.type === 'video360') {
-                    // ✅ فيديو 360 - سننشئ كرة لاحقاً
-                    // نضع نصاً مؤقتاً
+                if (landmark.type === 'video360' || landmark.is360) {
+                    // ✅ فيديو 360
                     const canvas = create360Tile(row, col, landmark.name);
                     texture = new THREE.CanvasTexture(canvas);
                 } else if (landmark.type === 'video') {
@@ -322,7 +438,8 @@ function rebuildMap() {
                 landmarkName: landmarkName,
                 landmarkType: landmark ? landmark.type : 'none',
                 is360: is360,
-                landmarkUrl: landmark ? landmark.url : null
+                landmarkUrl: landmark ? landmark.url : null,
+                landmarkId: landmark ? landmark.id : null
             };
 
             tileGroup.add(mesh);
@@ -346,31 +463,19 @@ function rebuildMap() {
 }
 
 // ============================================================
-//  5. 🌐 إنشاء كرات 360
+//  8. 🌐 إنشاء كرات 360
 // ============================================================
 
-let sphere360Meshes = [];
-
 function create360Spheres() {
-    // تنظيف الكرات القديمة
-    sphere360Meshes.forEach(mesh => {
-        if (mesh.parent) mesh.parent.remove(mesh);
-        if (mesh.material) {
-            if (mesh.material.map) mesh.material.map.dispose();
-            mesh.material.dispose();
-        }
-        if (mesh.geometry) mesh.geometry.dispose();
-    });
-    sphere360Meshes = [];
+    if (!window.sphere360Meshes) window.sphere360Meshes = [];
 
-    // البحث عن معالم 360
     const landmarks360 = landmarks.filter(l => l.is360 === true);
     
     for (const landmark of landmarks360) {
         const posX = landmark.col * TILE_SIZE - HALF + TILE_SIZE / 2;
         const posZ = landmark.row * TILE_SIZE - HALF + TILE_SIZE / 2;
         
-        // كرة صغيرة شفافة مع أيقونة
+        // كرة صغيرة شفافة
         const sphereGeo = new THREE.SphereGeometry(0.4, 16, 16);
         const sphereMat = new THREE.MeshStandardMaterial({
             color: 0x00f2ff,
@@ -387,18 +492,18 @@ function create360Spheres() {
             landmarkName: landmark.name,
             landmarkUrl: landmark.url,
             row: landmark.row,
-            col: landmark.col
+            col: landmark.col,
+            landmarkId: landmark.id
         };
         scene.add(sphere);
-        sphere360Meshes.push(sphere);
+        window.sphere360Meshes.push(sphere);
         
-        // إضافة أيقونة 🌐 فوق الكرة
+        // أيقونة 🌐
         const canvas = document.createElement('canvas');
         canvas.width = 64;
         canvas.height = 64;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = 'transparent';
-        ctx.fillRect(0, 0, 64, 64);
+        ctx.clearRect(0, 0, 64, 64);
         ctx.font = '40px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -414,12 +519,12 @@ function create360Spheres() {
         icon.scale.set(0.8, 0.8, 1);
         icon.position.set(posX, 0.9, posZ);
         scene.add(icon);
-        sphere360Meshes.push(icon);
+        window.sphere360Meshes.push(icon);
     }
 }
 
 // ============================================================
-//  6. 🎨 دوال مساعدة للرسم
+//  9. 🎨 دوال مساعدة للرسم
 // ============================================================
 
 function createDefaultTile(row, col) {
@@ -445,7 +550,6 @@ function create360Tile(row, col, name) {
     canvas.height = 128;
     const ctx = canvas.getContext('2d');
     
-    // خلفية مميزة للـ 360
     const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
     grad.addColorStop(0, '#00f2ff');
     grad.addColorStop(0.5, '#0f3460');
@@ -467,26 +571,22 @@ function create360Tile(row, col, name) {
 }
 
 // ============================================================
-//  7. 🌐 نظام الدخول إلى 360
+//  10. 🌐 نظام الدخول إلى 360
 // ============================================================
 
 let isIn360Mode = false;
 let savedCameraPos = null;
 let savedCameraTarget = null;
-let savedPlayerVisible = true;
-let savedTilesVisible = true;
 let sphere360Mesh = null;
 let sphere360Texture = null;
 let sphere360Video = null;
 
 function enter360Mode() {
-    // البحث عن المربع النشط
     const px = playerGroup.position.x + HALF;
     const pz = playerGroup.position.z + HALF;
     const col = Math.floor(px / TILE_SIZE);
     const row = Math.floor(pz / TILE_SIZE);
     
-    // البحث عن معلم 360 في هذا المربع
     const landmark = landmarks.find(l => l.row === row && l.col === col && l.is360 === true);
     if (!landmark) {
         showToast('❌ لا يوجد فيديو 360 هنا', 'error');
@@ -495,21 +595,17 @@ function enter360Mode() {
     
     showToast('🌐 جاري الدخول إلى 360...', 'info');
     
-    // حفظ حالة الكاميرا
     savedCameraPos = camera.position.clone();
     savedCameraTarget = playerGroup.position.clone();
     
-    // إخفاء اللاعب والمربعات
     playerGroup.visible = false;
     tileGroup.visible = false;
     tileMeshes.forEach(m => m.visible = false);
-    sphere360Meshes.forEach(m => m.visible = false);
+    if (window.sphere360Meshes) window.sphere360Meshes.forEach(m => m.visible = false);
     document.getElementById('enter360-btn').style.display = 'none';
     
-    // إنشاء كرة 360
     create360Sphere(landmark.url);
     
-    // نقل الكاميرا لمركز الكرة
     const centerX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
     const centerZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
     camera.position.set(centerX, 0, centerZ);
@@ -517,7 +613,7 @@ function enter360Mode() {
     
     isIn360Mode = true;
     
-    // إظهار زر الخروج
+    // زر خروج
     const exitBtn = document.createElement('button');
     exitBtn.id = 'exit360-btn';
     exitBtn.textContent = '🚪 خروج 360';
@@ -534,7 +630,6 @@ function enter360Mode() {
 }
 
 function create360Sphere(url) {
-    // تنظيف الكرة القديمة
     if (sphere360Mesh) {
         if (sphere360Mesh.parent) sphere360Mesh.parent.remove(sphere360Mesh);
         if (sphere360Mesh.material) {
@@ -595,7 +690,6 @@ function exit360Mode() {
     
     showToast('🚪 الخروج من وضع 360...', 'info');
     
-    // إزالة كرة 360
     if (sphere360Mesh) {
         if (sphere360Mesh.parent) sphere360Mesh.parent.remove(sphere360Mesh);
         if (sphere360Mesh.material) {
@@ -614,19 +708,16 @@ function exit360Mode() {
         sphere360Texture = null;
     }
     
-    // إظهار اللاعب والمربعات
     playerGroup.visible = true;
     tileGroup.visible = true;
     tileMeshes.forEach(m => m.visible = true);
-    sphere360Meshes.forEach(m => m.visible = true);
+    if (window.sphere360Meshes) window.sphere360Meshes.forEach(m => m.visible = true);
     
-    // إعادة الكاميرا
     if (savedCameraPos) {
         camera.position.copy(savedCameraPos);
         camera.lookAt(savedCameraTarget);
     }
     
-    // إزالة زر الخروج
     const exitBtn = document.getElementById('exit360-btn');
     if (exitBtn) exitBtn.remove();
     
@@ -636,7 +727,7 @@ function exit360Mode() {
 }
 
 // ============================================================
-//  8. 🏃 حركة اللاعب
+//  11. 🏃 حركة اللاعب
 // ============================================================
 
 function updatePlayer() {
@@ -689,13 +780,11 @@ function updateActiveTile() {
         }
     });
     
-    // عرض معلومات المربع
     if (currentLandmark) {
-        const icon = currentLandmark.is360 ? '🌐' : (landmarks.find(l => l.row === row && l.col === col)?.type === 'video' ? '🎬' : '🖼️');
+        const icon = currentLandmark.is360 ? '🌐' : '📍';
         document.getElementById('tile-info').textContent = 
             icon + ' ' + currentLandmark.name + ' (' + col + ',' + row + ')';
         
-        // إظهار زر دخول 360 إذا كان المربع 360
         const enterBtn = document.getElementById('enter360-btn');
         if (currentLandmark.is360) {
             enterBtn.style.display = 'block';
@@ -710,14 +799,11 @@ function updateActiveTile() {
 }
 
 // ============================================================
-//  9. 🎥 كاميرا PUBG
+//  12. 🎥 كاميرا
 // ============================================================
 
 function updateCamera() {
-    if (isIn360Mode) {
-        // في وضع 360، الكاميرا تتحكم بالماوس
-        return;
-    }
+    if (isIn360Mode) return;
     
     const target = playerGroup.position.clone();
     const angle = playerGroup.rotation.y;
@@ -743,7 +829,7 @@ function resetCamera() {
 }
 
 // ============================================================
-//  10. 📐 شبكة إرشادية
+//  13. 📐 شبكة
 // ============================================================
 
 function addGrid() {
@@ -767,7 +853,7 @@ function toggleGrid() {
 }
 
 // ============================================================
-//  11. 🗺️ خريطة مصغرة
+//  14. 🗺️ خريطة مصغرة
 // ============================================================
 
 function setupMinimap() {
@@ -796,7 +882,6 @@ function updateMinimap() {
             const py = y * TILE_SIZE * scale;
             const size = TILE_SIZE * scale * 0.9;
             
-            // التحقق من وجود معلم
             const landmark = landmarks.find(l => l.row === y && l.col === x);
             if (landmark && landmark.is360) {
                 ctx.fillStyle = '#00f2ff';
@@ -809,7 +894,6 @@ function updateMinimap() {
         }
     }
 
-    // اللاعب
     const px = (playerGroup.position.x + HALF) * scale;
     const py = (playerGroup.position.z + HALF) * scale;
 
@@ -827,7 +911,7 @@ function updateMinimap() {
 }
 
 // ============================================================
-//  12. 🎮 تحكم
+//  15. 🎮 تحكم
 // ============================================================
 
 function setupTouchControls() {
@@ -877,7 +961,7 @@ function showToast(message, type) {
 }
 
 // ============================================================
-//  13. 🚀 Three.js
+//  16. 🚀 Three.js
 // ============================================================
 
 function initThree() {
@@ -951,7 +1035,7 @@ function initThree() {
 }
 
 // ============================================================
-//  14. 🔄 حلقة الرسم
+//  17. 🔄 حلقة الرسم
 // ============================================================
 
 function animate() {
@@ -961,7 +1045,6 @@ function animate() {
     updateCamera();
     updateMinimap();
 
-    // تحديث فيديو 360
     if (sphere360Texture && isIn360Mode) {
         sphere360Texture.needsUpdate = true;
     }
@@ -970,7 +1053,7 @@ function animate() {
 }
 
 // ============================================================
-//  15. 🚀 بدء التشغيل
+//  18. 🚀 بدء التشغيل
 // ============================================================
 
 window.addEventListener('resize', () => {
@@ -984,21 +1067,18 @@ window.addEventListener('resize', () => {
 setupTouchControls();
 initThree();
 
-// تحميل المعالم الافتراضية
 setTimeout(() => {
-    loadDefaultLandmarks();
-    document.getElementById('status').textContent = '✅ جاهز! تحرك واستكشف';
+    generateMap();
+    document.getElementById('status').textContent = '✅ جاهز! أضف معالم أو استكشف';
 }, 500);
 
-console.log('🌍 خريطة + معالم + 360 جاهزة!');
+console.log('🌍 معالم حقيقية - خريطة تفاعلية');
 console.log('📌 المميزات:');
-console.log('  ✅ خريطة ' + GRID + '×' + GRID + ' مربع');
-console.log('  ✅ معالم (فيديو، صورة، 360)');
-console.log('  ✅ فيديو 360 مع دخول وخروج');
-console.log('  ✅ كاميرا PUBG');
-console.log('  ✅ خريطة مصغرة');
-console.log('  ✅ إضاءة وظلال');
+console.log('  ✅ رفع ملفات حقيقية (فيديو، صورة، 360)');
+console.log('  ✅ إضافة معالم من النموذج');
+console.log('  ✅ معالم تجريبية للاختبار');
+console.log('  ✅ فيديو 360 مع دخول/خروج');
+console.log('  ✅ خريطة مصغرة ملونة');
 </script>
 </body>
 </html>
-
