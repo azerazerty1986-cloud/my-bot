@@ -1,1 +1,1747 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ناردو 3D - عصا تحكم + أسلحة</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none;-webkit-user-select:none}
+#start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px}
+.start-logo{font-size:42px;font-weight:900;color:#ffd700;animation:float 3s ease-in-out infinite}
+.start-btn{border:2px solid #00f2ff;color:#00f2ff;padding:16px 50px;background:rgba(0,242,255,0.08);border-radius:60px;font-size:20px;cursor:pointer;font-weight:700;font-family:inherit;transition:all .3s}
+.start-btn:hover{transform:scale(1.05);background:#00f2ff;color:#000;box-shadow:0 0 50px rgba(0,242,255,0.4)}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+#game-container{position:fixed;inset:0;display:none;background:#0a0a1a}
+#game-canvas{display:block;width:100%;height:100%}
+.hud{position:fixed;top:0;left:0;right:0;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;z-index:100;background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,215,0,0.1)}
+.hud .title{color:#ffd700;font-size:13px;font-weight:700}
+.hud-stats{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.stat-box{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 10px;display:flex;align-items:center;gap:5px;font-size:11px}
+.stat-box.score{color:#ffd700}.stat-box.health{color:#f87171}.stat-box.level{color:#60a5fa}.stat-box.boss-next{color:#ff4757;font-size:10px}.stat-box.coins{color:#ffd700}
+.health-bar{width:60px;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden}
+.health-fill{height:100%;background:linear-gradient(90deg,#f87171,#ff8a8a);border-radius:3px;transition:width 0.3s}
 
+/* ===== JOYSTICK ===== */
+.joystick-zone{position:fixed;bottom:20px;left:20px;width:140px;height:140px;z-index:200;touch-action:none}
+.joystick-base{position:absolute;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.1);top:10px;left:10px}
+.joystick-knob{position:absolute;width:50px;height:50px;border-radius:50%;background:rgba(139,92,246,0.4);border:2px solid #8b5cf6;top:45px;left:45px;box-shadow:0 0 20px rgba(139,92,246,0.3);pointer-events:none;transition:none;will-change:transform}
+.joystick-knob.active{background:rgba(139,92,246,0.7);box-shadow:0 0 30px rgba(139,92,246,0.5)}
+
+/* ===== FIRE BUTTON ===== */
+.fire-btn{position:fixed;bottom:35px;right:25px;width:70px;height:70px;border-radius:50%;background:rgba(255,71,71,0.15);border:2px solid rgba(255,71,71,0.4);z-index:200;display:flex;align-items:center;justify-content:center;font-size:28px;cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;transition:all 0.1s;font-family:inherit}
+.fire-btn:active{transform:scale(0.85);background:rgba(255,71,71,0.4);border-color:#ff4757;box-shadow:0 0 40px rgba(255,71,71,0.5)}
+.fire-btn .btn-label{font-size:8px;color:rgba(255,255,255,0.3);position:absolute;bottom:6px;font-weight:700}
+
+/* ===== CONTROL TOGGLE ===== */
+.control-toggle{position:fixed;bottom:120px;left:20px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.1);border-radius:6px;padding:3px 8px;z-index:200;font-size:9px;color:#888;cursor:pointer;display:none;font-family:inherit}
+
+/* ===== WEAPON SELECTOR ===== */
+.weapon-selector{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(10,10,30,0.98);border:2px solid rgba(255,215,0,0.2);border-radius:20px;padding:20px;z-index:600;display:none;backdrop-filter:blur(20px);min-width:320px;max-width:90%;max-height:80vh;overflow-y:auto}
+.weapon-selector.show{display:block;animation:popIn 0.3s ease}
+.weapon-selector h3{color:#ffd700;font-size:18px;text-align:center;margin-bottom:15px}
+.weapon-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.weapon-card{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px;text-align:center;cursor:pointer;transition:all 0.3s;position:relative}
+.weapon-card:hover{background:rgba(139,92,246,0.15);border-color:#8b5cf6;transform:translateY(-2px)}
+.weapon-card.active{border-color:#ffd700;background:rgba(255,215,0,0.1);box-shadow:0 0 30px rgba(255,215,0,0.15)}
+.weapon-card.active::after{content:'✓';position:absolute;top:-8px;right:-8px;background:#ffd700;color:#000;border-radius:50%;width:22px;height:22px;font-size:12px;font-weight:900;display:flex;align-items:center;justify-content:center}
+.weapon-card.locked{opacity:0.5;cursor:not-allowed}
+.weapon-card.locked:hover{transform:none}
+.weapon-card .w-icon{font-size:32px;margin-bottom:5px}
+.weapon-card .w-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:3px}
+.weapon-card .w-desc{font-size:9px;color:#888;margin-bottom:5px}
+.weapon-card .w-stats{font-size:9px;color:#60a5fa;margin-bottom:3px}
+.weapon-card .w-stats span{margin:0 3px}
+.weapon-card .w-cost{position:absolute;top:5px;left:5px;background:rgba(255,215,0,0.15);color:#ffd700;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700}
+.weapon-card .w-unlock{position:absolute;top:5px;right:5px;background:rgba(74,222,128,0.15);color:#4ade80;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;cursor:pointer}
+.weapon-toggle{position:fixed;top:10px;right:120px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;cursor:pointer;display:none;font-family:inherit}
+.close-weapons{position:absolute;top:10px;left:10px;background:none;border:none;color:#f87171;font-size:18px;cursor:pointer;padding:5px;font-family:inherit}
+.close-weapons:hover{transform:scale(1.2)}
+@keyframes popIn{0%{opacity:0;transform:translate(-50%,-50%) scale(0.8)}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+
+/* ===== SKIN SELECTOR ===== */
+.skin-selector{position:fixed;bottom:220px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:10px;z-index:230;display:none;backdrop-filter:blur(12px);min-width:180px;max-height:180px;overflow-y:auto}
+.skin-selector.show{display:block}
+.skin-selector h4{color:#ffd700;font-size:12px;margin-bottom:6px;text-align:center}
+.skin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px}
+.skin-option{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:4px;text-align:center;cursor:pointer;transition:.2s}
+.skin-option:hover{background:rgba(139,92,246,0.1);border-color:#8b5cf6}
+.skin-option .preview{width:28px;height:28px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
+.skin-option .preview img{width:100%;height:100%;object-fit:cover}
+.skin-option .sname{font-size:7px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skin-option.active{border-color:#ffd700;background:rgba(255,215,0,0.05)}
+.skin-toggle{position:fixed;top:10px;right:60px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;cursor:pointer;display:none;font-family:inherit}
+
+/* ===== TOAST ===== */
+.toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.toast{background:rgba(0,0,0,0.9);padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
+.toast.success{border-color:#4ade80;color:#4ade80}.toast.error{border-color:#f87171;color:#f87171}.toast.gold{border-color:#ffd700;color:#ffd700}.toast.boss{border-color:#ff0000;color:#ff4757;background:rgba(255,0,0,0.2)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
+
+/* ===== GAME OVER ===== */
+#game-over-screen{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.92);display:none;flex-direction:column;justify-content:center;align-items:center;gap:20px;backdrop-filter:blur(10px)}
+#game-over-screen.show{display:flex}
+.game-over-title{font-size:48px;font-weight:900;color:#f87171;text-shadow:0 0 30px rgba(248,113,113,0.5);animation:pulse 1.5s ease-in-out infinite}
+.game-over-score{font-size:24px;color:#ffd700}
+.restart-btn{border:2px solid #4ade80;color:#4ade80;padding:14px 40px;background:rgba(74,222,128,0.08);border-radius:60px;font-size:18px;cursor:pointer;font-weight:700;font-family:inherit;transition:all .3s}
+.restart-btn:hover{transform:scale(1.05);background:#4ade80;color:#000}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+/* ===== BOSS ===== */
+.boss-bar-container{position:fixed;top:52px;left:10px;right:10px;z-index:100;display:none;background:rgba(0,0,0,0.6);padding:6px 12px;border-radius:10px;border:1px solid rgba(255,0,0,0.2)}
+.boss-bar-container.show{display:block}
+.boss-bar-bg{width:100%;height:10px;background:rgba(255,0,0,0.15);border-radius:5px;overflow:hidden;border:1px solid rgba(255,0,0,0.2)}
+.boss-bar-fill{height:100%;background:linear-gradient(90deg,#ff0000,#ff6600);border-radius:5px;transition:width 0.3s;width:100%}
+.boss-name{text-align:center;font-size:11px;color:#ff4757;font-weight:700;margin-bottom:4px;text-shadow:0 0 20px rgba(255,0,0,0.6)}
+.boss-name .boss-emoji{font-size:16px}
+.boss-warning{position:fixed;inset:0;z-index:500;background:rgba(255,0,0,0.15);display:none;justify-content:center;align-items:center;pointer-events:none}
+.boss-warning.show{display:flex;animation:bossWarn 2s ease forwards}
+.boss-warning-text{font-size:48px;font-weight:900;color:#ff0000;text-shadow:0 0 30px rgba(255,0,0,0.8);animation:bossPulse 0.5s ease-in-out infinite}
+@keyframes bossWarn{0%{opacity:0;transform:scale(0.5)}20%{opacity:1;transform:scale(1)}80%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.2)}}
+@keyframes bossPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+
+/* ===== D-PAD ===== */
+.dpad{position:fixed;bottom:20px;left:20px;width:140px;height:140px;z-index:200;display:none}
+.dpad-btn{position:absolute;width:44px;height:44px;border-radius:8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;touch-action:none}
+.dpad-btn:active{background:rgba(255,255,255,0.2)}
+.dpad-up{top:0;left:50%;transform:translateX(-50%)}
+.dpad-down{bottom:0;left:50%;transform:translateX(-50%)}
+.dpad-left{top:50%;left:0;transform:translateY(-50%)}
+.dpad-right{top:50%;right:0;transform:translateY(-50%)}
+
+/* ===== TG ===== */
+.tg-dropdown{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:10px 14px;z-index:250;min-width:280px;max-width:92%;display:none;backdrop-filter:blur(12px)}
+.tg-dropdown.show{display:block}
+.tg-dropdown .row{display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap}
+.tg-dropdown input{flex:1;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,215,0,0.1);background:#0a0a1a;color:#fff;font-size:10px;font-family:inherit;min-width:50px}
+.tg-dropdown .btn{padding:4px 10px;border:none;border-radius:6px;font-weight:700;font-size:10px;cursor:pointer;font-family:inherit}
+.btn-accent{background:#00f2ff;color:#111}.btn-purple{background:#8b5cf6;color:#fff}.btn-gold{background:#ffd700;color:#111}.btn-red{background:#f87171;color:#fff}
+.tg-toggle{position:fixed;bottom:155px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none;font-family:inherit}
+</style>
+</head>
+<body>
+
+<div id="start-screen">
+  <div class="start-logo">🎬 ناردو 3D</div>
+  <div style="color:#666;text-align:center;max-width:350px">🌠 نيازك | 💎 جواهر | 👹 وحوش<br>🎮 عصا تحكم 360° | 🔫 أسلحة</div>
+  <button class="start-btn" onclick="enterApp()">🚀 دخول</button>
+</div>
+
+<div id="game-container">
+  <canvas id="game-canvas"></canvas>
+  
+  <div class="hud">
+    <div class="title">🗺️ الخريطة</div>
+    <div class="hud-stats">
+      <div class="stat-box level"><span>⚡</span><span id="level-display">1</span></div>
+      <div class="stat-box score"><span>💎</span><span id="score-display">0</span></div>
+      <div class="stat-box coins"><span>💰</span><span id="coins-display">0</span></div>
+      <div class="stat-box health"><span>❤️</span><div class="health-bar"><div class="health-fill" id="health-fill" style="width:100%"></div></div></div>
+      <div class="stat-box boss-next" id="boss-next">👹 200</div>
+    </div>
+  </div>
+
+  <!-- BOSS BAR -->
+  <div class="boss-bar-container" id="boss-bar">
+    <div class="boss-name"><span class="boss-emoji">👹</span> الوحش العملاق</div>
+    <div class="boss-bar-bg"><div class="boss-bar-fill" id="boss-fill"></div></div>
+  </div>
+
+  <!-- BOSS WARNING -->
+  <div class="boss-warning" id="boss-warning">
+    <div class="boss-warning-text">⚠️ الوحش يقترب!</div>
+  </div>
+
+  <!-- ===== JOYSTICK ===== -->
+  <div class="joystick-zone" id="joystick-zone">
+    <div class="joystick-base"></div>
+    <div class="joystick-knob" id="joystick-knob"></div>
+  </div>
+
+  <!-- ===== D-PAD ===== -->
+  <div class="dpad" id="dpad">
+    <div class="dpad-btn dpad-up" id="dpad-up">▲</div>
+    <div class="dpad-btn dpad-down" id="dpad-down">▼</div>
+    <div class="dpad-btn dpad-left" id="dpad-left">◄</div>
+    <div class="dpad-btn dpad-right" id="dpad-right">►</div>
+  </div>
+
+  <!-- ===== FIRE BUTTON ===== -->
+  <div class="fire-btn" id="fire-btn">🔫<span class="btn-label">إطلاق</span></div>
+
+  <!-- ===== CONTROL TOGGLE ===== -->
+  <button class="control-toggle" id="control-toggle" onclick="toggleControls()">🎮 D-Pad</button>
+
+  <!-- ===== WEAPON SELECTOR ===== -->
+  <div class="weapon-selector" id="weapon-selector">
+    <button class="close-weapons" onclick="toggleWeaponSelector()">✖</button>
+    <h3>🔫 اختر سلاحك</h3>
+    <div class="weapon-grid" id="weapon-grid"></div>
+  </div>
+  <button class="weapon-toggle" id="weapon-toggle" onclick="toggleWeaponSelector()">🔫 سلاحي</button>
+
+  <!-- ===== SKIN SELECTOR ===== -->
+  <div class="skin-selector" id="skin-selector">
+    <h4>📌 اختر الملصق</h4>
+    <div class="skin-grid" id="skin-grid"></div>
+  </div>
+  <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">📌 شخصيتي</button>
+
+  <!-- ===== TG ===== -->
+  <button class="tg-toggle" id="tg-toggle" onclick="toggleTG()">📡 القناة</button>
+  <div class="tg-dropdown" id="tg-dropdown">
+    <div class="row"><input type="text" id="bot-token" placeholder="Bot Token"><input type="text" id="chat-id" placeholder="Channel ID"></div>
+    <div class="row">
+      <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
+      <button class="btn btn-purple" onclick="fetchAnimated()">🎬 جلب متحرك</button>
+      <button class="btn btn-red" onclick="toggleTG()">✖</button>
+    </div>
+    <div style="font-size:10px;color:#888" id="tg-status">⭕ غير متصل</div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<div id="game-over-screen">
+  <div class="game-over-title">💥 انتهت اللعبة!</div>
+  <div class="game-over-score">🏆 النقاط: <span id="final-score">0</span></div>
+  <button class="restart-btn" onclick="restartGame()">🔄 إعادة اللعب</button>
+</div>
+
+<script>
+// ============================================================
+//  ناردو 3D — v32 FULL + WEAPON SYSTEM + JOYSTICK + FIRE BUTTON
+// ============================================================
+
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+const MAP_SIZE = 16;
+const TILE_SIZE = 40;
+let mapData = [];
+let player = { x: 1.5, y: 1.5, speed: 0.12 };
+let camera = { x: 0, y: 0 };
+
+// ===== JOYSTICK STATE =====
+let joystickActive = false;
+let joystickVector = { x: 0, y: 0 };
+
+// ===== KEYBOARD FALLBACK =====
+let touchDirs = { up: false, down: false, left: false, right: false };
+
+// ===== GAME STATE =====
+let gameState = {
+  score: 0, highScore: parseInt(localStorage.getItem('nardo_high_score') || '0'),
+  health: 100, maxHealth: 100, level: 1, gameOver: false,
+  invincible: false, invincibleTimer: 0, combo: 0, comboTimer: 0,
+  bossActive: false, 
+  nextBossScore: 200,
+  bossInterval: 200,
+  coins: parseInt(localStorage.getItem('nardo_coins') || '0'),
+  bossCount: 0
+};
+
+let meteors = [], gems = [], particles = [], bossBullets = [];
+let meteorSpawnTimer = 0, gemSpawnTimer = 0;
+let meteorSpawnInterval = 120, gemSpawnInterval = 180;
+let meteorSpeedBase = 2;
+let screenShake = { intensity: 0 };
+
+// ===== BOSS =====
+let boss = null;
+let bossWarningActive = false;
+
+// ===== WEAPON SYSTEM =====
+let bullets = [];
+let currentWeapon = null;
+let fireCooldown = 0;
+let fireButtonPressed = false;
+let shootCooldown = 0;
+
+// ===== STICKER =====
+let stickerMedia = null;
+let mediaReady = false;
+let connected = false, botToken = '', channelId = '', lastUpdateId = 0;
+
+// ============================================================
+//  تعريف الأسلحة
+// ============================================================
+const weapons = [
+  { 
+    id: 'pistol', 
+    name: 'مسدس', 
+    emoji: '🔫', 
+    desc: 'سلاح أساسي متوازن', 
+    damage: 15, 
+    fireRate: 20, 
+    speed: 8, 
+    range: 300, 
+    color: '#00f2ff',
+    size: 4,
+    unlocked: true, 
+    cost: 0 
+  },
+  { 
+    id: 'machinegun', 
+    name: 'رشاش', 
+    emoji: '🔫', 
+    desc: 'سرعة إطلاق عالية', 
+    damage: 8, 
+    fireRate: 5, 
+    speed: 10, 
+    range: 250, 
+    color: '#ff6b9d',
+    size: 3,
+    unlocked: false, 
+    cost: 150 
+  },
+  { 
+    id: 'laser', 
+    name: 'ليزر', 
+    emoji: '⚡', 
+    desc: 'يخترق الأعداء', 
+    damage: 25, 
+    fireRate: 30, 
+    speed: 15, 
+    range: 400, 
+    color: '#4ade80',
+    size: 5,
+    piercing: true,
+    unlocked: false, 
+    cost: 300 
+  },
+  { 
+    id: 'rocket', 
+    name: 'صاروخ', 
+    emoji: '🚀', 
+    desc: 'ضخم ومدمر', 
+    damage: 55, 
+    fireRate: 60, 
+    speed: 5, 
+    range: 350, 
+    color: '#ff4757',
+    size: 8,
+    explosive: true,
+    unlocked: false, 
+    cost: 500 
+  },
+  { 
+    id: 'shotgun', 
+    name: 'شوتغان', 
+    emoji: '🔫', 
+    desc: 'عدة رصاصات', 
+    damage: 10, 
+    fireRate: 40, 
+    speed: 7, 
+    range: 200, 
+    color: '#ffd700',
+    size: 4,
+    multi: 5, 
+    spread: 0.4,
+    unlocked: false, 
+    cost: 250 
+  },
+  { 
+    id: 'sniper', 
+    name: 'قناص', 
+    emoji: '🎯', 
+    desc: 'دقة عالية ومدى بعيد', 
+    damage: 45, 
+    fireRate: 50, 
+    speed: 20, 
+    range: 600, 
+    color: '#fbbf24',
+    size: 6,
+    piercing: true,
+    unlocked: false, 
+    cost: 400 
+  },
+  { 
+    id: 'flamethrower', 
+    name: 'قاذف نار', 
+    emoji: '🔥', 
+    desc: 'نار مستمرة', 
+    damage: 6, 
+    fireRate: 2, 
+    speed: 6, 
+    range: 150, 
+    color: '#ff6600',
+    size: 8,
+    continuous: true,
+    unlocked: false, 
+    cost: 350 
+  }
+];
+
+// ============================================================
+//  BOSS EMOJIS
+// ============================================================
+const bossEmojis = [
+  { emoji: '👹', name: 'العملاق', ability: 'قبضة سحق', color: '#ff0000', bulletEmoji: '👊', specialAttack: 'ضربة أرضية', attackCount: 3, damage: 15, speed: 0.8, healthMult: 1.0, size: 55 },
+  { emoji: '🐉', name: 'التنين', ability: 'نار التنين', color: '#ff6600', bulletEmoji: '🔥', specialAttack: 'كرة نارية', attackCount: 4, damage: 20, speed: 1.0, healthMult: 1.2, size: 60 },
+  { emoji: '👾', name: 'الفضائي', ability: 'شعاع ليزر', color: '#00ff00', bulletEmoji: '💚', specialAttack: 'ليزر ثلاثي', attackCount: 5, damage: 12, speed: 1.2, healthMult: 0.8, size: 45 },
+  { emoji: '🧟', name: 'الزومبي', ability: 'جيش الموتى', color: '#00cc00', bulletEmoji: '🧠', specialAttack: 'استدعاء الزومبي', attackCount: 6, damage: 10, speed: 0.6, healthMult: 1.5, size: 50 },
+  { emoji: '🤖', name: 'الروبوت', ability: 'صواريخ موجهة', color: '#00ccff', bulletEmoji: '🚀', specialAttack: 'وابل صواريخ', attackCount: 7, damage: 18, speed: 1.1, healthMult: 1.1, size: 48 },
+  { emoji: '👻', name: 'الشبح', ability: 'اختراق الأجساد', color: '#ccccff', bulletEmoji: '👻', specialAttack: 'موجة خوف', attackCount: 2, damage: 25, speed: 1.5, healthMult: 0.6, size: 40 },
+  { emoji: '💀', name: 'الهيكل العظمي', ability: 'قذائف العظام', color: '#ffffff', bulletEmoji: '💀', specialAttack: 'مطر العظام', attackCount: 8, damage: 8, speed: 1.0, healthMult: 0.7, size: 45 },
+  { emoji: '🐺', name: 'الذئب', ability: 'انقضاض سريع', color: '#cccccc', bulletEmoji: '🐾', specialAttack: 'عواء البرية', attackCount: 3, damage: 22, speed: 1.8, healthMult: 0.7, size: 42 },
+  { emoji: '🦇', name: 'الخفاش', ability: 'موجات صوتية', color: '#9900cc', bulletEmoji: '🦇', specialAttack: 'سرب الخفافيش', attackCount: 4, damage: 14, speed: 1.4, healthMult: 0.6, size: 38 },
+  { emoji: '👿', name: 'الشيطان', ability: 'نار الجحيم', color: '#ff3300', bulletEmoji: '🔥', specialAttack: 'جحيم الشيطان', attackCount: 6, damage: 25, speed: 0.9, healthMult: 1.3, size: 55 },
+  { emoji: '🌋', name: 'البركان', ability: 'حمم بركانية', color: '#ff4500', bulletEmoji: '🌋', specialAttack: 'ثوران بركاني', attackCount: 5, damage: 20, speed: 0.5, healthMult: 1.4, size: 58 },
+  { emoji: '⚡', name: 'البرق', ability: 'صاعقة كهربائية', color: '#ffff00', bulletEmoji: '⚡', specialAttack: 'عاصفة كهربائية', attackCount: 4, damage: 30, speed: 2.0, healthMult: 0.5, size: 35 },
+  { emoji: '🌀', name: 'الإعصار', ability: 'زوابع مدمرة', color: '#00ddff', bulletEmoji: '🌀', specialAttack: 'إعصار خارق', attackCount: 3, damage: 15, speed: 0.7, healthMult: 1.0, size: 52 },
+  { emoji: '🔥', name: 'النار', ability: 'لهيب محرق', color: '#ff8800', bulletEmoji: '🔥', specialAttack: 'انفجار ناري', attackCount: 4, damage: 18, speed: 1.0, healthMult: 0.9, size: 48 },
+  { emoji: '❄️', name: 'الثلج', ability: 'تجميد سريع', color: '#66ddff', bulletEmoji: '❄️', specialAttack: 'عاصفة ثلجية', attackCount: 3, damage: 10, speed: 0.6, healthMult: 1.1, size: 50, freezeChance: 0.3 },
+  { emoji: '☠️', name: 'السم', ability: 'سم قاتل', color: '#66ff00', bulletEmoji: '☠️', specialAttack: 'ضباب سام', attackCount: 5, damage: 8, speed: 0.8, healthMult: 1.0, size: 44, poisonChance: 0.4 },
+  { emoji: '👽', name: 'الكائن الفضائي', ability: 'تخاطر ذهني', color: '#88ff00', bulletEmoji: '👽', specialAttack: 'غزو فضائي', attackCount: 6, damage: 16, speed: 1.3, healthMult: 0.9, size: 46 },
+  { emoji: '🧙', name: 'الساحر', ability: 'سحر الظلام', color: '#9900ff', bulletEmoji: '🧙', specialAttack: 'تعويذة سحرية', attackCount: 4, damage: 22, speed: 0.7, healthMult: 0.8, size: 42 },
+  { emoji: '🧛', name: 'المصاص', ability: 'مص الدماء', color: '#cc0044', bulletEmoji: '🧛', specialAttack: 'عض مميت', attackCount: 3, damage: 28, speed: 1.2, healthMult: 0.8, size: 44, lifesteal: 0.2 },
+  { emoji: '🦄', name: 'يونيكورن', ability: 'قوس قزح', color: '#ff66ff', bulletEmoji: '🌈', specialAttack: 'انفجار قوس قزح', attackCount: 2, damage: 35, speed: 2.5, healthMult: 0.4, size: 38, healChance: 0.2 }
+];
+
+const gemTypes = [
+  { emoji: '💎', color: '#00f2ff', points: 10, glow: 'rgba(0,242,255,0.4)' },
+  { emoji: '🔮', color: '#8b5cf6', points: 20, glow: 'rgba(139,92,246,0.4)' },
+  { emoji: '💍', color: '#ffd700', points: 50, glow: 'rgba(255,215,0,0.4)' },
+  { emoji: '⭐', color: '#ff6b9d', points: 30, glow: 'rgba(255,107,157,0.4)' },
+  { emoji: '🌟', color: '#fbbf24', points: 100, glow: 'rgba(251,191,36,0.5)' }
+];
+
+// ============================================================
+//  TOAST
+// ============================================================
+function showToast(message, type) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + (type || '');
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3200);
+}
+
+function updateHUD() {
+  document.getElementById('score-display').textContent = gameState.score;
+  document.getElementById('level-display').textContent = gameState.level;
+  document.getElementById('coins-display').textContent = gameState.coins;
+  document.getElementById('health-fill').style.width = (gameState.health / gameState.maxHealth * 100) + '%';
+  
+  const nextBossEl = document.getElementById('boss-next');
+  if (nextBossEl && !gameState.bossActive) {
+    const remaining = gameState.nextBossScore - gameState.score;
+    const nextIndex = (gameState.bossCount) % bossEmojis.length;
+    const nextBoss = bossEmojis[nextIndex];
+    if (remaining > 0) {
+      nextBossEl.textContent = `${nextBoss.emoji} ${remaining}`;
+      nextBossEl.style.color = '#ff4757';
+    } else {
+      nextBossEl.textContent = `${nextBoss.emoji} قادم!`;
+      nextBossEl.style.color = '#ff6b6b';
+    }
+  }
+}
+
+// ============================================================
+//  MAP
+// ============================================================
+function generateMap() {
+  mapData = [];
+  for (let y = 0; y < MAP_SIZE; y++) {
+    const row = [];
+    for (let x = 0; x < MAP_SIZE; x++) {
+      if (x === 0 || x === MAP_SIZE - 1 || y === 0 || y === MAP_SIZE - 1) row.push(1);
+      else if (Math.random() < 0.1 && !(x <= 3 && y <= 3)) row.push(1);
+      else row.push(0);
+    }
+    mapData.push(row);
+  }
+  for (let y = 1; y <= 3; y++) for (let x = 1; x <= 3; x++) mapData[y][x] = 0;
+}
+
+// ============================================================
+//  SPAWN
+// ============================================================
+function spawnMeteor() {
+  const edge = Math.floor(Math.random() * 4);
+  let mx, my, vx, vy;
+  const speed = meteorSpeedBase + (gameState.level * 0.5) + Math.random() * 1.5;
+  if (edge === 0) { mx = Math.random() * MAP_SIZE * TILE_SIZE; my = -50; vx = (Math.random() - 0.5) * speed; vy = speed; }
+  else if (edge === 1) { mx = MAP_SIZE * TILE_SIZE + 50; my = Math.random() * MAP_SIZE * TILE_SIZE; vx = -speed; vy = (Math.random() - 0.5) * speed; }
+  else if (edge === 2) { mx = Math.random() * MAP_SIZE * TILE_SIZE; my = MAP_SIZE * TILE_SIZE + 50; vx = (Math.random() - 0.5) * speed; vy = -speed; }
+  else { mx = -50; my = Math.random() * MAP_SIZE * TILE_SIZE; vx = speed; vy = (Math.random() - 0.5) * speed; }
+  meteors.push({ x: mx, y: my, vx, vy, size: 15 + Math.random() * 20, rotation: Math.random() * Math.PI * 2, rotSpeed: (Math.random() - 0.5) * 0.15, trail: [], color: `hsl(${Math.random() * 40 + 10}, 100%, 60%)`, dead: false });
+}
+
+function spawnGem() {
+  let gx, gy, attempts = 0;
+  do { gx = 1 + Math.random() * (MAP_SIZE - 2); gy = 1 + Math.random() * (MAP_SIZE - 2); attempts++; } while (mapData[Math.floor(gy)]?.[Math.floor(gx)] === 1 && attempts < 20);
+  const type = gemTypes[Math.floor(Math.random() * gemTypes.length)];
+  gems.push({ x: gx * TILE_SIZE + TILE_SIZE/2, y: gy * TILE_SIZE + TILE_SIZE/2, type, floatOffset: Math.random() * Math.PI * 2, collected: false, scale: 1, pulse: 0 });
+}
+
+function spawnParticles(x, y, color, count, speed) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = Math.random() * speed;
+    particles.push({ x, y, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd, life: 1, decay: 0.02 + Math.random() * 0.03, color, size: 2 + Math.random() * 4 });
+  }
+}
+
+function spawnFloatingText(x, y, text, color) {
+  particles.push({ x, y, vx: 0, vy: -1.5, life: 1.5, decay: 0.015, color, size: 14, text, isText: true });
+}
+
+// ============================================================
+//  DAMAGE
+// ============================================================
+function takeDamage(amount) {
+  if (gameState.invincible) return;
+  gameState.health -= amount;
+  if (gameState.health <= 0) {
+    gameState.health = 0;
+    endGame();
+  } else {
+    gameState.invincible = true;
+    gameState.invincibleTimer = 60;
+    showToast('💥 اصطدام! -' + amount + ' ❤️', 'error');
+  }
+  updateHUD();
+}
+
+function endGame() {
+  gameState.gameOver = true;
+  if (gameState.score > gameState.highScore) {
+    gameState.highScore = gameState.score;
+    localStorage.setItem('nardo_high_score', gameState.highScore.toString());
+  }
+  document.getElementById('final-score').textContent = gameState.score;
+  document.getElementById('game-over-screen').classList.add('show');
+}
+
+function restartGame() {
+  gameState = { score: 0, highScore: gameState.highScore, health: 100, maxHealth: 100, level: 1, gameOver: false, invincible: false, invincibleTimer: 0, combo: 0, comboTimer: 0, bossActive: false, nextBossScore: 200, bossInterval: 200, coins: gameState.coins, bossCount: 0 };
+  meteors = []; gems = []; particles = []; bullets = []; bossBullets = [];
+  boss = null;
+  bossWarningActive = false;
+  player.x = 1.5; player.y = 1.5;
+  document.getElementById('boss-bar').classList.remove('show');
+  document.getElementById('boss-warning').classList.remove('show');
+  document.getElementById('game-over-screen').classList.remove('show');
+  updateHUD();
+  showToast('🎮 لنبدأ من جديد!', 'success');
+}
+
+// ============================================================
+//  BOSS SYSTEM
+// ============================================================
+function createBoss() {
+  const edge = Math.floor(Math.random() * 4);
+  let bx, by;
+  if (edge === 0) { bx = MAP_SIZE * TILE_SIZE / 2; by = -80; }
+  else if (edge === 1) { bx = MAP_SIZE * TILE_SIZE + 80; by = MAP_SIZE * TILE_SIZE / 2; }
+  else if (edge === 2) { bx = MAP_SIZE * TILE_SIZE / 2; by = MAP_SIZE * TILE_SIZE + 80; }
+  else { bx = -80; by = MAP_SIZE * TILE_SIZE / 2; }
+  
+  const bossIndex = gameState.bossCount % bossEmojis.length;
+  const bossData = bossEmojis[bossIndex];
+  
+  const levelMult = 1 + (gameState.level - 1) * 0.2;
+  const healthMult = bossData.healthMult || 1.0;
+  
+  boss = {
+    x: bx, y: by,
+    health: 200 * healthMult * levelMult, 
+    maxHealth: 200 * healthMult * levelMult,
+    size: bossData.size || 50, 
+    speed: (bossData.speed || 0.8) + gameState.level * 0.05,
+    attackTimer: 0, 
+    attackInterval: Math.max(30, 80 - gameState.level * 3),
+    moveTimer: 0, 
+    dead: false,
+    emoji: bossData.emoji,
+    name: bossData.name,
+    ability: bossData.ability,
+    specialAttack: bossData.specialAttack,
+    color: bossData.color,
+    bulletEmoji: bossData.bulletEmoji || '🔥',
+    attackCount: bossData.attackCount || 3,
+    damage: (bossData.damage || 15) + Math.floor(gameState.level * 0.5),
+    bossNumber: gameState.bossCount + 1,
+    phase: 0,
+    specialCooldown: 0,
+    freezeChance: bossData.freezeChance || 0,
+    poisonChance: bossData.poisonChance || 0,
+    lifesteal: bossData.lifesteal || 0,
+    healChance: bossData.healChance || 0,
+    isFrozen: false,
+    freezeTimer: 0
+  };
+  
+  gameState.bossActive = true;
+  document.getElementById('boss-bar').classList.add('show');
+  document.querySelector('.boss-name').innerHTML = 
+    `<span class="boss-emoji">${boss.emoji}</span> ${boss.name} - ${boss.ability} (${boss.bossNumber})`;
+  
+  showToast(`👹 ظهر ${boss.emoji} ${boss.name}! قدرته: ${boss.ability}`, 'boss');
+}
+
+function updateBoss() {
+  if (!boss || boss.dead) return;
+  
+  if (boss.isFrozen) {
+    boss.freezeTimer--;
+    if (boss.freezeTimer <= 0) { boss.isFrozen = false; showToast('❄️ الوحش تحرر!', 'info'); }
+    return;
+  }
+  
+  const px = player.x * TILE_SIZE + TILE_SIZE/2;
+  const py = player.y * TILE_SIZE + TILE_SIZE/2;
+  const dx = px - boss.x;
+  const dy = py - boss.y;
+  const dist = Math.hypot(dx, dy);
+  
+  boss.phase = 0;
+  if (boss.health < boss.maxHealth * 0.5) boss.phase = 1;
+  if (boss.health < boss.maxHealth * 0.25) boss.phase = 2;
+  
+  if (dist > 150) {
+    boss.x += (dx / dist) * boss.speed * (1 + boss.phase * 0.2);
+    boss.y += (dy / dist) * boss.speed * (1 + boss.phase * 0.2);
+  } else {
+    boss.moveTimer += 0.02 + boss.phase * 0.01;
+    boss.x += Math.cos(boss.moveTimer + boss.phase * 0.5) * boss.speed * 1.5;
+    boss.y += Math.sin(boss.moveTimer + boss.phase * 0.5) * boss.speed * 1.5;
+  }
+  
+  boss.attackTimer++;
+  const attackInterval = Math.max(25, boss.attackInterval - boss.phase * 10);
+  boss.specialCooldown++;
+  const isSpecial = boss.specialCooldown >= 5;
+  
+  if (boss.attackTimer >= attackInterval) {
+    boss.attackTimer = 0;
+    const angle = Math.atan2(dy, dx);
+    const bulletCount = isSpecial ? boss.attackCount + 2 : boss.attackCount;
+    const spread = (0.15 + boss.phase * 0.05) * (isSpecial ? 0.8 : 1);
+    
+    const bulletEmoji = isSpecial ? '🌟' : (boss.bulletEmoji || '🔥');
+    const damageMult = isSpecial ? 1.5 : 1;
+    
+    for (let i = 0; i < bulletCount; i++) {
+      const a = angle - (bulletCount - 1) * spread / 2 + i * spread;
+      const speed = 3 + boss.phase * 0.5 + (isSpecial ? 1 : 0);
+      bossBullets.push({
+        x: boss.x, y: boss.y,
+        vx: Math.cos(a) * speed, 
+        vy: Math.sin(a) * speed,
+        size: 6 + boss.phase * 2 + (isSpecial ? 3 : 0),
+        color: boss.color || '#ff0000',
+        damage: (boss.damage || 15) * damageMult,
+        emoji: bulletEmoji,
+        life: 150,
+        isSpecial: isSpecial,
+        freezeChance: boss.freezeChance || 0,
+        poisonChance: boss.poisonChance || 0
+      });
+    }
+    
+    if (isSpecial) {
+      showToast(`⚡ ${boss.emoji} يستخدم ${boss.specialAttack}!`, 'boss');
+      screenShake.intensity = 20;
+      boss.specialCooldown = 0;
+    }
+    
+    if (boss.phase >= 1) spawnMeteor();
+    if (boss.phase >= 2) spawnMeteor();
+  }
+  
+  document.getElementById('boss-fill').style.width = Math.max(0, (boss.health / boss.maxHealth * 100)) + '%';
+  
+  if (!gameState.invincible && !gameState.gameOver) {
+    if (Math.hypot(boss.x - px, boss.y - py) < boss.size + TILE_SIZE * 0.4) {
+      const damage = (boss.damage || 15) + boss.phase * 5;
+      takeDamage(damage);
+      screenShake.intensity = 20 + boss.phase * 5;
+      spawnParticles(px, py, '#ff4757', 25, 5);
+      const pushAngle = Math.atan2(py - boss.y, px - boss.x);
+      player.x += Math.cos(pushAngle) * 0.3;
+      player.y += Math.sin(pushAngle) * 0.3;
+      if (boss.lifesteal > 0) {
+        const healAmount = damage * boss.lifesteal;
+        boss.health = Math.min(boss.maxHealth, boss.health + healAmount);
+        spawnFloatingText(boss.x, boss.y - 30, `+${Math.floor(healAmount)} ❤️`, '#ff0066');
+        showToast(`🧛 الوحش امتص ${Math.floor(healAmount)} صحة!`, 'error');
+      }
+    }
+  }
+}
+
+function defeatBoss() {
+  if (!boss) return;
+  boss.dead = true;
+  gameState.bossActive = false;
+  document.getElementById('boss-bar').classList.remove('show');
+  gameState.bossCount++;
+  
+  spawnParticles(boss.x, boss.y, '#ff4757', 60, 8);
+  spawnParticles(boss.x, boss.y, '#ffd700', 40, 6);
+  spawnParticles(boss.x, boss.y, boss.color || '#8b5cf6', 30, 5);
+  spawnFloatingText(boss.x, boss.y - 30, '+500 💎', '#ffd700');
+  spawnFloatingText(boss.x, boss.y - 50, `🎉 ${boss.emoji} هزم!`, '#4ade80');
+  
+  gameState.score += 500;
+  gameState.coins += 100;
+  gameState.health = Math.min(gameState.maxHealth, gameState.health + 30);
+  localStorage.setItem('nardo_coins', gameState.coins.toString());
+  
+  let specialReward = '';
+  if (boss.emoji === '🦄' && Math.random() < boss.healChance) {
+    gameState.health = gameState.maxHealth;
+    specialReward = '❤️ شفاء كامل!';
+    showToast('🦄 تم شفاؤك بالكامل!', 'success');
+  }
+  if (boss.emoji === '⚡') {
+    gameState.score += 100;
+    specialReward = '⚡ +100 نقطة إضافية!';
+    showToast('⚡ مكافأة البرق! +100 نقطة', 'gold');
+  }
+  if (boss.emoji === '🌀') {
+    gameState.coins += 50;
+    specialReward = '🌀 +50 عملة إضافية!';
+    localStorage.setItem('nardo_coins', gameState.coins.toString());
+    showToast('🌀 مكافأة الإعصار! +50 عملة', 'gold');
+  }
+  
+  screenShake.intensity = 25;
+  showToast(`🎉 هزمت ${boss.emoji} ${boss.name}! +500 نقطة +100 عملة ${specialReward}`, 'gold');
+  
+  updateHUD();
+  
+  const gemCount = Math.floor((boss.damage || 15) / 10) + 2;
+  for (let i = 0; i < gemCount; i++) {
+    setTimeout(() => {
+      const type = gemTypes[Math.floor(Math.random() * gemTypes.length)];
+      gems.push({ 
+        x: boss.x + (Math.random() - 0.5) * 150, 
+        y: boss.y + (Math.random() - 0.5) * 150, 
+        type, 
+        floatOffset: Math.random() * Math.PI * 2, 
+        collected: false, 
+        scale: 1, 
+        pulse: 0 
+      });
+    }, i * 300);
+  }
+  
+  const nextIndex = (gameState.bossCount) % bossEmojis.length;
+  const nextBoss = bossEmojis[nextIndex];
+  showToast(`👹 الوحش القادم: ${nextBoss.emoji} ${nextBoss.name} عند ${gameState.nextBossScore} نقطة`, 'info');
+}
+
+function updateBossBullets() {
+  for (let i = bossBullets.length - 1; i >= 0; i--) {
+    const b = bossBullets[i];
+    b.x += b.vx; b.y += b.vy; b.life--;
+    if (b.life <= 0 || b.x < -100 || b.x > MAP_SIZE * TILE_SIZE + 100 || b.y < -100 || b.y > MAP_SIZE * TILE_SIZE + 100) { bossBullets.splice(i, 1); continue; }
+    const px = player.x * TILE_SIZE + TILE_SIZE/2;
+    const py = player.y * TILE_SIZE + TILE_SIZE/2;
+    if (!gameState.invincible && !gameState.gameOver && Math.hypot(b.x - px, b.y - py) < b.size + TILE_SIZE * 0.35) {
+      const damage = b.damage || 10;
+      takeDamage(damage);
+      bossBullets.splice(i, 1);
+      spawnParticles(px, py, '#ff4757', 12, 3);
+      screenShake.intensity = 10;
+      if (b.freezeChance && Math.random() < b.freezeChance && !gameState.gameOver) {
+        player.speed = 0.04;
+        showToast('❄️ تم تجميدك!', 'error');
+        setTimeout(() => { player.speed = 0.12; showToast('✅ تحررت!', 'success'); }, 1500);
+      }
+      if (b.poisonChance && Math.random() < b.poisonChance && !gameState.gameOver) {
+        let poisonTicks = 0;
+        const poisonInterval = setInterval(() => {
+          if (gameState.gameOver || poisonTicks >= 6) { clearInterval(poisonInterval); return; }
+          takeDamage(3);
+          spawnParticles(px + (Math.random() - 0.5) * 40, py + (Math.random() - 0.5) * 40, '#66ff00', 5, 1);
+          poisonTicks++;
+        }, 500);
+        showToast('☠️ تم تسميمك!', 'error');
+      }
+    }
+  }
+}
+
+function showBossWarning(bossData) {
+  if (bossWarningActive || gameState.bossActive) return;
+  bossWarningActive = true;
+  const warn = document.getElementById('boss-warning');
+  const warnText = document.querySelector('.boss-warning-text');
+  if (bossData) warnText.textContent = `⚠️ ${bossData.emoji} يقترب!`;
+  else warnText.textContent = '⚠️ الوحش يقترب!';
+  warn.classList.add('show');
+  setTimeout(() => { warn.classList.remove('show'); bossWarningActive = false; createBoss(); }, 2000);
+}
+
+function checkBossSpawn() {
+  if (gameState.bossActive || bossWarningActive) return;
+  if (gameState.score >= gameState.nextBossScore) {
+    const nextIndex = (gameState.bossCount) % bossEmojis.length;
+    const nextBoss = bossEmojis[nextIndex];
+    showBossWarning(nextBoss);
+    gameState.nextBossScore += gameState.bossInterval;
+    showToast(`⚠️ ${nextBoss.emoji} ${nextBoss.name} يقترب!`, 'boss');
+  }
+}
+
+// ============================================================
+//  WEAPON SYSTEM - CORE
+// ============================================================
+function initWeapons() {
+  loadUnlockedWeapons();
+  currentWeapon = weapons.find(w => w.unlocked) || weapons[0];
+  document.getElementById('fire-btn').innerHTML = currentWeapon.emoji + '<span class="btn-label">إطلاق</span>';
+  renderWeaponGrid();
+}
+
+function loadUnlockedWeapons() {
+  try {
+    const saved = localStorage.getItem('nardo_weapons_unlocked');
+    if (saved) {
+      const ids = JSON.parse(saved);
+      for (const w of weapons) {
+        if (ids.includes(w.id)) w.unlocked = true;
+      }
+    }
+  } catch(e) {}
+}
+
+function saveUnlockedWeapons() {
+  const unlocked = weapons.filter(w => w.unlocked).map(w => w.id);
+  localStorage.setItem('nardo_weapons_unlocked', JSON.stringify(unlocked));
+}
+
+function fireWeapon() {
+  if (fireCooldown > 0 || gameState.gameOver || !fireButtonPressed) return;
+  if (!currentWeapon) return;
+  
+  const cooldown = currentWeapon.continuous ? 2 : currentWeapon.fireRate;
+  if (fireCooldown > 0) return;
+  fireCooldown = cooldown;
+  
+  const px = player.x * TILE_SIZE + TILE_SIZE/2;
+  const py = player.y * TILE_SIZE + TILE_SIZE/2;
+  
+  // اتجاه الإطلاق
+  let dirX = 0, dirY = 0;
+  if (joystickActive && (Math.abs(joystickVector.x) > 0.1 || Math.abs(joystickVector.y) > 0.1)) {
+    dirX = joystickVector.x;
+    dirY = joystickVector.y;
+  } else {
+    dirX = 0;
+    dirY = -1;
+  }
+  
+  const baseAngle = Math.atan2(dirY, dirX);
+  const count = currentWeapon.multi || 1;
+  const spread = currentWeapon.spread || 0;
+  
+  screenShake.intensity = Math.min(5, currentWeapon.damage / 10);
+  
+  for (let i = 0; i < count; i++) {
+    const angleOffset = count > 1 ? (i - (count-1)/2) * spread : 0;
+    const angle = baseAngle + angleOffset + (Math.random() - 0.5) * 0.02;
+    const speed = currentWeapon.speed + (Math.random() - 0.5) * 0.5;
+    
+    bullets.push({
+      x: px, y: py,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      damage: currentWeapon.damage,
+      size: currentWeapon.size || 4,
+      color: currentWeapon.color,
+      life: currentWeapon.range / speed,
+      maxLife: currentWeapon.range / speed,
+      piercing: currentWeapon.piercing || false,
+      explosive: currentWeapon.explosive || false,
+      continuous: currentWeapon.continuous || false,
+      hitList: [],
+      angle: angle,
+      trail: []
+    });
+  }
+  
+  spawnParticles(px, py, currentWeapon.color, 5, 3);
+  if (currentWeapon.explosive) {
+    spawnParticles(px, py, '#ff6600', 10, 4);
+  }
+}
+
+function updateBullets() {
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    b.x += b.vx; b.y += b.vy; b.life--;
+    
+    if (b.trail.length < 5) b.trail.push({ x: b.x, y: b.y });
+    
+    if (b.life <= 0 || b.x < -100 || b.x > MAP_SIZE * TILE_SIZE + 100 || 
+        b.y < -100 || b.y > MAP_SIZE * TILE_SIZE + 100) {
+      bullets.splice(i, 1);
+      continue;
+    }
+    
+    let hit = false;
+    // اصطدام النيازك
+    for (let j = meteors.length - 1; j >= 0; j--) {
+      const m = meteors[j];
+      if (Math.hypot(b.x - m.x, b.y - m.y) < m.size + b.size) {
+        if (b.piercing && b.hitList.includes(j)) continue;
+        
+        if (b.explosive) {
+          spawnParticles(m.x, m.y, '#ff6600', 30, 6);
+          spawnParticles(m.x, m.y, '#ffd700', 20, 4);
+          screenShake.intensity = 20;
+          for (let k = meteors.length - 1; k >= 0; k--) {
+            if (Math.hypot(meteors[k].x - m.x, meteors[k].y - m.y) < 100) {
+              meteors[k].dead = true;
+              spawnParticles(meteors[k].x, meteors[k].y, '#ff4757', 15, 4);
+              gameState.score += 5;
+            }
+          }
+        } else {
+          spawnParticles(m.x, m.y, b.color, 12, 4);
+          screenShake.intensity = 3;
+        }
+        
+        m.dead = true;
+        meteors.splice(j, 1);
+        gameState.score += 10;
+        spawnFloatingText(m.x, m.y - 15, '+10', '#ffd700');
+        
+        if (b.piercing) {
+          b.hitList.push(j);
+          b.damage = Math.max(1, b.damage * 0.8);
+        } else {
+          hit = true;
+          break;
+        }
+      }
+    }
+    
+    // اصطدام الوحش
+    if (boss && !boss.dead && !hit) {
+      if (Math.hypot(b.x - boss.x, b.y - boss.y) < boss.size + b.size) {
+        if (b.explosive) {
+          boss.health -= b.damage * 2;
+          spawnParticles(boss.x, boss.y, '#ff6600', 40, 6);
+          screenShake.intensity = 25;
+        } else {
+          boss.health -= b.damage;
+          spawnParticles(b.x, b.y, b.color, 10, 3);
+          screenShake.intensity = 5;
+        }
+        if (boss.health <= 0) defeatBoss();
+        if (!b.piercing) { bullets.splice(i, 1); continue; }
+      }
+    }
+    
+    if (hit && !b.piercing) bullets.splice(i, 1);
+  }
+}
+
+// ============================================================
+//  UPDATE
+// ============================================================
+function updatePlayer() {
+  if (gameState.gameOver) return;
+  
+  let dx = 0, dy = 0;
+  
+  if (joystickActive) {
+    dx = joystickVector.x * player.speed * 1.5;
+    dy = joystickVector.y * player.speed * 1.5;
+  } else {
+    if (touchDirs.up) dy = -player.speed;
+    if (touchDirs.down) dy = player.speed;
+    if (touchDirs.left) dx = -player.speed;
+    if (touchDirs.right) dx = player.speed;
+  }
+
+  const newX = player.x + dx;
+  const newY = player.y + dy;
+  const checkX = Math.round(newX);
+  const checkY = Math.round(newY);
+  
+  if (checkX >= 0 && checkX < MAP_SIZE && checkY >= 0 && checkY < MAP_SIZE && mapData[checkY]?.[checkX] !== 1) {
+    player.x = newX;
+    player.y = newY;
+  }
+  
+  player.x = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.x));
+  player.y = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.y));
+
+  if (gameState.invincible) { gameState.invincibleTimer--; if (gameState.invincibleTimer <= 0) gameState.invincible = false; }
+  if (gameState.comboTimer > 0) { gameState.comboTimer--; if (gameState.comboTimer <= 0) gameState.combo = 0; }
+}
+
+function updateMeteors() {
+  meteorSpawnTimer++;
+  const currentInterval = Math.max(30, meteorSpawnInterval - gameState.level * 8);
+  if (meteorSpawnTimer >= currentInterval) { meteorSpawnTimer = 0; spawnMeteor(); }
+
+  for (let i = meteors.length - 1; i >= 0; i--) {
+    const m = meteors[i];
+    m.x += m.vx; m.y += m.vy; m.rotation += m.rotSpeed;
+    m.trail.push({ x: m.x, y: m.y, life: 1 });
+    if (m.trail.length > 15) m.trail.shift();
+    for (const t of m.trail) t.life -= 0.07;
+    m.trail = m.trail.filter(t => t.life > 0);
+
+    if (m.x < -200 || m.x > MAP_SIZE * TILE_SIZE + 200 || m.y < -200 || m.y > MAP_SIZE * TILE_SIZE + 200) { meteors.splice(i, 1); continue; }
+
+    if (!gameState.invincible && !gameState.gameOver) {
+      const px = player.x * TILE_SIZE + TILE_SIZE/2, py = player.y * TILE_SIZE + TILE_SIZE/2;
+      if (Math.hypot(m.x - px, m.y - py) < m.size + TILE_SIZE * 0.4) {
+        m.dead = true; meteors.splice(i, 1);
+        takeDamage(25);
+        spawnParticles(px, py, '#ff4757', 20, 4);
+        screenShake.intensity = 15;
+        spawnFloatingText(px, py - 20, '-25 ❤️', '#ff4757');
+      }
+    }
+  }
+}
+
+function updateGems() {
+  gemSpawnTimer++;
+  const currentInterval = Math.max(60, gemSpawnInterval - gameState.level * 5);
+  if (gemSpawnTimer >= currentInterval && gems.length < 8) { gemSpawnTimer = 0; spawnGem(); }
+
+  for (let i = gems.length - 1; i >= 0; i--) {
+    const g = gems[i];
+    g.floatOffset += 0.05; g.pulse += 0.08;
+    if (g.collected) { g.scale -= 0.08; if (g.scale <= 0) { gems.splice(i, 1); } continue; }
+
+    const px = player.x * TILE_SIZE + TILE_SIZE/2, py = player.y * TILE_SIZE + TILE_SIZE/2;
+    if (Math.hypot(g.x - px, g.y - py) < TILE_SIZE * 0.9) {
+      g.collected = true;
+      const points = g.type.points * (1 + Math.floor(gameState.combo / 3));
+      gameState.score += points;
+      gameState.combo++; gameState.comboTimer = 120;
+      const newLevel = 1 + Math.floor(gameState.score / 100);
+      if (newLevel > gameState.level) { gameState.level = newLevel; showToast('⚡ مستوى ' + gameState.level + '!', 'success'); spawnFloatingText(px, py - 40, 'مستوى ' + gameState.level + '!', '#00f2ff'); }
+      spawnParticles(g.x, g.y, g.type.color, 12, 3);
+      spawnFloatingText(g.x, g.y - 15, '+' + points, g.type.color);
+      updateHUD();
+    }
+  }
+}
+
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+
+// ============================================================
+//  RENDER
+// ============================================================
+function renderGame() {
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+
+  let shakeX = 0, shakeY = 0;
+  if (screenShake.intensity > 0) {
+    shakeX = (Math.random() - 0.5) * screenShake.intensity;
+    shakeY = (Math.random() - 0.5) * screenShake.intensity;
+    screenShake.intensity *= 0.9;
+    if (screenShake.intensity < 0.5) screenShake.intensity = 0;
+  }
+
+  camera.x = player.x * TILE_SIZE - w / 2;
+  camera.y = player.y * TILE_SIZE - h / 2;
+  camera.x = Math.max(0, Math.min(MAP_SIZE * TILE_SIZE - w, camera.x));
+  camera.y = Math.max(0, Math.min(MAP_SIZE * TILE_SIZE - h, camera.y));
+
+  ctx.save();
+  ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
+
+  // Map
+  for (let y = 0; y < MAP_SIZE; y++) {
+    for (let x = 0; x < MAP_SIZE; x++) {
+      const px = x * TILE_SIZE, py = y * TILE_SIZE;
+      if (mapData[y][x] === 1) {
+        ctx.fillStyle = '#2a2a4a'; ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        ctx.strokeStyle = '#3a3a5a'; ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
+      } else {
+        ctx.fillStyle = (x + y) % 2 === 0 ? '#1a1a2e' : '#222244';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+      }
+    }
+  }
+
+  // Gems
+  for (const g of gems) {
+    if (g.collected && g.scale <= 0) continue;
+    const floatY = Math.sin(g.floatOffset) * 4;
+    const pulseScale = 1 + Math.sin(g.pulse) * 0.15;
+    const finalScale = g.scale * pulseScale;
+    const size = 16 * finalScale;
+    ctx.save();
+    ctx.translate(g.x, g.y + floatY);
+    const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, size * 1.5);
+    glow.addColorStop(0, g.type.glow); glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = g.type.color; ctx.shadowColor = g.type.color; ctx.shadowBlur = 15;
+    ctx.font = `bold ${size}px Cairo`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(g.type.emoji, 0, 0); ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // Boss Bullets
+  for (const b of bossBullets) {
+    ctx.save();
+    const glow = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.size * 3);
+    glow.addColorStop(0, b.color + '40');
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(b.x, b.y, b.size * 3, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowColor = b.color; ctx.shadowBlur = 20;
+    ctx.font = `${b.size * 2}px Cairo`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(b.emoji || '🔥', b.x, b.y);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // Boss
+  if (boss && !boss.dead) {
+    ctx.save();
+    ctx.translate(boss.x, boss.y);
+    const size = boss.size;
+    
+    const glowColors = {
+      '👹': 'rgba(255,0,0,0.3)','🐉': 'rgba(255,100,0,0.3)','👾': 'rgba(0,255,0,0.3)',
+      '🧟': 'rgba(0,200,0,0.3)','🤖': 'rgba(0,200,255,0.3)','👻': 'rgba(200,200,255,0.3)',
+      '💀': 'rgba(255,255,255,0.3)','🐺': 'rgba(200,200,200,0.3)','🦇': 'rgba(100,0,100,0.3)',
+      '👿': 'rgba(255,0,0,0.3)','🌋': 'rgba(255,100,0,0.3)','⚡': 'rgba(255,255,0,0.3)',
+      '🌀': 'rgba(0,200,255,0.3)','🔥': 'rgba(255,100,0,0.3)','❄️': 'rgba(100,200,255,0.3)',
+      '☠️': 'rgba(0,200,0,0.3)','👽': 'rgba(0,255,100,0.3)','🧙': 'rgba(200,0,200,0.3)',
+      '🧛': 'rgba(200,0,0,0.3)','🦄': 'rgba(255,200,255,0.3)'
+    };
+    
+    const glowColor = glowColors[boss.emoji] || 'rgba(255,0,0,0.3)';
+    const glow = ctx.createRadialGradient(0, 0, 10, 0, 0, size * 2);
+    glow.addColorStop(0, glowColor);
+    glow.addColorStop(0.5, glowColor.replace('0.3', '0.1'));
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, size * 2, 0, Math.PI * 2); ctx.fill();
+    
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(0, size * 0.8, size * 0.8, size * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+    
+    const gradient = ctx.createRadialGradient(-size*0.2, -size*0.2, 0, 0, 0, size);
+    gradient.addColorStop(0, '#ff6b6b');
+    gradient.addColorStop(0.6, '#cc0000');
+    gradient.addColorStop(1, '#660000');
+    ctx.fillStyle = gradient;
+    ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI * 2); ctx.fill();
+    
+    ctx.strokeStyle = boss.phase >= 2 ? '#ff6b6b' : boss.phase >= 1 ? '#ff8800' : '#ff0000';
+    ctx.lineWidth = 3 + boss.phase;
+    ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI * 2); ctx.stroke();
+    
+    ctx.font = `${size * 1.4}px Cairo`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 30;
+    ctx.fillText(boss.emoji, 0, 0);
+    ctx.shadowBlur = 0;
+    
+    ctx.fillStyle = 'rgba(255,215,0,0.8)';
+    ctx.font = 'bold 14px Cairo';
+    ctx.textAlign = 'center';
+    ctx.fillText(`#${boss.bossNumber}`, 0, -size - 25);
+    
+    ctx.fillStyle = 'rgba(255,215,0,0.6)';
+    ctx.font = '9px Cairo';
+    ctx.fillText(`⚡${boss.ability}`, 0, -size - 38);
+    
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '10px Cairo';
+    ctx.fillText(boss.name, 0, -size - 10);
+    
+    const healthPercent = boss.health / boss.maxHealth;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(-size * 0.8, -size * 1.5, size * 1.6, 6);
+    ctx.fillStyle = healthPercent > 0.5 ? '#4ade80' : healthPercent > 0.25 ? '#fbbf24' : '#f87171';
+    ctx.fillRect(-size * 0.8, -size * 1.5, size * 1.6 * healthPercent, 6);
+    
+    ctx.restore();
+  }
+
+  // Meteors
+  for (const m of meteors) {
+    for (let t = 0; t < m.trail.length; t++) {
+      const trail = m.trail[t];
+      ctx.fillStyle = m.color; ctx.globalAlpha = trail.life * 0.4;
+      ctx.beginPath(); ctx.arc(trail.x, trail.y, m.size * 0.4 * trail.life, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    ctx.save(); ctx.translate(m.x, m.y); ctx.rotate(m.rotation);
+    const meteorGlow = ctx.createRadialGradient(0, 0, m.size * 0.3, 0, 0, m.size * 1.2);
+    meteorGlow.addColorStop(0, 'rgba(255,100,50,0.6)'); meteorGlow.addColorStop(0.5, 'rgba(255,50,50,0.3)'); meteorGlow.addColorStop(1, 'rgba(255,0,0,0)');
+    ctx.fillStyle = meteorGlow; ctx.beginPath(); ctx.arc(0, 0, m.size * 1.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffeb3b'; ctx.shadowColor = '#ff4757'; ctx.shadowBlur = 20;
+    ctx.beginPath(); ctx.arc(0, 0, m.size * 0.5, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#8b4513'; ctx.beginPath(); ctx.arc(-m.size * 0.15, -m.size * 0.1, m.size * 0.25, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  // Player Bullets
+  for (const b of bullets) {
+    ctx.save();
+    
+    // Trail
+    if (b.trail.length > 1) {
+      for (let t = 0; t < b.trail.length - 1; t++) {
+        ctx.globalAlpha = (t / b.trail.length) * 0.3;
+        ctx.fillStyle = b.color;
+        ctx.beginPath();
+        ctx.arc(b.trail[t].x, b.trail[t].y, b.size * (t / b.trail.length) * 0.5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+    }
+    
+    const glow = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.size * 4);
+    glow.addColorStop(0, b.color + '60');
+    glow.addColorStop(0.3, b.color + '30');
+    glow.addColorStop(1, b.color + '00');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.size * 4, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.fillStyle = b.color;
+    ctx.shadowColor = b.color;
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    
+    if (b.explosive) {
+      ctx.fillStyle = '#ffd700';
+      ctx.font = `${b.size * 1.5}px Cairo`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🚀', b.x, b.y - 2);
+    }
+    
+    ctx.restore();
+  }
+
+  // Player
+  const px = player.x * TILE_SIZE, py = player.y * TILE_SIZE;
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
+  ctx.beginPath(); ctx.ellipse(px + TILE_SIZE/2, py + TILE_SIZE * 0.92, TILE_SIZE * 0.55, TILE_SIZE * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+
+  if (gameState.invincible && Math.sin(Date.now() / 50) > 0) ctx.globalAlpha = 0.3;
+
+  if (stickerMedia) {
+    const size = 200;
+    if (stickerMedia.type === 'image' && stickerMedia.img) {
+      ctx.save();
+      const glow = ctx.createRadialGradient(px + TILE_SIZE/2, py + TILE_SIZE/2, 5, px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.7);
+      glow.addColorStop(0, 'rgba(139,92,246,0.25)'); glow.addColorStop(1, 'rgba(139,92,246,0)');
+      ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.7, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.5, 0, Math.PI * 2); ctx.clip();
+      ctx.drawImage(stickerMedia.img, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size);
+      ctx.restore();
+      ctx.strokeStyle = '#8b5cf6'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.5, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = '#c084fc'; ctx.font = 'bold 12px Cairo'; ctx.textAlign = 'center';
+      ctx.fillText('📌 ملصق', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2 - 8);
+    } else if (stickerMedia.type === 'video' && stickerMedia.video) {
+      ctx.save();
+      try { ctx.drawImage(stickerMedia.video, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size); } catch(e) {}
+      ctx.fillStyle = '#c084fc'; ctx.font = 'bold 12px Cairo'; ctx.textAlign = 'center';
+      ctx.fillText('🎬 فيديو', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2 - 6);
+      ctx.restore();
+    } else if (stickerMedia.type === 'lottie' && stickerMedia.iframe) {
+      ctx.save();
+      try { ctx.drawImage(stickerMedia.iframe, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size); } catch(e) {}
+      ctx.fillStyle = '#c084fc'; ctx.font = 'bold 12px Cairo'; ctx.textAlign = 'center';
+      ctx.fillText('🎬 متحرك', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2 - 6);
+      ctx.restore();
+    }
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath(); ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, 6, 0, Math.PI * 2); ctx.fill();
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  // Particles
+  ctx.save(); ctx.translate(shakeX, shakeY);
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life);
+    if (p.isText) { ctx.fillStyle = p.color; ctx.font = `bold ${p.size}px Cairo`; ctx.textAlign = 'center'; ctx.fillText(p.text, p.x - camera.x, p.y - camera.y); }
+    else { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x - camera.x, p.y - camera.y, p.size * p.life, 0, Math.PI * 2); ctx.fill(); }
+  }
+  ctx.globalAlpha = 1; ctx.restore();
+
+  // Combo
+  if (gameState.combo > 1 && gameState.comboTimer > 0) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(w/2 - 60, 50, 120, 28);
+    ctx.fillStyle = '#ffd700'; ctx.font = 'bold 14px Cairo'; ctx.textAlign = 'center';
+    ctx.fillText('🔥 كومبو x' + gameState.combo, w/2, 68);
+  }
+}
+
+// ============================================================
+//  LOOP
+// ============================================================
+function gameLoop() {
+  if (!gameState.gameOver) {
+    updatePlayer(); 
+    updateMeteors(); 
+    updateGems(); 
+    updateParticles();
+    updateBullets();
+    checkBossSpawn();
+    if (gameState.bossActive && boss) {
+      updateBoss();
+      updateBossBullets();
+    }
+    
+    // إطلاق تلقائي مستمر
+    if (fireButtonPressed && currentWeapon && !gameState.gameOver) {
+      fireWeapon();
+    }
+    
+    if (fireCooldown > 0) fireCooldown--;
+    if (shootCooldown > 0) shootCooldown--;
+  }
+  renderGame();
+  requestAnimationFrame(gameLoop);
+}
+
+// ============================================================
+//  JOYSTICK SETUP
+// ============================================================
+function setupJoystick() {
+  const zone = document.getElementById('joystick-zone');
+  const knob = document.getElementById('joystick-knob');
+  let centerX, centerY;
+  const maxDist = 35;
+
+  function updateJoystick(touchX, touchY) {
+    let dx = touchX - centerX;
+    let dy = touchY - centerY;
+    const dist = Math.hypot(dx, dy);
+    if (dist > maxDist) {
+      dx = (dx / dist) * maxDist;
+      dy = (dy / dist) * maxDist;
+    }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    joystickVector.x = dx / maxDist;
+    joystickVector.y = dy / maxDist;
+  }
+
+  zone.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    const rect = zone.getBoundingClientRect();
+    centerX = rect.left + rect.width / 2;
+    centerY = rect.top + rect.height / 2;
+    const touch = e.touches[0];
+    joystickActive = true;
+    knob.classList.add('active');
+    updateJoystick(touch.clientX, touch.clientY);
+  }, { passive: false });
+
+  zone.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    if (!joystickActive) return;
+    const touch = e.touches[0];
+    updateJoystick(touch.clientX, touch.clientY);
+  }, { passive: false });
+
+  zone.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    joystickActive = false;
+    knob.classList.remove('active');
+    knob.style.transform = 'translate(0px, 0px)';
+    joystickVector = { x: 0, y: 0 };
+  }, { passive: false });
+
+  zone.addEventListener('touchcancel', function() {
+    joystickActive = false;
+    knob.classList.remove('active');
+    knob.style.transform = 'translate(0px, 0px)';
+    joystickVector = { x: 0, y: 0 };
+  });
+}
+
+// ============================================================
+//  FIRE BUTTON SETUP
+// ============================================================
+function setupFireButton() {
+  const btn = document.getElementById('fire-btn');
+  
+  btn.addEventListener('touchstart', e => {
+    e.preventDefault();
+    fireButtonPressed = true;
+    btn.style.transform = 'scale(0.85)';
+    btn.style.background = 'rgba(255,71,71,0.4)';
+    btn.style.borderColor = '#ff4757';
+    btn.style.boxShadow = '0 0 40px rgba(255,71,71,0.5)';
+  }, { passive: false });
+  
+  btn.addEventListener('touchend', e => {
+    e.preventDefault();
+    fireButtonPressed = false;
+    btn.style.transform = 'scale(1)';
+    btn.style.background = 'rgba(255,71,71,0.15)';
+    btn.style.borderColor = 'rgba(255,71,71,0.4)';
+    btn.style.boxShadow = 'none';
+  }, { passive: false });
+  
+  btn.addEventListener('touchcancel', () => {
+    fireButtonPressed = false;
+    btn.style.transform = 'scale(1)';
+    btn.style.background = 'rgba(255,71,71,0.15)';
+    btn.style.borderColor = 'rgba(255,71,71,0.4)';
+    btn.style.boxShadow = 'none';
+  });
+  
+  btn.addEventListener('mousedown', () => {
+    fireButtonPressed = true;
+    btn.style.transform = 'scale(0.85)';
+    btn.style.background = 'rgba(255,71,71,0.4)';
+    btn.style.borderColor = '#ff4757';
+    btn.style.boxShadow = '0 0 40px rgba(255,71,71,0.5)';
+  });
+  
+  btn.addEventListener('mouseup', () => {
+    fireButtonPressed = false;
+    btn.style.transform = 'scale(1)';
+    btn.style.background = 'rgba(255,71,71,0.15)';
+    btn.style.borderColor = 'rgba(255,71,71,0.4)';
+    btn.style.boxShadow = 'none';
+  });
+  
+  btn.addEventListener('mouseleave', () => {
+    fireButtonPressed = false;
+    btn.style.transform = 'scale(1)';
+    btn.style.background = 'rgba(255,71,71,0.15)';
+    btn.style.borderColor = 'rgba(255,71,71,0.4)';
+    btn.style.boxShadow = 'none';
+  });
+}
+
+// ============================================================
+//  WEAPON SELECTOR UI
+// ============================================================
+function renderWeaponGrid() {
+  const grid = document.getElementById('weapon-grid');
+  grid.innerHTML = '';
+  
+  for (const w of weapons) {
+    const card = document.createElement('div');
+    card.className = 'weapon-card' + 
+      (w.id === currentWeapon?.id ? ' active' : '') + 
+      (!w.unlocked ? ' locked' : '');
+    
+    const statsHtml = `
+      <span>⚔️${w.damage}</span>
+      <span>🚀${w.speed}</span>
+      <span>⏱️${w.fireRate}</span>
+      ${w.piercing ? '<span>🔱خارق</span>' : ''}
+      ${w.explosive ? '<span>💥متفجر</span>' : ''}
+      ${w.multi ? `<span>🔫x${w.multi}</span>` : ''}
+    `;
+    
+    card.innerHTML = `
+      <div class="w-icon">${w.emoji}</div>
+      <div class="w-name">${w.name}</div>
+      <div class="w-desc">${w.desc}</div>
+      <div class="w-stats">${statsHtml}</div>
+      ${!w.unlocked ? `<div class="w-cost">💰 ${w.cost}</div>` : ''}
+    `;
+    
+    card.onclick = () => selectWeapon(w);
+    grid.appendChild(card);
+  }
+}
+
+function selectWeapon(w) {
+  if (w.unlocked) {
+    currentWeapon = w;
+    document.getElementById('fire-btn').innerHTML = w.emoji + '<span class="btn-label">إطلاق</span>';
+    renderWeaponGrid();
+    showToast(`🔫 ${w.emoji} ${w.name} جاهز!`, 'success');
+    updateHUD();
+  } else {
+    if (gameState.coins >= w.cost) {
+      gameState.coins -= w.cost;
+      w.unlocked = true;
+      currentWeapon = w;
+      document.getElementById('fire-btn').innerHTML = w.emoji + '<span class="btn-label">إطلاق</span>';
+      localStorage.setItem('nardo_coins', gameState.coins.toString());
+      saveUnlockedWeapons();
+      renderWeaponGrid();
+      showToast(`✅ تم فتح ${w.emoji} ${w.name}!`, 'gold');
+      updateHUD();
+    } else {
+      showToast(`❌ يحتاج ${w.cost} 💰 عملات`, 'error');
+    }
+  }
+}
+
+function toggleWeaponSelector() {
+  const selector = document.getElementById('weapon-selector');
+  selector.classList.toggle('show');
+  if (selector.classList.contains('show')) renderWeaponGrid();
+}
+
+// ============================================================
+//  CONTROLS
+// ============================================================
+function toggleControls() {
+  const dpad = document.getElementById('dpad');
+  const joystick = document.getElementById('joystick-zone');
+  const toggle = document.getElementById('control-toggle');
+  
+  if (dpad.style.display === 'none' || dpad.style.display === '') {
+    dpad.style.display = 'block';
+    joystick.style.display = 'none';
+    toggle.textContent = '🕹️ Joystick';
+    showToast('🎮 تم التبديل إلى D-Pad', 'info');
+  } else {
+    dpad.style.display = 'none';
+    joystick.style.display = 'block';
+    toggle.textContent = '🎮 D-Pad';
+    showToast('🕹️ تم التبديل إلى Joystick', 'info');
+  }
+}
+
+// ============================================================
+//  D-PAD SETUP
+// ============================================================
+function setupDPad() {
+  const btnUp = document.getElementById('dpad-up');
+  const btnDown = document.getElementById('dpad-down');
+  const btnLeft = document.getElementById('dpad-left');
+  const btnRight = document.getElementById('dpad-right');
+
+  function setDir(dir, state) {
+    touchDirs[dir] = state;
+  }
+
+  btnUp.addEventListener('touchstart', e => { e.preventDefault(); setDir('up', true); });
+  btnUp.addEventListener('touchend', e => { e.preventDefault(); setDir('up', false); });
+  btnUp.addEventListener('touchcancel', () => setDir('up', false));
+  
+  btnDown.addEventListener('touchstart', e => { e.preventDefault(); setDir('down', true); });
+  btnDown.addEventListener('touchend', e => { e.preventDefault(); setDir('down', false); });
+  btnDown.addEventListener('touchcancel', () => setDir('down', false));
+  
+  btnLeft.addEventListener('touchstart', e => { e.preventDefault(); setDir('left', true); });
+  btnLeft.addEventListener('touchend', e => { e.preventDefault(); setDir('left', false); });
+  btnLeft.addEventListener('touchcancel', () => setDir('left', false));
+  
+  btnRight.addEventListener('touchstart', e => { e.preventDefault(); setDir('right', true); });
+  btnRight.addEventListener('touchend', e => { e.preventDefault(); setDir('right', false); });
+  btnRight.addEventListener('touchcancel', () => setDir('right', false));
+
+  // Mouse support
+  btnUp.addEventListener('mousedown', () => setDir('up', true));
+  btnUp.addEventListener('mouseup', () => setDir('up', false));
+  btnUp.addEventListener('mouseleave', () => setDir('up', false));
+  
+  btnDown.addEventListener('mousedown', () => setDir('down', true));
+  btnDown.addEventListener('mouseup', () => setDir('down', false));
+  btnDown.addEventListener('mouseleave', () => setDir('down', false));
+  
+  btnLeft.addEventListener('mousedown', () => setDir('left', true));
+  btnLeft.addEventListener('mouseup', () => setDir('left', false));
+  btnLeft.addEventListener('mouseleave', () => setDir('left', false));
+  
+  btnRight.addEventListener('mousedown', () => setDir('right', true));
+  btnRight.addEventListener('mouseup', () => setDir('right', false));
+  btnRight.addEventListener('mouseleave', () => setDir('right', false));
+}
+
+// ============================================================
+//  KEYBOARD
+// ============================================================
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowUp') touchDirs.up = true;
+  if (e.key === 'ArrowDown') touchDirs.down = true;
+  if (e.key === 'ArrowLeft') touchDirs.left = true;
+  if (e.key === 'ArrowRight') touchDirs.right = true;
+  if (e.key === ' ' || e.key === 'Space') {
+    e.preventDefault();
+    fireButtonPressed = true;
+  }
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'ArrowUp') touchDirs.up = false;
+  if (e.key === 'ArrowDown') touchDirs.down = false;
+  if (e.key === 'ArrowLeft') touchDirs.left = false;
+  if (e.key === 'ArrowRight') touchDirs.right = false;
+  if (e.key === ' ' || e.key === 'Space') {
+    e.preventDefault();
+    fireButtonPressed = false;
+  }
+});
+
+// ============================================================
+//  TELEGRAM
+// ============================================================
+function toggleTG() { document.getElementById('tg-dropdown').classList.toggle('show'); }
+function toggleSkinSelector() { document.getElementById('skin-selector').classList.toggle('show'); }
+
+function setTGStatus(msg, type) {
+  const el = document.getElementById('tg-status');
+  el.textContent = msg;
+  el.style.color = type === 'success' ? '#4ade80' : type === 'error' ? '#f87171' : '#888';
+}
+
+async function testTelegram() {
+  botToken = document.getElementById('bot-token').value.trim();
+  channelId = document.getElementById('chat-id').value.trim();
+  if (!botToken || !channelId) { setTGStatus('❌ ادخل البيانات', 'error'); return; }
+  setTGStatus('🔄 جاري...', '');
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getMe');
+    const data = await res.json();
+    if (data.ok) { connected = true; setTGStatus('✅ متصل بـ @' + data.result.username, 'success'); showToast('✅ تم الاتصال!', 'success'); }
+    else { setTGStatus('❌ ' + data.description, 'error'); }
+  } catch(e) { setTGStatus('❌ فشل الاتصال', 'error'); }
+}
+
+async function fetchAnimated() {
+  if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
+  setTGStatus('🎬 جاري البحث...', '');
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
+    const data = await res.json();
+    if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
+    for (const update of (data.result || [])) {
+      lastUpdateId = Math.max(lastUpdateId, update.update_id);
+      const msg = update.channel_post || update.message;
+      if (!msg || !msg.sticker) continue;
+      const sticker = msg.sticker;
+      const fileId = sticker.file_id;
+      const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+      const fileData = await fileRes.json();
+      if (!fileData.ok) continue;
+      const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+
+      if (sticker.is_video) {
+        const video = document.createElement('video');
+        video.muted = true; video.loop = true; video.playsInline = true; video.preload = 'auto';
+        video.src = url;
+        video.onloadeddata = () => {
+          video.play().catch(() => {});
+          stickerMedia = { type: 'video', video };
+          mediaReady = true;
+          setTGStatus('✅ فيديو جاهز', 'success');
+          showToast('🎬 فيديو جاهز للعرض', 'success');
+        };
+        video.load();
+        return;
+      }
+
+      if (sticker.is_animated) {
+        const iframe = document.createElement('iframe');
+        iframe.style.width = '240px'; iframe.style.height = '240px';
+        iframe.style.position = 'fixed'; iframe.style.left = '-9999px'; iframe.style.top = '-9999px';
+        iframe.src = 'https://cdn.jsdelivr.net/npm/lottie-iframe@1.0.0/index.html?url=' + encodeURIComponent(url);
+        document.body.appendChild(iframe);
+        setTimeout(() => {
+          stickerMedia = { type: 'lottie', iframe };
+          mediaReady = true;
+          setTGStatus('✅ متحرك جاهز', 'success');
+          showToast('🎬 متحرك جاهز للعرض', 'success');
+        }, 1000);
+        return;
+      }
+
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        stickerMedia = { type: 'image', img };
+        mediaReady = true;
+        setTGStatus('✅ ملصق جاهز', 'success');
+        showToast('📌 ملصق جاهز للعرض', 'success');
+      };
+      img.onerror = () => { setTGStatus('❌ فشل تحميل الصورة', 'error'); };
+      img.src = url;
+      return;
+    }
+    setTGStatus('📭 لا يوجد ملصق', '');
+  } catch(e) { setTGStatus('❌ خطأ', 'error'); }
+}
+
+// ============================================================
+//  RESIZE
+// ============================================================
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+
+// ============================================================
+//  ENTRY
+// ============================================================
+function enterApp() {
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('game-container').style.display = 'block';
+  document.getElementById('tg-toggle').style.display = 'block';
+  document.getElementById('skin-toggle').style.display = 'block';
+  document.getElementById('weapon-toggle').style.display = 'block';
+  document.getElementById('control-toggle').style.display = 'block';
+
+  generateMap();
+  resize();
+  window.addEventListener('resize', resize);
+  for (let i = 0; i < 5; i++) spawnGem();
+  updateHUD();
+  
+  setupJoystick();
+  setupFireButton();
+  setupDPad();
+  initWeapons();
+  
+  // Auto-fire loop
+  setInterval(() => {
+    if (fireCooldown > 0) fireCooldown--;
+    if (shootCooldown > 0) shootCooldown--;
+  }, 100);
+  
+  gameLoop();
+
+  const savedToken = localStorage.getItem('nardo_bot_token');
+  const savedChat = localStorage.getItem('nardo_chat_id');
+  if (savedToken) document.getElementById('bot-token').value = savedToken;
+  if (savedChat) document.getElementById('chat-id').value = savedChat;
+  if (savedToken && savedChat) setTimeout(testTelegram, 500);
+  
+  showToast('🌠 استخدم عصا التحكم للحركة!', 'info');
+  showToast('🔫 اضغط زر الإطلاق لإطلاق النار!', 'info');
+  showToast('👹 كل 200 نقطة يظهر وحش!', 'info');
+}
+
+console.log('🎬 ناردو 3D — v32 FULL + WEAPON SYSTEM + FIRE BUTTON + JOYSTICK');
+</script>
+</body>
+</html>
+
+  
+
+
+  
