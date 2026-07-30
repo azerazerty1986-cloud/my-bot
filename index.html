@@ -3,2661 +3,789 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🎮 العوالم القتالية - التحكم الدائري</title>
+<title>ملصق متحرك في الخريطة</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
 <style>
-* { margin:0; padding:0; box-sizing:border-box; }
-body { 
-  font-family:'Cairo',sans-serif; 
-  background:#050510; 
-  color:#fff; 
-  overflow:hidden;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-}
+:root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--info:#60a5fa;--accent:#00f2ff;--purple:#8b5cf6}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none}
 
-canvas { display:block; width:100%; height:100%; }
+#start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px}
+.start-logo{font-size:42px;font-weight:900;color:var(--gold);animation:float 3s ease-in-out infinite}
+.start-subtitle{font-size:15px;color:#666;text-align:center;max-width:350px}
+.start-btn{border:2px solid var(--accent);color:var(--accent);padding:16px 50px;background:rgba(0,242,255,0.08);border-radius:60px;font-size:20px;cursor:pointer;transition:all .3s;font-weight:700;font-family:inherit}
+.start-btn:hover{transform:scale(1.05);background:var(--accent);color:#000;box-shadow:0 0 50px rgba(0,242,255,0.4)}
+.user-info{color:var(--accent);font-size:13px;background:rgba(0,0,0,0.6);padding:8px 24px;border-radius:30px}
+.version-tag{position:absolute;bottom:15px;font-size:11px;color:#444}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 
-/* ===== شاشة البداية ===== */
-#start-screen {
-  position:fixed; inset:0; z-index:2000;
-  background:linear-gradient(135deg,#0a0a2a 0%,#000 50%,#0a0a1a 100%);
-  display:flex; flex-direction:column; justify-content:center; align-items:center; gap:24px;
-}
-.start-logo { 
-  font-size:52px; font-weight:900; 
-  background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: float 3s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
-}
-@keyframes glow {
-  from { filter: drop-shadow(0 0 20px rgba(255,215,0,0.3)); }
-  to { filter: drop-shadow(0 0 40px rgba(255,215,0,0.6)); }
-}
-.start-subtitle { 
-  font-size:15px; color:#888; text-align:center; 
-  max-width:420px; line-height:2; 
-}
-.start-subtitle span { 
-  color:#ffd700; font-weight:700;
-  background: rgba(255,215,0,0.08);
-  padding: 2px 10px;
-  border-radius: 20px;
-}
-.start-btn {
-  border:2px solid #00f2ff; color:#00f2ff; padding:18px 60px;
-  background:rgba(0,242,255,0.08); border-radius:60px; font-size:22px;
-  cursor:pointer; transition:all .3s; font-weight:700; font-family:inherit;
-  position: relative; overflow: hidden;
-}
-.start-btn::before {
-  content: ''; position: absolute; top:0; left:-100%;
-  width:100%; height:100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
-}
-.start-btn:hover::before { left:100%; }
-.start-btn:hover { 
-  transform:scale(1.08); background:#00f2ff; color:#000; 
-  box-shadow:0 0 60px rgba(0,242,255,0.5), 0 0 100px rgba(0,242,255,0.2);
-}
-.version-tag { position:absolute; bottom:20px; font-size:12px; color:#555; }
-.start-features {
-  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
-  max-width: 400px;
-}
-.start-features .feat {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 11px;
-  color: #aaa;
-}
+#game-container{position:fixed;inset:0;display:none;background:#0a0a1a}
+#game-canvas{display:block;width:100%;height:100%}
 
-/* ===== HUD ===== */
-#hud {
-  position:fixed; top:12px; left:50%; transform:translateX(-50%);
-  background:rgba(0,0,0,0.9); padding:8px 18px; border-radius:16px;
-  z-index:100; display:none; gap:14px; font-size:12px;
-  border:1px solid rgba(255,255,255,0.08);
-  flex-wrap:wrap; justify-content:center;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 4px 30px rgba(0,0,0,0.3);
-}
-#hud .stat { text-align:center; min-width: 50px; }
-#hud .stat .val { font-weight:bold; font-size:14px; }
-#hud .stat .health { color:#4ade80; }
-#hud .stat .kills { color:#ffd700; }
-#hud .stat .label { font-size:9px; color:#666; display:block; margin-top:2px; }
-#hud .stat .xp-bar {
-  width: 40px; height: 3px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 2px;
-  margin: 3px auto 0;
-  overflow: hidden;
-}
-#hud .stat .xp-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
-  border-radius: 2px;
-  transition: width 0.3s;
-}
+.hud{position:fixed;top:0;left:0;right:0;padding:6px 12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:100;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px)}
+.hud .title{color:var(--gold);font-size:13px;font-weight:700}
+.hud .info{color:#aaa;font-size:11px}
 
-#health-bar-container {
-  position:fixed; bottom:140px; left:50%; transform:translateX(-50%);
-  width:220px; height:8px; background:rgba(255,255,255,0.05);
-  border-radius:4px; z-index:100; overflow:hidden;
-  display:none;
-  border: 1px solid rgba(255,255,255,0.05);
-}
-#health-bar {
-  height:100%; width:100%; background:linear-gradient(90deg,#4ade80,#22d3ee);
-  border-radius:4px; transition:width 0.3s, background 0.3s;
-  position: relative;
-}
-#health-bar::after {
-  content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  animation: shimmer 2s infinite;
-}
-@keyframes shimmer {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(100%); }
-}
+.dpad{position:fixed;bottom:20px;left:16px;width:120px;height:120px;z-index:200}
+.dpad-btn{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .1s}
+.dpad-btn:active{background:rgba(139,92,246,0.2);border-color:var(--purple);color:var(--purple);transform:scale(0.88)}
+.dpad-up{top:0;left:40px}
+.dpad-down{bottom:0;left:40px}
+.dpad-left{top:40px;left:0}
+.dpad-right{top:40px;right:0}
 
-#game-message {
-  position:fixed; bottom:170px; left:50%; transform:translateX(-50%);
-  color:#ffd700; font-size:18px; font-weight:bold; z-index:100;
-  text-shadow:0 0 30px rgba(255,215,0,0.4), 0 2px 4px rgba(0,0,0,0.5);
-  opacity:0; transition:opacity 0.5s, transform 0.5s;
+.tg-dropdown{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:10px 14px;z-index:250;min-width:280px;max-width:92%;display:none;backdrop-filter:blur(12px)}
+.tg-dropdown.show{display:block}
+.tg-dropdown .row{display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap}
+.tg-dropdown input{flex:1;padding:4px 8px;border-radius:6px;border:1px solid rgba(255,215,0,0.1);background:#0a0a1a;color:#fff;font-size:10px;font-family:inherit;min-width:50px}
+.tg-dropdown .btn{padding:4px 10px;border:none;border-radius:6px;font-weight:700;font-size:10px;cursor:pointer;font-family:inherit}
+.btn-accent{background:var(--accent);color:#111}
+.btn-purple{background:var(--purple);color:#fff}
+.btn-gold{background:var(--gold);color:#111}
+.btn-red{background:var(--error);color:#fff}
+.tg-toggle{position:fixed;bottom:155px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:20px;padding:3px 14px;z-index:210;font-size:11px;color:#888;cursor:pointer;display:none}
+
+.skin-selector{position:fixed;bottom:220px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.12);border-radius:14px;padding:10px;z-index:230;display:none;backdrop-filter:blur(12px);min-width:180px;max-height:180px;overflow-y:auto}
+.skin-selector.show{display:block}
+.skin-selector h4{color:var(--gold);font-size:12px;margin-bottom:6px;text-align:center}
+.skin-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(60px,1fr));gap:6px}
+.skin-option{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:6px;padding:4px;text-align:center;cursor:pointer;transition:.2s}
+.skin-option:hover{background:rgba(139,92,246,0.1);border-color:var(--purple)}
+.skin-option .preview{width:28px;height:28px;border-radius:50%;margin:0 auto 3px;background:#0a0a1a;display:flex;align-items:center;justify-content:center;font-size:14px;overflow:hidden}
+.skin-option .preview img{width:100%;height:100%;object-fit:cover}
+.skin-option .sname{font-size:7px;color:#888;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.skin-option.active{border-color:var(--gold);background:rgba(255,215,0,0.05)}
+
+.skin-toggle{position:fixed;top:10px;right:60px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;cursor:pointer;display:none}
+.skin-toggle:hover{color:var(--gold)}
+
+.toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
+.toast{background:rgba(0,0,0,0.9);padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
+.toast.success{border-color:var(--success);color:var(--success)}
+.toast.error{border-color:var(--error);color:var(--error)}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
+@keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
+
+/* Canvas مخفي لـ Lottie */
+#lottie-hidden {
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  width: 240px;
+  height: 240px;
   pointer-events: none;
-  white-space: nowrap;
-}
-#game-message.show { opacity:1; transform:translateX(-50%) translateY(-5px); }
-
-#controls {
-  position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
-  display:none; gap:6px; z-index:100; flex-wrap:wrap; justify-content:center;
-}
-#controls button {
-  background:rgba(139,92,246,0.12); color:#fff; 
-  border:1px solid rgba(139,92,246,0.25);
-  padding:6px 14px; border-radius:12px; cursor:pointer; 
-  font-size:10px; font-family:inherit;
-  transition:all 0.3s; font-weight: 600;
-}
-#controls button:hover { 
-  background:rgba(139,92,246,0.3); 
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(139,92,246,0.2);
-}
-#controls button:active { transform: translateY(0); }
-
-/* ===== التحكم الدائري الاحترافي ===== */
-.dpad {
-  position: fixed; 
-  bottom: 100px; 
-  left: 25px; 
-  width: 140px; 
-  height: 140px; 
-  z-index: 200;
-  display: none;
-  filter: drop-shadow(0 0 30px rgba(139,92,246,0.1));
-}
-
-.dpad-bg {
-  position: absolute;
-  top: 0; left: 0;
-  width: 100%; height: 100%;
-  z-index: 0;
-  animation: rotateSlow 30s linear infinite;
-}
-@keyframes rotateSlow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* حلقات زخرفية */
-.dpad-ring {
-  position: absolute;
-  top: 5px; left: 5px;
-  width: 130px; height: 130px;
-  border-radius: 50%;
-  border: 1px solid rgba(139,92,246,0.06);
-  z-index: 0;
-  animation: ringSpin 20s linear infinite reverse;
-}
-.dpad-ring-inner {
-  position: absolute;
-  top: 15px; left: 15px;
-  width: 110px; height: 110px;
-  border-radius: 50%;
-  border: 1px dashed rgba(139,92,246,0.04);
-  z-index: 0;
-  animation: ringSpin 15s linear infinite;
-}
-@keyframes ringSpin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-/* أزرار الاتجاه */
-.dpad-btn {
-  position: absolute;
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(255,255,255,0.3);
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  z-index: 2;
-  backdrop-filter: blur(8px);
-  box-shadow: 
-    0 2px 10px rgba(0,0,0,0.2),
-    inset 0 1px 0 rgba(255,255,255,0.05);
-}
-.dpad-btn:hover {
-  background: rgba(139,92,246,0.15);
-  border-color: rgba(139,92,246,0.2);
-  color: rgba(255,255,255,0.6);
-  transform: scale(1.05);
-}
-.dpad-btn:active, .dpad-btn.active {
-  background: rgba(139,92,246,0.35);
-  border-color: rgba(139,92,246,0.5);
-  color: #c4b5fd;
-  transform: scale(0.88);
-  box-shadow: 
-    0 0 30px rgba(139,92,246,0.2),
-    inset 0 0 20px rgba(139,92,246,0.1);
-}
-.dpad-btn svg {
-  width: 18px;
-  height: 18px;
-}
-
-.dpad-up { top: 0; left: 46px; }
-.dpad-down { bottom: 0; left: 46px; }
-.dpad-left { top: 46px; left: 0; }
-.dpad-right { top: 46px; right: 0; }
-
-/* المركز */
-.dpad-center {
-  position: absolute;
-  top: 46px; left: 46px;
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  z-index: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-.center-pulse {
-  position: absolute;
-  width: 100%; height: 100%;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
-  animation: centerPulse 2s ease-in-out infinite;
-}
-@keyframes centerPulse {
-  0%,100% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.2); opacity: 1; }
-}
-.center-dot {
-  width: 10px; height: 10px;
-  border-radius: 50%;
-  background: rgba(139,92,246,0.3);
-  border: 1px solid rgba(139,92,246,0.2);
-  animation: dotPulse 1.5s ease-in-out infinite;
-}
-@keyframes dotPulse {
-  0%,100% { transform: scale(1); opacity: 0.3; }
-  50% { transform: scale(0.7); opacity: 0.8; }
-}
-
-/* زر التسريع الاحترافي */
-.speed-btn {
-  position: absolute;
-  bottom: -10px;
-  right: -10px;
-  width: 52px; height: 52px;
-  border-radius: 50%;
-  cursor: pointer;
-  z-index: 3;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  filter: drop-shadow(0 2px 20px rgba(255,215,0,0.05));
-}
-.speed-btn:hover {
-  transform: scale(1.08);
-  filter: drop-shadow(0 4px 30px rgba(255,215,0,0.15));
-}
-.speed-btn:active {
-  transform: scale(0.92);
-}
-.speed-btn svg {
-  width: 100%; height: 100%;
-  filter: drop-shadow(0 0 10px rgba(255,215,0,0.1));
-}
-.speed-btn .speed-ring {
-  transition: stroke-dashoffset 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-.speed-btn.active .speed-ring {
-  stroke: #ffd700;
-  filter: drop-shadow(0 0 15px rgba(255,215,0,0.3));
-}
-.speed-btn .speed-glow {
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255,215,0,0.1) 0%, transparent 70%);
   opacity: 0;
-  transition: opacity 0.5s;
-  pointer-events: none;
+  z-index: -1;
 }
-.speed-btn.active .speed-glow {
-  opacity: 1;
-  animation: glowPulse 1.5s ease-in-out infinite;
-}
-@keyframes glowPulse {
-  0%,100% { transform: scale(0.8); opacity: 0.3; }
-  50% { transform: scale(1.2); opacity: 0.8; }
-}
-
-/* مؤشر السرعة الرقمي */
-.speed-indicator {
-  position: absolute;
-  top: -12px;
-  right: -8px;
-  width: 28px; height: 28px;
-  border-radius: 50%;
-  background: rgba(0,0,0,0.8);
-  border: 1px solid rgba(255,215,0,0.2);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-  font-weight: 900;
-  color: #ffd700;
-  z-index: 4;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 2px 15px rgba(0,0,0,0.3);
-  transition: all 0.3s;
-  opacity: 0;
-  transform: scale(0.5);
-}
-.speed-indicator.show {
-  opacity: 1;
-  transform: scale(1);
-}
-.speed-indicator.active {
-  border-color: #ffd700;
-  box-shadow: 0 0 20px rgba(255,215,0,0.2);
-}
-
-#fire-btn {
-  position:fixed; bottom:100px; right:24px;
-  width:65px; height:65px; border-radius:50%;
-  background:rgba(255,68,68,0.15); border:2px solid rgba(255,68,68,0.35);
-  color:#ff4444; font-size:26px; cursor:pointer; z-index:200;
-  display:none; align-items:center; justify-content:center;
-  transition: all 0.15s;
-  backdrop-filter: blur(4px);
-  box-shadow: 0 4px 20px rgba(255,68,68,0.1);
-}
-#fire-btn:active { 
-  transform:scale(0.85); 
-  background:rgba(255,68,68,0.4);
-  box-shadow: 0 0 30px rgba(255,68,68,0.3);
-}
-
-#enter-btn, #exit-btn {
-  position:fixed; bottom:155px; left:50%; transform:translateX(-50%);
-  padding:8px 24px; border-radius:14px; border:none; font-size:13px;
-  font-family:inherit; cursor:pointer; z-index:150; display:none;
-  font-weight: 700;
-  transition: all 0.3s;
-  backdrop-filter: blur(10px);
-}
-#enter-btn { 
-  background:rgba(0,242,255,0.15); color:#fff; 
-  border:1px solid rgba(0,242,255,0.3);
-  box-shadow: 0 4px 20px rgba(0,242,255,0.1);
-}
-#enter-btn:hover {
-  background:rgba(0,242,255,0.3);
-  transform: translateX(-50%) scale(1.05);
-}
-#exit-btn { 
-  background:rgba(248,113,113,0.15); color:#fff; 
-  border:1px solid rgba(248,113,113,0.3);
-  box-shadow: 0 4px 20px rgba(248,113,113,0.1);
-}
-#exit-btn:hover {
-  background:rgba(248,113,113,0.3);
-  transform: translateX(-50%) scale(1.05);
-}
-
-#transition-screen {
-  position:fixed; inset:0; z-index:500;
-  background:rgba(0,0,0,0.92); display:none;
-  justify-content:center; align-items:center; flex-direction:column;
-  backdrop-filter: blur(10px);
-}
-#transition-screen .spinner {
-  width:50px; height:50px; border:3px solid rgba(255,215,0,0.1);
-  border-top-color:#ffd700; border-radius:50%; 
-  animation:spin 0.8s linear infinite;
-  box-shadow: 0 0 20px rgba(255,215,0,0.1);
-}
-@keyframes spin { to { transform:rotate(360deg); } }
-#transition-text { margin-top:18px; color:#ffd700; font-size:16px; font-weight: 600; }
-
-#toast-container {
-  position:fixed; bottom:120px; left:50%; transform:translateX(-50%);
-  z-index:1000; display:flex; flex-direction:column; gap:6px; align-items:center;
-  pointer-events:none;
-}
-.toast {
-  background:rgba(0,0,0,0.92); color:#fff; padding:8px 18px;
-  border-radius:16px; font-size:12px; border:1px solid rgba(255,255,255,0.08);
-  animation: toastIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  backdrop-filter: blur(10px);
-  font-weight: 600;
-  max-width: 280px;
-  text-align: center;
-}
-.toast.success { border-color:#4ade80; color:#4ade80; }
-.toast.error { border-color:#f87171; color:#f87171; }
-.toast.info { border-color:#60a5fa; color:#60a5fa; }
-.toast.warn { border-color:#fbbf24; color:#fbbf24; }
-@keyframes toastIn { 
-  from { opacity:0; transform:translateY(10px) scale(0.9); } 
-  to { opacity:1; transform:translateY(0) scale(1); } 
-}
-
-#minimap-frame {
-  position:fixed; top:60px; left:12px; width:110px; height:110px;
-  border:2px solid rgba(255,215,0,0.3); border-radius:12px; overflow:hidden;
-  background:rgba(5,5,16,0.85); z-index:90; display:none;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  backdrop-filter: blur(4px);
-}
-
-#video-controls {
-  position:fixed; bottom:90px; left:50%; transform:translateX(-50%);
-  z-index:300; display:none; gap:10px; align-items:center;
-  background:rgba(0,0,0,0.9); padding:8px 18px; border-radius:20px;
-  border: 1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(10px);
-}
-#video-controls button {
-  background:rgba(255,255,255,0.1); border:none; color:#fff;
-  width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px;
-  transition: all 0.2s;
-}
-#video-controls button:hover { background:rgba(255,255,255,0.2); transform: scale(1.1); }
-#video-controls input[type="range"] { 
-  width:120px; height:4px; -webkit-appearance:none; 
-  background:rgba(255,255,255,0.15); border-radius:2px; 
-}
-#video-controls input[type="range"]::-webkit-slider-thumb { 
-  -webkit-appearance:none; width:10px; height:10px; border-radius:50%; 
-  background:#ffd700; cursor:pointer; 
-  box-shadow: 0 0 10px rgba(255,215,0,0.3);
-}
-
-#game-over {
-  position:fixed; inset:0; z-index:500;
-  background:rgba(0,0,0,0.93); display:none;
-  justify-content:center; align-items:center; flex-direction:column; gap:20px;
-  backdrop-filter: blur(15px);
-}
-#game-over h1 { 
-  font-size:42px; 
-  background: linear-gradient(135deg, #ff4444, #ff8c00);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-#game-over .final-stats { 
-  color:#aaa; font-size:15px; text-align:center; line-height:2;
-  background: rgba(255,255,255,0.03);
-  padding: 20px 30px;
-  border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.06);
-}
-#game-over .final-stats span { color: #ffd700; font-weight: 700; }
-#game-over button {
-  padding:14px 45px; border-radius:30px; border:none;
-  background:linear-gradient(135deg, #ffd700, #ff8c00); 
-  color:#111; font-size:18px; font-weight:800;
-  cursor:pointer; font-family:inherit;
-  transition: all 0.3s;
-  box-shadow: 0 4px 30px rgba(255,215,0,0.3);
-}
-#game-over button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 40px rgba(255,215,0,0.4);
-}
-
-#upload-modal {
-  position:fixed; inset:0; z-index:500;
-  background:rgba(0,0,0,0.85); display:none;
-  justify-content:center; align-items:center;
-  backdrop-filter: blur(10px);
-}
-#upload-modal .modal-content {
-  background:rgba(10,10,30,0.95); border:1px solid rgba(255,215,0,0.2);
-  border-radius:18px; padding:24px; max-width:400px; width:90%;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-}
-#upload-modal .modal-title { 
-  color:#ffd700; font-size:18px; font-weight:800; text-align:center; margin-bottom:16px; 
-}
-#upload-modal .modal-field { margin-bottom:12px; }
-#upload-modal .modal-field label { display:block; color:#888; font-size:11px; margin-bottom:4px; font-weight: 600; }
-#upload-modal .modal-field input, #upload-modal .modal-field select {
-  width:100%; padding:8px 12px; border-radius:8px;
-  border:1px solid rgba(255,215,0,0.12); background:#0a0a1a;
-  color:#fff; font-size:12px; font-family:inherit;
-  transition: border-color 0.3s;
-}
-#upload-modal .modal-field input:focus, #upload-modal .modal-field select:focus {
-  outline: none;
-  border-color: rgba(255,215,0,0.4);
-}
-#upload-modal .file-upload-area {
-  border:2px dashed rgba(255,215,0,0.2); border-radius:10px;
-  padding:20px; text-align:center; cursor:pointer; margin-bottom:12px;
-  transition: all 0.3s;
-}
-#upload-modal .file-upload-area:hover {
-  border-color: rgba(255,215,0,0.4);
-  background: rgba(255,215,0,0.03);
-}
-#upload-modal .file-upload-area .icon { font-size:36px; display:block; margin-bottom:6px; }
-#upload-modal .file-upload-area .text { color:#666; font-size:12px; }
-#upload-modal .file-upload-area .file-name { color:#4ade80; font-size:11px; display:none; margin-top:4px; }
-#upload-modal .modal-actions { display:flex; gap:10px; margin-top:16px; }
-#upload-modal .modal-actions button { 
-  flex:1; padding:10px; border:none; border-radius:8px; 
-  font-weight:700; font-size:12px; cursor:pointer; font-family:inherit;
-  transition: all 0.3s;
-}
-.btn-secondary { background:rgba(255,255,255,0.06); color:#888; }
-.btn-secondary:hover { background:rgba(255,255,255,0.1); }
-.btn-success { background:linear-gradient(135deg, #4ade80, #22c55e); color:#111; }
-.btn-success:hover { transform: scale(1.02); }
-
-#file-input { display:none; }
-
-#achievements-panel {
-  position: fixed; top: 60px; right: 12px;
-  background: rgba(0,0,0,0.9);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  padding: 12px;
-  z-index: 95;
-  display: none;
-  max-width: 200px;
-  backdrop-filter: blur(10px);
-}
-#achievements-panel h3 {
-  color: #ffd700;
-  font-size: 12px;
-  margin-bottom: 8px;
-  text-align: center;
-}
-.achievement-item {
-  font-size: 10px;
-  padding: 4px 8px;
-  margin: 3px 0;
-  border-radius: 6px;
-  background: rgba(255,255,255,0.03);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.achievement-item.unlocked { color: #4ade80; border-left: 2px solid #4ade80; }
-.achievement-item.locked { color: #555; }
-
-#settings-btn {
-  position: fixed; top: 12px; right: 12px;
-  z-index: 101;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 50%;
-  width: 36px; height: 36px;
-  color: #fff;
-  font-size: 18px;
-  cursor: pointer;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.3s;
-}
-#settings-btn:hover { background: rgba(255,255,255,0.12); }
-
-#settings-panel {
-  position: fixed; top: 55px; right: 12px;
-  background: rgba(0,0,0,0.92);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px;
-  padding: 16px;
-  z-index: 102;
-  display: none;
-  min-width: 180px;
-  backdrop-filter: blur(10px);
-}
-#settings-panel .setting-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid rgba(255,255,255,0.05);
-  font-size: 12px;
-}
-#settings-panel .setting-row:last-child { border-bottom: none; }
-#settings-panel label { color: #aaa; }
-#settings-panel input[type="range"] { width: 80px; }
-#settings-panel button {
-  background: rgba(139,92,246,0.2);
-  border: 1px solid rgba(139,92,246,0.3);
-  color: #fff;
-  padding: 4px 12px;
-  border-radius: 6px;
-  font-size: 11px;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-#damage-overlay {
-  position: fixed; inset: 0;
-  background: radial-gradient(circle, transparent 40%, rgba(255,0,0,0.3) 100%);
-  pointer-events: none;
-  z-index: 80;
-  opacity: 0;
-  transition: opacity 0.3s;
-}
-#damage-overlay.show { opacity: 1; }
-
-#level-up-effect {
-  position: fixed; inset: 0;
-  pointer-events: none;
-  z-index: 400;
-  display: none;
-  justify-content: center;
-  align-items: center;
-}
-#level-up-effect .level-text {
-  font-size: 64px;
-  font-weight: 900;
-  color: #ffd700;
-  text-shadow: 0 0 60px rgba(255,215,0,0.5);
-  animation: levelUpPop 1.5s ease-out forwards;
-}
-@keyframes levelUpPop {
-  0% { transform: scale(0) rotate(-10deg); opacity: 0; }
-  30% { transform: scale(1.2) rotate(5deg); opacity: 1; }
-  60% { transform: scale(1) rotate(0deg); opacity: 1; }
-  100% { transform: scale(1.5) translateY(-100px); opacity: 0; }
-}
-
-#quest-panel {
-  position: fixed; top: 60px; right: 12px;
-  background: rgba(0,0,0,0.9);
-  border: 1px solid rgba(139,92,246,0.2);
-  border-radius: 12px;
-  padding: 12px;
-  z-index: 95;
-  display: none;
-  max-width: 220px;
-  backdrop-filter: blur(10px);
-}
-#quest-panel h3 { color: #a78bfa; font-size: 12px; margin-bottom: 8px; }
-.quest-item {
-  font-size: 10px;
-  padding: 6px;
-  margin: 3px 0;
-  border-radius: 6px;
-  background: rgba(255,255,255,0.03);
-  border-right: 2px solid #8b5cf6;
-}
-.quest-item.complete { border-right-color: #4ade80; color: #4ade80; }
-.quest-progress {
-  height: 3px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 2px;
-  margin-top: 4px;
-  overflow: hidden;
-}
-.quest-progress-fill {
-  height: 100%;
-  background: #8b5cf6;
-  border-radius: 2px;
-  transition: width 0.3s;
-}
-
-@keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-12px); } }
 </style>
 </head>
 <body>
 
-<!-- ===== شاشة البداية ===== -->
 <div id="start-screen">
-  <div class="start-logo">🎮 العوالم القتالية</div>
-  <div class="start-subtitle">
-    <span>🏆 التحكم الدائري الاحترافي</span><br>
-    خريطة · معالم · عوالم · فيديو 360 · قتال · إنجازات
-  </div>
-  <div class="start-features">
-    <div class="feat">⚔️ قتال</div>
-    <div class="feat">🌍 عوالم</div>
-    <div class="feat">🎯 مهام</div>
-    <div class="feat">🏆 إنجازات</div>
-    <div class="feat">⚡ تسريع</div>
-  </div>
-  <button class="start-btn" onclick="startGame()">🚀 ابدأ المغامرة</button>
-  <div style="display:flex;gap:10px;margin-top:10px;">
-    <button class="start-btn" style="padding:10px 30px;font-size:14px;" onclick="loadGame()">📂 تحميل</button>
-    <button class="start-btn" style="padding:10px 30px;font-size:14px;" onclick="showTutorial()">❓ دليل</button>
-  </div>
-  <div class="version-tag">v70.0 | التحكم الدائري</div>
+  <div class="start-logo">🎬 ملصق متحرك</div>
+  <div class="start-subtitle">يدعم .tgs + .webm • يظهر في الخريطة</div>
+  <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
+  <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
+  <div class="version-tag">v27.0 | Final Working</div>
 </div>
 
-<!-- ===== دليل اللعب ===== -->
-<div id="tutorial-panel" style="position:fixed;inset:0;z-index:2001;background:rgba(0,0,0,0.95);display:none;justify-content:center;align-items:center;flex-direction:column;gap:20px;padding:20px;">
-  <h2 style="color:#ffd700;font-size:28px;">📖 دليل اللعب</h2>
-  <div style="max-width:400px;color:#aaa;font-size:13px;line-height:2;text-align:center;">
-    <div>🎮 <b>الحركة:</b> أزرار الاتجاه الدائرية</div>
-    <div>⚡ <b>التسريع:</b> زر ⚡ لتغيير السرعة (1x → 3x)</div>
-    <div>🦇 <b>الإطلاق:</b> زر النار أو مفتاح المسافة</div>
-    <div>🌐 <b>الدخول:</b> Enter عند الوقوف على بوابة</div>
-    <div>🚪 <b>الخروج:</b> Escape للعودة للخريطة</div>
-    <div>💚 <b>الشفاء:</b> مفتاح H</div>
-    <div>⚔️ <b>ساحة القتال:</b> ادخل عبر البوابة واقتل الأعداء</div>
-  </div>
-  <button class="start-btn" style="padding:10px 40px;font-size:16px;" onclick="hideTutorial()">✅ فهمت</button>
-</div>
+<div id="game-container">
+  <canvas id="game-canvas"></canvas>
+  <canvas id="lottie-hidden" width="240" height="240"></canvas>
 
-<!-- ===== HUD ===== -->
-<div id="hud">
-  <div class="stat">
-    <span class="val health" id="health-display">100</span>
-    <span class="label">❤️ صحة</span>
-  </div>
-  <div class="stat">
-    <span class="val kills" id="kills-display">0</span>
-    <span class="label">💀 قتلى</span>
-  </div>
-  <div class="stat">
-    <span class="val" id="score-display" style="color:#ffd700;">0</span>
-    <span class="label">🏆 نقاط</span>
-  </div>
-  <div class="stat">
-    <span class="val" id="level-display" style="color:#60a5fa;">1</span>
-    <span class="label">⭐ مستوى</span>
-    <div class="xp-bar"><div class="xp-fill" id="xp-bar-fill" style="width:0%"></div></div>
-  </div>
-  <div class="stat">
-    <span class="val" id="world-count" style="color:#a78bfa;">1</span>
-    <span class="label">🌍 عوالم</span>
-  </div>
-  <div class="stat">
-    <span class="val" id="landmark-count" style="color:#fbbf24;">0</span>
-    <span class="label">📍 معالم</span>
-  </div>
-  <div class="stat">
-    <span class="val" id="coins-display" style="color:#fbbf24;">0</span>
-    <span class="label">🪙 ذهب</span>
-  </div>
-</div>
-
-<button id="settings-btn" onclick="toggleSettings()">⚙️</button>
-<div id="settings-panel">
-  <div class="setting-row">
-    <label>🔊 الصوت</label>
-    <input type="range" id="volume-slider" min="0" max="100" value="50" onchange="setVolume(this.value)">
-  </div>
-  <div class="setting-row">
-    <label>📍 الخريطة المصغرة</label>
-    <button onclick="toggleMinimap()">تبديل</button>
-  </div>
-  <div class="setting-row">
-    <label>🌙 الوضع الليلي</label>
-    <button onclick="toggleNightMode()">تبديل</button>
-  </div>
-  <div class="setting-row">
-    <label>💾 حفظ اللعبة</label>
-    <button onclick="saveGame()">حفظ</button>
-  </div>
-  <div class="setting-row">
-    <label>📂 تحميل</label>
-    <button onclick="loadGame()">تحميل</button>
-  </div>
-</div>
-
-<div id="health-bar-container"><div id="health-bar"></div></div>
-<div id="game-message">⚔️ استكشف العوالم واقتل الأعداء!</div>
-
-<div id="controls">
-  <button onclick="spawnEnemy()">👾 عدو</button>
-  <button onclick="healPlayer()">💚 شفاء</button>
-  <button onclick="addLandmark()">📍 معلم</button>
-  <button onclick="addRandomWorld()">🌍 عالم</button>
-  <button onclick="openUploadModal()">📁 رفع</button>
-  <button onclick="toggleAchievements()">🏆 إنجازات</button>
-  <button onclick="toggleQuests()">🎯 مهام</button>
-  <button onclick="resetGame()">🔄 إعادة</button>
-  <button onclick="toggleSpeed()" style="background:rgba(255,215,0,0.15);border-color:#ffd700;">⚡ x<span id="speed-display">1</span></button>
-</div>
-
-<!-- ===== التحكم الدائري الاحترافي ===== -->
-<div class="dpad" id="dpad" style="display:none;">
-  <!-- الخلفية الدائرية المتدرجة -->
-  <svg class="dpad-bg" viewBox="0 0 140 140">
-    <defs>
-      <radialGradient id="dpadGlow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="rgba(139,92,246,0.08)"/>
-        <stop offset="70%" stop-color="rgba(139,92,246,0.02)"/>
-        <stop offset="100%" stop-color="rgba(139,92,246,0)"/>
-      </radialGradient>
-    </defs>
-    <circle cx="70" cy="70" r="60" fill="url(#dpadGlow)"/>
-    <circle cx="70" cy="70" r="55" fill="none" stroke="rgba(139,92,246,0.06)" stroke-width="1"/>
-    <circle cx="70" cy="70" r="45" fill="none" stroke="rgba(139,92,246,0.04)" stroke-width="0.5"/>
-  </svg>
-
-  <!-- المؤشرات الدائرية -->
-  <div class="dpad-ring"></div>
-  <div class="dpad-ring-inner"></div>
-
-  <!-- زر التسريع الاحترافي -->
-  <div class="speed-btn" id="speed-btn" onclick="toggleSpeed()">
-    <svg width="40" height="40" viewBox="0 0 40 40">
-      <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(255,215,0,0.15)" stroke-width="1.5"/>
-      <circle class="speed-ring" cx="20" cy="20" r="18" fill="none" stroke="#ffd700" stroke-width="1.5" 
-        stroke-dasharray="113" stroke-dashoffset="113" id="speed-ring"/>
-      <text x="20" y="16" text-anchor="middle" fill="#ffd700" font-size="14" font-weight="900" id="speed-icon">⚡</text>
-      <text x="20" y="28" text-anchor="middle" fill="rgba(255,215,0,0.7)" font-size="8" font-weight="700" id="speed-label">1x</text>
-    </svg>
-    <div class="speed-glow"></div>
+  <div class="hud">
+    <div class="title">🗺️ الخريطة</div>
+    <div class="info" id="char-name">لا توجد شخصية</div>
   </div>
 
-  <!-- أزرار الاتجاه الأربعة -->
-  <button class="dpad-btn dpad-up" data-dir="up">
-    <svg width="20" height="20" viewBox="0 0 20 20">
-      <polygon points="10,2 18,16 2,16" fill="currentColor"/>
-    </svg>
-  </button>
-  <button class="dpad-btn dpad-down" data-dir="down">
-    <svg width="20" height="20" viewBox="0 0 20 20">
-      <polygon points="2,4 18,4 10,18" fill="currentColor"/>
-    </svg>
-  </button>
-  <button class="dpad-btn dpad-left" data-dir="left">
-    <svg width="20" height="20" viewBox="0 0 20 20">
-      <polygon points="2,10 16,2 16,18" fill="currentColor"/>
-    </svg>
-  </button>
-  <button class="dpad-btn dpad-right" data-dir="right">
-    <svg width="20" height="20" viewBox="0 0 20 20">
-      <polygon points="18,10 4,2 4,18" fill="currentColor"/>
-    </svg>
-  </button>
-
-  <!-- المركز -->
-  <div class="dpad-center">
-    <div class="center-pulse"></div>
-    <div class="center-dot"></div>
+  <div class="dpad" id="dpad">
+    <div class="dpad-btn dpad-up" data-dir="up">▲</div>
+    <div class="dpad-btn dpad-down" data-dir="down">▼</div>
+    <div class="dpad-btn dpad-left" data-dir="left">◀</div>
+    <div class="dpad-btn dpad-right" data-dir="right">▶</div>
   </div>
 
-  <!-- مؤشر السرعة الرقمي -->
-  <div class="speed-indicator" id="speed-indicator">1</div>
-</div>
-
-<button id="fire-btn" onclick="fireWeapon()">🦇</button>
-<button id="enter-btn" onclick="enterWorld()">🌐 دخول</button>
-<button id="exit-btn" onclick="exitWorld()">🚪 خروج</button>
-
-<div id="transition-screen">
-  <div class="spinner"></div>
-  <div id="transition-text">جاري الانتقال...</div>
-</div>
-
-<div id="toast-container"></div>
-<div id="minimap-frame"></div>
-
-<div id="video-controls">
-  <button onclick="togglePlay()">⏸️</button>
-  <input type="range" id="video-progress" min="0" max="100" value="0" oninput="seekVideo(this.value)">
-  <span id="video-time" style="font-size:11px;color:#aaa;min-width:70px;">00:00 / 00:00</span>
-  <button onclick="toggleMute()">🔊</button>
-</div>
-
-<div id="game-over">
-  <h1>💀 انتهت اللعبة</h1>
-  <div class="final-stats">
-    <div>💀 قتلى: <span id="final-kills">0</span></div>
-    <div>🏆 نقاط: <span id="final-score">0</span></div>
-    <div>🪙 ذهب: <span id="final-coins">0</span></div>
-    <div>⭐ المستوى: <span id="final-level">1</span></div>
-    <div>🌍 عوالم: <span id="final-worlds">1</span></div>
-    <div>📍 معالم: <span id="final-landmarks">0</span></div>
-  </div>
-  <button onclick="restartGame()">🔄 العب مجدداً</button>
-</div>
-
-<div id="upload-modal">
-  <div class="modal-content">
-    <div class="modal-title">📁 رفع فيديو/صورة</div>
-    <div class="modal-field">
-      <label>🏷️ الاسم</label>
-      <input type="text" id="lm-name" placeholder="اسم المعلم">
+  <button class="tg-toggle" id="tg-toggle" onclick="toggleTG()">📡 القناة</button>
+  <div class="tg-dropdown" id="tg-dropdown">
+    <div class="row">
+      <input type="text" id="bot-token" placeholder="Bot Token">
+      <input type="text" id="chat-id" placeholder="Channel ID">
     </div>
-    <div class="modal-field">
-      <label>📂 النوع</label>
-      <select id="lm-type">
-        <option value="video">🎬 فيديو</option>
-        <option value="image">🖼️ صورة</option>
-        <option value="video360">🌐 فيديو 360</option>
-      </select>
+    <div class="row">
+      <button class="btn btn-accent" onclick="testTelegram()">🔗 اتصال</button>
+      <button class="btn btn-purple" onclick="fetchAnimatedOrVideo()">🎬 جلب متحرك</button>
+      <button class="btn btn-gold" onclick="fetchStickers()">📌 جلب ملصق</button>
+      <button class="btn btn-red" onclick="toggleTG()">✖</button>
     </div>
-    <div class="modal-field">
-      <label>📍 الإحداثيات</label>
-      <div style="display:flex;gap:8px;">
-        <input type="number" id="lm-row" placeholder="صف" min="0" max="11" style="flex:1;">
-        <input type="number" id="lm-col" placeholder="عمود" min="0" max="11" style="flex:1;">
-      </div>
-    </div>
-    <div class="file-upload-area" onclick="document.getElementById('file-input').click()">
-      <span class="icon">📁</span>
-      <span class="text">اختر ملف</span>
-      <span class="file-name" id="file-name-display"></span>
-    </div>
-    <input type="file" id="file-input" accept="video/*,.webm,.mp4,.mov,image/*" onchange="handleLandmarkFile(event)">
-    <div class="modal-actions">
-      <button class="btn-secondary" onclick="closeUploadModal()">✖ إلغاء</button>
-      <button class="btn-success" onclick="addLandmarkFromModal()">✅ إضافة</button>
-    </div>
+    <div style="font-size:10px;color:#888;" id="tg-status">⭕ غير متصل</div>
   </div>
+
+  <div class="skin-selector" id="skin-selector">
+    <h4>📌 اختر الملصق</h4>
+    <div class="skin-grid" id="skin-grid"></div>
+  </div>
+
+  <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">📌 شخصيتي</button>
 </div>
 
-<div id="achievements-panel">
-  <h3>🏆 الإنجازات</h3>
-  <div id="achievements-list"></div>
-</div>
-
-<div id="quest-panel">
-  <h3>🎯 المهام الحالية</h3>
-  <div id="quest-list"></div>
-</div>
-
-<div id="damage-overlay"></div>
-
-<div id="level-up-effect">
-  <div class="level-text">⭐ مستوى جديد!</div>
-</div>
-
-<canvas id="canvas"></canvas>
+<div class="toast-container" id="toast-container"></div>
 
 <script>
 // ============================================================
-//  🎮 العوالم القتالية - التحكم الدائري الاحترافي v70.0
+//  ناردو 3D — الملصق المتحرك v27.0 (يعمل)
 // ============================================================
 
-// ===== 1. المتغيرات العامة =====
-let scene, camera, renderer;
-let playerGroup, tileGroup;
-let tileMeshes = [];
-let gridHelper = null;
-let minimapCtx = null;
-let isTransitioning = false;
-let isInWorld = false;
-let currentWorldId = 'main';
-let savedPlayerPos = null;
+const tg = window.Telegram?.WebApp;
+let userData = null;
 
-let touchDirs = { up:false, down:false, left:false, right:false };
-const PLAYER_SPEED = 0.12;
-
-// إحصائيات اللاعب
-let playerHealth = 100;
-let maxHealth = 100;
-let kills = 0;
-let score = 0;
-let level = 1;
-let xp = 0;
-let coins = 0;
-const XP_PER_LEVEL = 50;
-let visitedWorlds = new Set(['main']);
-
-// الخريطة
-let GRID = 12;
-let TILE_SIZE = 3;
-let WORLD_SIZE = GRID * TILE_SIZE;
-let HALF = WORLD_SIZE / 2;
-let gridVisible = true;
-let gameRunning = true;
-let nightMode = false;
-
-// المعالم
-let landmarks = [];
-let nextLandmarkId = 1;
-let pendingFile = null;
-
-// العوالم
-let worlds = [];
-
-// القتال
-let enemies = [];
-let bullets = [];
-let enemySpawnTimer = 0;
-let lastFireTime = 0;
-const BULLET_SPEED = 0.6;
-
-// فيديو 360
-let videoMesh = null;
-let videoTexture = null;
-let videoElement = null;
-let isVideoPlaying = true;
-let isVideoMuted = false;
-let lon = 0, lat = 0;
-let isDragging = false;
-let onPointerDownX = 0, onPointerDownY = 0, onPointerDownLon = 0, onPointerDownLat = 0;
-
-// جسيمات
-let particles = [];
-
-// إضاءة
-let ambientLight, dirLight, dirLight2;
-
-// إنجازات
-let achievements = {
-  first_kill: { name: 'أول قتل', desc: 'اقتل أول عدو', unlocked: false, emoji: '💀' },
-  killer_10: { name: 'قاتل محترف', desc: 'اقتل 10 أعداء', unlocked: false, emoji: '⚔️' },
-  explorer: { name: 'مستكشف', desc: 'اكتشف 3 عوالم', unlocked: false, emoji: '🌍' },
-  master: { name: 'سيد العوالم', desc: 'اكتشف 5 عوالم', unlocked: false, emoji: '👑' },
-  collector: { name: 'جامع المعالم', desc: 'أضف 5 معالم', unlocked: false, emoji: '📍' },
-  survivor: { name: 'الناجي', desc: 'وصل للمستوى 5', unlocked: false, emoji: '🛡️' },
-  rich: { name: 'ثراء', desc: 'اجمع 100 ذهب', unlocked: false, emoji: '🪙' },
-  healer: { name: 'معالج', desc: 'استخدم الشفاء 5 مرات', unlocked: false, emoji: '💚' }
-};
-let healCount = 0;
-
-// مهام
-let quests = [
-  { id: 'q1', name: 'قاتل مبتدئ', desc: 'اقتل 3 أعداء', target: 3, current: 0, type: 'kills', reward: 20 },
-  { id: 'q2', name: 'مستكشف', desc: 'اكتشف عالمين جديدين', target: 2, current: 0, type: 'worlds', reward: 50 },
-  { id: 'q3', name: 'باني', desc: 'أضف 3 معالم', target: 3, current: 0, type: 'landmarks', reward: 30 },
-  { id: 'q4', name: 'جامع', desc: 'اجمع 50 نقطة', target: 50, current: 0, type: 'score', reward: 25 }
-];
-
-// ===== 2. نظام التسريع =====
-let speedMultiplier = 1;
-const SPEED_LEVELS = [1, 1.5, 2, 3];
-let speedIndex = 0;
-
-function toggleSpeed() {
-  speedIndex = (speedIndex + 1) % SPEED_LEVELS.length;
-  speedMultiplier = SPEED_LEVELS[speedIndex];
-  
-  const btn = document.getElementById('speed-btn');
-  const label = document.getElementById('speed-label');
-  const icon = document.getElementById('speed-icon');
-  const ring = document.getElementById('speed-ring');
-  const indicator = document.getElementById('speed-indicator');
-  const display = document.getElementById('speed-display');
-  
-  // تحديث النص
-  label.textContent = speedMultiplier + 'x';
-  indicator.textContent = speedMultiplier;
-  if (display) display.textContent = speedMultiplier;
-  
-  // تحديث الحلقة
-  const circumference = 113;
-  const progress = 1 - (speedIndex / (SPEED_LEVELS.length - 1));
-  ring.style.strokeDashoffset = circumference * progress;
-  
-  // تحديث الحالة
-  if (speedMultiplier > 1) {
-    btn.classList.add('active');
-    indicator.classList.add('active');
-    indicator.classList.add('show');
-    icon.textContent = '⚡';
-    showToast('🚀 تسريع x' + speedMultiplier, 'info');
-  } else {
-    btn.classList.remove('active');
-    indicator.classList.remove('active');
-    indicator.classList.remove('show');
-    icon.textContent = '⚡';
-    showToast('🐢 سرعة عادية', 'info');
-  }
-}
-
-// ===== 3. العوالم الافتراضية =====
-function createDefaultWorlds() {
-  worlds = [
-    {
-      id: 'main',
-      name: 'الخريطة الرئيسية',
-      grid: 12,
-      tileSize: 3,
-      startPosition: { x: 0, z: 0 },
-      background: '#0a0a1a',
-      items: [
-        { id: 'p1', type: 'portal', title: 'عالم القتال', emoji: '⚔️', row: 3, col: 3, targetWorld: 'world_fight' },
-        { id: 'p2', type: 'portal', title: 'فيديو 360', emoji: '🌐', row: 3, col: 8, targetWorld: 'world_360' },
-        { id: 'p3', type: 'portal', title: 'معرض الصور', emoji: '🖼️', row: 8, col: 3, targetWorld: 'world_gallery' },
-        { id: 'p4', type: 'portal', title: 'الغابة المظلمة', emoji: '🌲', row: 8, col: 8, targetWorld: 'world_forest' }
-      ]
-    },
-    {
-      id: 'world_fight',
-      name: '⚔️ ساحة القتال',
-      grid: 10,
-      tileSize: 3,
-      startPosition: { x: 0, z: 0 },
-      background: '#1a0a0a',
-      items: []
-    },
-    {
-      id: 'world_360',
-      name: '🌐 فيديو 360',
-      grid: 6,
-      tileSize: 4,
-      startPosition: { x: 0, z: 0 },
-      background: '#050510',
-      videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
-      items: []
-    },
-    {
-      id: 'world_gallery',
-      name: '🖼️ معرض الصور',
-      grid: 8,
-      tileSize: 3.5,
-      startPosition: { x: 0, z: 0 },
-      background: '#0a0a2e',
-      items: [
-        { id: 1, type: 'image', title: '🌊 موجة', emoji: '🌊', row: 2, col: 2 },
-        { id: 2, type: 'image', title: '🔥 نار', emoji: '🔥', row: 2, col: 5 },
-        { id: 3, type: 'image', title: '🌈 قوس قزح', emoji: '🌈', row: 5, col: 2 },
-        { id: 4, type: 'image', title: '⭐ نجمة', emoji: '⭐', row: 5, col: 5 }
-      ]
-    },
-    {
-      id: 'world_forest',
-      name: '🌲 الغابة المظلمة',
-      grid: 10,
-      tileSize: 3,
-      startPosition: { x: 0, z: 0 },
-      background: '#0a1a0a',
-      items: [
-        { id: 1, type: 'image', title: '🌳 شجرة', emoji: '🌳', row: 2, col: 2 },
-        { id: 2, type: 'image', title: '🦊 ثعلب', emoji: '🦊', row: 2, col: 7 },
-        { id: 3, type: 'image', title: '🍄 فطر', emoji: '🍄', row: 7, col: 2 },
-        { id: 4, type: 'image', title: '🦉 بومة', emoji: '🦉', row: 7, col: 7 }
-      ]
-    }
-  ];
-}
-
-// ===== 4. دوال مساعدة =====
-function showToast(msg, type) {
-  const c = document.getElementById('toast-container');
-  const t = document.createElement('div');
-  t.className = 'toast ' + (type || 'info');
-  t.textContent = msg;
-  c.appendChild(t);
-  setTimeout(function() {
-    t.style.opacity = '0';
-    t.style.transform = 'translateY(-10px)';
-    setTimeout(function() { t.remove(); }, 300);
-  }, 2500);
-}
-
-function showMessage(text, duration) {
-  duration = duration || 1500;
-  const el = document.getElementById('game-message');
-  el.textContent = text;
-  el.classList.add('show');
-  clearTimeout(el._timeout);
-  el._timeout = setTimeout(function() { el.classList.remove('show'); }, duration);
-}
-
-function showTransition(text) {
-  document.getElementById('transition-text').textContent = text;
-  document.getElementById('transition-screen').style.display = 'flex';
-}
-function hideTransition() {
-  document.getElementById('transition-screen').style.display = 'none';
-}
-
-function updateHUD() {
-  document.getElementById('health-display').textContent = Math.round(playerHealth);
-  document.getElementById('kills-display').textContent = kills;
-  document.getElementById('score-display').textContent = score;
-  document.getElementById('level-display').textContent = level;
-  document.getElementById('world-count').textContent = visitedWorlds.size;
-  document.getElementById('landmark-count').textContent = landmarks.length;
-  document.getElementById('coins-display').textContent = coins;
-
-  const xpPercent = (xp / XP_PER_LEVEL) * 100;
-  document.getElementById('xp-bar-fill').style.width = xpPercent + '%';
-
-  const healthPercent = (playerHealth / maxHealth) * 100;
-  document.getElementById('health-bar').style.width = healthPercent + '%';
-  if (healthPercent < 30) {
-    document.getElementById('health-bar').style.background = 'linear-gradient(90deg,#f87171,#ef4444)';
-  } else if (healthPercent < 60) {
-    document.getElementById('health-bar').style.background = 'linear-gradient(90deg,#fbbf24,#f59e0b)';
-  } else {
-    document.getElementById('health-bar').style.background = 'linear-gradient(90deg,#4ade80,#22d3ee)';
-  }
-}
-
-function addXP(amount) {
-  xp += amount;
-  while (xp >= XP_PER_LEVEL) {
-    xp -= XP_PER_LEVEL;
-    levelUp();
-  }
-  updateHUD();
-  updateQuests('score', amount);
-}
-
-function levelUp() {
-  level++;
-  playerHealth = Math.min(maxHealth, playerHealth + 25);
-  maxHealth += 10;
-  showLevelUpEffect();
-  showMessage('⭐ ترقية! المستوى ' + level, 2500);
-  checkAchievement('survivor', level >= 5);
-}
-
-function showLevelUpEffect() {
-  const el = document.getElementById('level-up-effect');
-  el.querySelector('.level-text').textContent = '⭐ المستوى ' + level + '!';
-  el.style.display = 'flex';
-  setTimeout(function() { el.style.display = 'none'; }, 1500);
-}
-
-function addCoins(amount) {
-  coins += amount;
-  updateHUD();
-  checkAchievement('rich', coins >= 100);
-}
-
-function getWorld(id) { return worlds.find(function(w) { return w.id === id; }); }
-function getCurrentWorld() { return getWorld(currentWorldId); }
-function getPlayerTile() {
-  const px = playerGroup.position.x + HALF;
-  const pz = playerGroup.position.z + HALF;
-  return { col: Math.floor(px / TILE_SIZE), row: Math.floor(pz / TILE_SIZE) };
-}
-
-// ===== 5. نظام الإنجازات =====
-function checkAchievement(key, condition) {
-  if (condition && !achievements[key].unlocked) {
-    achievements[key].unlocked = true;
-    showToast('🏆 إنجاز جديد: ' + achievements[key].name + ' ' + achievements[key].emoji, 'success');
-    score += 25;
-    updateHUD();
-    renderAchievements();
-  }
-}
-
-function renderAchievements() {
-  const list = document.getElementById('achievements-list');
-  list.innerHTML = '';
-  Object.entries(achievements).forEach(function(entry) {
-    const key = entry[0], ach = entry[1];
-    const div = document.createElement('div');
-    div.className = 'achievement-item ' + (ach.unlocked ? 'unlocked' : 'locked');
-    div.textContent = ach.emoji + ' ' + ach.name + (ach.unlocked ? ' ✅' : ' 🔒');
-    list.appendChild(div);
-  });
-}
-
-function toggleAchievements() {
-  const panel = document.getElementById('achievements-panel');
-  const questPanel = document.getElementById('quest-panel');
-  questPanel.style.display = 'none';
-  panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-  renderAchievements();
-}
-
-// ===== 6. نظام المهام =====
-function updateQuests(type, amount) {
-  quests.forEach(function(q) {
-    if (q.type === type && !q.complete) {
-      q.current += amount;
-      if (q.current >= q.target) {
-        q.current = q.target;
-        q.complete = true;
-        showToast('🎯 مهمة مكتملة: ' + q.name + ' +' + q.reward + ' نقطة', 'success');
-        score += q.reward;
-        addCoins(Math.floor(q.reward / 2));
-        updateHUD();
-      }
-    }
-  });
-  renderQuests();
-}
-
-function renderQuests() {
-  const list = document.getElementById('quest-list');
-  list.innerHTML = '';
-  quests.forEach(function(q) {
-    const div = document.createElement('div');
-    div.className = 'quest-item ' + (q.complete ? 'complete' : '');
-    const pct = Math.min(100, (q.current / q.target) * 100);
-    div.innerHTML = '<div>' + (q.complete ? '✅' : '📋') + ' ' + q.name + '</div>' +
-      '<div style="font-size:9px;color:#888;margin-top:2px;">' + q.desc + '</div>' +
-      '<div class="quest-progress"><div class="quest-progress-fill" style="width:' + pct + '%"></div></div>';
-    list.appendChild(div);
-  });
-}
-
-function toggleQuests() {
-  const panel = document.getElementById('quest-panel');
-  const achPanel = document.getElementById('achievements-panel');
-  achPanel.style.display = 'none';
-  panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-  renderQuests();
-}
-
-// ===== 7. بناء العالم =====
-function clearWorld() {
-  tileMeshes.forEach(function(m) {
-    if (m.parent) m.parent.remove(m);
-    if (m.material && m.material.map) m.material.map.dispose();
-    if (m.material) m.material.dispose();
-    if (m.geometry) m.geometry.dispose();
-  });
-  tileMeshes = [];
-
-  if (gridHelper && gridHelper.parent) { gridHelper.parent.remove(gridHelper); gridHelper = null; }
-
-  if (videoMesh) {
-    if (videoMesh.parent) videoMesh.parent.remove(videoMesh);
-    if (videoMesh.material && videoMesh.material.map) videoMesh.material.map.dispose();
-    if (videoMesh.material) videoMesh.material.dispose();
-    if (videoMesh.geometry) videoMesh.geometry.dispose();
-    videoMesh = null;
-  }
-  if (videoTexture) { videoTexture.dispose(); videoTexture = null; }
-  if (videoElement) { 
-    try { videoElement.pause(); videoElement.src = ''; } catch(e) {} 
-    videoElement = null; 
-  }
-  document.getElementById('video-controls').style.display = 'none';
-
-  particles.forEach(function(p) { if (p.mesh.parent) p.mesh.parent.remove(p.mesh); });
-  particles = [];
-
-  if (window.floatingSprites) {
-    window.floatingSprites.forEach(function(s) { if (s.parent) s.parent.remove(s); });
-    window.floatingSprites = [];
-  }
-
-  scene.children.slice().forEach(function(child) {
-    if (child.userData && (child.userData.isPortalRing || child.userData.isPortalBeam)) {
-      scene.remove(child);
-      if (child.geometry) child.geometry.dispose();
-      if (child.material) child.material.dispose();
-    }
-  });
-}
-
-function buildWorld(worldId) {
-  const world = getWorld(worldId);
-  if (!world) return;
-
-  clearWorld();
-  currentWorldId = worldId;
-  GRID = world.grid || 8;
-  TILE_SIZE = world.tileSize || 3;
-  WORLD_SIZE = GRID * TILE_SIZE;
-  HALF = WORLD_SIZE / 2;
-
-  const bg = world.background || '#0a0a1a';
-  scene.background = new THREE.Color(bg);
-  scene.fog = new THREE.Fog(bg, 20, 45);
-
-  for (let row = 0; row < GRID; row++) {
-    for (let col = 0; col < GRID; col++) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 256; canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-
-      const item = world.items ? world.items.find(function(i) { return i.row === row && i.col === col; }) : null;
-
-      if (item) {
-        const grad = ctx.createLinearGradient(0, 0, 256, 256);
-        if (item.type === 'portal') {
-          grad.addColorStop(0, '#0a2a3a');
-          grad.addColorStop(1, '#1a3a4a');
-        } else {
-          grad.addColorStop(0, '#1a1a2e');
-          grad.addColorStop(1, '#2a2a3e');
-        }
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 256, 256);
-
-        ctx.strokeStyle = item.type === 'portal' ? 'rgba(0,242,255,0.3)' : 'rgba(255,215,0,0.3)';
-        ctx.lineWidth = 4;
-        ctx.strokeRect(4, 4, 248, 248);
-
-        ctx.fillStyle = item.type === 'portal' ? '#00f2ff' : '#ffd700';
-        ctx.font = item.emoji ? '90px Arial' : '48px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(item.emoji || '📌', 128, 100);
-        ctx.font = 'bold 20px Cairo, Arial';
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText((item.title || '').substring(0, 14), 128, 190);
-
-        ctx.shadowColor = item.type === 'portal' ? '#00f2ff' : '#ffd700';
-        ctx.shadowBlur = 20;
-        ctx.fillText(item.emoji || '📌', 128, 100);
-        ctx.shadowBlur = 0;
+function initTelegram() {
+  try {
+    if (tg) {
+      tg.ready(); tg.expand();
+      if (tg.initDataUnsafe?.user) {
+        userData = tg.initDataUnsafe.user;
+        document.getElementById('userInfoDisplay').innerHTML = '👤 ' + (userData.first_name || 'مستخدم');
       } else {
-        const colors = ['#1a1a2e', '#16213e', '#0f3460', '#1e293b', '#2d1b3d', '#1a0a2e'];
-        ctx.fillStyle = colors[(row + col) % colors.length];
-        ctx.fillRect(0, 0, 256, 256);
-
-        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for (let i = 0; i <= 256; i += 32) {
-          ctx.moveTo(i, 0); ctx.lineTo(i, 256);
-          ctx.moveTo(0, i); ctx.lineTo(256, i);
-        }
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.font = 'bold 18px Arial';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(col + ',' + row, 128, 128);
-      }
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.magFilter = THREE.LinearFilter;
-      const geo = new THREE.PlaneGeometry(TILE_SIZE * 0.96, TILE_SIZE * 0.96);
-      const mat = new THREE.MeshStandardMaterial({ 
-        map: tex, side: THREE.DoubleSide, 
-        roughness: 0.3, metalness: 0.15,
-        emissive: new THREE.Color(0x000000),
-        emissiveIntensity: 0
-      });
-      const mesh = new THREE.Mesh(geo, mat);
-      const posX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
-      const posZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
-      mesh.position.set(posX, 0, posZ);
-      mesh.rotation.x = -Math.PI / 2;
-      mesh.userData = { row: row, col: col, item: item || null };
-      tileGroup.add(mesh);
-      tileMeshes.push(mesh);
-    }
-  }
-
-  if (world.items) {
-    window.floatingSprites = [];
-    world.items.forEach(function(item, idx) {
-      const posX = item.col * TILE_SIZE - HALF + TILE_SIZE / 2;
-      const posZ = item.row * TILE_SIZE - HALF + TILE_SIZE / 2;
-
-      if (item.emoji) {
-        const c = document.createElement('canvas');
-        c.width = 256; c.height = 256;
-        const cx = c.getContext('2d');
-        cx.font = '160px Arial';
-        cx.textAlign = 'center';
-        cx.textBaseline = 'middle';
-        cx.shadowColor = 'rgba(255,255,255,0.3)';
-        cx.shadowBlur = 30;
-        cx.fillText(item.emoji, 128, 128);
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ 
-          map: new THREE.CanvasTexture(c), transparent: true, depthTest: false 
-        }));
-        sprite.scale.set(1.6, 1.6, 1);
-        sprite.position.set(posX, 1.4, posZ);
-        sprite.userData = { floatOffset: idx * 0.5, floatSpeed: 1.5 + Math.random() * 0.5 };
-        scene.add(sprite);
-        window.floatingSprites.push(sprite);
-      }
-
-      if (item.type === 'portal') {
-        const ring = new THREE.Mesh(
-          new THREE.RingGeometry(0.6, 0.9, 32),
-          new THREE.MeshBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
-        );
-        ring.rotation.x = -Math.PI / 2;
-        ring.position.set(posX, 0.08, posZ);
-        ring.userData = { isPortalRing: true };
-        scene.add(ring);
-
-        const beam = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.1, 0.4, 2, 8, 1, true),
-          new THREE.MeshBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.08, side: THREE.DoubleSide })
-        );
-        beam.position.set(posX, 1, posZ);
-        beam.userData = { isPortalBeam: true };
-        scene.add(beam);
-      }
-    });
-  }
-
-  if (world.type === 'video360' && world.videoUrl) {
-    createVideo360(world.videoUrl);
-    document.getElementById('video-controls').style.display = 'flex';
-  }
-
-  gridHelper = new THREE.GridHelper(WORLD_SIZE, GRID, 0x8b5cf6, 0x2a2a4a);
-  gridHelper.position.y = 0.04;
-  gridHelper.material.transparent = true;
-  gridHelper.material.opacity = gridVisible ? 0.15 : 0;
-  tileGroup.add(gridHelper);
-
-  document.getElementById('exit-btn').style.display = (worldId !== 'main') ? 'block' : 'none';
-  document.getElementById('enter-btn').style.display = 'none';
-
-  isInWorld = (worldId !== 'main');
-
-  if (world.startPosition) {
-    playerGroup.position.set(world.startPosition.x, 0, world.startPosition.z);
-  }
-
-  if (worldId === 'world_fight') {
-    enemies.forEach(function(e) { scene.remove(e); });
-    enemies = [];
-    enemySpawnTimer = 0;
-  }
-
-  updateHUD();
-  updateActiveTile();
-  renderLandmarks();
-}
-
-// ===== 8. فيديو 360 =====
-function createVideo360(url) {
-  videoElement = document.createElement('video');
-  videoElement.muted = isVideoMuted;
-  videoElement.loop = true;
-  videoElement.playsInline = true;
-  videoElement.crossOrigin = 'anonymous';
-  videoElement.src = url;
-  videoElement.volume = 0.35;
-
-  videoElement.addEventListener('loadeddata', function() {
-    videoElement.play().catch(function(){});
-    videoTexture = new THREE.VideoTexture(videoElement);
-    videoTexture.minFilter = THREE.LinearFilter;
-    videoTexture.magFilter = THREE.LinearFilter;
-
-    const geo = new THREE.SphereGeometry(8, 64, 64);
-    const mat = new THREE.MeshBasicMaterial({ map: videoTexture, side: THREE.BackSide });
-    videoMesh = new THREE.Mesh(geo, mat);
-    videoMesh.position.set(0, 0, 0);
-    scene.add(videoMesh);
-
-    camera.position.set(0, 0, 0);
-    lon = 0; lat = 0;
-    update360Camera();
-    updateVideoTime();
-  });
-
-  videoElement.addEventListener('timeupdate', updateVideoTime);
-  videoElement.addEventListener('ended', function() { isVideoPlaying = false; });
-  videoElement.load();
-}
-
-function update360Camera() {
-  const phi = THREE.MathUtils.degToRad(90 - lat);
-  const theta = THREE.MathUtils.degToRad(lon);
-  const target = new THREE.Vector3(
-    Math.sin(phi) * Math.cos(theta),
-    Math.cos(phi),
-    Math.sin(phi) * Math.sin(theta)
-  );
-  camera.lookAt(target);
-}
-
-function updateVideoTime() {
-  if (!videoElement) return;
-  const cur = formatTime(videoElement.currentTime);
-  const dur = formatTime(videoElement.duration || 0);
-  document.getElementById('video-time').textContent = cur + ' / ' + dur;
-  if (videoElement.duration) {
-    document.getElementById('video-progress').value = (videoElement.currentTime / videoElement.duration) * 100;
-  }
-}
-
-function formatTime(sec) {
-  if (!sec || isNaN(sec)) return '00:00';
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-}
-
-function seekVideo(val) {
-  if (!videoElement || !videoElement.duration) return;
-  videoElement.currentTime = (val / 100) * videoElement.duration;
-}
-
-function togglePlay() {
-  if (!videoElement) return;
-  if (isVideoPlaying) { 
-    videoElement.pause(); 
-    document.querySelector('#video-controls button:first-child').textContent = '▶️'; 
-  } else { 
-    videoElement.play(); 
-    document.querySelector('#video-controls button:first-child').textContent = '⏸️'; 
-  }
-  isVideoPlaying = !isVideoPlaying;
-}
-
-function toggleMute() {
-  if (!videoElement) return;
-  isVideoMuted = !isVideoMuted;
-  videoElement.muted = isVideoMuted;
-  document.querySelector('#video-controls button:last-child').textContent = isVideoMuted ? '🔇' : '🔊';
-}
-
-// ===== 9. الدخول والخروج من العوالم =====
-function enterWorld() {
-  if (isTransitioning || currentWorldId !== 'main') return;
-
-  const tile = getPlayerTile();
-  const world = getCurrentWorld();
-  const item = world.items ? world.items.find(function(i) { 
-    return i.row === tile.row && i.col === tile.col && i.type === 'portal'; 
-  }) : null;
-
-  if (!item || !item.targetWorld) {
-    showToast('❌ لا توجد بوابة هنا', 'error');
-    return;
-  }
-
-  const target = getWorld(item.targetWorld);
-  if (!target) { showToast('❌ العالم غير موجود', 'error'); return; }
-
-  isTransitioning = true;
-  savedPlayerPos = { x: playerGroup.position.x, z: playerGroup.position.z };
-  showTransition('جاري الدخول إلى ' + target.name);
-
-  setTimeout(function() {
-    buildWorld(item.targetWorld);
-
-    if (!visitedWorlds.has(item.targetWorld)) {
-      visitedWorlds.add(item.targetWorld);
-      score += 50;
-      addXP(30);
-      addCoins(10);
-      showToast('🏆 اكتشاف عالم جديد! +50', 'success');
-      updateQuests('worlds', 1);
-      checkAchievement('explorer', visitedWorlds.size >= 3);
-      checkAchievement('master', visitedWorlds.size >= 5);
-    }
-
-    if (target.id === 'world_360') {
-      camera.position.set(0, 0, 0);
-      lon = 0; lat = 0;
-      update360Camera();
-    } else {
-      camera.position.set(0, 6.5, 11);
-      camera.lookAt(0, 0.5, 0);
-    }
-
-    hideTransition();
-    isTransitioning = false;
-    showToast('✅ دخلت: ' + target.name, 'success');
-  }, 700);
-}
-
-function exitWorld() {
-  if (isTransitioning || currentWorldId === 'main') return;
-
-  isTransitioning = true;
-  showTransition('جاري العودة للخريطة...');
-
-  setTimeout(function() {
-    buildWorld('main');
-    if (savedPlayerPos) {
-      playerGroup.position.set(savedPlayerPos.x, 0, savedPlayerPos.z);
-      savedPlayerPos = null;
-    }
-    camera.position.set(0, 7, 12);
-    camera.lookAt(0, 0, 0);
-    hideTransition();
-    isTransitioning = false;
-    showToast('✅ عدت للخريطة الرئيسية', 'success');
-  }, 600);
-}
-
-// ===== 10. المعالم =====
-function addLandmark() {
-  const emojis = ['🏰','🌲','🌊','⛰️','🏜️','🌋','🏗️','🌺','🕌','🏯','🎪','🏟️'];
-  const names = ['قلعة','غابة','بحيرة','جبل','صحراء','بركان','مبنى','حديقة','مسجد','معبد','سيرك','ملعب'];
-
-  const idx = Math.floor(Math.random() * emojis.length);
-  const x = (Math.random() - 0.5) * (WORLD_SIZE - 2);
-  const z = (Math.random() - 0.5) * (WORLD_SIZE - 2);
-
-  landmarks.push({
-    id: nextLandmarkId++,
-    name: emojis[idx] + ' ' + names[idx],
-    emoji: emojis[idx],
-    x: x,
-    z: z,
-    color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')
-  });
-
-  showToast('📍 تم إضافة معلم: ' + names[idx], 'success');
-  updateHUD();
-  updateQuests('landmarks', 1);
-  checkAchievement('collector', landmarks.length >= 5);
-  renderLandmarks();
-}
-
-function renderLandmarks() {
-  if (window.landmarkMeshes) {
-    window.landmarkMeshes.forEach(function(m) {
-      if (m.parent) m.parent.remove(m);
-      if (m.material) m.material.dispose();
-      if (m.geometry) m.geometry.dispose();
-    });
-  }
-  window.landmarkMeshes = [];
-
-  landmarks.forEach(function(lm) {
-    const sphere = new THREE.Mesh(
-      new THREE.SphereGeometry(0.3, 12, 12),
-      new THREE.MeshStandardMaterial({ 
-        color: lm.color, emissive: lm.color, emissiveIntensity: 0.3, 
-        transparent: true, opacity: 0.9 
-      })
-    );
-    sphere.position.set(lm.x, 0.3, lm.z);
-    sphere.castShadow = true;
-    scene.add(sphere);
-    window.landmarkMeshes.push(sphere);
-
-    const pillar = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.02, 0.05, 1.8, 6),
-      new THREE.MeshBasicMaterial({ color: lm.color, transparent: true, opacity: 0.12 })
-    );
-    pillar.position.set(lm.x, 0.9, lm.z);
-    scene.add(pillar);
-    window.landmarkMeshes.push(pillar);
-
-    const canvas = document.createElement('canvas');
-    canvas.width = 128; canvas.height = 128;
-    const ctx = canvas.getContext('2d');
-    ctx.clearRect(0, 0, 128, 128);
-    ctx.font = '72px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(lm.emoji, 64, 64);
-
-    const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({ 
-        map: new THREE.CanvasTexture(canvas), transparent: true, depthTest: false 
-      })
-    );
-    sprite.scale.set(0.9, 0.9, 1);
-    sprite.position.set(lm.x, 1.4, lm.z);
-    scene.add(sprite);
-    window.landmarkMeshes.push(sprite);
-  });
-}
-
-// ===== 11. رفع فيديو/صورة =====
-function openUploadModal() {
-  document.getElementById('upload-modal').style.display = 'flex';
-  document.getElementById('lm-name').value = '';
-  document.getElementById('lm-row').value = '';
-  document.getElementById('lm-col').value = '';
-  document.getElementById('file-name-display').style.display = 'none';
-  pendingFile = null;
-}
-
-function closeUploadModal() {
-  document.getElementById('upload-modal').style.display = 'none';
-  pendingFile = null;
-}
-
-function handleLandmarkFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  pendingFile = file;
-  const display = document.getElementById('file-name-display');
-  display.textContent = '✅ ' + file.name;
-  display.style.display = 'block';
-  event.target.value = '';
-}
-
-function addLandmarkFromModal() {
-  const name = document.getElementById('lm-name').value.trim();
-  const type = document.getElementById('lm-type').value;
-  const row = parseInt(document.getElementById('lm-row').value);
-  const col = parseInt(document.getElementById('lm-col').value);
-
-  if (!name) { showToast('⚠️ أدخل اسماً', 'warn'); return; }
-  if (!pendingFile) { showToast('⚠️ اختر ملفاً', 'warn'); return; }
-  if (isNaN(row) || isNaN(col) || row < 0 || row >= GRID || col < 0 || col >= GRID) {
-    showToast('❌ إحداثيات غير صالحة', 'error');
-    return;
-  }
-
-  const url = URL.createObjectURL(pendingFile);
-  const is360 = (type === 'video360');
-
-  landmarks.push({
-    id: nextLandmarkId++,
-    name: name,
-    type: type,
-    url: url,
-    file: pendingFile.name,
-    row: row,
-    col: col,
-    is360: is360
-  });
-
-  closeUploadModal();
-  showToast('✅ تم إضافة: ' + name + (is360 ? ' 🌐' : ''), 'success');
-  updateHUD();
-  updateQuests('landmarks', 1);
-  checkAchievement('collector', landmarks.length >= 5);
-  renderLandmarks();
-}
-
-// ===== 12. عوالم عشوائية =====
-function addRandomWorld() {
-  const emojis = ['🎮','🎯','🎨','🌈','⭐','🌺','🌸','🌊','🔥','💫','🚀','🌙'];
-  const titles = ['ملصقات','فن','طبيعة','خيال','مغامرات','ألعاب','رياضة','موسيقى'];
-
-  const newId = 'world_' + Date.now();
-  const newWorld = {
-    id: newId,
-    name: '🌍 ' + titles[Math.floor(Math.random() * titles.length)],
-    grid: 8,
-    tileSize: 3.5,
-    startPosition: { x: 0, z: 0 },
-    background: '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0'),
-    items: []
-  };
-
-  const num = 3 + Math.floor(Math.random() * 3);
-  for (let i = 0; i < num; i++) {
-    let r, c;
-    do {
-      r = 1 + Math.floor(Math.random() * 6);
-      c = 1 + Math.floor(Math.random() * 6);
-    } while (newWorld.items.some(function(it) { return it.row === r && it.col === c; }));
-
-    newWorld.items.push({
-      id: Date.now() + i,
-      type: 'image',
-      title: titles[i % titles.length],
-      emoji: emojis[i % emojis.length],
-      row: r,
-      col: c
-    });
-  }
-
-  worlds.push(newWorld);
-
-  const main = getWorld('main');
-  if (main) {
-    let pr, pc;
-    do {
-      pr = 1 + Math.floor(Math.random() * 10);
-      pc = 1 + Math.floor(Math.random() * 10);
-    } while (main.items.some(function(it) { return it.row === pr && it.col === pc; }));
-
-    main.items.push({
-      id: 'portal_' + Date.now(),
-      type: 'portal',
-      title: newWorld.name,
-      emoji: '🌐',
-      row: pr,
-      col: pc,
-      targetWorld: newId
-    });
-
-    if (currentWorldId === 'main') buildWorld('main');
-  }
-
-  showToast('✅ تم إنشاء عالم جديد: ' + newWorld.name, 'success');
-}
-
-// ===== 13. نظام القتال =====
-function spawnEnemy() {
-  if (!gameRunning || currentWorldId !== 'world_fight') {
-    showToast('⚠️ فقط في ساحة القتال', 'warn');
-    return;
-  }
-
-  const angle = Math.random() * Math.PI * 2;
-  const distance = 4 + Math.random() * 4;
-  const x = playerGroup.position.x + Math.cos(angle) * distance;
-  const z = playerGroup.position.z + Math.sin(angle) * distance;
-
-  const limit = GRID * TILE_SIZE / 2 - 1;
-  const posX = Math.max(-limit, Math.min(limit, x));
-  const posZ = Math.max(-limit, Math.min(limit, z));
-
-  const enemy = createEnemyMesh(posX, posZ);
-  enemies.push(enemy);
-  showMessage('👾 عدو ظهر!', 800);
-}
-
-function createEnemyMesh(x, z) {
-  const group = new THREE.Group();
-
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.3, 0.35, 0.6, 8),
-    new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xdc2626, emissiveIntensity: 0.3 })
-  );
-  body.position.y = 0.3;
-  body.castShadow = true;
-  group.add(body);
-
-  const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.18, 8, 8),
-    new THREE.MeshStandardMaterial({ color: 0xfca5a5 })
-  );
-  head.position.y = 0.75;
-  head.castShadow = true;
-  group.add(head);
-
-  const eyeMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-  const eyeGeo = new THREE.SphereGeometry(0.04, 6, 6);
-  const eyeL = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeL.position.set(-0.07, 0.77, 0.18);
-  group.add(eyeL);
-  const eyeR = new THREE.Mesh(eyeGeo, eyeMat);
-  eyeR.position.set(0.07, 0.77, 0.18);
-  group.add(eyeR);
-
-  const hornGeo = new THREE.ConeGeometry(0.04, 0.15, 4);
-  const hornMat = new THREE.MeshStandardMaterial({ color: 0x991b1b });
-  const hornL = new THREE.Mesh(hornGeo, hornMat);
-  hornL.position.set(-0.1, 0.92, 0);
-  hornL.rotation.z = 0.3;
-  group.add(hornL);
-  const hornR = new THREE.Mesh(hornGeo, hornMat);
-  hornR.position.set(0.1, 0.92, 0);
-  hornR.rotation.z = -0.3;
-  group.add(hornR);
-
-  group.position.set(x, 0, z);
-  group.userData = {
-    health: 20 + level * 5,
-    maxHealth: 20 + level * 5,
-    speed: 0.025 + level * 0.003,
-    damage: 5 + level * 2,
-    attackCooldown: 0
-  };
-
-  scene.add(group);
-  return group;
-}
-
-function updateEnemies() {
-  if (currentWorldId !== 'world_fight') return;
-
-  const toRemove = [];
-
-  enemies.forEach(function(enemy, index) {
-    if (!enemy.parent) {
-      toRemove.push(index);
-      return;
-    }
-
-    const dx = playerGroup.position.x - enemy.position.x;
-    const dz = playerGroup.position.z - enemy.position.z;
-    const dist = Math.sqrt(dx*dx + dz*dz);
-
-    if (dist > 0.5) {
-      const speed = enemy.userData.speed;
-      enemy.position.x += (dx / dist) * speed;
-      enemy.position.z += (dz / dist) * speed;
-      enemy.rotation.y = Math.atan2(dx, dz);
-    }
-
-    if (dist < 1.0 && enemy.userData.attackCooldown <= 0) {
-      playerHealth -= enemy.userData.damage;
-      enemy.userData.attackCooldown = 60;
-      showMessage('💥 تعرضت للهجوم! -' + enemy.userData.damage, 800);
-
-      const overlay = document.getElementById('damage-overlay');
-      overlay.classList.add('show');
-      setTimeout(function() { overlay.classList.remove('show'); }, 300);
-
-      updateHUD();
-      if (playerHealth <= 0) gameOver();
-    }
-
-    if (enemy.userData.attackCooldown > 0) enemy.userData.attackCooldown--;
-  });
-
-  enemies = enemies.filter(function(e, i) { return toRemove.indexOf(i) === -1; });
-}
-
-function fireWeapon() {
-  if (!gameRunning || currentWorldId !== 'world_fight') {
-    showToast('⚠️ فقط في ساحة القتال', 'warn');
-    return;
-  }
-
-  const now = Date.now();
-  if (now - lastFireTime < 250) return;
-  lastFireTime = now;
-
-  const bullet = createBullet();
-  bullets.push(bullet);
-
-  const flash = new THREE.PointLight(0xff6600, 3, 4);
-  flash.position.copy(playerGroup.position);
-  flash.position.y += 0.6;
-  scene.add(flash);
-  setTimeout(function() { scene.remove(flash); }, 80);
-
-  createMuzzleFlash();
-}
-
-function createMuzzleFlash() {
-  const positions = [];
-  for (let i = 0; i < 8; i++) {
-    positions.push(
-      (Math.random() - 0.5) * 0.2,
-      (Math.random() - 0.5) * 0.2,
-      (Math.random() - 0.5) * 0.2
-    );
-  }
-  const geo = new THREE.BufferGeometry();
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-  const mat = new THREE.PointsMaterial({ color: 0xffaa00, size: 0.08, transparent: true, opacity: 1 });
-  const pts = new THREE.Points(geo, mat);
-
-  const dir = new THREE.Vector3(0, 0, -1);
-  dir.applyQuaternion(playerGroup.quaternion);
-  pts.position.copy(playerGroup.position);
-  pts.position.y += 0.6;
-  pts.position.x += dir.x * 0.5;
-  pts.position.z += dir.z * 0.5;
-
-  scene.add(pts);
-  particles.push({ mesh: pts, life: 20, type: 'flash' });
-}
-
-function createBullet() {
-  const geo = new THREE.SphereGeometry(0.07, 8, 8);
-  const mat = new THREE.MeshBasicMaterial({ color: 0x00f2ff });
-  const mesh = new THREE.Mesh(geo, mat);
-
-  const dir = new THREE.Vector3(0, 0, -1);
-  dir.applyQuaternion(playerGroup.quaternion);
-
-  mesh.position.copy(playerGroup.position);
-  mesh.position.y += 0.6;
-  mesh.position.x += dir.x * 0.5;
-  mesh.position.z += dir.z * 0.5;
-
-  mesh.userData = { direction: dir, speed: BULLET_SPEED, life: 60 };
-  scene.add(mesh);
-  return mesh;
-}
-
-function updateBullets() {
-  if (currentWorldId !== 'world_fight') return;
-
-  const toRemove = [];
-
-  bullets.forEach(function(bullet, index) {
-    if (!bullet.parent) {
-      toRemove.push(index);
-      return;
-    }
-
-    const dir = bullet.userData.direction;
-    bullet.position.x += dir.x * bullet.userData.speed;
-    bullet.position.z += dir.z * bullet.userData.speed;
-    bullet.userData.life--;
-
-    let hit = false;
-    enemies.forEach(function(enemy) {
-      if (hit) return;
-      const dx = bullet.position.x - enemy.position.x;
-      const dz = bullet.position.z - enemy.position.z;
-      if (dx*dx + dz*dz < 0.5) {
-        hit = true;
-        enemy.userData.health -= 15 + level * 2;
-
-        const positions = [];
-        for (let i = 0; i < 20; i++) {
-          positions.push((Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5);
-        }
-        const geo = new THREE.BufferGeometry();
-        geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-        const mat = new THREE.PointsMaterial({ color: 0xff4400, size: 0.06, transparent: true, opacity: 0.9 });
-        const pts = new THREE.Points(geo, mat);
-        pts.position.copy(enemy.position);
-        pts.position.y += 0.3;
-        scene.add(pts);
-        particles.push({ mesh: pts, life: 40, type: 'blood' });
-
-        if (enemy.userData.health <= 0) {
-          kills++;
-          score += 10 * level;
-          addXP(8 + level);
-          addCoins(5 + level);
-          showMessage('💀 قتل عدو! +' + (10 * level), 1000);
-          checkAchievement('first_kill', kills >= 1);
-          checkAchievement('killer_10', kills >= 10);
-          updateQuests('kills', 1);
-          scene.remove(enemy);
-        }
-        updateHUD();
-      }
-    });
-
-    if (hit || bullet.userData.life <= 0) {
-      scene.remove(bullet);
-      toRemove.push(index);
-    }
-  });
-
-  bullets = bullets.filter(function(b, i) { return toRemove.indexOf(i) === -1; });
-}
-
-function updateParticles() {
-  const toRemove = [];
-  particles.forEach(function(p, i) {
-    p.life--;
-    if (p.life <= 0) {
-      if (p.mesh.parent) p.mesh.parent.remove(p.mesh);
-      toRemove.push(i);
-    } else {
-      if (p.type === 'blood') {
-        p.mesh.position.y -= 0.01;
-        p.mesh.material.opacity = p.life / 40;
-      } else if (p.type === 'flash') {
-        p.mesh.material.opacity = p.life / 20;
-        p.mesh.scale.multiplyScalar(0.95);
-      }
-    }
-  });
-  particles = particles.filter(function(p, i) { return toRemove.indexOf(i) === -1; });
-}
-
-function healPlayer() {
-  if (playerHealth >= maxHealth) {
-    showToast('❤️ صحتك كاملة!', 'info');
-    return;
-  }
-  playerHealth = Math.min(maxHealth, playerHealth + 30);
-  healCount++;
-  showMessage('💚 تم الشفاء +30', 1000);
-  updateHUD();
-  checkAchievement('healer', healCount >= 5);
-}
-
-// ===== 14. نهاية اللعبة =====
-function gameOver() {
-  gameRunning = false;
-  document.getElementById('final-kills').textContent = kills;
-  document.getElementById('final-score').textContent = score;
-  document.getElementById('final-coins').textContent = coins;
-  document.getElementById('final-level').textContent = level;
-  document.getElementById('final-worlds').textContent = visitedWorlds.size;
-  document.getElementById('final-landmarks').textContent = landmarks.length;
-  document.getElementById('game-over').style.display = 'flex';
-  showMessage('💀 لقد مت!', 2000);
-}
-
-function restartGame() {
-  document.getElementById('game-over').style.display = 'none';
-  playerHealth = 100;
-  maxHealth = 100;
-  kills = 0;
-  score = 0;
-  level = 1;
-  xp = 0;
-  coins = 0;
-  healCount = 0;
-  gameRunning = true;
-
-  enemies.forEach(function(e) { scene.remove(e); });
-  enemies = [];
-  bullets.forEach(function(b) { scene.remove(b); });
-  bullets = [];
-
-  visitedWorlds = new Set(['main']);
-  landmarks = [];
-  nextLandmarkId = 1;
-
-  Object.keys(achievements).forEach(function(k) { achievements[k].unlocked = false; });
-  quests.forEach(function(q) { q.current = 0; q.complete = false; });
-
-  createDefaultWorlds();
-  buildWorld('main');
-  camera.position.set(0, 7, 12);
-  camera.lookAt(0, 0, 0);
-  updateHUD();
-  showMessage('💪 معركة جديدة!', 1500);
-}
-
-function resetGame() {
-  if (!gameRunning) return;
-  showToast('🔄 جاري إعادة التعيين...', 'info');
-  setTimeout(function() { restartGame(); }, 500);
-}
-
-// ===== 15. حركة اللاعب والكاميرا (مع نظام التسريع) =====
-function updatePlayer() {
-  if (isTransitioning) return;
-  if (!gameRunning) return;
-  if (isInWorld && getCurrentWorld() && getCurrentWorld().id === 'world_360') return;
-
-  const currentSpeed = PLAYER_SPEED * speedMultiplier;
-  let dx = 0, dz = 0;
-  
-  if (touchDirs.up) dz = -currentSpeed;
-  if (touchDirs.down) dz = currentSpeed;
-  if (touchDirs.left) dx = -currentSpeed;
-  if (touchDirs.right) dx = currentSpeed;
-
-  const limit = HALF - TILE_SIZE / 2;
-  playerGroup.position.x = Math.max(-limit, Math.min(limit, playerGroup.position.x + dx));
-  playerGroup.position.z = Math.max(-limit, Math.min(limit, playerGroup.position.z + dz));
-
-  if (dx !== 0 || dz !== 0) {
-    playerGroup.rotation.y = Math.atan2(dx, dz);
-  }
-
-  updateActiveTile();
-}
-
-function updateCamera() {
-  if (isTransitioning) return;
-  if (isInWorld && getCurrentWorld() && getCurrentWorld().id === 'world_360') return;
-
-  const target = playerGroup.position.clone();
-  const angle = playerGroup.rotation.y;
-  const dist = 6.5;
-  const height = 4.5;
-
-  const desired = new THREE.Vector3(
-    target.x - Math.sin(angle) * dist,
-    target.y + height,
-    target.z - Math.cos(angle) * dist
-  );
-
-  camera.position.lerp(desired, 0.08);
-  camera.lookAt(target.x, target.y + 0.8, target.z);
-}
-
-// ===== 16. تحديث المربع النشط =====
-function updateActiveTile() {
-  if (isTransitioning) return;
-  const tile = getPlayerTile();
-  let onPortal = false;
-  let portalTitle = '';
-
-  tileMeshes.forEach(function(mesh) {
-    const d = mesh.userData;
-    if (d.row === tile.row && d.col === tile.col) {
-      mesh.material.emissive = new THREE.Color(0x00f2ff);
-      mesh.material.emissiveIntensity = 0.35;
-      if (d.item && d.item.type === 'portal') {
-        onPortal = true;
-        portalTitle = d.item.title || 'عالم';
+        userData = { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+        document.getElementById('userInfoDisplay').innerHTML = '👤 مستخدم';
       }
     } else {
-      mesh.material.emissive = new THREE.Color(0x000000);
-      mesh.material.emissiveIntensity = 0;
+      userData = { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+      document.getElementById('userInfoDisplay').innerHTML = '👤 مستخدم';
     }
-  });
+  } catch(e) {
+    userData = { id: Math.floor(Math.random()*100000), first_name: 'مستخدم' };
+    document.getElementById('userInfoDisplay').innerHTML = '👤 مستخدم';
+  }
+}
 
-  const btn = document.getElementById('enter-btn');
-  if (onPortal && currentWorldId === 'main') {
-    btn.style.display = 'block';
-    btn.textContent = '🌐 دخول ' + portalTitle;
+let botToken = '', channelId = '', connected = false, lastUpdateId = 0;
+let fetchedStickers = [];
+let loadedImages = {};
+let playerSkin = null;
+let autoSelectDone = false;
+
+// ===== Lottie (.tgs) =====
+let lottieAnimation = null;
+let lottieCanvas = document.getElementById('lottie-hidden');
+let animationLoaded = false;
+
+// ===== Video (.webm) =====
+let videoSticker = null;
+let videoReady = false;
+
+function destroyLottie() {
+  if (lottieAnimation) {
+    try { lottieAnimation.destroy(); } catch(e) {}
+    lottieAnimation = null;
+  }
+  animationLoaded = false;
+}
+
+function destroyVideo() {
+  if (videoSticker) {
+    try {
+      videoSticker.pause();
+      videoSticker.removeAttribute('src');
+      videoSticker.load();
+    } catch(e) {}
+    videoSticker = null;
+  }
+  videoReady = false;
+}
+
+function destroyAllAnimated() {
+  destroyLottie();
+  destroyVideo();
+}
+
+function toggleTG() {
+  document.getElementById('tg-dropdown').classList.toggle('show');
+}
+
+function toggleSkinSelector() {
+  document.getElementById('skin-selector').classList.toggle('show');
+  renderSkinSelector();
+}
+
+function renderSkinSelector() {
+  const grid = document.getElementById('skin-grid');
+  grid.innerHTML = '';
+  for (const char of fetchedStickers) {
+    const opt = document.createElement('div');
+    opt.className = 'skin-option' + (playerSkin && playerSkin.id === char.id ? ' active' : '');
+    const avatar = char.imageUrl ? `<img src="${char.imageUrl}" alt="">` : '📌';
+    opt.innerHTML = `<div class="preview">${avatar}</div><div class="sname">${char.name}</div>`;
+    opt.onclick = () => selectSkin(char);
+    grid.appendChild(opt);
+  }
+}
+
+function selectSkin(char) {
+  destroyAllAnimated();
+  if (char) {
+    playerSkin = {
+      id: char.id,
+      name: char.name,
+      imageUrl: char.imageUrl,
+      isSticker: char.isSticker || false
+    };
+    document.getElementById('char-name').textContent = char.name + ' 📌';
+    showToast('✅ تم اختيار ' + char.name, 'success');
   } else {
-    btn.style.display = 'none';
+    playerSkin = null;
+    document.getElementById('char-name').textContent = 'لا توجد شخصية';
+  }
+  renderGame();
+  renderSkinSelector();
+  document.getElementById('skin-selector').classList.remove('show');
+}
+
+function setTGStatus(msg, type) {
+  const el = document.getElementById('tg-status');
+  el.textContent = msg;
+  el.style.color = type === 'success' ? 'var(--success)' : type === 'error' ? 'var(--error)' : '#888';
+}
+
+async function testTelegram() {
+  botToken = document.getElementById('bot-token').value.trim();
+  channelId = document.getElementById('chat-id').value.trim();
+  if (!botToken || !channelId) { setTGStatus('❌ ادخل البيانات', 'error'); return; }
+  setTGStatus('🔄 جاري...', '');
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getMe');
+    const data = await res.json();
+    if (data.ok) {
+      connected = true;
+      setTGStatus('✅ متصل بـ @' + data.result.username, 'success');
+      localStorage.setItem('nardo_bot_token', botToken);
+      localStorage.setItem('nardo_chat_id', channelId);
+      showToast('✅ تم الاتصال!', 'success');
+    } else {
+      setTGStatus('❌ ' + data.description, 'error');
+    }
+  } catch(e) {
+    setTGStatus('❌ فشل الاتصال', 'error');
   }
 }
 
-// ===== 17. خريطة مصغرة =====
-function setupMinimap() {
-  const frame = document.getElementById('minimap-frame');
-  const c = document.createElement('canvas');
-  c.width = 110; c.height = 110;
-  frame.appendChild(c);
-  minimapCtx = c.getContext('2d');
+// ============================================================
+//  جلب متحرك (TGS أو WebM)
+// ============================================================
+async function fetchAnimatedOrVideo() {
+  if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
+  setTGStatus('🎬 جاري البحث عن ملصق متحرك...', '');
+
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
+    const data = await res.json();
+    if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
+
+    for (const update of (data.result || [])) {
+      lastUpdateId = Math.max(lastUpdateId, update.update_id);
+      const msg = update.channel_post || update.message;
+      if (!msg || !msg.sticker) continue;
+
+      const sticker = msg.sticker;
+      const fileId = sticker.file_id;
+
+      // 1. WebM
+      if (sticker.is_video) {
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        if (fileData.ok && fileData.result.file_path) {
+          const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+          
+          // استخراج الاسم من التعليق
+          const caption = msg.caption || '';
+          const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+          const charName = nameMatch ? nameMatch[1].trim() : 'ملصق WebM';
+          
+          showVideoSticker(url, charName);
+          setTGStatus('✅ تم جلب WebM!', 'success');
+          showToast('🎬 WebM جاهز: ' + charName, 'success');
+          return;
+        }
+      }
+
+      // 2. TGS
+      if (sticker.is_animated) {
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        if (fileData.ok && fileData.result.file_path) {
+          const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+          
+          const caption = msg.caption || '';
+          const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+          const charName = nameMatch ? nameMatch[1].trim() : 'ملصق TGS';
+          
+          await showTgsSticker(url, charName);
+          setTGStatus('✅ تم جلب TGS!', 'success');
+          showToast('🎬 TGS جاهز: ' + charName, 'success');
+          return;
+        }
+      }
+    }
+
+    setTGStatus('📭 لا يوجد ملصق متحرك في القناة', '');
+    showToast('📭 أرسل ملصق متحرك في القناة ثم أعد المحاولة', 'info');
+  } catch (e) {
+    console.error(e);
+    setTGStatus('❌ خطأ في الجلب', 'error');
+    showToast('❌ ' + (e.message || 'خطأ'), 'error');
+  }
 }
 
-function updateMinimap() {
-  if (!minimapCtx || document.getElementById('minimap-frame').style.display !== 'block') return;
-  const ctx = minimapCtx;
-  const w = 110, h = 110;
+// ============================================================
+//  WebM
+// ============================================================
+function showVideoSticker(url, name) {
+  destroyAllAnimated();
+  playerSkin = null;
+
+  videoSticker = document.createElement('video');
+  videoSticker.muted = true;
+  videoSticker.loop = true;
+  videoSticker.playsInline = true;
+  videoSticker.preload = 'auto';
+  videoSticker.src = url;
+
+  videoSticker.onloadeddata = () => {
+    videoReady = true;
+    videoSticker.play().catch(err => console.warn('play error', err));
+    document.getElementById('char-name').textContent = '🎬 ' + name;
+    showToast('✅ الفيديو جاهز للعرض', 'success');
+    renderGame();
+  };
+
+  videoSticker.onerror = () => {
+    showToast('❌ فشل تحميل الفيديو', 'error');
+    setTGStatus('❌ فشل WebM', 'error');
+    videoReady = false;
+  };
+
+  videoSticker.load();
+}
+
+// ============================================================
+//  TGS (مع فك الضغط)
+// ============================================================
+async function showTgsSticker(url, name) {
+  destroyAllAnimated();
+  playerSkin = null;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('فشل جلب الملف: ' + response.status);
+
+    const buffer = await response.arrayBuffer();
+    const decompressed = pako.ungzip(new Uint8Array(buffer), { to: 'string' });
+    const animationData = JSON.parse(decompressed);
+
+    lottieAnimation = lottie.loadAnimation({
+      container: lottieCanvas,
+      renderer: 'canvas',
+      loop: true,
+      autoplay: true,
+      animationData: animationData,
+      rendererSettings: {
+        clearCanvas: true,
+        preserveAspectRatio: 'xMidYMid meet'
+      }
+    });
+
+    lottieAnimation.addEventListener('DOMLoaded', () => {
+      animationLoaded = true;
+      document.getElementById('char-name').textContent = '🎬 ' + name;
+      showToast('✅ TGS جاهز للعرض', 'success');
+      renderGame();
+    });
+
+    // احتياطي
+    setTimeout(() => {
+      if (!animationLoaded) {
+        animationLoaded = true;
+        document.getElementById('char-name').textContent = '🎬 ' + name;
+        renderGame();
+      }
+    }, 1500);
+
+  } catch (err) {
+    console.error('TGS Error:', err);
+    showToast('❌ فشل TGS: ' + (err.message || 'خطأ'), 'error');
+    setTGStatus('❌ فشل TGS', 'error');
+  }
+}
+
+// ============================================================
+//  الملصقات الثابتة
+// ============================================================
+async function fetchStickers() {
+  if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
+  setTGStatus('📌 جاري جلب الملصقات...', '');
+
+  try {
+    const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
+    const data = await res.json();
+    if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
+
+    let newItems = 0;
+
+    for (const update of (data.result || [])) {
+      lastUpdateId = Math.max(lastUpdateId, update.update_id);
+      const msg = update.channel_post || update.message;
+      if (!msg) continue;
+
+      let fileId = null, imageUrl = '';
+
+      if (msg.sticker && !msg.sticker.is_animated && !msg.sticker.is_video) {
+        fileId = msg.sticker.file_id;
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        if (fileData.ok && fileData.result.file_path) {
+          imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+        }
+      }
+
+      if (!fileId && msg.photo && msg.photo.length > 0) {
+        fileId = msg.photo[msg.photo.length - 1].file_id;
+        const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
+        const fileData = await fileRes.json();
+        if (fileData.ok && fileData.result.file_path) {
+          imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
+        }
+      }
+
+      if (!fileId) continue;
+      if (fetchedStickers.some(c => c.fileId === fileId)) continue;
+
+      const caption = msg.caption || '';
+      const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+      const isSticker = !!msg.sticker && !msg.sticker.is_animated && !msg.sticker.is_video;
+
+      const char = {
+        id: (isSticker ? 'sticker_' : 'image_') + fileId,
+        fileId,
+        name: nameMatch ? nameMatch[1].trim() : (isSticker ? 'ملصق #' : 'صورة #') + (fetchedStickers.length + 1),
+        imageUrl,
+        isSticker
+      };
+
+      fetchedStickers.push(char);
+      newItems++;
+
+      if (imageUrl) {
+        const img = new Image();
+        img.onload = () => {
+          loadedImages[char.id] = img;
+          if (isSticker && !autoSelectDone && fetchedStickers.length === 1) {
+            setTimeout(autoSelectFirstSticker, 400);
+          }
+          renderGame();
+        };
+        img.onerror = () => {
+          console.warn('فشل تحميل صورة:', imageUrl);
+        };
+        img.src = imageUrl;
+      }
+    }
+
+    if (newItems > 0) {
+      setTGStatus('✅ جلب ' + newItems + ' عنصر!', 'success');
+      renderSkinSelector();
+      showToast('📌 تم جلب ' + newItems + ' ملصق/صورة!', 'success');
+      if (!autoSelectDone) setTimeout(autoSelectFirstSticker, 700);
+    } else {
+      setTGStatus('📭 لا توجد عناصر جديدة', '');
+    }
+  } catch (e) {
+    console.error(e);
+    setTGStatus('❌ خطأ', 'error');
+  }
+}
+
+function autoSelectFirstSticker() {
+  if (autoSelectDone) return;
+  const stickers = fetchedStickers.filter(c => c.isSticker);
+  if (stickers.length > 0) {
+    selectSkin(stickers[0]);
+    autoSelectDone = true;
+    return true;
+  }
+  if (fetchedStickers.length > 0) {
+    selectSkin(fetchedStickers[0]);
+    autoSelectDone = true;
+    return true;
+  }
+  return false;
+}
+
+// ============================================================
+//  GAME ENGINE
+// ============================================================
+const canvas = document.getElementById('game-canvas');
+const ctx = canvas.getContext('2d');
+
+const MAP_SIZE = 16;
+const TILE_SIZE = 40;
+let mapData = [];
+let player = { x: 1.5, y: 1.5, speed: 0.08, direction: 'down' };
+let camera = { x: 0, y: 0 };
+let touchDirs = { up: false, down: false, left: false, right: false };
+
+function generateMap() {
+  mapData = [];
+  for (let y = 0; y < MAP_SIZE; y++) {
+    const row = [];
+    for (let x = 0; x < MAP_SIZE; x++) {
+      if (x === 0 || x === MAP_SIZE - 1 || y === 0 || y === MAP_SIZE - 1) row.push(1);
+      else if (Math.random() < 0.1 && !(x <= 3 && y <= 3)) row.push(1);
+      else row.push(0);
+    }
+    mapData.push(row);
+  }
+  for (let y = 1; y <= 3; y++) for (let x = 1; x <= 3; x++) mapData[y][x] = 0;
+}
+
+function renderGame() {
+  const w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
-  ctx.fillStyle = 'rgba(8,8,20,0.92)';
-  ctx.fillRect(0, 0, w, h);
 
-  const scale = w / WORLD_SIZE;
-  const world = getCurrentWorld();
-  if (!world) return;
+  camera.x = player.x * TILE_SIZE - w / 2;
+  camera.y = player.y * TILE_SIZE - h / 2;
+  camera.x = Math.max(0, Math.min(MAP_SIZE * TILE_SIZE - w, camera.x));
+  camera.y = Math.max(0, Math.min(MAP_SIZE * TILE_SIZE - h, camera.y));
 
-  for (let y = 0; y < GRID; y++) {
-    for (let x = 0; x < GRID; x++) {
-      const item = world.items ? world.items.find(function(i) { return i.row === y && i.col === x; }) : null;
-      if (item) {
-        ctx.fillStyle = item.type === 'portal' ? '#00f2ff' : '#fbbf24';
+  ctx.save();
+  ctx.translate(-camera.x, -camera.y);
+
+  // الخريطة
+  for (let y = 0; y < MAP_SIZE; y++) {
+    for (let x = 0; x < MAP_SIZE; x++) {
+      const px = x * TILE_SIZE, py = y * TILE_SIZE;
+      if (mapData[y][x] === 1) {
+        ctx.fillStyle = '#2a2a4a';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
+        ctx.strokeStyle = '#3a3a5a';
+        ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
       } else {
-        ctx.fillStyle = ((x + y) % 2 === 0) ? '#2a2a4a' : '#1a1a2e';
+        ctx.fillStyle = (x + y) % 2 === 0 ? '#1a1a2e' : '#222244';
+        ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
       }
-      ctx.fillRect(x * TILE_SIZE * scale, y * TILE_SIZE * scale, TILE_SIZE * scale * 0.9, TILE_SIZE * scale * 0.9);
     }
   }
 
-  const px = (playerGroup.position.x + HALF) * scale;
-  const py = (playerGroup.position.z + HALF) * scale;
-  ctx.fillStyle = '#a78bfa';
+  const px = player.x * TILE_SIZE;
+  const py = player.y * TILE_SIZE;
+
+  // ظل
+  ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath();
-  ctx.arc(px, py, 3.5, 0, Math.PI * 2);
+  ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE * 0.92, TILE_SIZE * 0.55, TILE_SIZE * 0.12, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = '#fff';
-  ctx.lineWidth = 1;
-  ctx.stroke();
-}
 
-// ===== 18. الإعدادات =====
-function toggleSettings() {
-  const panel = document.getElementById('settings-panel');
-  panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-}
+  // ===== رسم الملصق =====
+  if (videoReady && videoSticker && videoSticker.readyState >= 2) {
+    const size = 200;
+    try {
+      ctx.drawImage(videoSticker, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size);
+    } catch (e) {
+      console.warn('draw video error', e);
+    }
+    ctx.fillStyle = '#c084fc';
+    ctx.font = 'bold 12px Cairo';
+    ctx.textAlign = 'center';
+    ctx.fillText('🎬 WebM', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2 - 6);
+  }
+  else if (animationLoaded && lottieCanvas) {
+    const size = 200;
+    try {
+      ctx.drawImage(lottieCanvas, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size);
+    } catch (e) {
+      console.warn('draw lottie error', e);
+    }
+    ctx.fillStyle = '#c084fc';
+    ctx.font = 'bold 12px Cairo';
+    ctx.textAlign = 'center';
+    ctx.fillText('🎬 TGS', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2 - 6);
+  }
+  else if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
+    const size = TILE_SIZE * 1.8;
+    const img = loadedImages[playerSkin.id];
 
-function toggleMinimap() {
-  const frame = document.getElementById('minimap-frame');
-  frame.style.display = frame.style.display === 'block' ? 'none' : 'block';
-  gridVisible = !gridVisible;
-  if (gridHelper) gridHelper.material.opacity = gridVisible ? 0.15 : 0;
-  showToast(gridVisible ? '📍 الخريطة مفعلة' : '📍 الخريطة مخفية', 'info');
-}
+    // توهج
+    const glow = ctx.createRadialGradient(px + TILE_SIZE/2, py + TILE_SIZE/2, 5, px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.7);
+    glow.addColorStop(0, 'rgba(139,92,246,0.25)');
+    glow.addColorStop(1, 'rgba(139,92,246,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.7, 0, Math.PI * 2);
+    ctx.fill();
 
-function toggleNightMode() {
-  nightMode = !nightMode;
-  if (nightMode) {
-    scene.fog = new THREE.Fog(scene.background, 10, 30);
-    ambientLight.intensity = 0.2;
-    dirLight.intensity = 0.4;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.5, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(img, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size);
+    ctx.restore();
+
+    ctx.strokeStyle = '#8b5cf6';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.5, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = '#c084fc';
+    ctx.font = 'bold 12px Cairo';
+    ctx.textAlign = 'center';
+    ctx.fillText(playerSkin.name || 'ملصق', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2 - 8);
   } else {
-    scene.fog = new THREE.Fog(scene.background, 20, 45);
-    ambientLight.intensity = 0.5;
-    dirLight.intensity = 0.85;
+    // نقطة صغيرة
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.beginPath();
+    ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, 6, 0, Math.PI * 2);
+    ctx.fill();
   }
-  showToast(nightMode ? '🌙 الوضع الليلي' : '☀️ الوضع النهاري', 'info');
+
+  ctx.restore();
+
+  // إحداثيات
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(10, 10, 180, 22);
+  ctx.fillStyle = '#aaa';
+  ctx.font = '11px Cairo';
+  ctx.textAlign = 'left';
+  ctx.fillText('📍 ' + Math.round(player.x) + ' , ' + Math.round(player.y), 16, 26);
 }
 
-function setVolume(val) {
-  if (videoElement) videoElement.volume = val / 100;
-}
+function updatePlayer() {
+  let dx = 0, dy = 0;
+  if (touchDirs.up) dy = -player.speed;
+  if (touchDirs.down) dy = player.speed;
+  if (touchDirs.left) dx = -player.speed;
+  if (touchDirs.right) dx = player.speed;
 
-// ===== 19. حفظ وتحميل =====
-function saveGame() {
-  const data = {
-    playerHealth: playerHealth,
-    maxHealth: maxHealth,
-    kills: kills,
-    score: score,
-    level: level,
-    xp: xp,
-    coins: coins,
-    visitedWorlds: Array.from(visitedWorlds),
-    landmarks: landmarks,
-    nextLandmarkId: nextLandmarkId,
-    achievements: achievements,
-    healCount: healCount,
-    quests: quests
-  };
-  try {
-    localStorage.setItem('battle_worlds_save', JSON.stringify(data));
-    showToast('💾 تم حفظ اللعبة!', 'success');
-  } catch(e) {
-    showToast('❌ فشل الحفظ', 'error');
+  const newX = player.x + dx;
+  const newY = player.y + dy;
+  const checkX = Math.round(newX);
+  const checkY = Math.round(newY);
+
+  if (checkX >= 0 && checkX < MAP_SIZE && checkY >= 0 && checkY < MAP_SIZE && mapData[checkY][checkX] !== 1) {
+    player.x = newX;
   }
-}
-
-function loadGame() {
-  try {
-    const data = JSON.parse(localStorage.getItem('battle_worlds_save'));
-    if (!data) {
-      showToast('❌ لا يوجد حفظ سابق', 'error');
-      return;
-    }
-    playerHealth = data.playerHealth || 100;
-    maxHealth = data.maxHealth || 100;
-    kills = data.kills || 0;
-    score = data.score || 0;
-    level = data.level || 1;
-    xp = data.xp || 0;
-    coins = data.coins || 0;
-    visitedWorlds = new Set(data.visitedWorlds || ['main']);
-    landmarks = data.landmarks || [];
-    nextLandmarkId = data.nextLandmarkId || 1;
-    if (data.achievements) achievements = data.achievements;
-    healCount = data.healCount || 0;
-    if (data.quests) quests = data.quests;
-
-    showToast('📂 تم تحميل اللعبة!', 'success');
-    if (document.getElementById('start-screen').style.display !== 'none') {
-      startGame();
-    } else {
-      updateHUD();
-      renderLandmarks();
-      renderAchievements();
-      renderQuests();
-    }
-  } catch(e) {
-    showToast('❌ فشل التحميل', 'error');
+  if (checkX >= 0 && checkX < MAP_SIZE && checkY >= 0 && checkY < MAP_SIZE && mapData[checkY][checkX] !== 1) {
+    player.y = newY;
   }
+
+  player.x = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.x));
+  player.y = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.y));
 }
 
-function showTutorial() {
-  document.getElementById('tutorial-panel').style.display = 'flex';
+function gameLoop() {
+  updatePlayer();
+  renderGame();
+  requestAnimationFrame(gameLoop);
 }
-function hideTutorial() {
-  document.getElementById('tutorial-panel').style.display = 'none';
+
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  renderGame();
 }
 
-// ===== 20. تهيئة Three.js =====
-function initGame() {
-  const canvas = document.getElementById('canvas');
-
-  scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0a1a);
-  scene.fog = new THREE.Fog(0x0a0a1a, 20, 45);
-
-  camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 100);
-  camera.position.set(0, 7, 12);
-
-  renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
-  renderer.setSize(innerWidth, innerHeight);
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-  ambientLight = new THREE.AmbientLight(0x8b5cf6, 0.5);
-  scene.add(ambientLight);
-
-  dirLight = new THREE.DirectionalLight(0xfff0dd, 0.85);
-  dirLight.position.set(10, 20, 8);
-  dirLight.castShadow = true;
-  dirLight.shadow.mapSize.width = 1024;
-  dirLight.shadow.mapSize.height = 1024;
-  scene.add(dirLight);
-
-  dirLight2 = new THREE.DirectionalLight(0x4466ff, 0.3);
-  dirLight2.position.set(-10, 10, -10);
-  scene.add(dirLight2);
-
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(40, 40),
-    new THREE.MeshStandardMaterial({ color: 0x15152a, roughness: 0.9 })
-  );
-  ground.rotation.x = -Math.PI / 2;
-  ground.position.y = -0.05;
-  ground.receiveShadow = true;
-  scene.add(ground);
-
-  playerGroup = new THREE.Group();
-  const body = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.32, 0.38, 0.7, 8),
-    new THREE.MeshStandardMaterial({ color: 0x8b5cf6, emissive: 0x5b21b6, emissiveIntensity: 0.2 })
-  );
-  body.position.y = 0.35;
-  body.castShadow = true;
-  playerGroup.add(body);
-
-  const head = new THREE.Mesh(
-    new THREE.SphereGeometry(0.18, 8, 8),
-    new THREE.MeshStandardMaterial({ color: 0xa78bfa })
-  );
-  head.position.y = 0.85;
-  head.castShadow = true;
-  playerGroup.add(head);
-
-  const crown = new THREE.Mesh(
-    new THREE.ConeGeometry(0.12, 0.12, 6),
-    new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffa500, emissiveIntensity: 0.1 })
-  );
-  crown.position.y = 1.0;
-  playerGroup.add(crown);
-
-  const swordHandle = new THREE.Mesh(
-    new THREE.CylinderGeometry(0.02, 0.02, 0.2, 4),
-    new THREE.MeshStandardMaterial({ color: 0x8b5cf6 })
-  );
-  swordHandle.position.set(0.35, 0.5, 0);
-  playerGroup.add(swordHandle);
-  const swordBlade = new THREE.Mesh(
-    new THREE.BoxGeometry(0.04, 0.4, 0.01),
-    new THREE.MeshStandardMaterial({ color: 0xcccccc, emissive: 0x888888, emissiveIntensity: 0.2 })
-  );
-  swordBlade.position.set(0.35, 0.75, 0);
-  playerGroup.add(swordBlade);
-
-  playerGroup.position.set(0, 0, 0);
-  scene.add(playerGroup);
-
-  tileGroup = new THREE.Group();
-  scene.add(tileGroup);
-
-  setupMinimap();
-  document.getElementById('minimap-frame').style.display = 'block';
-
-  createDefaultWorlds();
-  renderLandmarks();
-  buildWorld('main');
-  updateHUD();
-  renderAchievements();
-  renderQuests();
-
-  showMessage('⚔️ استكشف العوالم واقتل الأعداء!', 2000);
-
-  function loop() {
-    requestAnimationFrame(loop);
-
-    if (gameRunning) {
-      updatePlayer();
-      updateEnemies();
-      updateBullets();
-      updateParticles();
-
-      if (currentWorldId === 'world_fight') {
-        enemySpawnTimer++;
-        if (enemySpawnTimer > Math.max(30, 100 - level * 4) && enemies.length < Math.min(8, 4 + level)) {
-          enemySpawnTimer = 0;
-          spawnEnemy();
-        }
-      }
-    }
-
-    if (window.floatingSprites) {
-      const time = Date.now() * 0.001;
-      window.floatingSprites.forEach(function(s) {
-        if (s.userData) {
-          s.position.y = 1.4 + Math.sin(time * s.userData.floatSpeed + s.userData.floatOffset) * 0.15;
-        }
-      });
-    }
-
-    scene.children.forEach(function(child) {
-      if (child.userData && child.userData.isPortalRing) {
-        child.rotation.z += 0.01;
-      }
+function setupTouchControls() {
+  document.querySelectorAll('.dpad-btn').forEach(btn => {
+    const dir = btn.getAttribute('data-dir');
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      touchDirs[dir] = true;
+      btn.style.background = 'rgba(139,92,246,0.15)';
+      btn.style.borderColor = '#8b5cf6';
+    }, { passive: false });
+    btn.addEventListener('touchend', e => {
+      e.preventDefault();
+      touchDirs[dir] = false;
+      btn.style.background = '';
+      btn.style.borderColor = '';
+    }, { passive: false });
+    btn.addEventListener('touchcancel', () => {
+      touchDirs[dir] = false;
+      btn.style.background = '';
+      btn.style.borderColor = '';
     });
-
-    updateCamera();
-    updateMinimap();
-    if (videoTexture) videoTexture.needsUpdate = true;
-    renderer.render(scene, camera);
-  }
-  loop();
-}
-
-function startGame() {
-  document.getElementById('start-screen').style.display = 'none';
-  document.getElementById('hud').style.display = 'flex';
-  document.getElementById('health-bar-container').style.display = 'block';
-  document.getElementById('controls').style.display = 'flex';
-  document.getElementById('dpad').style.display = 'block';
-  document.getElementById('fire-btn').style.display = 'flex';
-  document.getElementById('game-message').style.display = 'block';
-  document.getElementById('minimap-frame').style.display = 'block';
-  document.getElementById('settings-btn').style.display = 'flex';
-  document.getElementById('enter-btn').style.display = 'none';
-
-  initGame();
-}
-
-// ===== 21. التحكم =====
-function setupControls() {
-  document.querySelectorAll('.dpad-btn').forEach(function(btn) {
-    const dir = btn.dataset.dir;
-    btn.addEventListener('touchstart', function(e) { e.preventDefault(); touchDirs[dir] = true; btn.classList.add('active'); }, { passive: false });
-    btn.addEventListener('touchend', function(e) { e.preventDefault(); touchDirs[dir] = false; btn.classList.remove('active'); }, { passive: false });
-    btn.addEventListener('mousedown', function() { touchDirs[dir] = true; btn.classList.add('active'); });
-    btn.addEventListener('mouseup', function() { touchDirs[dir] = false; btn.classList.remove('active'); });
-    btn.addEventListener('mouseleave', function() { touchDirs[dir] = false; btn.classList.remove('active'); });
-  });
-
-  window.addEventListener('keydown', function(e) {
-    if (e.key === 'ArrowUp') touchDirs.up = true;
-    if (e.key === 'ArrowDown') touchDirs.down = true;
-    if (e.key === 'ArrowLeft') touchDirs.left = true;
-    if (e.key === 'ArrowRight') touchDirs.right = true;
-    if (e.key === ' ' || e.code === 'Space') { e.preventDefault(); fireWeapon(); }
-    if (e.key === 'h' || e.key === 'H') healPlayer();
-    if (e.key === 'Enter') enterWorld();
-    if (e.key === 'Escape') exitWorld();
-    if (e.key === 'Shift') { e.preventDefault(); toggleSpeed(); }
-  });
-  window.addEventListener('keyup', function(e) {
-    if (e.key === 'ArrowUp') touchDirs.up = false;
-    if (e.key === 'ArrowDown') touchDirs.down = false;
-    if (e.key === 'ArrowLeft') touchDirs.left = false;
-    if (e.key === 'ArrowRight') touchDirs.right = false;
-  });
-
-  document.getElementById('fire-btn').addEventListener('touchstart', function(e) {
-    e.preventDefault();
-    fireWeapon();
   });
 }
 
-window.addEventListener('resize', function() {
-  if (camera) {
-    camera.aspect = innerWidth / innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(innerWidth, innerHeight);
-  }
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowUp') touchDirs.up = true;
+  if (e.key === 'ArrowDown') touchDirs.down = true;
+  if (e.key === 'ArrowLeft') touchDirs.left = true;
+  if (e.key === 'ArrowRight') touchDirs.right = true;
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'ArrowUp') touchDirs.up = false;
+  if (e.key === 'ArrowDown') touchDirs.down = false;
+  if (e.key === 'ArrowLeft') touchDirs.left = false;
+  if (e.key === 'ArrowRight') touchDirs.right = false;
 });
 
-document.addEventListener('click', function(e) {
-  const settingsPanel = document.getElementById('settings-panel');
-  const settingsBtn = document.getElementById('settings-btn');
-  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
-    settingsPanel.style.display = 'none';
-  }
-});
+function showToast(message, type) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + (type || '');
+  toast.textContent = message;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3200);
+}
 
-setupControls();
+function enterApp() {
+  document.getElementById('start-screen').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('game-container').style.display = 'block';
+    document.getElementById('tg-toggle').style.display = 'block';
+    document.getElementById('skin-toggle').style.display = 'block';
 
-console.log('🎮 العوالم القتالية - التحكم الدائري الاحترافي v70.0');
-console.log('📌 الميزات الجديدة:');
-console.log('  ⚡ زر تسريع دائري (1x → 3x)');
-console.log('  🎮 تحكم دائري احترافي مع أزرار مثلثة');
-console.log('  💫 مؤشر سرعة رقمي');
-console.log('  🌟 حلقة متحركة تعكس مستوى التسريع');
-console.log('  ⌨️ اختصار Shift لتغيير السرعة');
+    generateMap();
+    resize();
+    window.addEventListener('resize', resize);
+
+    setTimeout(() => {
+      if (connected) {
+        showToast('📡 جاهز - أرسل ملصقاً متحركاً ثم اضغط جلب', 'info');
+      } else {
+        showToast('📡 اضغط اتصال أولاً', 'info');
+      }
+    }, 800);
+
+    gameLoop();
+  }, 400);
+
+  const savedToken = localStorage.getItem('nardo_bot_token');
+  const savedChat = localStorage.getItem('nardo_chat_id');
+  if (savedToken) document.getElementById('bot-token').value = savedToken;
+  if (savedChat) document.getElementById('chat-id').value = savedChat;
+
+  setTimeout(() => {
+    if (savedToken && savedChat) testTelegram();
+  }, 900);
+
+  if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+}
+
+initTelegram();
+setupTouchControls();
+setTimeout(() => {
+  document.getElementById('start-btn').style.display = 'block';
+}, 400);
+
+console.log('🎬 v27.0 — Final Working Version');
 </script>
 </body>
 </html>
 
-  
+
+
