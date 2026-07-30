@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ملصق متحرك في الخريطة</title>
+<title>ملصق متحرك في الخريطة - المغامرة</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
-:root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--info:#60a5fa;--accent:#00f2ff;--purple:#8b5cf6}
+:root{--gold:#ffd700;--success:#4ade80;--error:#f87171;--info:#60a5fa;--accent:#00f2ff;--purple:#8b5cf6;--gem:#ff6b9d;--meteor:#ff4757}
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none}
 
@@ -25,9 +25,17 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 #game-container{position:fixed;inset:0;display:none;background:#0a0a1a}
 #game-canvas{display:block;width:100%;height:100%}
 
-.hud{position:fixed;top:0;left:0;right:0;padding:6px 12px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:100;background:rgba(0,0,0,0.6);backdrop-filter:blur(8px)}
+.hud{position:fixed;top:0;left:0;right:0;padding:8px 14px;display:flex;justify-content:space-between;align-items:center;pointer-events:none;z-index:100;background:rgba(0,0,0,0.7);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,215,0,0.1)}
 .hud .title{color:var(--gold);font-size:13px;font-weight:700}
 .hud .info{color:#aaa;font-size:11px}
+.hud-stats{display:flex;gap:12px;align-items:center}
+.stat-box{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 10px;display:flex;align-items:center;gap:5px;font-size:11px}
+.stat-box .icon{font-size:13px}
+.stat-box.score{color:var(--gold)}
+.stat-box.health{color:var(--error)}
+.stat-box.level{color:var(--accent)}
+.health-bar{width:60px;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden}
+.health-fill{height:100%;background:linear-gradient(90deg,var(--error),#ff8a8a);border-radius:3px;transition:width 0.3s}
 
 .dpad{position:fixed;bottom:20px;left:16px;width:120px;height:120px;z-index:200}
 .dpad-btn{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .1s}
@@ -66,6 +74,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .toast{background:rgba(0,0,0,0.9);padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
 .toast.success{border-color:var(--success);color:var(--success)}
 .toast.error{border-color:var(--error);color:var(--error)}
+.toast.gold{border-color:var(--gold);color:var(--gold)}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
 
@@ -74,22 +83,36 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
   position: fixed;
   left: -9999px;
   top: -9999px;
-  width: 240px;
-  height: 240px;
+  width: 240;
+  height: 240;
   pointer-events: none;
   opacity: 0;
   z-index: -1;
 }
+
+/* شاشة Game Over */
+#game-over-screen{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.92);display:none;flex-direction:column;justify-content:center;align-items:center;gap:20px;backdrop-filter:blur(10px)}
+#game-over-screen.show{display:flex}
+.game-over-title{font-size:48px;font-weight:900;color:var(--error);text-shadow:0 0 30px rgba(248,113,113,0.5);animation:pulse 1.5s ease-in-out infinite}
+.game-over-score{font-size:24px;color:var(--gold)}
+.game-over-high{font-size:14px;color:#888}
+.restart-btn{border:2px solid var(--success);color:var(--success);padding:14px 40px;background:rgba(74,222,128,0.08);border-radius:60px;font-size:18px;cursor:pointer;transition:all .3s;font-weight:700;font-family:inherit;margin-top:10px}
+.restart-btn:hover{transform:scale(1.05);background:var(--success);color:#000;box-shadow:0 0 40px rgba(74,222,128,0.4)}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+/* تأثير اهتزاز الشاشة */
+@keyframes shake{0%,100%{transform:translate(0,0)}10%,30%,50%,70%,90%{transform:translate(-5px,0)}20%,40%,60%,80%{transform:translate(5px,0)}}
+.shake{animation:shake 0.5s}
 </style>
 </head>
 <body>
 
 <div id="start-screen">
   <div class="start-logo">🎬 ملصق متحرك</div>
-  <div class="start-subtitle">يدعم .tgs + .webm • يظهر في الخريطة</div>
+  <div class="start-subtitle">🌠 نيازك | 💎 جواهر | 🏆 نقاط<br>يدعم .tgs + .webm • يظهر في الخريطة</div>
   <div class="user-info" id="userInfoDisplay">🔄 جاري التحميل...</div>
   <button class="start-btn" id="start-btn" onclick="enterApp()" style="display:none;">🚀 دخول</button>
-  <div class="version-tag">v27.0 | Final Working</div>
+  <div class="version-tag">v28.0 | Meteor Rush</div>
 </div>
 
 <div id="game-container">
@@ -98,6 +121,20 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
   <div class="hud">
     <div class="title">🗺️ الخريطة</div>
+    <div class="hud-stats">
+      <div class="stat-box level">
+        <span class="icon">⚡</span>
+        <span id="level-display">1</span>
+      </div>
+      <div class="stat-box score">
+        <span class="icon">💎</span>
+        <span id="score-display">0</span>
+      </div>
+      <div class="stat-box health">
+        <span class="icon">❤️</span>
+        <div class="health-bar"><div class="health-fill" id="health-fill" style="width:100%"></div></div>
+      </div>
+    </div>
     <div class="info" id="char-name">لا توجد شخصية</div>
   </div>
 
@@ -133,9 +170,17 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <div class="toast-container" id="toast-container"></div>
 
+<!-- شاشة Game Over -->
+<div id="game-over-screen">
+  <div class="game-over-title">💥 انتهت اللعبة!</div>
+  <div class="game-over-score">🏆 النقاط: <span id="final-score">0</span></div>
+  <div class="game-over-high">🥇 الأفضل: <span id="high-score">0</span></div>
+  <button class="restart-btn" onclick="restartGame()">🔄 إعادة اللعب</button>
+</div>
+
 <script>
 // ============================================================
-//  ناردو 3D — الملصق المتحرك v27.0 (يعمل)
+//  ناردو 3D — الملصق المتحرك v28.0 (Meteor Rush)
 // ============================================================
 
 const tg = window.Telegram?.WebApp;
@@ -176,6 +221,44 @@ let animationLoaded = false;
 // ===== Video (.webm) =====
 let videoSticker = null;
 let videoReady = false;
+
+// ===== GAME STATE =====
+let gameState = {
+  score: 0,
+  highScore: parseInt(localStorage.getItem('nardo_high_score') || '0'),
+  health: 100,
+  maxHealth: 100,
+  level: 1,
+  gameOver: false,
+  invincible: false,
+  invincibleTimer: 0,
+  combo: 0,
+  comboTimer: 0
+};
+
+// ===== METEORS =====
+let meteors = [];
+let meteorSpawnTimer = 0;
+let meteorSpawnInterval = 120; // frames
+let meteorSpeedBase = 2;
+
+// ===== GEMS =====
+let gems = [];
+let gemSpawnTimer = 0;
+let gemSpawnInterval = 180;
+let gemTypes = [
+  { emoji: '💎', color: '#00f2ff', points: 10, glow: 'rgba(0,242,255,0.4)' },
+  { emoji: '🔮', color: '#8b5cf6', points: 20, glow: 'rgba(139,92,246,0.4)' },
+  { emoji: '💍', color: '#ffd700', points: 50, glow: 'rgba(255,215,0,0.4)' },
+  { emoji: '⭐', color: '#ff6b9d', points: 30, glow: 'rgba(255,107,157,0.4)' },
+  { emoji: '🌟', color: '#fbbf24', points: 100, glow: 'rgba(251,191,36,0.5)' }
+];
+
+// ===== PARTICLES =====
+let particles = [];
+
+// ===== SCREEN SHAKE =====
+let screenShake = { x: 0, y: 0, intensity: 0 };
 
 function destroyLottie() {
   if (lottieAnimation) {
@@ -292,18 +375,15 @@ async function fetchAnimatedOrVideo() {
       const sticker = msg.sticker;
       const fileId = sticker.file_id;
 
-      // 1. WebM
       if (sticker.is_video) {
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
         const fileData = await fileRes.json();
         if (fileData.ok && fileData.result.file_path) {
           const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
-          
-          // استخراج الاسم من التعليق
           const caption = msg.caption || '';
-          const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+          const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^
+]+)/i);
           const charName = nameMatch ? nameMatch[1].trim() : 'ملصق WebM';
-          
           showVideoSticker(url, charName);
           setTGStatus('✅ تم جلب WebM!', 'success');
           showToast('🎬 WebM جاهز: ' + charName, 'success');
@@ -311,17 +391,15 @@ async function fetchAnimatedOrVideo() {
         }
       }
 
-      // 2. TGS
       if (sticker.is_animated) {
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
         const fileData = await fileRes.json();
         if (fileData.ok && fileData.result.file_path) {
           const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
-          
           const caption = msg.caption || '';
-          const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+          const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^
+]+)/i);
           const charName = nameMatch ? nameMatch[1].trim() : 'ملصق TGS';
-          
           await showTgsSticker(url, charName);
           setTGStatus('✅ تم جلب TGS!', 'success');
           showToast('🎬 TGS جاهز: ' + charName, 'success');
@@ -339,20 +417,15 @@ async function fetchAnimatedOrVideo() {
   }
 }
 
-// ============================================================
-//  WebM
-// ============================================================
 function showVideoSticker(url, name) {
   destroyAllAnimated();
   playerSkin = null;
-
   videoSticker = document.createElement('video');
   videoSticker.muted = true;
   videoSticker.loop = true;
   videoSticker.playsInline = true;
   videoSticker.preload = 'auto';
   videoSticker.src = url;
-
   videoSticker.onloadeddata = () => {
     videoReady = true;
     videoSticker.play().catch(err => console.warn('play error', err));
@@ -360,51 +433,37 @@ function showVideoSticker(url, name) {
     showToast('✅ الفيديو جاهز للعرض', 'success');
     renderGame();
   };
-
   videoSticker.onerror = () => {
     showToast('❌ فشل تحميل الفيديو', 'error');
     setTGStatus('❌ فشل WebM', 'error');
     videoReady = false;
   };
-
   videoSticker.load();
 }
 
-// ============================================================
-//  TGS (مع فك الضغط)
-// ============================================================
 async function showTgsSticker(url, name) {
   destroyAllAnimated();
   playerSkin = null;
-
   try {
     const response = await fetch(url);
     if (!response.ok) throw new Error('فشل جلب الملف: ' + response.status);
-
     const buffer = await response.arrayBuffer();
     const decompressed = pako.ungzip(new Uint8Array(buffer), { to: 'string' });
     const animationData = JSON.parse(decompressed);
-
     lottieAnimation = lottie.loadAnimation({
       container: lottieCanvas,
       renderer: 'canvas',
       loop: true,
       autoplay: true,
       animationData: animationData,
-      rendererSettings: {
-        clearCanvas: true,
-        preserveAspectRatio: 'xMidYMid meet'
-      }
+      rendererSettings: { clearCanvas: true, preserveAspectRatio: 'xMidYMid meet' }
     });
-
     lottieAnimation.addEventListener('DOMLoaded', () => {
       animationLoaded = true;
       document.getElementById('char-name').textContent = '🎬 ' + name;
       showToast('✅ TGS جاهز للعرض', 'success');
       renderGame();
     });
-
-    // احتياطي
     setTimeout(() => {
       if (!animationLoaded) {
         animationLoaded = true;
@@ -412,7 +471,6 @@ async function showTgsSticker(url, name) {
         renderGame();
       }
     }, 1500);
-
   } catch (err) {
     console.error('TGS Error:', err);
     showToast('❌ فشل TGS: ' + (err.message || 'خطأ'), 'error');
@@ -420,27 +478,19 @@ async function showTgsSticker(url, name) {
   }
 }
 
-// ============================================================
-//  الملصقات الثابتة
-// ============================================================
 async function fetchStickers() {
   if (!connected) { setTGStatus('⚠️ اتصل أولاً', 'error'); return; }
   setTGStatus('📌 جاري جلب الملصقات...', '');
-
   try {
     const res = await fetch('https://api.telegram.org/bot' + botToken + '/getUpdates?limit=50&offset=' + (lastUpdateId + 1));
     const data = await res.json();
     if (!data.ok) { setTGStatus('❌ ' + data.description, 'error'); return; }
-
     let newItems = 0;
-
     for (const update of (data.result || [])) {
       lastUpdateId = Math.max(lastUpdateId, update.update_id);
       const msg = update.channel_post || update.message;
       if (!msg) continue;
-
       let fileId = null, imageUrl = '';
-
       if (msg.sticker && !msg.sticker.is_animated && !msg.sticker.is_video) {
         fileId = msg.sticker.file_id;
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
@@ -449,7 +499,6 @@ async function fetchStickers() {
           imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
         }
       }
-
       if (!fileId && msg.photo && msg.photo.length > 0) {
         fileId = msg.photo[msg.photo.length - 1].file_id;
         const fileRes = await fetch('https://api.telegram.org/bot' + botToken + '/getFile?file_id=' + fileId);
@@ -458,14 +507,12 @@ async function fetchStickers() {
           imageUrl = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
         }
       }
-
       if (!fileId) continue;
       if (fetchedStickers.some(c => c.fileId === fileId)) continue;
-
       const caption = msg.caption || '';
-      const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^\n]+)/i);
+      const nameMatch = caption.match(/(?:اسم|name|Name)[\s:]*([^
+]+)/i);
       const isSticker = !!msg.sticker && !msg.sticker.is_animated && !msg.sticker.is_video;
-
       const char = {
         id: (isSticker ? 'sticker_' : 'image_') + fileId,
         fileId,
@@ -473,10 +520,8 @@ async function fetchStickers() {
         imageUrl,
         isSticker
       };
-
       fetchedStickers.push(char);
       newItems++;
-
       if (imageUrl) {
         const img = new Image();
         img.onload = () => {
@@ -486,13 +531,10 @@ async function fetchStickers() {
           }
           renderGame();
         };
-        img.onerror = () => {
-          console.warn('فشل تحميل صورة:', imageUrl);
-        };
+        img.onerror = () => { console.warn('فشل تحميل صورة:', imageUrl); };
         img.src = imageUrl;
       }
     }
-
     if (newItems > 0) {
       setTGStatus('✅ جلب ' + newItems + ' عنصر!', 'success');
       renderSkinSelector();
@@ -524,6 +566,269 @@ function autoSelectFirstSticker() {
 }
 
 // ============================================================
+//  METEOR & GEM SYSTEM
+// ============================================================
+
+function spawnMeteor() {
+  const edge = Math.floor(Math.random() * 4); // 0=top,1=right,2=bottom,3=left
+  let mx, my, vx, vy;
+  const speed = meteorSpeedBase + (gameState.level * 0.5) + Math.random() * 1.5;
+  const angle = Math.random() * Math.PI * 2;
+
+  // Spawn from edges with velocity toward center-ish
+  if (edge === 0) { // top
+    mx = Math.random() * MAP_SIZE * TILE_SIZE;
+    my = -50;
+    vx = (Math.random() - 0.5) * speed;
+    vy = speed;
+  } else if (edge === 1) { // right
+    mx = MAP_SIZE * TILE_SIZE + 50;
+    my = Math.random() * MAP_SIZE * TILE_SIZE;
+    vx = -speed;
+    vy = (Math.random() - 0.5) * speed;
+  } else if (edge === 2) { // bottom
+    mx = Math.random() * MAP_SIZE * TILE_SIZE;
+    my = MAP_SIZE * TILE_SIZE + 50;
+    vx = (Math.random() - 0.5) * speed;
+    vy = -speed;
+  } else { // left
+    mx = -50;
+    my = Math.random() * MAP_SIZE * TILE_SIZE;
+    vx = speed;
+    vy = (Math.random() - 0.5) * speed;
+  }
+
+  meteors.push({
+    x: mx,
+    y: my,
+    vx: vx,
+    vy: vy,
+    size: 15 + Math.random() * 20,
+    rotation: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 0.15,
+    trail: [],
+    color: `hsl(${Math.random() * 40 + 10}, 100%, 60%)`,
+    dead: false
+  });
+}
+
+function spawnGem() {
+  let gx, gy, attempts = 0;
+  do {
+    gx = 1 + Math.random() * (MAP_SIZE - 2);
+    gy = 1 + Math.random() * (MAP_SIZE - 2);
+    attempts++;
+  } while (mapData[Math.floor(gy)] && mapData[Math.floor(gy)][Math.floor(gx)] === 1 && attempts < 20);
+
+  const type = gemTypes[Math.floor(Math.random() * gemTypes.length)];
+  gems.push({
+    x: gx * TILE_SIZE + TILE_SIZE/2,
+    y: gy * TILE_SIZE + TILE_SIZE/2,
+    type: type,
+    floatOffset: Math.random() * Math.PI * 2,
+    collected: false,
+    scale: 1,
+    pulse: 0
+  });
+}
+
+function spawnParticles(x, y, color, count, speed) {
+  for (let i = 0; i < count; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const spd = Math.random() * speed;
+    particles.push({
+      x: x,
+      y: y,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd,
+      life: 1,
+      decay: 0.02 + Math.random() * 0.03,
+      color: color,
+      size: 2 + Math.random() * 4
+    });
+  }
+}
+
+function spawnFloatingText(x, y, text, color) {
+  particles.push({
+    x: x,
+    y: y,
+    vx: 0,
+    vy: -1.5,
+    life: 1.5,
+    decay: 0.015,
+    color: color,
+    size: 14,
+    text: text,
+    isText: true
+  });
+}
+
+function updateMeteors() {
+  // Spawn
+  meteorSpawnTimer++;
+  const currentInterval = Math.max(30, meteorSpawnInterval - gameState.level * 8);
+  if (meteorSpawnTimer >= currentInterval) {
+    meteorSpawnTimer = 0;
+    spawnMeteor();
+  }
+
+  for (let i = meteors.length - 1; i >= 0; i--) {
+    const m = meteors[i];
+    m.x += m.vx;
+    m.y += m.vy;
+    m.rotation += m.rotSpeed;
+
+    // Trail
+    m.trail.push({ x: m.x, y: m.y, life: 1 });
+    if (m.trail.length > 15) m.trail.shift();
+    for (const t of m.trail) t.life -= 0.07;
+    m.trail = m.trail.filter(t => t.life > 0);
+
+    // Remove if out of bounds far
+    if (m.x < -200 || m.x > MAP_SIZE * TILE_SIZE + 200 || m.y < -200 || m.y > MAP_SIZE * TILE_SIZE + 200) {
+      meteors.splice(i, 1);
+      continue;
+    }
+
+    // Collision with player
+    if (!gameState.invincible && !gameState.gameOver) {
+      const px = player.x * TILE_SIZE + TILE_SIZE/2;
+      const py = player.y * TILE_SIZE + TILE_SIZE/2;
+      const dist = Math.hypot(m.x - px, m.y - py);
+      if (dist < m.size + TILE_SIZE * 0.4) {
+        // HIT!
+        m.dead = true;
+        meteors.splice(i, 1);
+        takeDamage(25);
+        spawnParticles(px, py, '#ff4757', 20, 4);
+        screenShake.intensity = 15;
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+        spawnFloatingText(px, py - 20, '-25 ❤️', '#ff4757');
+        continue;
+      }
+    }
+  }
+}
+
+function updateGems() {
+  gemSpawnTimer++;
+  const currentInterval = Math.max(60, gemSpawnInterval - gameState.level * 5);
+  if (gemSpawnTimer >= currentInterval && gems.length < 8) {
+    gemSpawnTimer = 0;
+    spawnGem();
+  }
+
+  for (let i = gems.length - 1; i >= 0; i--) {
+    const g = gems[i];
+    g.floatOffset += 0.05;
+    g.pulse += 0.08;
+
+    if (g.collected) {
+      g.scale -= 0.08;
+      if (g.scale <= 0) {
+        gems.splice(i, 1);
+      }
+      continue;
+    }
+
+    // Collision with player
+    const px = player.x * TILE_SIZE + TILE_SIZE/2;
+    const py = player.y * TILE_SIZE + TILE_SIZE/2;
+    const dist = Math.hypot(g.x - px, g.y - py);
+    if (dist < TILE_SIZE * 0.9) {
+      g.collected = true;
+      const points = g.type.points * (1 + Math.floor(gameState.combo / 3));
+      gameState.score += points;
+      gameState.combo++;
+      gameState.comboTimer = 120;
+
+      // Level up every 100 points
+      const newLevel = 1 + Math.floor(gameState.score / 100);
+      if (newLevel > gameState.level) {
+        gameState.level = newLevel;
+        showToast('⚡ مستوى ' + gameState.level + '!', 'success');
+        spawnFloatingText(px, py - 40, 'مستوى ' + gameState.level + '!', '#00f2ff');
+        if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+      }
+
+      spawnParticles(g.x, g.y, g.type.color, 12, 3);
+      spawnFloatingText(g.x, g.y - 15, '+' + points, g.type.color);
+      if (tg?.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+      updateHUD();
+    }
+  }
+}
+
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life -= p.decay;
+    if (p.life <= 0) {
+      particles.splice(i, 1);
+    }
+  }
+}
+
+function takeDamage(amount) {
+  gameState.health -= amount;
+  if (gameState.health <= 0) {
+    gameState.health = 0;
+    endGame();
+  } else {
+    gameState.invincible = true;
+    gameState.invincibleTimer = 90; // 1.5 seconds at 60fps
+    showToast('💥 اصطدام! -' + amount + ' ❤️', 'error');
+  }
+  updateHUD();
+}
+
+function endGame() {
+  gameState.gameOver = true;
+  if (gameState.score > gameState.highScore) {
+    gameState.highScore = gameState.score;
+    localStorage.setItem('nardo_high_score', gameState.highScore.toString());
+  }
+  document.getElementById('final-score').textContent = gameState.score;
+  document.getElementById('high-score').textContent = gameState.highScore;
+  document.getElementById('game-over-screen').classList.add('show');
+  if (tg?.HapticFeedback) tg.HapticFeedback.notificationOccurred('error');
+}
+
+function restartGame() {
+  gameState = {
+    score: 0,
+    highScore: gameState.highScore,
+    health: 100,
+    maxHealth: 100,
+    level: 1,
+    gameOver: false,
+    invincible: false,
+    invincibleTimer: 0,
+    combo: 0,
+    comboTimer: 0
+  };
+  meteors = [];
+  gems = [];
+  particles = [];
+  meteorSpawnTimer = 0;
+  gemSpawnTimer = 0;
+  player.x = 1.5;
+  player.y = 1.5;
+  document.getElementById('game-over-screen').classList.remove('show');
+  updateHUD();
+  showToast('🎮 لنبدأ من جديد!', 'success');
+}
+
+function updateHUD() {
+  document.getElementById('score-display').textContent = gameState.score;
+  document.getElementById('level-display').textContent = gameState.level;
+  document.getElementById('health-fill').style.width = (gameState.health / gameState.maxHealth * 100) + '%';
+}
+
+// ============================================================
 //  GAME ENGINE
 // ============================================================
 const canvas = document.getElementById('game-canvas');
@@ -532,7 +837,7 @@ const ctx = canvas.getContext('2d');
 const MAP_SIZE = 16;
 const TILE_SIZE = 40;
 let mapData = [];
-let player = { x: 1.5, y: 1.5, speed: 0.08, direction: 'down' };
+let player = { x: 1.5, y: 1.5, speed: 0.1, direction: 'down' };
 let camera = { x: 0, y: 0 };
 let touchDirs = { up: false, down: false, left: false, right: false };
 
@@ -554,15 +859,24 @@ function renderGame() {
   const w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
 
+  // Screen shake
+  let shakeX = 0, shakeY = 0;
+  if (screenShake.intensity > 0) {
+    shakeX = (Math.random() - 0.5) * screenShake.intensity;
+    shakeY = (Math.random() - 0.5) * screenShake.intensity;
+    screenShake.intensity *= 0.9;
+    if (screenShake.intensity < 0.5) screenShake.intensity = 0;
+  }
+
   camera.x = player.x * TILE_SIZE - w / 2;
   camera.y = player.y * TILE_SIZE - h / 2;
   camera.x = Math.max(0, Math.min(MAP_SIZE * TILE_SIZE - w, camera.x));
   camera.y = Math.max(0, Math.min(MAP_SIZE * TILE_SIZE - h, camera.y));
 
   ctx.save();
-  ctx.translate(-camera.x, -camera.y);
+  ctx.translate(-camera.x + shakeX, -camera.y + shakeY);
 
-  // الخريطة
+  // Background grid
   for (let y = 0; y < MAP_SIZE; y++) {
     for (let x = 0; x < MAP_SIZE; x++) {
       const px = x * TILE_SIZE, py = y * TILE_SIZE;
@@ -571,6 +885,9 @@ function renderGame() {
         ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
         ctx.strokeStyle = '#3a3a5a';
         ctx.strokeRect(px, py, TILE_SIZE, TILE_SIZE);
+        // Wall detail
+        ctx.fillStyle = 'rgba(255,255,255,0.03)';
+        ctx.fillRect(px + 4, py + 4, TILE_SIZE - 8, TILE_SIZE - 8);
       } else {
         ctx.fillStyle = (x + y) % 2 === 0 ? '#1a1a2e' : '#222244';
         ctx.fillRect(px, py, TILE_SIZE, TILE_SIZE);
@@ -578,23 +895,106 @@ function renderGame() {
     }
   }
 
+  // Draw gems
+  for (const g of gems) {
+    if (g.collected && g.scale <= 0) continue;
+    const floatY = Math.sin(g.floatOffset) * 4;
+    const pulseScale = 1 + Math.sin(g.pulse) * 0.15;
+    const finalScale = g.scale * pulseScale;
+    const size = 16 * finalScale;
+
+    ctx.save();
+    ctx.translate(g.x, g.y + floatY);
+
+    // Glow
+    const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, size * 1.5);
+    glow.addColorStop(0, g.type.glow);
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(0, 0, size * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Gem body
+    ctx.fillStyle = g.type.color;
+    ctx.shadowColor = g.type.color;
+    ctx.shadowBlur = 15;
+    ctx.font = `bold ${size}px Cairo`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(g.type.emoji, 0, 0);
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
+  }
+
+  // Draw meteors
+  for (const m of meteors) {
+    // Trail
+    for (let t = 0; t < m.trail.length; t++) {
+      const trail = m.trail[t];
+      ctx.fillStyle = m.color;
+      ctx.globalAlpha = trail.life * 0.4;
+      ctx.beginPath();
+      ctx.arc(trail.x, trail.y, m.size * 0.4 * trail.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Meteor body
+    ctx.save();
+    ctx.translate(m.x, m.y);
+    ctx.rotate(m.rotation);
+
+    // Outer glow
+    const meteorGlow = ctx.createRadialGradient(0, 0, m.size * 0.3, 0, 0, m.size * 1.2);
+    meteorGlow.addColorStop(0, 'rgba(255,100,50,0.6)');
+    meteorGlow.addColorStop(0.5, 'rgba(255,50,50,0.3)');
+    meteorGlow.addColorStop(1, 'rgba(255,0,0,0)');
+    ctx.fillStyle = meteorGlow;
+    ctx.beginPath();
+    ctx.arc(0, 0, m.size * 1.2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Core
+    ctx.fillStyle = '#ffeb3b';
+    ctx.shadowColor = '#ff4757';
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.arc(0, 0, m.size * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Rock texture
+    ctx.fillStyle = '#8b4513';
+    ctx.beginPath();
+    ctx.arc(-m.size * 0.15, -m.size * 0.1, m.size * 0.25, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
   const px = player.x * TILE_SIZE;
   const py = player.y * TILE_SIZE;
 
-  // ظل
+  // Player shadow
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   ctx.beginPath();
   ctx.ellipse(px + TILE_SIZE / 2, py + TILE_SIZE * 0.92, TILE_SIZE * 0.55, TILE_SIZE * 0.12, 0, 0, Math.PI * 2);
   ctx.fill();
+
+  // Invincibility blink
+  if (gameState.invincible) {
+    const blink = Math.sin(Date.now() / 50) > 0;
+    if (!blink) ctx.globalAlpha = 0.3;
+  }
 
   // ===== رسم الملصق =====
   if (videoReady && videoSticker && videoSticker.readyState >= 2) {
     const size = 200;
     try {
       ctx.drawImage(videoSticker, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size);
-    } catch (e) {
-      console.warn('draw video error', e);
-    }
+    } catch (e) { console.warn('draw video error', e); }
     ctx.fillStyle = '#c084fc';
     ctx.font = 'bold 12px Cairo';
     ctx.textAlign = 'center';
@@ -604,9 +1004,7 @@ function renderGame() {
     const size = 200;
     try {
       ctx.drawImage(lottieCanvas, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size);
-    } catch (e) {
-      console.warn('draw lottie error', e);
-    }
+    } catch (e) { console.warn('draw lottie error', e); }
     ctx.fillStyle = '#c084fc';
     ctx.font = 'bold 12px Cairo';
     ctx.textAlign = 'center';
@@ -615,8 +1013,6 @@ function renderGame() {
   else if (playerSkin && playerSkin.imageUrl && loadedImages[playerSkin.id]) {
     const size = TILE_SIZE * 1.8;
     const img = loadedImages[playerSkin.id];
-
-    // توهج
     const glow = ctx.createRadialGradient(px + TILE_SIZE/2, py + TILE_SIZE/2, 5, px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.7);
     glow.addColorStop(0, 'rgba(139,92,246,0.25)');
     glow.addColorStop(1, 'rgba(139,92,246,0)');
@@ -624,44 +1020,73 @@ function renderGame() {
     ctx.beginPath();
     ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.7, 0, Math.PI * 2);
     ctx.fill();
-
     ctx.save();
     ctx.beginPath();
     ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.5, 0, Math.PI * 2);
     ctx.clip();
     ctx.drawImage(img, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size);
     ctx.restore();
-
     ctx.strokeStyle = '#8b5cf6';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.5, 0, Math.PI * 2);
     ctx.stroke();
-
     ctx.fillStyle = '#c084fc';
     ctx.font = 'bold 12px Cairo';
     ctx.textAlign = 'center';
     ctx.fillText(playerSkin.name || 'ملصق', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2 - 8);
   } else {
-    // نقطة صغيرة
     ctx.fillStyle = 'rgba(255,255,255,0.2)';
     ctx.beginPath();
     ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, 6, 0, Math.PI * 2);
     ctx.fill();
   }
 
+  ctx.globalAlpha = 1;
   ctx.restore();
 
-  // إحداثيات
+  // Particles (screen space)
+  ctx.save();
+  ctx.translate(shakeX, shakeY);
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life);
+    if (p.isText) {
+      ctx.fillStyle = p.color;
+      ctx.font = `bold ${p.size}px Cairo`;
+      ctx.textAlign = 'center';
+      ctx.fillText(p.text, p.x - camera.x, p.y - camera.y);
+    } else {
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x - camera.x, p.y - camera.y, p.size * p.life, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.globalAlpha = 1;
+  ctx.restore();
+
+  // Combo display
+  if (gameState.combo > 1 && gameState.comboTimer > 0) {
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(w/2 - 60, 50, 120, 28);
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 14px Cairo';
+    ctx.textAlign = 'center';
+    ctx.fillText('🔥 كومبو x' + gameState.combo, w/2, 68);
+  }
+
+  // Coordinates
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
-  ctx.fillRect(10, 10, 180, 22);
+  ctx.fillRect(10, h - 35, 180, 22);
   ctx.fillStyle = '#aaa';
   ctx.font = '11px Cairo';
   ctx.textAlign = 'left';
-  ctx.fillText('📍 ' + Math.round(player.x) + ' , ' + Math.round(player.y), 16, 26);
+  ctx.fillText('📍 ' + Math.round(player.x) + ' , ' + Math.round(player.y), 16, h - 20);
 }
 
 function updatePlayer() {
+  if (gameState.gameOver) return;
+
   let dx = 0, dy = 0;
   if (touchDirs.up) dy = -player.speed;
   if (touchDirs.down) dy = player.speed;
@@ -682,10 +1107,31 @@ function updatePlayer() {
 
   player.x = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.x));
   player.y = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.y));
+
+  // Invincibility timer
+  if (gameState.invincible) {
+    gameState.invincibleTimer--;
+    if (gameState.invincibleTimer <= 0) {
+      gameState.invincible = false;
+    }
+  }
+
+  // Combo timer
+  if (gameState.comboTimer > 0) {
+    gameState.comboTimer--;
+    if (gameState.comboTimer <= 0) {
+      gameState.combo = 0;
+    }
+  }
 }
 
 function gameLoop() {
-  updatePlayer();
+  if (!gameState.gameOver) {
+    updatePlayer();
+    updateMeteors();
+    updateGems();
+    updateParticles();
+  }
   renderGame();
   requestAnimationFrame(gameLoop);
 }
@@ -753,11 +1199,15 @@ function enterApp() {
     resize();
     window.addEventListener('resize', resize);
 
+    // Spawn initial gems
+    for (let i = 0; i < 5; i++) spawnGem();
+    updateHUD();
+
     setTimeout(() => {
       if (connected) {
         showToast('📡 جاهز - أرسل ملصقاً متحركاً ثم اضغط جلب', 'info');
       } else {
-        showToast('📡 اضغط اتصال أولاً', 'info');
+        showToast('🌠 اهرب من النيازك! اجمع الجواهر!', 'info');
       }
     }, 800);
 
@@ -782,10 +1232,8 @@ setTimeout(() => {
   document.getElementById('start-btn').style.display = 'block';
 }, 400);
 
-console.log('🎬 v27.0 — Final Working Version');
+console.log('🎬 v28.0 — Meteor Rush Edition');
 </script>
 </body>
 </html>
-
-
 
