@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🎮 العوالم القتالية - النسخة المحسنة الكاملة</title>
+<title>🎮 العوالم القتالية - التحكم الدائري</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -158,28 +158,211 @@ canvas { display:block; width:100%; height:100%; }
 }
 #controls button:active { transform: translateY(0); }
 
+/* ===== التحكم الدائري الاحترافي ===== */
 .dpad {
-  position:fixed; bottom:90px; left:20px; width:110px; height:110px; z-index:200;
-  display:none;
+  position: fixed; 
+  bottom: 100px; 
+  left: 25px; 
+  width: 140px; 
+  height: 140px; 
+  z-index: 200;
+  display: none;
+  filter: drop-shadow(0 0 30px rgba(139,92,246,0.1));
 }
+
+.dpad-bg {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 0;
+  animation: rotateSlow 30s linear infinite;
+}
+@keyframes rotateSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* حلقات زخرفية */
+.dpad-ring {
+  position: absolute;
+  top: 5px; left: 5px;
+  width: 130px; height: 130px;
+  border-radius: 50%;
+  border: 1px solid rgba(139,92,246,0.06);
+  z-index: 0;
+  animation: ringSpin 20s linear infinite reverse;
+}
+.dpad-ring-inner {
+  position: absolute;
+  top: 15px; left: 15px;
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  border: 1px dashed rgba(139,92,246,0.04);
+  z-index: 0;
+  animation: ringSpin 15s linear infinite;
+}
+@keyframes ringSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* أزرار الاتجاه */
 .dpad-btn {
-  position:absolute; width:38px; height:38px; border-radius:50%;
-  background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12);
-  display:flex; align-items:center; justify-content:center; font-size:16px;
-  color:rgba(255,255,255,0.4); cursor:pointer;
-  transition: all 0.15s;
-  backdrop-filter: blur(4px);
+  position: absolute;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(255,255,255,0.3);
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 2;
+  backdrop-filter: blur(8px);
+  box-shadow: 
+    0 2px 10px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.05);
 }
-.dpad-btn:active, .dpad-btn.active { 
-  background:rgba(139,92,246,0.4); 
-  color:#c4b5fd; 
-  transform:scale(0.9);
-  box-shadow: 0 0 20px rgba(139,92,246,0.3);
+.dpad-btn:hover {
+  background: rgba(139,92,246,0.15);
+  border-color: rgba(139,92,246,0.2);
+  color: rgba(255,255,255,0.6);
+  transform: scale(1.05);
 }
-.dpad-up { top:0; left:36px; }
-.dpad-down { bottom:0; left:36px; }
-.dpad-left { top:36px; left:0; }
-.dpad-right { top:36px; right:0; }
+.dpad-btn:active, .dpad-btn.active {
+  background: rgba(139,92,246,0.35);
+  border-color: rgba(139,92,246,0.5);
+  color: #c4b5fd;
+  transform: scale(0.88);
+  box-shadow: 
+    0 0 30px rgba(139,92,246,0.2),
+    inset 0 0 20px rgba(139,92,246,0.1);
+}
+.dpad-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.dpad-up { top: 0; left: 46px; }
+.dpad-down { bottom: 0; left: 46px; }
+.dpad-left { top: 46px; left: 0; }
+.dpad-right { top: 46px; right: 0; }
+
+/* المركز */
+.dpad-center {
+  position: absolute;
+  top: 46px; left: 46px;
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+.center-pulse {
+  position: absolute;
+  width: 100%; height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(139,92,246,0.15) 0%, transparent 70%);
+  animation: centerPulse 2s ease-in-out infinite;
+}
+@keyframes centerPulse {
+  0%,100% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.2); opacity: 1; }
+}
+.center-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: rgba(139,92,246,0.3);
+  border: 1px solid rgba(139,92,246,0.2);
+  animation: dotPulse 1.5s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%,100% { transform: scale(1); opacity: 0.3; }
+  50% { transform: scale(0.7); opacity: 0.8; }
+}
+
+/* زر التسريع الاحترافي */
+.speed-btn {
+  position: absolute;
+  bottom: -10px;
+  right: -10px;
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  cursor: pointer;
+  z-index: 3;
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  filter: drop-shadow(0 2px 20px rgba(255,215,0,0.05));
+}
+.speed-btn:hover {
+  transform: scale(1.08);
+  filter: drop-shadow(0 4px 30px rgba(255,215,0,0.15));
+}
+.speed-btn:active {
+  transform: scale(0.92);
+}
+.speed-btn svg {
+  width: 100%; height: 100%;
+  filter: drop-shadow(0 0 10px rgba(255,215,0,0.1));
+}
+.speed-btn .speed-ring {
+  transition: stroke-dashoffset 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.speed-btn.active .speed-ring {
+  stroke: #ffd700;
+  filter: drop-shadow(0 0 15px rgba(255,215,0,0.3));
+}
+.speed-btn .speed-glow {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,215,0,0.1) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.5s;
+  pointer-events: none;
+}
+.speed-btn.active .speed-glow {
+  opacity: 1;
+  animation: glowPulse 1.5s ease-in-out infinite;
+}
+@keyframes glowPulse {
+  0%,100% { transform: scale(0.8); opacity: 0.3; }
+  50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+/* مؤشر السرعة الرقمي */
+.speed-indicator {
+  position: absolute;
+  top: -12px;
+  right: -8px;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.8);
+  border: 1px solid rgba(255,215,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  color: #ffd700;
+  z-index: 4;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 15px rgba(0,0,0,0.3);
+  transition: all 0.3s;
+  opacity: 0;
+  transform: scale(0.5);
+}
+.speed-indicator.show {
+  opacity: 1;
+  transform: scale(1);
+}
+.speed-indicator.active {
+  border-color: #ffd700;
+  box-shadow: 0 0 20px rgba(255,215,0,0.2);
+}
 
 #fire-btn {
   position:fixed; bottom:100px; right:24px;
@@ -534,7 +717,7 @@ canvas { display:block; width:100%; height:100%; }
 <div id="start-screen">
   <div class="start-logo">🎮 العوالم القتالية</div>
   <div class="start-subtitle">
-    <span>🏆 النسخة المحسنة الكاملة</span><br>
+    <span>🏆 التحكم الدائري الاحترافي</span><br>
     خريطة · معالم · عوالم · فيديو 360 · قتال · إنجازات
   </div>
   <div class="start-features">
@@ -542,26 +725,27 @@ canvas { display:block; width:100%; height:100%; }
     <div class="feat">🌍 عوالم</div>
     <div class="feat">🎯 مهام</div>
     <div class="feat">🏆 إنجازات</div>
+    <div class="feat">⚡ تسريع</div>
   </div>
   <button class="start-btn" onclick="startGame()">🚀 ابدأ المغامرة</button>
   <div style="display:flex;gap:10px;margin-top:10px;">
     <button class="start-btn" style="padding:10px 30px;font-size:14px;" onclick="loadGame()">📂 تحميل</button>
     <button class="start-btn" style="padding:10px 30px;font-size:14px;" onclick="showTutorial()">❓ دليل</button>
   </div>
-  <div class="version-tag">v70.0 | المحسنة الكاملة</div>
+  <div class="version-tag">v70.0 | التحكم الدائري</div>
 </div>
 
 <!-- ===== دليل اللعب ===== -->
 <div id="tutorial-panel" style="position:fixed;inset:0;z-index:2001;background:rgba(0,0,0,0.95);display:none;justify-content:center;align-items:center;flex-direction:column;gap:20px;padding:20px;">
   <h2 style="color:#ffd700;font-size:28px;">📖 دليل اللعب</h2>
   <div style="max-width:400px;color:#aaa;font-size:13px;line-height:2;text-align:center;">
-    <div>🎮 <b>الحركة:</b> أزرار الاتجاه أو مفاتيح الأسهم</div>
+    <div>🎮 <b>الحركة:</b> أزرار الاتجاه الدائرية</div>
+    <div>⚡ <b>التسريع:</b> زر ⚡ لتغيير السرعة (1x → 3x)</div>
     <div>🔫 <b>الإطلاق:</b> زر النار أو مفتاح المسافة</div>
     <div>🌐 <b>الدخول:</b> Enter عند الوقوف على بوابة</div>
     <div>🚪 <b>الخروج:</b> Escape للعودة للخريطة</div>
     <div>💚 <b>الشفاء:</b> مفتاح H</div>
     <div>⚔️ <b>ساحة القتال:</b> ادخل عبر البوابة واقتل الأعداء</div>
-    <div>🏆 <b>النقاط:</b> اكتشف عوالم جديدة واقتل أعداء</div>
   </div>
   <button class="start-btn" style="padding:10px 40px;font-size:16px;" onclick="hideTutorial()">✅ فهمت</button>
 </div>
@@ -635,13 +819,71 @@ canvas { display:block; width:100%; height:100%; }
   <button onclick="toggleAchievements()">🏆 إنجازات</button>
   <button onclick="toggleQuests()">🎯 مهام</button>
   <button onclick="resetGame()">🔄 إعادة</button>
+  <button onclick="toggleSpeed()" style="background:rgba(255,215,0,0.15);border-color:#ffd700;">⚡ x<span id="speed-display">1</span></button>
 </div>
 
-<div class="dpad" id="dpad">
-  <div class="dpad-btn dpad-up" data-dir="up">▲</div>
-  <div class="dpad-btn dpad-down" data-dir="down">▼</div>
-  <div class="dpad-btn dpad-left" data-dir="left">◀</div>
-  <div class="dpad-btn dpad-right" data-dir="right">▶</div>
+<!-- ===== التحكم الدائري الاحترافي ===== -->
+<div class="dpad" id="dpad" style="display:none;">
+  <!-- الخلفية الدائرية المتدرجة -->
+  <svg class="dpad-bg" viewBox="0 0 140 140">
+    <defs>
+      <radialGradient id="dpadGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="rgba(139,92,246,0.08)"/>
+        <stop offset="70%" stop-color="rgba(139,92,246,0.02)"/>
+        <stop offset="100%" stop-color="rgba(139,92,246,0)"/>
+      </radialGradient>
+    </defs>
+    <circle cx="70" cy="70" r="60" fill="url(#dpadGlow)"/>
+    <circle cx="70" cy="70" r="55" fill="none" stroke="rgba(139,92,246,0.06)" stroke-width="1"/>
+    <circle cx="70" cy="70" r="45" fill="none" stroke="rgba(139,92,246,0.04)" stroke-width="0.5"/>
+  </svg>
+
+  <!-- المؤشرات الدائرية -->
+  <div class="dpad-ring"></div>
+  <div class="dpad-ring-inner"></div>
+
+  <!-- زر التسريع الاحترافي -->
+  <div class="speed-btn" id="speed-btn" onclick="toggleSpeed()">
+    <svg width="40" height="40" viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(255,215,0,0.15)" stroke-width="1.5"/>
+      <circle class="speed-ring" cx="20" cy="20" r="18" fill="none" stroke="#ffd700" stroke-width="1.5" 
+        stroke-dasharray="113" stroke-dashoffset="113" id="speed-ring"/>
+      <text x="20" y="16" text-anchor="middle" fill="#ffd700" font-size="14" font-weight="900" id="speed-icon">⚡</text>
+      <text x="20" y="28" text-anchor="middle" fill="rgba(255,215,0,0.7)" font-size="8" font-weight="700" id="speed-label">1x</text>
+    </svg>
+    <div class="speed-glow"></div>
+  </div>
+
+  <!-- أزرار الاتجاه الأربعة -->
+  <button class="dpad-btn dpad-up" data-dir="up">
+    <svg width="20" height="20" viewBox="0 0 20 20">
+      <polygon points="10,2 18,16 2,16" fill="currentColor"/>
+    </svg>
+  </button>
+  <button class="dpad-btn dpad-down" data-dir="down">
+    <svg width="20" height="20" viewBox="0 0 20 20">
+      <polygon points="2,4 18,4 10,18" fill="currentColor"/>
+    </svg>
+  </button>
+  <button class="dpad-btn dpad-left" data-dir="left">
+    <svg width="20" height="20" viewBox="0 0 20 20">
+      <polygon points="2,10 16,2 16,18" fill="currentColor"/>
+    </svg>
+  </button>
+  <button class="dpad-btn dpad-right" data-dir="right">
+    <svg width="20" height="20" viewBox="0 0 20 20">
+      <polygon points="18,10 4,2 4,18" fill="currentColor"/>
+    </svg>
+  </button>
+
+  <!-- المركز -->
+  <div class="dpad-center">
+    <div class="center-pulse"></div>
+    <div class="center-dot"></div>
+  </div>
+
+  <!-- مؤشر السرعة الرقمي -->
+  <div class="speed-indicator" id="speed-indicator">1</div>
 </div>
 
 <button id="fire-btn" onclick="fireWeapon()">🔫</button>
@@ -731,7 +973,7 @@ canvas { display:block; width:100%; height:100%; }
 
 <script>
 // ============================================================
-//  🎮 العوالم القتالية - النسخة المحسنة الكاملة v70.0
+//  🎮 العوالم القتالية - التحكم الدائري الاحترافي v70.0
 // ============================================================
 
 // ===== 1. المتغيرات العامة =====
@@ -820,7 +1062,49 @@ let quests = [
   { id: 'q4', name: 'جامع', desc: 'اجمع 50 نقطة', target: 50, current: 0, type: 'score', reward: 25 }
 ];
 
-// ===== 2. العوالم الافتراضية =====
+// ===== 2. نظام التسريع =====
+let speedMultiplier = 1;
+const SPEED_LEVELS = [1, 1.5, 2, 3];
+let speedIndex = 0;
+
+function toggleSpeed() {
+  speedIndex = (speedIndex + 1) % SPEED_LEVELS.length;
+  speedMultiplier = SPEED_LEVELS[speedIndex];
+  
+  const btn = document.getElementById('speed-btn');
+  const label = document.getElementById('speed-label');
+  const icon = document.getElementById('speed-icon');
+  const ring = document.getElementById('speed-ring');
+  const indicator = document.getElementById('speed-indicator');
+  const display = document.getElementById('speed-display');
+  
+  // تحديث النص
+  label.textContent = speedMultiplier + 'x';
+  indicator.textContent = speedMultiplier;
+  if (display) display.textContent = speedMultiplier;
+  
+  // تحديث الحلقة
+  const circumference = 113;
+  const progress = 1 - (speedIndex / (SPEED_LEVELS.length - 1));
+  ring.style.strokeDashoffset = circumference * progress;
+  
+  // تحديث الحالة
+  if (speedMultiplier > 1) {
+    btn.classList.add('active');
+    indicator.classList.add('active');
+    indicator.classList.add('show');
+    icon.textContent = '⚡';
+    showToast('🚀 تسريع x' + speedMultiplier, 'info');
+  } else {
+    btn.classList.remove('active');
+    indicator.classList.remove('active');
+    indicator.classList.remove('show');
+    icon.textContent = '⚡';
+    showToast('🐢 سرعة عادية', 'info');
+  }
+}
+
+// ===== 3. العوالم الافتراضية =====
 function createDefaultWorlds() {
   worlds = [
     {
@@ -887,7 +1171,7 @@ function createDefaultWorlds() {
   ];
 }
 
-// ===== 3. دوال مساعدة =====
+// ===== 4. دوال مساعدة =====
 function showToast(msg, type) {
   const c = document.getElementById('toast-container');
   const t = document.createElement('div');
@@ -981,7 +1265,7 @@ function getPlayerTile() {
   return { col: Math.floor(px / TILE_SIZE), row: Math.floor(pz / TILE_SIZE) };
 }
 
-// ===== 4. نظام الإنجازات =====
+// ===== 5. نظام الإنجازات =====
 function checkAchievement(key, condition) {
   if (condition && !achievements[key].unlocked) {
     achievements[key].unlocked = true;
@@ -1012,7 +1296,7 @@ function toggleAchievements() {
   renderAchievements();
 }
 
-// ===== 5. نظام المهام =====
+// ===== 6. نظام المهام =====
 function updateQuests(type, amount) {
   quests.forEach(function(q) {
     if (q.type === type && !q.complete) {
@@ -1052,7 +1336,7 @@ function toggleQuests() {
   renderQuests();
 }
 
-// ===== 6. بناء العالم =====
+// ===== 7. بناء العالم =====
 function clearWorld() {
   tileMeshes.forEach(function(m) {
     if (m.parent) m.parent.remove(m);
@@ -1078,17 +1362,14 @@ function clearWorld() {
   }
   document.getElementById('video-controls').style.display = 'none';
 
-  // إزالة الجسيمات
   particles.forEach(function(p) { if (p.mesh.parent) p.mesh.parent.remove(p.mesh); });
   particles = [];
 
-  // إزالة العناصر العائمة
   if (window.floatingSprites) {
     window.floatingSprites.forEach(function(s) { if (s.parent) s.parent.remove(s); });
     window.floatingSprites = [];
   }
 
-  // إزالة حلقات البوابات
   scene.children.slice().forEach(function(child) {
     if (child.userData && (child.userData.isPortalRing || child.userData.isPortalBeam)) {
       scene.remove(child);
@@ -1113,7 +1394,6 @@ function buildWorld(worldId) {
   scene.background = new THREE.Color(bg);
   scene.fog = new THREE.Fog(bg, 20, 45);
 
-  // بناء المربعات مع تحسينات بصرية
   for (let row = 0; row < GRID; row++) {
     for (let col = 0; col < GRID; col++) {
       const canvas = document.createElement('canvas');
@@ -1192,7 +1472,6 @@ function buildWorld(worldId) {
     }
   }
 
-  // أيقونات عائمة مع تأثيرات
   if (world.items) {
     window.floatingSprites = [];
     world.items.forEach(function(item, idx) {
@@ -1240,13 +1519,11 @@ function buildWorld(worldId) {
     });
   }
 
-  // فيديو 360
   if (world.type === 'video360' && world.videoUrl) {
     createVideo360(world.videoUrl);
     document.getElementById('video-controls').style.display = 'flex';
   }
 
-  // شبكة
   gridHelper = new THREE.GridHelper(WORLD_SIZE, GRID, 0x8b5cf6, 0x2a2a4a);
   gridHelper.position.y = 0.04;
   gridHelper.material.transparent = true;
@@ -1262,7 +1539,6 @@ function buildWorld(worldId) {
     playerGroup.position.set(world.startPosition.x, 0, world.startPosition.z);
   }
 
-  // إعادة تعيين الأعداء
   if (worldId === 'world_fight') {
     enemies.forEach(function(e) { scene.remove(e); });
     enemies = [];
@@ -1274,7 +1550,7 @@ function buildWorld(worldId) {
   renderLandmarks();
 }
 
-// ===== 7. فيديو 360 =====
+// ===== 8. فيديو 360 =====
 function createVideo360(url) {
   videoElement = document.createElement('video');
   videoElement.muted = isVideoMuted;
@@ -1359,7 +1635,7 @@ function toggleMute() {
   document.querySelector('#video-controls button:last-child').textContent = isVideoMuted ? '🔇' : '🔊';
 }
 
-// ===== 8. الدخول والخروج من العوالم =====
+// ===== 9. الدخول والخروج من العوالم =====
 function enterWorld() {
   if (isTransitioning || currentWorldId !== 'main') return;
 
@@ -1430,7 +1706,7 @@ function exitWorld() {
   }, 600);
 }
 
-// ===== 9. المعالم =====
+// ===== 10. المعالم =====
 function addLandmark() {
   const emojis = ['🏰','🌲','🌊','⛰️','🏜️','🌋','🏗️','🌺','🕌','🏯','🎪','🏟️'];
   const names = ['قلعة','غابة','بحيرة','جبل','صحراء','بركان','مبنى','حديقة','مسجد','معبد','سيرك','ملعب'];
@@ -1507,7 +1783,7 @@ function renderLandmarks() {
   });
 }
 
-// ===== 10. رفع فيديو/صورة =====
+// ===== 11. رفع فيديو/صورة =====
 function openUploadModal() {
   document.getElementById('upload-modal').style.display = 'flex';
   document.getElementById('lm-name').value = '';
@@ -1567,7 +1843,7 @@ function addLandmarkFromModal() {
   renderLandmarks();
 }
 
-// ===== 11. عوالم عشوائية =====
+// ===== 12. عوالم عشوائية =====
 function addRandomWorld() {
   const emojis = ['🎮','🎯','🎨','🌈','⭐','🌺','🌸','🌊','🔥','💫','🚀','🌙'];
   const titles = ['ملصقات','فن','طبيعة','خيال','مغامرات','ألعاب','رياضة','موسيقى'];
@@ -1627,7 +1903,7 @@ function addRandomWorld() {
   showToast('✅ تم إنشاء عالم جديد: ' + newWorld.name, 'success');
 }
 
-// ===== 12. نظام القتال =====
+// ===== 13. نظام القتال =====
 function spawnEnemy() {
   if (!gameRunning || currentWorldId !== 'world_fight') {
     showToast('⚠️ فقط في ساحة القتال', 'warn');
@@ -1676,7 +1952,6 @@ function createEnemyMesh(x, z) {
   eyeR.position.set(0.07, 0.77, 0.18);
   group.add(eyeR);
 
-  // قرون
   const hornGeo = new THREE.ConeGeometry(0.04, 0.15, 4);
   const hornMat = new THREE.MeshStandardMaterial({ color: 0x991b1b });
   const hornL = new THREE.Mesh(hornGeo, hornMat);
@@ -1728,7 +2003,6 @@ function updateEnemies() {
       enemy.userData.attackCooldown = 60;
       showMessage('💥 تعرضت للهجوم! -' + enemy.userData.damage, 800);
 
-      // تأثير الضرر
       const overlay = document.getElementById('damage-overlay');
       overlay.classList.add('show');
       setTimeout(function() { overlay.classList.remove('show'); }, 300);
@@ -1762,7 +2036,6 @@ function fireWeapon() {
   scene.add(flash);
   setTimeout(function() { scene.remove(flash); }, 80);
 
-  // جسيمات إطلاق
   createMuzzleFlash();
 }
 
@@ -1834,7 +2107,6 @@ function updateBullets() {
         hit = true;
         enemy.userData.health -= 15 + level * 2;
 
-        // جسيمات الدم
         const positions = [];
         for (let i = 0; i < 20; i++) {
           positions.push((Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5, (Math.random()-0.5)*0.5);
@@ -1904,7 +2176,7 @@ function healPlayer() {
   checkAchievement('healer', healCount >= 5);
 }
 
-// ===== 13. نهاية اللعبة =====
+// ===== 14. نهاية اللعبة =====
 function gameOver() {
   gameRunning = false;
   document.getElementById('final-kills').textContent = kills;
@@ -1938,10 +2210,7 @@ function restartGame() {
   landmarks = [];
   nextLandmarkId = 1;
 
-  // إعادة تعيين الإنجازات
   Object.keys(achievements).forEach(function(k) { achievements[k].unlocked = false; });
-
-  // إعادة تعيين المهام
   quests.forEach(function(q) { q.current = 0; q.complete = false; });
 
   createDefaultWorlds();
@@ -1958,18 +2227,19 @@ function resetGame() {
   setTimeout(function() { restartGame(); }, 500);
 }
 
-// ===== 14. حركة اللاعب والكاميرا =====
+// ===== 15. حركة اللاعب والكاميرا (مع نظام التسريع) =====
 function updatePlayer() {
   if (isTransitioning) return;
   if (!gameRunning) return;
-
   if (isInWorld && getCurrentWorld() && getCurrentWorld().id === 'world_360') return;
 
+  const currentSpeed = PLAYER_SPEED * speedMultiplier;
   let dx = 0, dz = 0;
-  if (touchDirs.up) dz = -PLAYER_SPEED;
-  if (touchDirs.down) dz = PLAYER_SPEED;
-  if (touchDirs.left) dx = -PLAYER_SPEED;
-  if (touchDirs.right) dx = PLAYER_SPEED;
+  
+  if (touchDirs.up) dz = -currentSpeed;
+  if (touchDirs.down) dz = currentSpeed;
+  if (touchDirs.left) dx = -currentSpeed;
+  if (touchDirs.right) dx = currentSpeed;
 
   const limit = HALF - TILE_SIZE / 2;
   playerGroup.position.x = Math.max(-limit, Math.min(limit, playerGroup.position.x + dx));
@@ -2001,7 +2271,7 @@ function updateCamera() {
   camera.lookAt(target.x, target.y + 0.8, target.z);
 }
 
-// ===== 15. تحديث المربع النشط =====
+// ===== 16. تحديث المربع النشط =====
 function updateActiveTile() {
   if (isTransitioning) return;
   const tile = getPlayerTile();
@@ -2032,7 +2302,7 @@ function updateActiveTile() {
   }
 }
 
-// ===== 16. خريطة مصغرة =====
+// ===== 17. خريطة مصغرة =====
 function setupMinimap() {
   const frame = document.getElementById('minimap-frame');
   const c = document.createElement('canvas');
@@ -2076,7 +2346,7 @@ function updateMinimap() {
   ctx.stroke();
 }
 
-// ===== 17. الإعدادات =====
+// ===== 18. الإعدادات =====
 function toggleSettings() {
   const panel = document.getElementById('settings-panel');
   panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
@@ -2108,7 +2378,7 @@ function setVolume(val) {
   if (videoElement) videoElement.volume = val / 100;
 }
 
-// ===== 18. حفظ وتحميل =====
+// ===== 19. حفظ وتحميل =====
 function saveGame() {
   const data = {
     playerHealth: playerHealth,
@@ -2175,7 +2445,7 @@ function hideTutorial() {
   document.getElementById('tutorial-panel').style.display = 'none';
 }
 
-// ===== 19. تهيئة Three.js =====
+// ===== 20. تهيئة Three.js =====
 function initGame() {
   const canvas = document.getElementById('canvas');
 
@@ -2206,7 +2476,6 @@ function initGame() {
   dirLight2.position.set(-10, 10, -10);
   scene.add(dirLight2);
 
-  // أرضية
   const ground = new THREE.Mesh(
     new THREE.PlaneGeometry(40, 40),
     new THREE.MeshStandardMaterial({ color: 0x15152a, roughness: 0.9 })
@@ -2216,7 +2485,6 @@ function initGame() {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // لاعب محسن
   playerGroup = new THREE.Group();
   const body = new THREE.Mesh(
     new THREE.CylinderGeometry(0.32, 0.38, 0.7, 8),
@@ -2241,7 +2509,6 @@ function initGame() {
   crown.position.y = 1.0;
   playerGroup.add(crown);
 
-  // سيف
   const swordHandle = new THREE.Mesh(
     new THREE.CylinderGeometry(0.02, 0.02, 0.2, 4),
     new THREE.MeshStandardMaterial({ color: 0x8b5cf6 })
@@ -2291,7 +2558,6 @@ function initGame() {
       }
     }
 
-    // تحريك الأيقونات العائمة
     if (window.floatingSprites) {
       const time = Date.now() * 0.001;
       window.floatingSprites.forEach(function(s) {
@@ -2301,7 +2567,6 @@ function initGame() {
       });
     }
 
-    // تحريك حلقات البوابات
     scene.children.forEach(function(child) {
       if (child.userData && child.userData.isPortalRing) {
         child.rotation.z += 0.01;
@@ -2331,7 +2596,7 @@ function startGame() {
   initGame();
 }
 
-// ===== 20. التحكم =====
+// ===== 21. التحكم =====
 function setupControls() {
   document.querySelectorAll('.dpad-btn').forEach(function(btn) {
     const dir = btn.dataset.dir;
@@ -2351,6 +2616,7 @@ function setupControls() {
     if (e.key === 'h' || e.key === 'H') healPlayer();
     if (e.key === 'Enter') enterWorld();
     if (e.key === 'Escape') exitWorld();
+    if (e.key === 'Shift') { e.preventDefault(); toggleSpeed(); }
   });
   window.addEventListener('keyup', function(e) {
     if (e.key === 'ArrowUp') touchDirs.up = false;
@@ -2373,7 +2639,6 @@ window.addEventListener('resize', function() {
   }
 });
 
-// إغلاق اللوحات عند النقر خارجها
 document.addEventListener('click', function(e) {
   const settingsPanel = document.getElementById('settings-panel');
   const settingsBtn = document.getElementById('settings-btn');
@@ -2384,23 +2649,15 @@ document.addEventListener('click', function(e) {
 
 setupControls();
 
-console.log('🎮 العوالم القتالية - النسخة المحسنة الكاملة v70.0');
-console.log('📌 جميع النقاط المطلوبة:');
-console.log('  ✅ خريطة 12×12 مع معالم');
-console.log('  ✅ فيديو 360 مع تحكم');
-console.log('  ✅ عوالم متعددة مع بوابات');
-console.log('  ✅ نظام قتال (أعداء، أسلحة، جسيمات)');
-console.log('  ✅ رفع فيديو/صورة');
-console.log('  ✅ نظام نقاط وخبرة ومستويات');
-console.log('  ✅ عوالم عشوائية');
-console.log('  ✅ شاشة انتقال');
-console.log('  ✅ خريطة مصغرة');
-console.log('  ✅ إنجازات ومهام');
-console.log('  ✅ حفظ/تحميل');
-console.log('  ✅ إعدادات متقدمة');
-console.log('  ✅ تأثيرات بصرية محسنة');
+console.log('🎮 العوالم القتالية - التحكم الدائري الاحترافي v70.0');
+console.log('📌 الميزات الجديدة:');
+console.log('  ⚡ زر تسريع دائري (1x → 3x)');
+console.log('  🎮 تحكم دائري احترافي مع أزرار مثلثة');
+console.log('  💫 مؤشر سرعة رقمي');
+console.log('  🌟 حلقة متحركة تعكس مستوى التسريع');
+console.log('  ⌨️ اختصار Shift لتغيير السرعة');
 </script>
 </body>
 </html>
 
-    
+  
