@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>ملصق متحرك - المغامرة</title>
+<title>ملصق متحرك - عصا تحكم</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none}
+body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none;-webkit-user-select:none}
 #start-screen{position:fixed;inset:0;z-index:2000;background:linear-gradient(135deg,#0a0a2a,#000);display:flex;flex-direction:column;justify-content:center;align-items:center;gap:20px}
 .start-logo{font-size:42px;font-weight:900;color:#ffd700;animation:float 3s ease-in-out infinite}
-.start-btn{border:2px solid #00f2ff;color:#00f2ff;padding:16px 50px;background:rgba(0,242,255,0.08);border-radius:60px;font-size:20px;cursor:pointer;font-weight:700;font-family:inherit}
+.start-btn{border:2px solid #00f2ff;color:#00f2ff;padding:16px 50px;background:rgba(0,242,255,0.08);border-radius:60px;font-size:20px;cursor:pointer;font-weight:700;font-family:inherit;transition:all .3s}
 .start-btn:hover{transform:scale(1.05);background:#00f2ff;color:#000;box-shadow:0 0 50px rgba(0,242,255,0.4)}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 #game-container{position:fixed;inset:0;display:none;background:#0a0a1a}
@@ -19,15 +19,16 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .hud .title{color:#ffd700;font-size:13px;font-weight:700}
 .hud-stats{display:flex;gap:12px;align-items:center}
 .stat-box{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 10px;display:flex;align-items:center;gap:5px;font-size:11px}
-.stat-box.score{color:#ffd700}
-.stat-box.health{color:#f87171}
-.stat-box.level{color:#60a5fa}
+.stat-box.score{color:#ffd700}.stat-box.health{color:#f87171}.stat-box.level{color:#60a5fa}
 .health-bar{width:60px;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden}
 .health-fill{height:100%;background:linear-gradient(90deg,#f87171,#ff8a8a);border-radius:3px;transition:width 0.3s}
-.dpad{position:fixed;bottom:20px;left:16px;width:120px;height:120px;z-index:200}
-.dpad-btn{position:absolute;width:40px;height:40px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;color:rgba(255,255,255,0.4);cursor:pointer;transition:all .1s}
-.dpad-btn:active{background:rgba(139,92,246,0.2);border-color:#8b5cf6;color:#8b5cf6;transform:scale(0.88)}
-.dpad-up{top:0;left:40px}.dpad-down{bottom:0;left:40px}.dpad-left{top:40px;left:0}.dpad-right{top:40px;right:0}
+
+/* ===== JOYSTICK ===== */
+.joystick-zone{position:fixed;bottom:20px;left:20px;width:140px;height:140px;z-index:200;touch-action:none}
+.joystick-base{position:absolute;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.05);border:2px solid rgba(255,255,255,0.1);top:10px;left:10px}
+.joystick-knob{position:absolute;width:50px;height:50px;border-radius:50%;background:rgba(139,92,246,0.4);border:2px solid #8b5cf6;top:45px;left:45px;box-shadow:0 0 20px rgba(139,92,246,0.3);pointer-events:none;transition:none;will-change:transform}
+.joystick-knob.active{background:rgba(139,92,246,0.7);box-shadow:0 0 30px rgba(139,92,246,0.5)}
+
 .tg-dropdown{position:fixed;bottom:170px;left:50%;transform:translateX(-50%);background:rgba(10,10,30,0.95);border:1px solid rgba(255,215,0,0.15);border-radius:14px;padding:10px 14px;z-index:250;min-width:280px;max-width:92%;display:none;backdrop-filter:blur(12px)}
 .tg-dropdown.show{display:block}
 .tg-dropdown .row{display:flex;gap:5px;margin-bottom:5px;flex-wrap:wrap}
@@ -55,7 +56,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 #game-over-screen.show{display:flex}
 .game-over-title{font-size:48px;font-weight:900;color:#f87171;text-shadow:0 0 30px rgba(248,113,113,0.5);animation:pulse 1.5s ease-in-out infinite}
 .game-over-score{font-size:24px;color:#ffd700}
-.restart-btn{border:2px solid #4ade80;color:#4ade80;padding:14px 40px;background:rgba(74,222,128,0.08);border-radius:60px;font-size:18px;cursor:pointer;font-weight:700;font-family:inherit}
+.restart-btn{border:2px solid #4ade80;color:#4ade80;padding:14px 40px;background:rgba(74,222,128,0.08);border-radius:60px;font-size:18px;cursor:pointer;font-weight:700;font-family:inherit;transition:all .3s}
 .restart-btn:hover{transform:scale(1.05);background:#4ade80;color:#000}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
 </style>
@@ -64,7 +65,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <div id="start-screen">
   <div class="start-logo">🎬 ملصق متحرك</div>
-  <div style="color:#666;text-align:center;max-width:350px">🌠 نيازك | 💎 جواهر | 🏆 نقاط</div>
+  <div style="color:#666;text-align:center;max-width:350px">🌠 نيازك | 💎 جواهر | 🏆 نقاط<br>🎮 عصا تحكم 360°</div>
   <button class="start-btn" onclick="enterApp()">🚀 دخول</button>
 </div>
 
@@ -79,12 +80,13 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     </div>
     <div class="info" id="char-name">لا توجد شخصية</div>
   </div>
-  <div class="dpad" id="dpad">
-    <div class="dpad-btn dpad-up" data-dir="up">▲</div>
-    <div class="dpad-btn dpad-down" data-dir="down">▼</div>
-    <div class="dpad-btn dpad-left" data-dir="left">◀</div>
-    <div class="dpad-btn dpad-right" data-dir="right">▶</div>
+
+  <!-- ===== JOYSTICK ===== -->
+  <div class="joystick-zone" id="joystick-zone">
+    <div class="joystick-base"></div>
+    <div class="joystick-knob" id="joystick-knob"></div>
   </div>
+
   <button class="tg-toggle" id="tg-toggle" onclick="toggleTG()">📡 القناة</button>
   <div class="tg-dropdown" id="tg-dropdown">
     <div class="row"><input type="text" id="bot-token" placeholder="Bot Token"><input type="text" id="chat-id" placeholder="Channel ID"></div>
@@ -95,6 +97,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
     </div>
     <div style="font-size:10px;color:#888" id="tg-status">⭕ غير متصل</div>
   </div>
+
   <div class="skin-selector" id="skin-selector"><h4>📌 اختر الملصق</h4><div class="skin-grid" id="skin-grid"></div></div>
   <button class="skin-toggle" id="skin-toggle" onclick="toggleSkinSelector()">📌 شخصيتي</button>
 </div>
@@ -108,17 +111,22 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  ناردو 3D — الملصق المتحرك v28 (Meteor Rush)
+//  ناردو 3D — عصا تحكم 360° v29
 // ============================================================
 
-// ===== GAME STATE =====
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 const MAP_SIZE = 16;
 const TILE_SIZE = 40;
 let mapData = [];
-let player = { x: 1.5, y: 1.5, speed: 0.1 };
+let player = { x: 1.5, y: 1.5, speed: 0.12 };
 let camera = { x: 0, y: 0 };
+
+// ===== JOYSTICK STATE =====
+let joystickActive = false;
+let joystickVector = { x: 0, y: 0 };
+
+// ===== KEYBOARD FALLBACK =====
 let touchDirs = { up: false, down: false, left: false, right: false };
 
 let gameState = {
@@ -142,12 +150,9 @@ const gemTypes = [
 ];
 
 // ===== STICKER SYSTEM =====
-let playerSkin = null;
-let loadedImages = {};
-let fetchedStickers = [];
-let connected = false, botToken = '', channelId = '', lastUpdateId = 0;
-let stickerMedia = null; // { type: 'image', img } or { type: 'lottie', iframe } or { type: 'video', video }
+let stickerMedia = null; // { type: 'image', img } or { type: 'video', video } or { type: 'lottie', iframe }
 let mediaReady = false;
+let connected = false, botToken = '', channelId = '', lastUpdateId = 0;
 
 // ===== TOAST =====
 function showToast(message, type) {
@@ -180,7 +185,7 @@ function generateMap() {
   for (let y = 1; y <= 3; y++) for (let x = 1; x <= 3; x++) mapData[y][x] = 0;
 }
 
-// ===== SPAWN FUNCTIONS =====
+// ===== SPAWN =====
 function spawnMeteor() {
   const edge = Math.floor(Math.random() * 4);
   let mx, my, vx, vy;
@@ -211,7 +216,7 @@ function spawnFloatingText(x, y, text, color) {
   particles.push({ x, y, vx: 0, vy: -1.5, life: 1.5, decay: 0.015, color, size: 14, text, isText: true });
 }
 
-// ===== DAMAGE / GAME OVER =====
+// ===== DAMAGE =====
 function takeDamage(amount) {
   gameState.health -= amount;
   if (gameState.health <= 0) {
@@ -245,19 +250,34 @@ function restartGame() {
   showToast('🎮 لنبدأ من جديد!', 'success');
 }
 
-// ===== UPDATE FUNCTIONS =====
+// ===== UPDATE =====
 function updatePlayer() {
   if (gameState.gameOver) return;
+  
   let dx = 0, dy = 0;
-  if (touchDirs.up) dy = -player.speed;
-  if (touchDirs.down) dy = player.speed;
-  if (touchDirs.left) dx = -player.speed;
-  if (touchDirs.right) dx = player.speed;
+  
+  if (joystickActive) {
+    // حركة 360° من عصا التحكم
+    dx = joystickVector.x * player.speed * 1.5;
+    dy = joystickVector.y * player.speed * 1.5;
+  } else {
+    // لوحة المفاتيح كخيار احتياطي
+    if (touchDirs.up) dy = -player.speed;
+    if (touchDirs.down) dy = player.speed;
+    if (touchDirs.left) dx = -player.speed;
+    if (touchDirs.right) dx = player.speed;
+  }
 
-  const newX = player.x + dx, newY = player.y + dy;
-  const checkX = Math.round(newX), checkY = Math.round(newY);
-  if (checkX >= 0 && checkX < MAP_SIZE && checkY >= 0 && checkY < MAP_SIZE && mapData[checkY][checkX] !== 1) player.x = newX;
-  if (checkX >= 0 && checkX < MAP_SIZE && checkY >= 0 && checkY < MAP_SIZE && mapData[checkY][checkX] !== 1) player.y = newY;
+  const newX = player.x + dx;
+  const newY = player.y + dy;
+  const checkX = Math.round(newX);
+  const checkY = Math.round(newY);
+  
+  if (checkX >= 0 && checkX < MAP_SIZE && checkY >= 0 && checkY < MAP_SIZE && mapData[checkY]?.[checkX] !== 1) {
+    player.x = newX;
+    player.y = newY;
+  }
+  
   player.x = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.x));
   player.y = Math.max(0.5, Math.min(MAP_SIZE - 0.5, player.y));
 
@@ -420,18 +440,17 @@ function renderGame() {
       ctx.beginPath(); ctx.arc(px + TILE_SIZE/2, py + TILE_SIZE/2, size * 0.5, 0, Math.PI * 2); ctx.stroke();
       ctx.fillStyle = '#c084fc'; ctx.font = 'bold 12px Cairo'; ctx.textAlign = 'center';
       ctx.fillText('📌 ملصق', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2 - 8);
-    } else if (stickerMedia.type === 'lottie' && stickerMedia.iframe) {
-      ctx.save();
-      const iframe = stickerMedia.iframe;
-      try { ctx.drawImage(iframe, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size); } catch(e) {}
-      ctx.fillStyle = '#c084fc'; ctx.font = 'bold 12px Cairo'; ctx.textAlign = 'center';
-      ctx.fillText('🎬 متحرك', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2 - 6);
-      ctx.restore();
     } else if (stickerMedia.type === 'video' && stickerMedia.video) {
       ctx.save();
       try { ctx.drawImage(stickerMedia.video, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size); } catch(e) {}
       ctx.fillStyle = '#c084fc'; ctx.font = 'bold 12px Cairo'; ctx.textAlign = 'center';
       ctx.fillText('🎬 فيديو', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2 - 6);
+      ctx.restore();
+    } else if (stickerMedia.type === 'lottie' && stickerMedia.iframe) {
+      ctx.save();
+      try { ctx.drawImage(stickerMedia.iframe, px + TILE_SIZE/2 - size/2, py + TILE_SIZE/2 - size/2, size, size); } catch(e) {}
+      ctx.fillStyle = '#c084fc'; ctx.font = 'bold 12px Cairo'; ctx.textAlign = 'center';
+      ctx.fillText('🎬 متحرك', px + TILE_SIZE/2, py + TILE_SIZE/2 - size/2 - 6);
       ctx.restore();
     }
   } else {
@@ -473,17 +492,73 @@ function resize() {
   canvas.height = window.innerHeight;
 }
 
-// ===== CONTROLS =====
-function setupTouchControls() {
-  document.querySelectorAll('.dpad-btn').forEach(btn => {
-    const dir = btn.getAttribute('data-dir');
-    btn.addEventListener('touchstart', e => { e.preventDefault(); touchDirs[dir] = true; btn.style.background = 'rgba(139,92,246,0.15)'; btn.style.borderColor = '#8b5cf6'; }, { passive: false });
-    btn.addEventListener('touchend', e => { e.preventDefault(); touchDirs[dir] = false; btn.style.background = ''; btn.style.borderColor = ''; }, { passive: false });
-    btn.addEventListener('touchcancel', () => { touchDirs[dir] = false; btn.style.background = ''; btn.style.borderColor = ''; });
+// ===== JOYSTICK SETUP =====
+function setupJoystick() {
+  const zone = document.getElementById('joystick-zone');
+  const knob = document.getElementById('joystick-knob');
+  let centerX, centerY;
+  const maxDist = 35;
+
+  function updateJoystick(touchX, touchY) {
+    let dx = touchX - centerX;
+    let dy = touchY - centerY;
+    const dist = Math.hypot(dx, dy);
+    if (dist > maxDist) {
+      dx = (dx / dist) * maxDist;
+      dy = (dy / dist) * maxDist;
+    }
+    knob.style.transform = `translate(${dx}px, ${dy}px)`;
+    joystickVector.x = dx / maxDist;
+    joystickVector.y = dy / maxDist;
+  }
+
+  zone.addEventListener('touchstart', function(e) {
+    e.preventDefault();
+    const rect = zone.getBoundingClientRect();
+    centerX = rect.left + rect.width / 2;
+    centerY = rect.top + rect.height / 2;
+    const touch = e.touches[0];
+    joystickActive = true;
+    knob.classList.add('active');
+    updateJoystick(touch.clientX, touch.clientY);
+  }, { passive: false });
+
+  zone.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+    if (!joystickActive) return;
+    const touch = e.touches[0];
+    updateJoystick(touch.clientX, touch.clientY);
+  }, { passive: false });
+
+  zone.addEventListener('touchend', function(e) {
+    e.preventDefault();
+    joystickActive = false;
+    knob.classList.remove('active');
+    knob.style.transform = 'translate(0px, 0px)';
+    joystickVector = { x: 0, y: 0 };
+  }, { passive: false });
+
+  zone.addEventListener('touchcancel', function() {
+    joystickActive = false;
+    knob.classList.remove('active');
+    knob.style.transform = 'translate(0px, 0px)';
+    joystickVector = { x: 0, y: 0 };
   });
 }
-document.addEventListener('keydown', e => { if (e.key === 'ArrowUp') touchDirs.up = true; if (e.key === 'ArrowDown') touchDirs.down = true; if (e.key === 'ArrowLeft') touchDirs.left = true; if (e.key === 'ArrowRight') touchDirs.right = true; });
-document.addEventListener('keyup', e => { if (e.key === 'ArrowUp') touchDirs.up = false; if (e.key === 'ArrowDown') touchDirs.down = false; if (e.key === 'ArrowLeft') touchDirs.left = false; if (e.key === 'ArrowRight') touchDirs.right = false; });
+
+// ===== KEYBOARD =====
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowUp') touchDirs.up = true;
+  if (e.key === 'ArrowDown') touchDirs.down = true;
+  if (e.key === 'ArrowLeft') touchDirs.left = true;
+  if (e.key === 'ArrowRight') touchDirs.right = true;
+});
+document.addEventListener('keyup', e => {
+  if (e.key === 'ArrowUp') touchDirs.up = false;
+  if (e.key === 'ArrowDown') touchDirs.down = false;
+  if (e.key === 'ArrowLeft') touchDirs.left = false;
+  if (e.key === 'ArrowRight') touchDirs.right = false;
+});
 
 // ===== TELEGRAM API =====
 function toggleTG() { document.getElementById('tg-dropdown').classList.toggle('show'); }
@@ -527,7 +602,6 @@ async function fetchAnimated() {
       const url = 'https://api.telegram.org/file/bot' + botToken + '/' + fileData.result.file_path;
 
       if (sticker.is_video) {
-        // Video sticker (WebM)
         const video = document.createElement('video');
         video.muted = true; video.loop = true; video.playsInline = true; video.preload = 'auto';
         video.src = url;
@@ -543,7 +617,6 @@ async function fetchAnimated() {
       }
 
       if (sticker.is_animated) {
-        // Animated sticker (TGS) - load in iframe
         const iframe = document.createElement('iframe');
         iframe.style.width = '240px'; iframe.style.height = '240px';
         iframe.style.position = 'fixed'; iframe.style.left = '-9999px'; iframe.style.top = '-9999px';
@@ -558,7 +631,6 @@ async function fetchAnimated() {
         return;
       }
 
-      // Static sticker (image)
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
@@ -587,7 +659,7 @@ function enterApp() {
   window.addEventListener('resize', resize);
   for (let i = 0; i < 5; i++) spawnGem();
   updateHUD();
-  setupTouchControls();
+  setupJoystick();
   gameLoop();
 
   const savedToken = localStorage.getItem('nardo_bot_token');
@@ -597,9 +669,9 @@ function enterApp() {
   if (savedToken && savedChat) setTimeout(testTelegram, 500);
 }
 
-// ===== INIT =====
-console.log('🎬 ناردو 3D — Meteor Rush v28');
-showToast('🌠 اهرب من النيازك! اجمع الجواهر!', 'info');
+console.log('🎬 ناردو 3D — Joystick 360° v29');
+showToast('🌠 استخدم عصا التحكم للحركة!', 'info');
 </script>
 </body>
 </html>
+
