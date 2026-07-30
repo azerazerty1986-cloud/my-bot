@@ -49,7 +49,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .skin-toggle{position:fixed;top:10px;right:60px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,215,0,0.1);border-radius:6px;padding:3px 10px;z-index:200;font-size:10px;color:#888;cursor:pointer;display:none}
 .toast-container{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);z-index:700;display:flex;flex-direction:column;gap:5px;pointer-events:none}
 .toast{background:rgba(0,0,0,0.9);padding:6px 16px;border-radius:30px;font-size:11px;border:1px solid rgba(255,255,255,0.06);animation:toastIn .3s,toastOut .3s 2.7s forwards}
-.toast.success{border-color:#4ade80;color:#4ade80}.toast.error{border-color:#f87171;color:#f87171}.toast.gold{border-color:#ffd700;color:#ffd700}
+.toast.success{border-color:#4ade80;color:#4ade80}.toast.error{border-color:#f87171;color:#f87171}.toast.gold{border-color:#ffd700;color:#ffd700}.toast.boss{border-color:#ff0000;color:#ff4757;background:rgba(255,0,0,0.2)}
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,20px)}to{opacity:1;transform:translate(-50%,0)}}
 @keyframes toastOut{from{opacity:1;transform:translate(-50%,0)}to{opacity:0;transform:translate(-50%,-20px)}}
 #game-over-screen{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,0.92);display:none;flex-direction:column;justify-content:center;align-items:center;gap:20px;backdrop-filter:blur(10px)}
@@ -59,13 +59,84 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .restart-btn{border:2px solid #4ade80;color:#4ade80;padding:14px 40px;background:rgba(74,222,128,0.08);border-radius:60px;font-size:18px;cursor:pointer;font-weight:700;font-family:inherit;transition:all .3s}
 .restart-btn:hover{transform:scale(1.05);background:#4ade80;color:#000}
 @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+
+/* ===== BOSS STYLES ===== */
+.boss-bar-container {
+  position: fixed;
+  top: 52px;
+  left: 10px;
+  right: 10px;
+  z-index: 100;
+  display: none;
+  background: rgba(0,0,0,0.6);
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,0,0,0.2);
+}
+.boss-bar-container.show { display: block; }
+.boss-bar-bg {
+  width: 100%;
+  height: 10px;
+  background: rgba(255,0,0,0.15);
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid rgba(255,0,0,0.2);
+}
+.boss-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ff0000, #ff6600);
+  border-radius: 5px;
+  transition: width 0.3s;
+  width: 100%;
+}
+.boss-name {
+  text-align: center;
+  font-size: 11px;
+  color: #ff4757;
+  font-weight: 700;
+  margin-bottom: 4px;
+  text-shadow: 0 0 20px rgba(255,0,0,0.6);
+}
+.boss-name .boss-emoji { font-size: 16px; }
+
+.boss-warning {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: rgba(255,0,0,0.15);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+}
+.boss-warning.show {
+  display: flex;
+  animation: bossWarn 2s ease forwards;
+}
+.boss-warning-text {
+  font-size: 48px;
+  font-weight: 900;
+  color: #ff0000;
+  text-shadow: 0 0 30px rgba(255,0,0,0.8);
+  animation: bossPulse 0.5s ease-in-out infinite;
+}
+@keyframes bossWarn {
+  0% { opacity: 0; transform: scale(0.5); }
+  20% { opacity: 1; transform: scale(1); }
+  80% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.2); }
+}
+@keyframes bossPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
 </style>
 </head>
 <body>
 
 <div id="start-screen">
   <div class="start-logo">🎬 ملصق متحرك</div>
-  <div style="color:#666;text-align:center;max-width:350px">🌠 نيازك | 💎 جواهر | 🏆 نقاط<br>🎮 عصا تحكم 360°</div>
+  <div style="color:#666;text-align:center;max-width:350px">🌠 نيازك | 💎 جواهر | 👹 وحوش<br>🎮 عصا تحكم 360°</div>
   <button class="start-btn" onclick="enterApp()">🚀 دخول</button>
 </div>
 
@@ -79,6 +150,17 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
       <div class="stat-box health"><span>❤️</span><div class="health-bar"><div class="health-fill" id="health-fill" style="width:100%"></div></div></div>
     </div>
     <div class="info" id="char-name">لا توجد شخصية</div>
+  </div>
+
+  <!-- BOSS BAR -->
+  <div class="boss-bar-container" id="boss-bar">
+    <div class="boss-name"><span class="boss-emoji">👹</span> الوحش العملاق</div>
+    <div class="boss-bar-bg"><div class="boss-bar-fill" id="boss-fill"></div></div>
+  </div>
+
+  <!-- BOSS WARNING -->
+  <div class="boss-warning" id="boss-warning">
+    <div class="boss-warning-text">⚠️ الوحش يقترب!</div>
   </div>
 
   <!-- ===== JOYSTICK ===== -->
@@ -111,7 +193,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  ناردو 3D — عصا تحكم 360° v29
+//  ناردو 3D — عصا تحكم 360° v30 + BOSS SYSTEM
 // ============================================================
 
 const canvas = document.getElementById('game-canvas');
@@ -132,25 +214,31 @@ let touchDirs = { up: false, down: false, left: false, right: false };
 let gameState = {
   score: 0, highScore: parseInt(localStorage.getItem('nardo_high_score') || '0'),
   health: 100, maxHealth: 100, level: 1, gameOver: false,
-  invincible: false, invincibleTimer: 0, combo: 0, comboTimer: 0
+  invincible: false, invincibleTimer: 0, combo: 0, comboTimer: 0,
+  bossActive: false, nextBossScore: 300, coins: parseInt(localStorage.getItem('nardo_coins') || '0')
 };
 
-let meteors = [], gems = [], particles = [];
+let meteors = [], gems = [], particles = [], bullets = [], bossBullets = [];
 let meteorSpawnTimer = 0, gemSpawnTimer = 0;
 let meteorSpawnInterval = 120, gemSpawnInterval = 180;
 let meteorSpeedBase = 2;
 let screenShake = { intensity: 0 };
 
+// ===== BOSS VARIABLES =====
+let boss = null;
+let bossSpawnTimer = 0;
+let bossWarningActive = false;
+
 const gemTypes = [
   { emoji: '💎', color: '#00f2ff', points: 10, glow: 'rgba(0,242,255,0.4)' },
   { emoji: '🔮', color: '#8b5cf6', points: 20, glow: 'rgba(139,92,246,0.4)' },
-  { emoji: '💍', color: '#ffd700', points: 50, glow: 'rgba(255,215,0,0.4)' },
+  { emoji: '🍎', color: '#ffd700', points: 50, glow: 'rgba(255,215,0,0.4)' },
   { emoji: '⭐', color: '#ff6b9d', points: 30, glow: 'rgba(255,107,157,0.4)' },
   { emoji: '🌟', color: '#fbbf24', points: 100, glow: 'rgba(251,191,36,0.5)' }
 ];
 
 // ===== STICKER SYSTEM =====
-let stickerMedia = null; // { type: 'image', img } or { type: 'video', video } or { type: 'lottie', iframe }
+let stickerMedia = null;
 let mediaReady = false;
 let connected = false, botToken = '', channelId = '', lastUpdateId = 0;
 
@@ -241,13 +329,218 @@ function endGame() {
 }
 
 function restartGame() {
-  gameState = { score: 0, highScore: gameState.highScore, health: 100, maxHealth: 100, level: 1, gameOver: false, invincible: false, invincibleTimer: 0, combo: 0, comboTimer: 0 };
-  meteors = []; gems = []; particles = [];
-  meteorSpawnTimer = 0; gemSpawnTimer = 0;
+  gameState = { score: 0, highScore: gameState.highScore, health: 100, maxHealth: 100, level: 1, gameOver: false, invincible: false, invincibleTimer: 0, combo: 0, comboTimer: 0, bossActive: false, nextBossScore: 300, coins: gameState.coins };
+  meteors = []; gems = []; particles = []; bullets = []; bossBullets = [];
+  boss = null;
+  bossSpawnTimer = 0;
+  bossWarningActive = false;
   player.x = 1.5; player.y = 1.5;
+  document.getElementById('boss-bar').classList.remove('show');
+  document.getElementById('boss-warning').classList.remove('show');
   document.getElementById('game-over-screen').classList.remove('show');
   updateHUD();
   showToast('🎮 لنبدأ من جديد!', 'success');
+}
+
+// ============================================================
+//  BOSS SYSTEM
+// ============================================================
+
+function createBoss() {
+  const edge = Math.floor(Math.random() * 4);
+  let bx, by;
+  if (edge === 0) { bx = MAP_SIZE * TILE_SIZE / 2; by = -80; }
+  else if (edge === 1) { bx = MAP_SIZE * TILE_SIZE + 80; by = MAP_SIZE * TILE_SIZE / 2; }
+  else if (edge === 2) { bx = MAP_SIZE * TILE_SIZE / 2; by = MAP_SIZE * TILE_SIZE + 80; }
+  else { bx = -80; by = MAP_SIZE * TILE_SIZE / 2; }
+  
+  const levelMult = 1 + (gameState.level - 1) * 0.3;
+  const healthMult = 1 + (gameState.level - 1) * 0.2;
+  boss = {
+    x: bx, y: by,
+    health: 200 * healthMult, maxHealth: 200 * healthMult,
+    size: 50, speed: 0.8 + gameState.level * 0.1,
+    attackTimer: 0, attackInterval: Math.max(40, 80 - gameState.level * 3),
+    moveTimer: 0, dead: false,
+    emoji: '👹', phase: 0, phaseTimer: 0
+  };
+  gameState.bossActive = true;
+  document.getElementById('boss-bar').classList.add('show');
+  document.getElementById('boss-name').innerHTML = '<span class="boss-emoji">👹</span> الوحش العملاق (مستوى ' + gameState.level + ')';
+  showToast('👹 الوحش العملاق ظهر! اهزمه!', 'boss');
+}
+
+function updateBoss() {
+  if (!boss || boss.dead) return;
+  
+  const px = player.x * TILE_SIZE + TILE_SIZE/2;
+  const py = player.y * TILE_SIZE + TILE_SIZE/2;
+  const dx = px - boss.x;
+  const dy = py - boss.y;
+  const dist = Math.hypot(dx, dy);
+  
+  // تغيير المراحل حسب الصحة
+  boss.phase = 0;
+  if (boss.health < boss.maxHealth * 0.5) boss.phase = 1;
+  if (boss.health < boss.maxHealth * 0.25) boss.phase = 2;
+  
+  // حركة الوحش
+  if (dist > 150) {
+    boss.x += (dx / dist) * boss.speed * (1 + boss.phase * 0.2);
+    boss.y += (dy / dist) * boss.speed * (1 + boss.phase * 0.2);
+  } else {
+    boss.moveTimer += 0.02 + boss.phase * 0.01;
+    boss.x += Math.cos(boss.moveTimer + boss.phase * 0.5) * boss.speed * 1.5;
+    boss.y += Math.sin(boss.moveTimer + boss.phase * 0.5) * boss.speed * 1.5;
+  }
+  
+  // هجوم الوحش
+  boss.attackTimer++;
+  const attackInterval = Math.max(30, boss.attackInterval - boss.phase * 10);
+  if (boss.attackTimer >= attackInterval) {
+    boss.attackTimer = 0;
+    const angle = Math.atan2(dy, dx);
+    // زيادة عدد الرصاص حسب المرحلة
+    const bulletCount = 3 + boss.phase * 2;
+    const spread = 0.15 + boss.phase * 0.05;
+    for (let i = 0; i < bulletCount; i++) {
+      const a = angle - (bulletCount - 1) * spread / 2 + i * spread;
+      bossBullets.push({
+        x: boss.x, y: boss.y,
+        vx: Math.cos(a) * (3 + boss.phase * 0.5), 
+        vy: Math.sin(a) * (3 + boss.phase * 0.5),
+        size: 6 + boss.phase * 2, 
+        color: boss.phase >= 2 ? '#ff6b6b' : '#ff0000', 
+        life: 120, 
+        damage: 10 + boss.phase * 5
+      });
+    }
+    // في المرحلة 2، يطلق موجتين
+    if (boss.phase >= 2) {
+      setTimeout(() => {
+        for (let i = 0; i < bulletCount; i++) {
+          const a = angle - (bulletCount - 1) * spread / 2 + i * spread + 0.3;
+          bossBullets.push({
+            x: boss.x, y: boss.y,
+            vx: Math.cos(a) * 3.5, vy: Math.sin(a) * 3.5,
+            size: 6, color: '#ff6b6b', life: 100, damage: 12
+          });
+        }
+      }, 200);
+    }
+    spawnMeteor();
+    if (boss.phase >= 1) spawnMeteor();
+  }
+  
+  // تحديث شريط الصحة
+  document.getElementById('boss-fill').style.width = Math.max(0, (boss.health / boss.maxHealth * 100)) + '%';
+  
+  // اصطدام باللاعب
+  if (!gameState.invincible && !gameState.gameOver) {
+    if (Math.hypot(boss.x - px, boss.y - py) < boss.size + TILE_SIZE * 0.4) {
+      takeDamage(15 + boss.phase * 5);
+      screenShake.intensity = 20 + boss.phase * 5;
+      spawnParticles(px, py, '#ff4757', 25, 5);
+      // دفع اللاعب
+      const pushAngle = Math.atan2(py - boss.y, px - boss.x);
+      player.x += Math.cos(pushAngle) * 0.3;
+      player.y += Math.sin(pushAngle) * 0.3;
+    }
+  }
+  
+  // اصطدام رصاص اللاعب بالوحش
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    if (b && Math.hypot(b.x - boss.x, b.y - boss.y) < boss.size + b.size) {
+      const damage = b.damage || 10;
+      boss.health -= damage;
+      bullets.splice(i, 1);
+      spawnParticles(b.x, b.y, '#ff6600', 8, 3);
+      screenShake.intensity = 3;
+      if (boss.health <= 0) { defeatBoss(); return; }
+    }
+  }
+}
+
+function defeatBoss() {
+  if (!boss) return;
+  boss.dead = true;
+  gameState.bossActive = false;
+  document.getElementById('boss-bar').classList.remove('show');
+  
+  spawnParticles(boss.x, boss.y, '#ff4757', 60, 8);
+  spawnParticles(boss.x, boss.y, '#ffd700', 40, 6);
+  spawnParticles(boss.x, boss.y, '#8b5cf6', 30, 5);
+  spawnFloatingText(boss.x, boss.y - 30, '+500 💎', '#ffd700');
+  spawnFloatingText(boss.x, boss.y - 50, '🎉 الوحش هزم!', '#4ade80');
+  
+  gameState.score += 500;
+  gameState.coins += 100;
+  gameState.health = Math.min(gameState.maxHealth, gameState.health + 30);
+  localStorage.setItem('nardo_coins', gameState.coins.toString());
+  
+  screenShake.intensity = 25;
+  showToast('🎉 هزمت الوحش! +500 نقطة +100 عملة', 'gold');
+  gameState.nextBossScore = gameState.score + 300 + gameState.level * 50;
+  updateHUD();
+  
+  // مكافأة إضافية: جوهرة نادرة
+  for (let i = 0; i < 3; i++) {
+    setTimeout(() => {
+      const type = gemTypes[Math.floor(Math.random() * gemTypes.length)];
+      gems.push({ 
+        x: boss.x + (Math.random() - 0.5) * 100, 
+        y: boss.y + (Math.random() - 0.5) * 100, 
+        type, 
+        floatOffset: Math.random() * Math.PI * 2, 
+        collected: false, 
+        scale: 1, 
+        pulse: 0 
+      });
+    }, i * 300);
+  }
+}
+
+function updateBossBullets() {
+  for (let i = bossBullets.length - 1; i >= 0; i--) {
+    const b = bossBullets[i];
+    b.x += b.vx; b.y += b.vy; b.life--;
+    if (b.life <= 0 || b.x < -100 || b.x > MAP_SIZE * TILE_SIZE + 100 || b.y < -100 || b.y > MAP_SIZE * TILE_SIZE + 100) { 
+      bossBullets.splice(i, 1); 
+      continue; 
+    }
+    
+    const px = player.x * TILE_SIZE + TILE_SIZE/2;
+    const py = player.y * TILE_SIZE + TILE_SIZE/2;
+    if (!gameState.invincible && !gameState.gameOver && 
+        Math.hypot(b.x - px, b.y - py) < b.size + TILE_SIZE * 0.35) {
+      takeDamage(b.damage || 10);
+      bossBullets.splice(i, 1);
+      spawnParticles(px, py, '#ff4757', 12, 3);
+      screenShake.intensity = 10;
+    }
+  }
+}
+
+function showBossWarning() {
+  if (bossWarningActive || gameState.bossActive) return;
+  bossWarningActive = true;
+  const warn = document.getElementById('boss-warning');
+  warn.classList.add('show');
+  showToast('⚠️ الوحش العملاق يقترب!', 'boss');
+  setTimeout(() => {
+    warn.classList.remove('show');
+    bossWarningActive = false;
+    createBoss();
+  }, 2000);
+}
+
+function checkBossSpawn() {
+  if (gameState.bossActive || bossWarningActive) return;
+  if (gameState.score >= gameState.nextBossScore) {
+    showBossWarning();
+    gameState.nextBossScore += 300 + gameState.level * 50;
+  }
 }
 
 // ===== UPDATE =====
@@ -257,11 +550,9 @@ function updatePlayer() {
   let dx = 0, dy = 0;
   
   if (joystickActive) {
-    // حركة 360° من عصا التحكم
     dx = joystickVector.x * player.speed * 1.5;
     dy = joystickVector.y * player.speed * 1.5;
   } else {
-    // لوحة المفاتيح كخيار احتياطي
     if (touchDirs.up) dy = -player.speed;
     if (touchDirs.down) dy = player.speed;
     if (touchDirs.left) dx = -player.speed;
@@ -399,6 +690,67 @@ function renderGame() {
     ctx.restore();
   }
 
+  // Boss Bullets
+  for (const b of bossBullets) {
+    ctx.save();
+    const glow = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.size * 3);
+    glow.addColorStop(0, b.color + '80');
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(b.x, b.y, b.size * 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = b.color; ctx.shadowColor = b.color; ctx.shadowBlur = 15;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x - b.size * 0.3, b.y - b.size * 0.3, b.size * 0.3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+  // Boss
+  if (boss && !boss.dead) {
+    ctx.save();
+    ctx.translate(boss.x, boss.y);
+    const size = boss.size;
+    
+    // Boss glow
+    const glow = ctx.createRadialGradient(0, 0, 10, 0, 0, size * 1.8);
+    glow.addColorStop(0, 'rgba(255,0,0,0.3)');
+    glow.addColorStop(0.5, 'rgba(255,0,0,0.1)');
+    glow.addColorStop(1, 'rgba(255,0,0,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, size * 1.8, 0, Math.PI * 2); ctx.fill();
+    
+    // Boss shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+    ctx.beginPath(); ctx.ellipse(0, size * 0.8, size * 0.8, size * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+    
+    // Boss body
+    const gradient = ctx.createRadialGradient(-size*0.2, -size*0.2, 0, 0, 0, size);
+    gradient.addColorStop(0, '#ff6b6b');
+    gradient.addColorStop(0.6, '#cc0000');
+    gradient.addColorStop(1, '#660000');
+    ctx.fillStyle = gradient;
+    ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI * 2); ctx.fill();
+    
+    // Boss outline with phase color
+    ctx.strokeStyle = boss.phase >= 2 ? '#ff6b6b' : boss.phase >= 1 ? '#ff8800' : '#ff0000';
+    ctx.lineWidth = 3 + boss.phase;
+    ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI * 2); ctx.stroke();
+    
+    // Boss emoji
+    ctx.font = `${size * 1.2}px Cairo`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 30;
+    ctx.fillText(boss.emoji, 0, 0);
+    ctx.shadowBlur = 0;
+    
+    // Health indicator above boss
+    const healthPercent = boss.health / boss.maxHealth;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(-size * 0.8, -size * 1.5, size * 1.6, 6);
+    ctx.fillStyle = healthPercent > 0.5 ? '#4ade80' : healthPercent > 0.25 ? '#fbbf24' : '#f87171';
+    ctx.fillRect(-size * 0.8, -size * 1.5, size * 1.6 * healthPercent, 6);
+    
+    ctx.restore();
+  }
+
   // Meteors
   for (const m of meteors) {
     for (let t = 0; t < m.trail.length; t++) {
@@ -418,6 +770,14 @@ function renderGame() {
     ctx.restore();
   }
 
+  // Player Bullets (visual only)
+  for (const b of bullets) {
+    ctx.save();
+    ctx.fillStyle = '#00f2ff'; ctx.shadowColor = '#00f2ff'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(b.x, b.y, b.size || 4, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
   // Player
   const px = player.x * TILE_SIZE, py = player.y * TILE_SIZE;
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
@@ -425,7 +785,6 @@ function renderGame() {
 
   if (gameState.invincible && Math.sin(Date.now() / 50) > 0) ctx.globalAlpha = 0.3;
 
-  // Draw sticker media
   if (stickerMedia) {
     const size = 200;
     if (stickerMedia.type === 'image' && stickerMedia.img) {
@@ -481,7 +840,15 @@ function renderGame() {
 // ===== LOOP =====
 function gameLoop() {
   if (!gameState.gameOver) {
-    updatePlayer(); updateMeteors(); updateGems(); updateParticles();
+    updatePlayer(); 
+    updateMeteors(); 
+    updateGems(); 
+    updateParticles();
+    checkBossSpawn();
+    if (gameState.bossActive && boss) {
+      updateBoss();
+      updateBossBullets();
+    }
   }
   renderGame();
   requestAnimationFrame(gameLoop);
@@ -552,6 +919,11 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowDown') touchDirs.down = true;
   if (e.key === 'ArrowLeft') touchDirs.left = true;
   if (e.key === 'ArrowRight') touchDirs.right = true;
+  // Space to shoot
+  if (e.key === ' ' || e.key === 'Space') {
+    e.preventDefault();
+    shootBullet();
+  }
 });
 document.addEventListener('keyup', e => {
   if (e.key === 'ArrowUp') touchDirs.up = false;
@@ -559,6 +931,21 @@ document.addEventListener('keyup', e => {
   if (e.key === 'ArrowLeft') touchDirs.left = false;
   if (e.key === 'ArrowRight') touchDirs.right = false;
 });
+
+// ===== SHOOTING SYSTEM =====
+let shootCooldown = 0;
+function shootBullet() {
+  if (gameState.gameOver || shootCooldown > 0) return;
+  const px = player.x * TILE_SIZE + TILE_SIZE/2;
+  const py = player.y * TILE_SIZE + TILE_SIZE/2;
+  bullets.push({
+    x: px, y: py,
+    vx: 0, vy: -5,
+    size: 4, damage: 10,
+    life: 60
+  });
+  shootCooldown = 15;
+}
 
 // ===== TELEGRAM API =====
 function toggleTG() { document.getElementById('tg-dropdown').classList.toggle('show'); }
@@ -660,6 +1047,15 @@ function enterApp() {
   for (let i = 0; i < 5; i++) spawnGem();
   updateHUD();
   setupJoystick();
+  
+  // Auto-shoot timer
+  setInterval(() => {
+    if (shootCooldown > 0) shootCooldown--;
+    if (!gameState.gameOver && !gameState.bossActive) {
+      shootBullet();
+    }
+  }, 100);
+  
   gameLoop();
 
   const savedToken = localStorage.getItem('nardo_bot_token');
@@ -669,8 +1065,9 @@ function enterApp() {
   if (savedToken && savedChat) setTimeout(testTelegram, 500);
 }
 
-console.log('🎬 ناردو 3D — Joystick 360° v29');
+console.log('🎬 ناردو 3D — Joystick 360° v30 + BOSS SYSTEM');
 showToast('🌠 استخدم عصا التحكم للحركة!', 'info');
+showToast('👹 اجمع 300 نقطة لظهور الوحش!', 'info');
 </script>
 </body>
 </html>
