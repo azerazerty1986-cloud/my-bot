@@ -19,7 +19,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 .hud .title{color:#ffd700;font-size:13px;font-weight:700}
 .hud-stats{display:flex;gap:12px;align-items:center}
 .stat-box{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);border-radius:8px;padding:4px 10px;display:flex;align-items:center;gap:5px;font-size:11px}
-.stat-box.score{color:#ffd700}.stat-box.health{color:#f87171}.stat-box.level{color:#60a5fa}
+.stat-box.score{color:#ffd700}.stat-box.health{color:#f87171}.stat-box.level{color:#60a5fa}.stat-box.boss-next{color:#ff4757;font-size:10px}
 .health-bar{width:60px;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden}
 .health-fill{height:100%;background:linear-gradient(90deg,#f87171,#ff8a8a);border-radius:3px;transition:width 0.3s}
 
@@ -148,6 +148,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
       <div class="stat-box level"><span>⚡</span><span id="level-display">1</span></div>
       <div class="stat-box score"><span>💎</span><span id="score-display">0</span></div>
       <div class="stat-box health"><span>❤️</span><div class="health-bar"><div class="health-fill" id="health-fill" style="width:100%"></div></div></div>
+      <div class="stat-box boss-next" id="boss-next">👹 200</div>
     </div>
     <div class="info" id="char-name">لا توجد شخصية</div>
   </div>
@@ -193,7 +194,7 @@ body{font-family:'Cairo',sans-serif;background:#050510;color:#fff;overflow:hidde
 
 <script>
 // ============================================================
-//  ناردو 3D — عصا تحكم 360° v30 + BOSS SYSTEM
+//  ناردو 3D — عصا تحكم 360° v31 + BOSS SYSTEM COMPLETE
 // ============================================================
 
 const canvas = document.getElementById('game-canvas');
@@ -215,7 +216,11 @@ let gameState = {
   score: 0, highScore: parseInt(localStorage.getItem('nardo_high_score') || '0'),
   health: 100, maxHealth: 100, level: 1, gameOver: false,
   invincible: false, invincibleTimer: 0, combo: 0, comboTimer: 0,
-  bossActive: false, nextBossScore: 300, coins: parseInt(localStorage.getItem('nardo_coins') || '0')
+  bossActive: false, 
+  nextBossScore: 200,
+  bossInterval: 200,
+  coins: parseInt(localStorage.getItem('nardo_coins') || '0'),
+  bossCount: 0
 };
 
 let meteors = [], gems = [], particles = [], bullets = [], bossBullets = [];
@@ -228,11 +233,280 @@ let screenShake = { intensity: 0 };
 let boss = null;
 let bossSpawnTimer = 0;
 let bossWarningActive = false;
+let shootCooldown = 0;
+
+// ===== BOSS EMOJIS WITH UNIQUE ABILITIES =====
+const bossEmojis = [
+  { 
+    emoji: '👹', 
+    name: 'العملاق', 
+    ability: 'قبضة سحق',
+    color: '#ff0000',
+    bulletEmoji: '👊',
+    specialAttack: 'ضربة أرضية',
+    attackCount: 3,
+    damage: 15,
+    speed: 0.8,
+    healthMult: 1.0,
+    size: 55
+  },
+  { 
+    emoji: '🐉', 
+    name: 'التنين', 
+    ability: 'نار التنين',
+    color: '#ff6600',
+    bulletEmoji: '🔥',
+    specialAttack: 'كرة نارية',
+    attackCount: 4,
+    damage: 20,
+    speed: 1.0,
+    healthMult: 1.2,
+    size: 60
+  },
+  { 
+    emoji: '👾', 
+    name: 'الفضائي', 
+    ability: 'شعاع ليزر',
+    color: '#00ff00',
+    bulletEmoji: '💚',
+    specialAttack: 'ليزر ثلاثي',
+    attackCount: 5,
+    damage: 12,
+    speed: 1.2,
+    healthMult: 0.8,
+    size: 45
+  },
+  { 
+    emoji: '🧟', 
+    name: 'الزومبي', 
+    ability: 'جيش الموتى',
+    color: '#00cc00',
+    bulletEmoji: '🧠',
+    specialAttack: 'استدعاء الزومبي',
+    attackCount: 6,
+    damage: 10,
+    speed: 0.6,
+    healthMult: 1.5,
+    size: 50
+  },
+  { 
+    emoji: '🤖', 
+    name: 'الروبوت', 
+    ability: 'صواريخ موجهة',
+    color: '#00ccff',
+    bulletEmoji: '🚀',
+    specialAttack: 'وابل صواريخ',
+    attackCount: 7,
+    damage: 18,
+    speed: 1.1,
+    healthMult: 1.1,
+    size: 48
+  },
+  { 
+    emoji: '👻', 
+    name: 'الشبح', 
+    ability: 'اختراق الأجساد',
+    color: '#ccccff',
+    bulletEmoji: '👻',
+    specialAttack: 'موجة خوف',
+    attackCount: 2,
+    damage: 25,
+    speed: 1.5,
+    healthMult: 0.6,
+    size: 40
+  },
+  { 
+    emoji: '💀', 
+    name: 'الهيكل العظمي', 
+    ability: 'قذائف العظام',
+    color: '#ffffff',
+    bulletEmoji: '💀',
+    specialAttack: 'مطر العظام',
+    attackCount: 8,
+    damage: 8,
+    speed: 1.0,
+    healthMult: 0.7,
+    size: 45
+  },
+  { 
+    emoji: '🐺', 
+    name: 'الذئب', 
+    ability: 'انقضاض سريع',
+    color: '#cccccc',
+    bulletEmoji: '🐾',
+    specialAttack: 'عواء البرية',
+    attackCount: 3,
+    damage: 22,
+    speed: 1.8,
+    healthMult: 0.7,
+    size: 42
+  },
+  { 
+    emoji: '🦇', 
+    name: 'الخفاش', 
+    ability: 'موجات صوتية',
+    color: '#9900cc',
+    bulletEmoji: '🦇',
+    specialAttack: 'سرب الخفافيش',
+    attackCount: 4,
+    damage: 14,
+    speed: 1.4,
+    healthMult: 0.6,
+    size: 38
+  },
+  { 
+    emoji: '👿', 
+    name: 'الشيطان', 
+    ability: 'نار الجحيم',
+    color: '#ff3300',
+    bulletEmoji: '🔥',
+    specialAttack: 'جحيم الشيطان',
+    attackCount: 6,
+    damage: 25,
+    speed: 0.9,
+    healthMult: 1.3,
+    size: 55
+  },
+  { 
+    emoji: '🌋', 
+    name: 'البركان', 
+    ability: 'حمم بركانية',
+    color: '#ff4500',
+    bulletEmoji: '🌋',
+    specialAttack: 'ثوران بركاني',
+    attackCount: 5,
+    damage: 20,
+    speed: 0.5,
+    healthMult: 1.4,
+    size: 58
+  },
+  { 
+    emoji: '⚡', 
+    name: 'البرق', 
+    ability: 'صاعقة كهربائية',
+    color: '#ffff00',
+    bulletEmoji: '⚡',
+    specialAttack: 'عاصفة كهربائية',
+    attackCount: 4,
+    damage: 30,
+    speed: 2.0,
+    healthMult: 0.5,
+    size: 35
+  },
+  { 
+    emoji: '🌀', 
+    name: 'الإعصار', 
+    ability: 'زوابع مدمرة',
+    color: '#00ddff',
+    bulletEmoji: '🌀',
+    specialAttack: 'إعصار خارق',
+    attackCount: 3,
+    damage: 15,
+    speed: 0.7,
+    healthMult: 1.0,
+    size: 52
+  },
+  { 
+    emoji: '🔥', 
+    name: 'النار', 
+    ability: 'لهيب محرق',
+    color: '#ff8800',
+    bulletEmoji: '🔥',
+    specialAttack: 'انفجار ناري',
+    attackCount: 4,
+    damage: 18,
+    speed: 1.0,
+    healthMult: 0.9,
+    size: 48
+  },
+  { 
+    emoji: '❄️', 
+    name: 'الثلج', 
+    ability: 'تجميد سريع',
+    color: '#66ddff',
+    bulletEmoji: '❄️',
+    specialAttack: 'عاصفة ثلجية',
+    attackCount: 3,
+    damage: 10,
+    speed: 0.6,
+    healthMult: 1.1,
+    size: 50,
+    freezeChance: 0.3
+  },
+  { 
+    emoji: '☠️', 
+    name: 'السم', 
+    ability: 'سم قاتل',
+    color: '#66ff00',
+    bulletEmoji: '☠️',
+    specialAttack: 'ضباب سام',
+    attackCount: 5,
+    damage: 8,
+    speed: 0.8,
+    healthMult: 1.0,
+    size: 44,
+    poisonChance: 0.4
+  },
+  { 
+    emoji: '👽', 
+    name: 'الكائن الفضائي', 
+    ability: 'تخاطر ذهني',
+    color: '#88ff00',
+    bulletEmoji: '👽',
+    specialAttack: 'غزو فضائي',
+    attackCount: 6,
+    damage: 16,
+    speed: 1.3,
+    healthMult: 0.9,
+    size: 46
+  },
+  { 
+    emoji: '🧙', 
+    name: 'الساحر', 
+    ability: 'سحر الظلام',
+    color: '#9900ff',
+    bulletEmoji: '🧙',
+    specialAttack: 'تعويذة سحرية',
+    attackCount: 4,
+    damage: 22,
+    speed: 0.7,
+    healthMult: 0.8,
+    size: 42
+  },
+  { 
+    emoji: '🧛', 
+    name: 'المصاص', 
+    ability: 'مص الدماء',
+    color: '#cc0044',
+    bulletEmoji: '🧛',
+    specialAttack: 'عض مميت',
+    attackCount: 3,
+    damage: 28,
+    speed: 1.2,
+    healthMult: 0.8,
+    size: 44,
+    lifesteal: 0.2
+  },
+  { 
+    emoji: '🦄', 
+    name: 'يونيكورن', 
+    ability: 'قوس قزح',
+    color: '#ff66ff',
+    bulletEmoji: '🌈',
+    specialAttack: 'انفجار قوس قزح',
+    attackCount: 2,
+    damage: 35,
+    speed: 2.5,
+    healthMult: 0.4,
+    size: 38,
+    healChance: 0.2
+  }
+];
 
 const gemTypes = [
   { emoji: '💎', color: '#00f2ff', points: 10, glow: 'rgba(0,242,255,0.4)' },
   { emoji: '🔮', color: '#8b5cf6', points: 20, glow: 'rgba(139,92,246,0.4)' },
-  { emoji: '🍎', color: '#ffd700', points: 50, glow: 'rgba(255,215,0,0.4)' },
+  { emoji: '💍', color: '#ffd700', points: 50, glow: 'rgba(255,215,0,0.4)' },
   { emoji: '⭐', color: '#ff6b9d', points: 30, glow: 'rgba(255,107,157,0.4)' },
   { emoji: '🌟', color: '#fbbf24', points: 100, glow: 'rgba(251,191,36,0.5)' }
 ];
@@ -256,6 +530,20 @@ function updateHUD() {
   document.getElementById('score-display').textContent = gameState.score;
   document.getElementById('level-display').textContent = gameState.level;
   document.getElementById('health-fill').style.width = (gameState.health / gameState.maxHealth * 100) + '%';
+  
+  const nextBossEl = document.getElementById('boss-next');
+  if (nextBossEl && !gameState.bossActive) {
+    const remaining = gameState.nextBossScore - gameState.score;
+    const nextIndex = (gameState.bossCount) % bossEmojis.length;
+    const nextBoss = bossEmojis[nextIndex];
+    if (remaining > 0) {
+      nextBossEl.textContent = `${nextBoss.emoji} ${remaining}`;
+      nextBossEl.style.color = '#ff4757';
+    } else {
+      nextBossEl.textContent = `${nextBoss.emoji} قادم!`;
+      nextBossEl.style.color = '#ff6b6b';
+    }
+  }
 }
 
 // ===== MAP =====
@@ -329,7 +617,7 @@ function endGame() {
 }
 
 function restartGame() {
-  gameState = { score: 0, highScore: gameState.highScore, health: 100, maxHealth: 100, level: 1, gameOver: false, invincible: false, invincibleTimer: 0, combo: 0, comboTimer: 0, bossActive: false, nextBossScore: 300, coins: gameState.coins };
+  gameState = { score: 0, highScore: gameState.highScore, health: 100, maxHealth: 100, level: 1, gameOver: false, invincible: false, invincibleTimer: 0, combo: 0, comboTimer: 0, bossActive: false, nextBossScore: 200, bossInterval: 200, coins: gameState.coins, bossCount: 0 };
   meteors = []; gems = []; particles = []; bullets = []; bossBullets = [];
   boss = null;
   bossSpawnTimer = 0;
@@ -354,24 +642,60 @@ function createBoss() {
   else if (edge === 2) { bx = MAP_SIZE * TILE_SIZE / 2; by = MAP_SIZE * TILE_SIZE + 80; }
   else { bx = -80; by = MAP_SIZE * TILE_SIZE / 2; }
   
-  const levelMult = 1 + (gameState.level - 1) * 0.3;
-  const healthMult = 1 + (gameState.level - 1) * 0.2;
+  const bossIndex = gameState.bossCount % bossEmojis.length;
+  const bossData = bossEmojis[bossIndex];
+  
+  const levelMult = 1 + (gameState.level - 1) * 0.2;
+  const healthMult = bossData.healthMult || 1.0;
+  
   boss = {
     x: bx, y: by,
-    health: 200 * healthMult, maxHealth: 200 * healthMult,
-    size: 50, speed: 0.8 + gameState.level * 0.1,
-    attackTimer: 0, attackInterval: Math.max(40, 80 - gameState.level * 3),
-    moveTimer: 0, dead: false,
-    emoji: '🐲', phase: 0, phaseTimer: 0
+    health: 200 * healthMult * levelMult, 
+    maxHealth: 200 * healthMult * levelMult,
+    size: bossData.size || 50, 
+    speed: (bossData.speed || 0.8) + gameState.level * 0.05,
+    attackTimer: 0, 
+    attackInterval: Math.max(30, 80 - gameState.level * 3),
+    moveTimer: 0, 
+    dead: false,
+    emoji: bossData.emoji,
+    name: bossData.name,
+    ability: bossData.ability,
+    specialAttack: bossData.specialAttack,
+    color: bossData.color,
+    bulletEmoji: bossData.bulletEmoji || '🔥',
+    attackCount: bossData.attackCount || 3,
+    damage: (bossData.damage || 15) + Math.floor(gameState.level * 0.5),
+    bossNumber: gameState.bossCount + 1,
+    phase: 0,
+    specialCooldown: 0,
+    freezeChance: bossData.freezeChance || 0,
+    poisonChance: bossData.poisonChance || 0,
+    lifesteal: bossData.lifesteal || 0,
+    healChance: bossData.healChance || 0,
+    isFrozen: false,
+    freezeTimer: 0
   };
+  
   gameState.bossActive = true;
   document.getElementById('boss-bar').classList.add('show');
-  document.getElementById('boss-name').innerHTML = '<span class="boss-emoji">🐲</span> الوحش العملاق (مستوى ' + gameState.level + ')';
-  showToast('🐲 الوحش العملاق ظهر! اهزمه!', 'boss');
+  document.getElementById('boss-name').innerHTML = 
+    `<span class="boss-emoji">${boss.emoji}</span> ${boss.name} - ${boss.ability} (${boss.bossNumber})`;
+  
+  showToast(`👹 ظهر ${boss.emoji} ${boss.name}! قدرته: ${boss.ability}`, 'boss');
 }
 
 function updateBoss() {
   if (!boss || boss.dead) return;
+  
+  if (boss.isFrozen) {
+    boss.freezeTimer--;
+    if (boss.freezeTimer <= 0) {
+      boss.isFrozen = false;
+      showToast('❄️ الوحش تحرر من التجمد!', 'info');
+    }
+    return;
+  }
   
   const px = player.x * TILE_SIZE + TILE_SIZE/2;
   const py = player.y * TILE_SIZE + TILE_SIZE/2;
@@ -379,13 +703,11 @@ function updateBoss() {
   const dy = py - boss.y;
   const dist = Math.hypot(dx, dy);
   
-  // تغيير المراحل حسب الصحة
   boss.phase = 0;
   if (boss.health < boss.maxHealth * 0.5) boss.phase = 1;
   if (boss.health < boss.maxHealth * 0.25) boss.phase = 2;
   
-  // حركة الوحش
-  if (dist > 120) {
+  if (dist > 150) {
     boss.x += (dx / dist) * boss.speed * (1 + boss.phase * 0.2);
     boss.y += (dy / dist) * boss.speed * (1 + boss.phase * 0.2);
   } else {
@@ -394,64 +716,91 @@ function updateBoss() {
     boss.y += Math.sin(boss.moveTimer + boss.phase * 0.5) * boss.speed * 1.5;
   }
   
-  // هجوم الوحش
   boss.attackTimer++;
-  const attackInterval = Math.max(30, boss.attackInterval - boss.phase * 10);
+  const attackInterval = Math.max(25, boss.attackInterval - boss.phase * 10);
+  boss.specialCooldown++;
+  const isSpecial = boss.specialCooldown >= 5;
+  
   if (boss.attackTimer >= attackInterval) {
     boss.attackTimer = 0;
     const angle = Math.atan2(dy, dx);
-    // زيادة عدد الرصاص حسب المرحلة
-    const bulletCount = 3 + boss.phase * 2;
-    const spread = 0.15 + boss.phase * 0.05;
+    const bulletCount = isSpecial ? boss.attackCount + 2 : boss.attackCount;
+    const spread = (0.15 + boss.phase * 0.05) * (isSpecial ? 0.8 : 1);
+    
+    const bulletEmoji = isSpecial ? '🌟' : (boss.bulletEmoji || '🔥');
+    const damageMult = isSpecial ? 1.5 : 1;
+    
     for (let i = 0; i < bulletCount; i++) {
       const a = angle - (bulletCount - 1) * spread / 2 + i * spread;
+      const speed = 3 + boss.phase * 0.5 + (isSpecial ? 1 : 0);
       bossBullets.push({
         x: boss.x, y: boss.y,
-        vx: Math.cos(a) * (3 + boss.phase * 0.5), 
-        vy: Math.sin(a) * (3 + boss.phase * 0.5),
-        size: 6 + boss.phase * 2, 
-        color: boss.phase >= 2 ? '#ff6b6b' : '#ff0000', 
-        life: 120, 
-        damage: 10 + boss.phase * 5
+        vx: Math.cos(a) * speed, 
+        vy: Math.sin(a) * speed,
+        size: 6 + boss.phase * 2 + (isSpecial ? 3 : 0),
+        color: boss.color || '#ff0000',
+        damage: (boss.damage || 15) * damageMult,
+        emoji: bulletEmoji,
+        life: 150,
+        isSpecial: isSpecial,
+        freezeChance: boss.freezeChance || 0,
+        poisonChance: boss.poisonChance || 0
       });
     }
-    // في المرحلة 2، يطلق موجتين
-    if (boss.phase >= 2) {
-      setTimeout(() => {
-        for (let i = 0; i < bulletCount; i++) {
-          const a = angle - (bulletCount - 1) * spread / 2 + i * spread + 0.3;
-          bossBullets.push({
-            x: boss.x, y: boss.y,
-            vx: Math.cos(a) * 3.5, vy: Math.sin(a) * 3.5,
-            size: 6, color: '#ff6b6b', life: 100, damage: 12
-          });
-        }
-      }, 200);
+    
+    if (isSpecial) {
+      showToast(`⚡ ${boss.emoji} يستخدم ${boss.specialAttack}!`, 'boss');
+      screenShake.intensity = 20;
+      boss.specialCooldown = 0;
     }
-    spawnMeteor();
+    
+    if (boss.emoji === '🌋' && isSpecial) {
+      for (let i = 0; i < 3; i++) spawnMeteor();
+    }
+    if (boss.emoji === '⚡' && isSpecial) {
+      spawnParticles(px - 30, py - 30, '#ffff00', 30, 5);
+      spawnParticles(px + 30, py + 30, '#ffff00', 30, 5);
+    }
+    if (boss.emoji === '🌀' && isSpecial) {
+      const pullStrength = 0.5;
+      player.x -= (dx / dist) * pullStrength;
+      player.y -= (dy / dist) * pullStrength;
+    }
+    if (boss.emoji === '🧟' && isSpecial) {
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          spawnParticles(boss.x + (Math.random() - 0.5) * 100, boss.y + (Math.random() - 0.5) * 100, '#00cc00', 10, 2);
+        }, i * 200);
+      }
+    }
+    
     if (boss.phase >= 1) spawnMeteor();
+    if (boss.phase >= 2) spawnMeteor();
   }
   
-  // تحديث شريط الصحة
   document.getElementById('boss-fill').style.width = Math.max(0, (boss.health / boss.maxHealth * 100)) + '%';
   
-  // اصطدام باللاعب
   if (!gameState.invincible && !gameState.gameOver) {
     if (Math.hypot(boss.x - px, boss.y - py) < boss.size + TILE_SIZE * 0.4) {
-      takeDamage(15 + boss.phase * 5);
+      const damage = (boss.damage || 15) + boss.phase * 5;
+      takeDamage(damage);
       screenShake.intensity = 20 + boss.phase * 5;
       spawnParticles(px, py, '#ff4757', 25, 5);
-      // دفع اللاعب
       const pushAngle = Math.atan2(py - boss.y, px - boss.x);
       player.x += Math.cos(pushAngle) * 0.3;
       player.y += Math.sin(pushAngle) * 0.3;
+      if (boss.lifesteal > 0) {
+        const healAmount = damage * boss.lifesteal;
+        boss.health = Math.min(boss.maxHealth, boss.health + healAmount);
+        spawnFloatingText(boss.x, boss.y - 30, `+${Math.floor(healAmount)} ❤️`, '#ff0066');
+        showToast(`🧛 الوحش امتص ${Math.floor(healAmount)} صحة!`, 'error');
+      }
     }
   }
   
-  // اصطدام رصاص اللاعب بالوحش
   for (let i = bullets.length - 1; i >= 0; i--) {
     const b = bullets[i];
-    if (b && Math.hypot(b.x - boss.x, b.y - boss.y) < boss.size + b.size) {
+    if (b && Math.hypot(b.x - boss.x, b.y - boss.y) < boss.size + (b.size || 4)) {
       const damage = b.damage || 10;
       boss.health -= damage;
       bullets.splice(i, 1);
@@ -467,30 +816,49 @@ function defeatBoss() {
   boss.dead = true;
   gameState.bossActive = false;
   document.getElementById('boss-bar').classList.remove('show');
+  gameState.bossCount++;
   
   spawnParticles(boss.x, boss.y, '#ff4757', 60, 8);
   spawnParticles(boss.x, boss.y, '#ffd700', 40, 6);
-  spawnParticles(boss.x, boss.y, '#8b5cf6', 30, 5);
+  spawnParticles(boss.x, boss.y, boss.color || '#8b5cf6', 30, 5);
   spawnFloatingText(boss.x, boss.y - 30, '+500 💎', '#ffd700');
-  spawnFloatingText(boss.x, boss.y - 50, '🎉 الوحش هزم!', '#4ade80');
+  spawnFloatingText(boss.x, boss.y - 50, `🎉 ${boss.emoji} هزم!`, '#4ade80');
   
   gameState.score += 500;
   gameState.coins += 100;
   gameState.health = Math.min(gameState.maxHealth, gameState.health + 30);
   localStorage.setItem('nardo_coins', gameState.coins.toString());
   
+  let specialReward = '';
+  if (boss.emoji === '🦄' && Math.random() < boss.healChance) {
+    gameState.health = gameState.maxHealth;
+    specialReward = '❤️ شفاء كامل!';
+    showToast('🦄 تم شفاؤك بالكامل!', 'success');
+  }
+  if (boss.emoji === '⚡') {
+    gameState.score += 100;
+    specialReward = '⚡ +100 نقطة إضافية!';
+    showToast('⚡ مكافأة البرق! +100 نقطة', 'gold');
+  }
+  if (boss.emoji === '🌀') {
+    gameState.coins += 50;
+    specialReward = '🌀 +50 عملة إضافية!';
+    localStorage.setItem('nardo_coins', gameState.coins.toString());
+    showToast('🌀 مكافأة الإعصار! +50 عملة', 'gold');
+  }
+  
   screenShake.intensity = 25;
-  showToast('🎉 هزمت الوحش! +500 نقطة +100 عملة', 'gold');
-  gameState.nextBossScore = gameState.score + 300 + gameState.level * 50;
+  showToast(`🎉 هزمت ${boss.emoji} ${boss.name}! +500 نقطة +100 عملة ${specialReward}`, 'gold');
+  
   updateHUD();
   
-  // مكافأة إضافية: جوهرة نادرة
-  for (let i = 0; i < 3; i++) {
+  const gemCount = Math.floor((boss.damage || 15) / 10) + 2;
+  for (let i = 0; i < gemCount; i++) {
     setTimeout(() => {
       const type = gemTypes[Math.floor(Math.random() * gemTypes.length)];
       gems.push({ 
-        x: boss.x + (Math.random() - 0.5) * 100, 
-        y: boss.y + (Math.random() - 0.5) * 100, 
+        x: boss.x + (Math.random() - 0.5) * 150, 
+        y: boss.y + (Math.random() - 0.5) * 150, 
         type, 
         floatOffset: Math.random() * Math.PI * 2, 
         collected: false, 
@@ -499,12 +867,19 @@ function defeatBoss() {
       });
     }, i * 300);
   }
+  
+  const nextIndex = (gameState.bossCount) % bossEmojis.length;
+  const nextBoss = bossEmojis[nextIndex];
+  showToast(`👹 الوحش القادم: ${nextBoss.emoji} ${nextBoss.name} (${nextBoss.ability}) عند ${gameState.nextBossScore} نقطة`, 'info');
 }
 
 function updateBossBullets() {
   for (let i = bossBullets.length - 1; i >= 0; i--) {
     const b = bossBullets[i];
-    b.x += b.vx; b.y += b.vy; b.life--;
+    b.x += b.vx; 
+    b.y += b.vy; 
+    b.life--;
+    
     if (b.life <= 0 || b.x < -100 || b.x > MAP_SIZE * TILE_SIZE + 100 || b.y < -100 || b.y > MAP_SIZE * TILE_SIZE + 100) { 
       bossBullets.splice(i, 1); 
       continue; 
@@ -514,20 +889,50 @@ function updateBossBullets() {
     const py = player.y * TILE_SIZE + TILE_SIZE/2;
     if (!gameState.invincible && !gameState.gameOver && 
         Math.hypot(b.x - px, b.y - py) < b.size + TILE_SIZE * 0.35) {
-      takeDamage(b.damage || 10);
+      
+      const damage = b.damage || 10;
+      takeDamage(damage);
       bossBullets.splice(i, 1);
       spawnParticles(px, py, '#ff4757', 12, 3);
       screenShake.intensity = 10;
+      
+      if (b.freezeChance && Math.random() < b.freezeChance && !gameState.gameOver) {
+        player.speed = 0.04;
+        showToast('❄️ تم تجميدك!', 'error');
+        setTimeout(() => {
+          player.speed = 0.12;
+          showToast('✅ تحررت من التجمد!', 'success');
+        }, 1500);
+      }
+      
+      if (b.poisonChance && Math.random() < b.poisonChance && !gameState.gameOver) {
+        let poisonTicks = 0;
+        const poisonInterval = setInterval(() => {
+          if (gameState.gameOver || poisonTicks >= 6) {
+            clearInterval(poisonInterval);
+            return;
+          }
+          takeDamage(3);
+          spawnParticles(px + (Math.random() - 0.5) * 40, py + (Math.random() - 0.5) * 40, '#66ff00', 5, 1);
+          poisonTicks++;
+        }, 500);
+        showToast('☠️ تم تسميمك!', 'error');
+      }
     }
   }
 }
 
-function showBossWarning() {
+function showBossWarning(bossData) {
   if (bossWarningActive || gameState.bossActive) return;
   bossWarningActive = true;
   const warn = document.getElementById('boss-warning');
+  const warnText = document.querySelector('.boss-warning-text');
+  if (bossData) {
+    warnText.textContent = `⚠️ ${bossData.emoji} يقترب!`;
+  } else {
+    warnText.textContent = '⚠️ الوحش يقترب!';
+  }
   warn.classList.add('show');
-  showToast('⚠️ الوحش العملاق يقترب!', 'boss');
   setTimeout(() => {
     warn.classList.remove('show');
     bossWarningActive = false;
@@ -538,9 +943,26 @@ function showBossWarning() {
 function checkBossSpawn() {
   if (gameState.bossActive || bossWarningActive) return;
   if (gameState.score >= gameState.nextBossScore) {
-    showBossWarning();
-    gameState.nextBossScore += 300 + gameState.level * 50;
+    const nextIndex = (gameState.bossCount) % bossEmojis.length;
+    const nextBoss = bossEmojis[nextIndex];
+    showBossWarning(nextBoss);
+    gameState.nextBossScore += gameState.bossInterval;
+    showToast(`⚠️ ${nextBoss.emoji} ${nextBoss.name} يقترب!`, 'boss');
   }
+}
+
+// ===== SHOOTING =====
+function shootBullet() {
+  if (gameState.gameOver || shootCooldown > 0) return;
+  const px = player.x * TILE_SIZE + TILE_SIZE/2;
+  const py = player.y * TILE_SIZE + TILE_SIZE/2;
+  bullets.push({
+    x: px, y: py,
+    vx: 0, vy: -5,
+    size: 4, damage: 10,
+    life: 60
+  });
+  shootCooldown = 15;
 }
 
 // ===== UPDATE =====
@@ -694,13 +1116,14 @@ function renderGame() {
   for (const b of bossBullets) {
     ctx.save();
     const glow = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.size * 3);
-    glow.addColorStop(0, b.color + '80');
+    glow.addColorStop(0, b.color + '40');
     glow.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(b.x, b.y, b.size * 3, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = b.color; ctx.shadowColor = b.color; ctx.shadowBlur = 15;
-    ctx.beginPath(); ctx.arc(b.x, b.y, b.size, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowColor = b.color; ctx.shadowBlur = 20;
+    ctx.font = `${b.size * 2}px Cairo`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(b.emoji || '🔥', b.x, b.y);
     ctx.shadowBlur = 0;
-    ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(b.x - b.size * 0.3, b.y - b.size * 0.3, b.size * 0.3, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
 
@@ -710,18 +1133,26 @@ function renderGame() {
     ctx.translate(boss.x, boss.y);
     const size = boss.size;
     
-    // Boss glow
-    const glow = ctx.createRadialGradient(0, 0, 10, 0, 0, size * 1.8);
-    glow.addColorStop(0, 'rgba(255,0,0,0.3)');
-    glow.addColorStop(0.5, 'rgba(255,0,0,0.1)');
-    glow.addColorStop(1, 'rgba(255,0,0,0)');
-    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, size * 1.8, 0, Math.PI * 2); ctx.fill();
+    const glowColors = {
+      '👹': 'rgba(255,0,0,0.3)','🐉': 'rgba(255,100,0,0.3)','👾': 'rgba(0,255,0,0.3)',
+      '🧟': 'rgba(0,200,0,0.3)','🤖': 'rgba(0,200,255,0.3)','👻': 'rgba(200,200,255,0.3)',
+      '💀': 'rgba(255,255,255,0.3)','🐺': 'rgba(200,200,200,0.3)','🦇': 'rgba(100,0,100,0.3)',
+      '👿': 'rgba(255,0,0,0.3)','🌋': 'rgba(255,100,0,0.3)','⚡': 'rgba(255,255,0,0.3)',
+      '🌀': 'rgba(0,200,255,0.3)','🔥': 'rgba(255,100,0,0.3)','❄️': 'rgba(100,200,255,0.3)',
+      '☠️': 'rgba(0,200,0,0.3)','👽': 'rgba(0,255,100,0.3)','🧙': 'rgba(200,0,200,0.3)',
+      '🧛': 'rgba(200,0,0,0.3)','🦄': 'rgba(255,200,255,0.3)'
+    };
     
-    // Boss shadow
+    const glowColor = glowColors[boss.emoji] || 'rgba(255,0,0,0.3)';
+    const glow = ctx.createRadialGradient(0, 0, 10, 0, 0, size * 2);
+    glow.addColorStop(0, glowColor);
+    glow.addColorStop(0.5, glowColor.replace('0.3', '0.1'));
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow; ctx.beginPath(); ctx.arc(0, 0, size * 2, 0, Math.PI * 2); ctx.fill();
+    
     ctx.fillStyle = 'rgba(0,0,0,0.3)';
     ctx.beginPath(); ctx.ellipse(0, size * 0.8, size * 0.8, size * 0.2, 0, 0, Math.PI * 2); ctx.fill();
     
-    // Boss body
     const gradient = ctx.createRadialGradient(-size*0.2, -size*0.2, 0, 0, 0, size);
     gradient.addColorStop(0, '#ff6b6b');
     gradient.addColorStop(0.6, '#cc0000');
@@ -729,19 +1160,29 @@ function renderGame() {
     ctx.fillStyle = gradient;
     ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI * 2); ctx.fill();
     
-    // Boss outline with phase color
     ctx.strokeStyle = boss.phase >= 2 ? '#ff6b6b' : boss.phase >= 1 ? '#ff8800' : '#ff0000';
     ctx.lineWidth = 3 + boss.phase;
     ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI * 2); ctx.stroke();
     
-    // Boss emoji
-    ctx.font = `${size * 1.2}px Cairo`;
+    ctx.font = `${size * 1.4}px Cairo`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 30;
     ctx.fillText(boss.emoji, 0, 0);
     ctx.shadowBlur = 0;
     
-    // Health indicator above boss
+    ctx.fillStyle = 'rgba(255,215,0,0.8)';
+    ctx.font = 'bold 14px Cairo';
+    ctx.textAlign = 'center';
+    ctx.fillText(`#${boss.bossNumber}`, 0, -size - 25);
+    
+    ctx.fillStyle = 'rgba(255,215,0,0.6)';
+    ctx.font = '9px Cairo';
+    ctx.fillText(`⚡${boss.ability}`, 0, -size - 38);
+    
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    ctx.font = '10px Cairo';
+    ctx.fillText(boss.name, 0, -size - 10);
+    
     const healthPercent = boss.health / boss.maxHealth;
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(-size * 0.8, -size * 1.5, size * 1.6, 6);
@@ -770,7 +1211,7 @@ function renderGame() {
     ctx.restore();
   }
 
-  // Player Bullets (visual only)
+  // Player Bullets
   for (const b of bullets) {
     ctx.save();
     ctx.fillStyle = '#00f2ff'; ctx.shadowColor = '#00f2ff'; ctx.shadowBlur = 10;
@@ -919,7 +1360,6 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowDown') touchDirs.down = true;
   if (e.key === 'ArrowLeft') touchDirs.left = true;
   if (e.key === 'ArrowRight') touchDirs.right = true;
-  // Space to shoot
   if (e.key === ' ' || e.key === 'Space') {
     e.preventDefault();
     shootBullet();
@@ -931,21 +1371,6 @@ document.addEventListener('keyup', e => {
   if (e.key === 'ArrowLeft') touchDirs.left = false;
   if (e.key === 'ArrowRight') touchDirs.right = false;
 });
-
-// ===== SHOOTING SYSTEM =====
-let shootCooldown = 0;
-function shootBullet() {
-  if (gameState.gameOver || shootCooldown > 0) return;
-  const px = player.x * TILE_SIZE + TILE_SIZE/2;
-  const py = player.y * TILE_SIZE + TILE_SIZE/2;
-  bullets.push({
-    x: px, y: py,
-    vx: 0, vy: -5,
-    size: 4, damage: 10,
-    life: 60
-  });
-  shootCooldown = 15;
-}
 
 // ===== TELEGRAM API =====
 function toggleTG() { document.getElementById('tg-dropdown').classList.toggle('show'); }
@@ -1048,10 +1473,9 @@ function enterApp() {
   updateHUD();
   setupJoystick();
   
-  // Auto-shoot timer
   setInterval(() => {
     if (shootCooldown > 0) shootCooldown--;
-    if (!gameState.gameOver && !gameState.bossActive) {
+    if (!gameState.gameOver) {
       shootBullet();
     }
   }, 100);
@@ -1065,10 +1489,11 @@ function enterApp() {
   if (savedToken && savedChat) setTimeout(testTelegram, 500);
 }
 
-console.log('🎬 ناردو 3D — Joystick 360° v30 + BOSS SYSTEM');
+console.log('🎬 ناردو 3D — Joystick 360° v31 + BOSS SYSTEM COMPLETE');
 showToast('🌠 استخدم عصا التحكم للحركة!', 'info');
-showToast('👹 اجمع 300 نقطة لظهور الوحش!', 'info');
+showToast('👹 كل 200 نقطة يظهر وحش بقدرات خاصة!', 'info');
 </script>
 </body>
 </html>
 
+  
