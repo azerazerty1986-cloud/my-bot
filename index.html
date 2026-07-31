@@ -709,6 +709,122 @@ canvas { display:block; width:100%; height:100%; }
 }
 
 @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-12px); } }
+
+/* ===== إضافات COD ===== */
+#cod-iframe {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  width: 100%;
+  height: 100%;
+  display: none;
+  border: none;
+  background: #000;
+}
+
+#close-cod-btn {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 3001;
+  padding: 12px 25px;
+  background: rgba(255,0,0,0.85);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  display: none;
+  font-family: inherit;
+  box-shadow: 0 4px 20px rgba(255,0,0,0.3);
+  transition: all 0.3s;
+}
+#close-cod-btn:hover {
+  transform: scale(1.05);
+  background: rgba(255,0,0,1);
+  box-shadow: 0 4px 30px rgba(255,0,0,0.5);
+}
+
+#cod-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+  background: rgba(0,0,0,0.95);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  padding: 20px;
+}
+#cod-modal .modal-box {
+  background: rgba(10,10,30,0.98);
+  border: 2px solid rgba(0,255,136,0.3);
+  border-radius: 20px;
+  padding: 30px;
+  max-width: 500px;
+  width: 100%;
+}
+#cod-modal .modal-box h2 {
+  color: #00ff88;
+  text-align: center;
+  margin-bottom: 20px;
+}
+#cod-modal .modal-box label {
+  color: #888;
+  display: block;
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+#cod-modal .modal-box input {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(0,255,136,0.2);
+  background: #0a0a1a;
+  color: #fff;
+  font-family: inherit;
+  margin-bottom: 15px;
+}
+#cod-modal .modal-box .row-inputs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+#cod-modal .modal-box .row-inputs div {
+  flex: 1;
+}
+#cod-modal .modal-box .row-inputs input {
+  margin-bottom: 0;
+}
+#cod-modal .modal-box .btn-row {
+  display: flex;
+  gap: 10px;
+}
+#cod-modal .modal-box .btn-add {
+  flex: 1;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #00ff88, #00cc66);
+  color: #000;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: inherit;
+}
+#cod-modal .modal-box .btn-cancel {
+  flex: 1;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  background: transparent;
+  color: #888;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: inherit;
+}
 </style>
 </head>
 <body>
@@ -820,11 +936,11 @@ canvas { display:block; width:100%; height:100%; }
   <button onclick="toggleQuests()">🎯 مهام</button>
   <button onclick="resetGame()">🔄 إعادة</button>
   <button onclick="toggleSpeed()" style="background:rgba(255,215,0,0.15);border-color:#ffd700;">⚡ x<span id="speed-display">1</span></button>
+  <button onclick="openCODModal()" style="background:rgba(0,255,136,0.15);border-color:#00ff88;color:#00ff88;">🎮 إضافة لعبة</button>
 </div>
 
 <!-- ===== التحكم الدائري الاحترافي ===== -->
 <div class="dpad" id="dpad" style="display:none;">
-  <!-- الخلفية الدائرية المتدرجة -->
   <svg class="dpad-bg" viewBox="0 0 140 140">
     <defs>
       <radialGradient id="dpadGlow" cx="50%" cy="50%" r="50%">
@@ -838,11 +954,9 @@ canvas { display:block; width:100%; height:100%; }
     <circle cx="70" cy="70" r="45" fill="none" stroke="rgba(139,92,246,0.04)" stroke-width="0.5"/>
   </svg>
 
-  <!-- المؤشرات الدائرية -->
   <div class="dpad-ring"></div>
   <div class="dpad-ring-inner"></div>
 
-  <!-- زر التسريع الاحترافي -->
   <div class="speed-btn" id="speed-btn" onclick="toggleSpeed()">
     <svg width="40" height="40" viewBox="0 0 40 40">
       <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(255,215,0,0.15)" stroke-width="1.5"/>
@@ -854,7 +968,6 @@ canvas { display:block; width:100%; height:100%; }
     <div class="speed-glow"></div>
   </div>
 
-  <!-- أزرار الاتجاه الأربعة -->
   <button class="dpad-btn dpad-up" data-dir="up">
     <svg width="20" height="20" viewBox="0 0 20 20">
       <polygon points="10,2 18,16 2,16" fill="currentColor"/>
@@ -876,13 +989,11 @@ canvas { display:block; width:100%; height:100%; }
     </svg>
   </button>
 
-  <!-- المركز -->
   <div class="dpad-center">
     <div class="center-pulse"></div>
     <div class="center-dot"></div>
   </div>
 
-  <!-- مؤشر السرعة الرقمي -->
   <div class="speed-indicator" id="speed-indicator">1</div>
 </div>
 
@@ -967,6 +1078,38 @@ canvas { display:block; width:100%; height:100%; }
 
 <div id="level-up-effect">
   <div class="level-text">⭐ مستوى جديد!</div>
+</div>
+
+<!-- ===== COD Elements ===== -->
+<iframe id="cod-iframe"></iframe>
+<button id="close-cod-btn" onclick="closeCODGame()">✖ إغلاق اللعبة</button>
+
+<div id="cod-modal">
+  <div class="modal-box">
+    <h2>🎮 إضافة بوابة لعبة</h2>
+    
+    <label>📁 اسم ملف اللعبة</label>
+    <input type="text" id="cod-filename" value="cod.html" placeholder="مثال: game.html">
+    
+    <div class="row-inputs">
+      <div>
+        <label>📍 الصف</label>
+        <input type="number" id="cod-row" value="3" min="0" max="11">
+      </div>
+      <div>
+        <label>📍 العمود</label>
+        <input type="number" id="cod-col" value="3" min="0" max="11">
+      </div>
+    </div>
+    
+    <label>🏷️ اسم البوابة</label>
+    <input type="text" id="cod-portal-name" value="🎮 لعبة أخرى">
+    
+    <div class="btn-row">
+      <button class="btn-add" onclick="addCOD()">✅ إضافة</button>
+      <button class="btn-cancel" onclick="closeCODModal()">✖ إلغاء</button>
+    </div>
+  </div>
 </div>
 
 <canvas id="canvas"></canvas>
@@ -1078,17 +1221,14 @@ function toggleSpeed() {
   const indicator = document.getElementById('speed-indicator');
   const display = document.getElementById('speed-display');
   
-  // تحديث النص
   label.textContent = speedMultiplier + 'x';
   indicator.textContent = speedMultiplier;
   if (display) display.textContent = speedMultiplier;
   
-  // تحديث الحلقة
   const circumference = 113;
   const progress = 1 - (speedIndex / (SPEED_LEVELS.length - 1));
   ring.style.strokeDashoffset = circumference * progress;
   
-  // تحديث الحالة
   if (speedMultiplier > 1) {
     btn.classList.add('active');
     indicator.classList.add('active');
@@ -1380,6 +1520,11 @@ function clearWorld() {
 }
 
 function buildWorld(worldId) {
+  // إغلاق أي لعبة COD مفتوحة
+  if (isCODGameOpen) {
+    closeCODGame();
+  }
+
   const world = getWorld(worldId);
   if (!world) return;
 
@@ -1404,7 +1549,10 @@ function buildWorld(worldId) {
 
       if (item) {
         const grad = ctx.createLinearGradient(0, 0, 256, 256);
-        if (item.type === 'portal') {
+        if (item.type === 'cod') {
+          grad.addColorStop(0, '#00ff88');
+          grad.addColorStop(1, '#0088ff');
+        } else if (item.type === 'portal') {
           grad.addColorStop(0, '#0a2a3a');
           grad.addColorStop(1, '#1a3a4a');
         } else {
@@ -1414,11 +1562,12 @@ function buildWorld(worldId) {
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, 256, 256);
 
-        ctx.strokeStyle = item.type === 'portal' ? 'rgba(0,242,255,0.3)' : 'rgba(255,215,0,0.3)';
-        ctx.lineWidth = 4;
+        const borderColor = item.isCOD ? 'rgba(0,255,136,0.5)' : 'rgba(0,242,255,0.3)';
+        ctx.strokeStyle = borderColor;
+        ctx.lineWidth = item.isCOD ? 6 : 4;
         ctx.strokeRect(4, 4, 248, 248);
 
-        ctx.fillStyle = item.type === 'portal' ? '#00f2ff' : '#ffd700';
+        ctx.fillStyle = item.isCOD ? '#00ff88' : '#00f2ff';
         ctx.font = item.emoji ? '90px Arial' : '48px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -1426,8 +1575,14 @@ function buildWorld(worldId) {
         ctx.font = 'bold 20px Cairo, Arial';
         ctx.fillStyle = '#ffffff';
         ctx.fillText((item.title || '').substring(0, 14), 128, 190);
+        
+        if (item.isCOD) {
+          ctx.fillStyle = 'rgba(0,255,136,0.5)';
+          ctx.font = 'bold 16px Cairo, Arial';
+          ctx.fillText('🎮 اضغط للدخول', 128, 230);
+        }
 
-        ctx.shadowColor = item.type === 'portal' ? '#00f2ff' : '#ffd700';
+        ctx.shadowColor = item.isCOD ? '#00ff88' : '#00f2ff';
         ctx.shadowBlur = 20;
         ctx.fillText(item.emoji || '📌', 128, 100);
         ctx.shadowBlur = 0;
@@ -1485,7 +1640,7 @@ function buildWorld(worldId) {
         cx.font = '160px Arial';
         cx.textAlign = 'center';
         cx.textBaseline = 'middle';
-        cx.shadowColor = 'rgba(255,255,255,0.3)';
+        cx.shadowColor = item.isCOD ? 'rgba(0,255,136,0.5)' : 'rgba(255,255,255,0.3)';
         cx.shadowBlur = 30;
         cx.fillText(item.emoji, 128, 128);
         const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ 
@@ -1498,10 +1653,11 @@ function buildWorld(worldId) {
         window.floatingSprites.push(sprite);
       }
 
-      if (item.type === 'portal') {
+      if (item.type === 'portal' || item.type === 'cod') {
+        const color = item.isCOD ? 0x00ff88 : 0x00f2ff;
         const ring = new THREE.Mesh(
           new THREE.RingGeometry(0.6, 0.9, 32),
-          new THREE.MeshBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.35, side: THREE.DoubleSide })
+          new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: item.isCOD ? 0.6 : 0.35, side: THREE.DoubleSide })
         );
         ring.rotation.x = -Math.PI / 2;
         ring.position.set(posX, 0.08, posZ);
@@ -1510,7 +1666,7 @@ function buildWorld(worldId) {
 
         const beam = new THREE.Mesh(
           new THREE.CylinderGeometry(0.1, 0.4, 2, 8, 1, true),
-          new THREE.MeshBasicMaterial({ color: 0x00f2ff, transparent: true, opacity: 0.08, side: THREE.DoubleSide })
+          new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: item.isCOD ? 0.2 : 0.08, side: THREE.DoubleSide })
         );
         beam.position.set(posX, 1, posZ);
         beam.userData = { isPortalBeam: true };
@@ -1645,8 +1801,13 @@ function enterWorld() {
     return i.row === tile.row && i.col === tile.col && i.type === 'portal'; 
   }) : null;
 
-  if (!item || !item.targetWorld) {
+  if (!item) {
     showToast('❌ لا توجد بوابة هنا', 'error');
+    return;
+  }
+
+  if (!item.targetWorld) {
+    showToast('❌ هذه البوابة لا تؤدي إلى أي عالم', 'error');
     return;
   }
 
@@ -1687,6 +1848,13 @@ function enterWorld() {
 }
 
 function exitWorld() {
+  // التحقق من iframe COD
+  const iframe = document.getElementById('cod-iframe');
+  if (iframe.style.display === 'block') {
+    closeCODGame();
+    return;
+  }
+  
   if (isTransitioning || currentWorldId === 'main') return;
 
   isTransitioning = true;
@@ -2272,20 +2440,29 @@ function updateCamera() {
 }
 
 // ===== 16. تحديث المربع النشط =====
+let isCODGameOpen = false;
+let currentCODFile = '';
+
 function updateActiveTile() {
   if (isTransitioning) return;
   const tile = getPlayerTile();
   let onPortal = false;
   let portalTitle = '';
+  let isCOD = false;
+  let codFile = '';
 
   tileMeshes.forEach(function(mesh) {
     const d = mesh.userData;
     if (d.row === tile.row && d.col === tile.col) {
-      mesh.material.emissive = new THREE.Color(0x00f2ff);
+      mesh.material.emissive = new THREE.Color(0x00ff88);
       mesh.material.emissiveIntensity = 0.35;
-      if (d.item && d.item.type === 'portal') {
+      if (d.item && (d.item.type === 'portal' || d.item.type === 'cod')) {
         onPortal = true;
         portalTitle = d.item.title || 'عالم';
+        if (d.item.isCOD) {
+          isCOD = true;
+          codFile = d.item.codFile || 'cod.html';
+        }
       }
     } else {
       mesh.material.emissive = new THREE.Color(0x000000);
@@ -2293,8 +2470,13 @@ function updateActiveTile() {
     }
   });
 
+  // إذا كانت بوابة COD واللاعب عليها - افتح اللعبة تلقائياً
+  if (isCOD && currentWorldId === 'main' && !isCODGameOpen) {
+    openCODGame(codFile);
+  }
+
   const btn = document.getElementById('enter-btn');
-  if (onPortal && currentWorldId === 'main') {
+  if (onPortal && currentWorldId === 'main' && !isCOD) {
     btn.style.display = 'block';
     btn.textContent = '🌐 دخول ' + portalTitle;
   } else {
@@ -2302,7 +2484,91 @@ function updateActiveTile() {
   }
 }
 
-// ===== 17. خريطة مصغرة =====
+// ===== 17. نظام COD =====
+function openCODModal() {
+  document.getElementById('cod-modal').style.display = 'flex';
+}
+
+function closeCODModal() {
+  document.getElementById('cod-modal').style.display = 'none';
+}
+
+function addCOD() {
+  const filename = document.getElementById('cod-filename').value.trim() || 'cod.html';
+  const row = parseInt(document.getElementById('cod-row').value) || 3;
+  const col = parseInt(document.getElementById('cod-col').value) || 3;
+  const portalName = document.getElementById('cod-portal-name').value.trim() || '🎮 لعبة أخرى';
+  
+  if (row < 0 || row >= GRID || col < 0 || col >= GRID) {
+    showToast('❌ إحداثيات غير صالحة!', 'error');
+    return;
+  }
+  
+  const world = getCurrentWorld();
+  if (world) {
+    world.items = world.items.filter(function(item) {
+      return !(item.row === row && item.col === col);
+    });
+    
+    world.items.push({
+      id: 'cod_portal_' + Date.now(),
+      type: 'cod',
+      title: portalName,
+      emoji: '🎮',
+      row: row,
+      col: col,
+      codFile: filename,
+      isCOD: true
+    });
+    
+    buildWorld(currentWorldId);
+    showToast('✅ تم إضافة بوابة لعبة في (' + row + ',' + col + ')', 'success');
+    closeCODModal();
+  }
+}
+
+function openCODGame(filename) {
+  if (isCODGameOpen) return;
+  
+  const iframe = document.getElementById('cod-iframe');
+  iframe.src = filename;
+  iframe.style.display = 'block';
+  document.getElementById('close-cod-btn').style.display = 'block';
+  document.getElementById('hud').style.display = 'none';
+  document.getElementById('health-bar-container').style.display = 'none';
+  document.getElementById('controls').style.display = 'none';
+  document.getElementById('dpad').style.display = 'none';
+  document.getElementById('fire-btn').style.display = 'none';
+  document.getElementById('game-message').style.display = 'none';
+  document.getElementById('minimap-frame').style.display = 'none';
+  document.getElementById('settings-btn').style.display = 'none';
+  
+  isCODGameOpen = true;
+  currentCODFile = filename;
+  showToast('🎮 تم فتح اللعبة: ' + filename, 'success');
+}
+
+function closeCODGame() {
+  const iframe = document.getElementById('cod-iframe');
+  iframe.style.display = 'none';
+  iframe.src = '';
+  document.getElementById('close-cod-btn').style.display = 'none';
+  
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('health-bar-container').style.display = 'block';
+  document.getElementById('controls').style.display = 'flex';
+  document.getElementById('dpad').style.display = 'block';
+  document.getElementById('fire-btn').style.display = 'flex';
+  document.getElementById('game-message').style.display = 'block';
+  document.getElementById('minimap-frame').style.display = 'block';
+  document.getElementById('settings-btn').style.display = 'flex';
+  
+  isCODGameOpen = false;
+  currentCODFile = '';
+  showToast('✅ تم إغلاق اللعبة', 'success');
+}
+
+// ===== 18. خريطة مصغرة =====
 function setupMinimap() {
   const frame = document.getElementById('minimap-frame');
   const c = document.createElement('canvas');
@@ -2327,7 +2593,7 @@ function updateMinimap() {
     for (let x = 0; x < GRID; x++) {
       const item = world.items ? world.items.find(function(i) { return i.row === y && i.col === x; }) : null;
       if (item) {
-        ctx.fillStyle = item.type === 'portal' ? '#00f2ff' : '#fbbf24';
+        ctx.fillStyle = item.type === 'portal' ? '#00f2ff' : item.type === 'cod' ? '#00ff88' : '#fbbf24';
       } else {
         ctx.fillStyle = ((x + y) % 2 === 0) ? '#2a2a4a' : '#1a1a2e';
       }
@@ -2346,7 +2612,7 @@ function updateMinimap() {
   ctx.stroke();
 }
 
-// ===== 18. الإعدادات =====
+// ===== 19. الإعدادات =====
 function toggleSettings() {
   const panel = document.getElementById('settings-panel');
   panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
@@ -2378,7 +2644,7 @@ function setVolume(val) {
   if (videoElement) videoElement.volume = val / 100;
 }
 
-// ===== 19. حفظ وتحميل =====
+// ===== 20. حفظ وتحميل =====
 function saveGame() {
   const data = {
     playerHealth: playerHealth,
@@ -2445,7 +2711,7 @@ function hideTutorial() {
   document.getElementById('tutorial-panel').style.display = 'none';
 }
 
-// ===== 20. تهيئة Three.js =====
+// ===== 21. تهيئة Three.js =====
 function initGame() {
   const canvas = document.getElementById('canvas');
 
@@ -2596,7 +2862,7 @@ function startGame() {
   initGame();
 }
 
-// ===== 21. التحكم =====
+// ===== 22. التحكم =====
 function setupControls() {
   document.querySelectorAll('.dpad-btn').forEach(function(btn) {
     const dir = btn.dataset.dir;
@@ -2656,6 +2922,8 @@ console.log('  🎮 تحكم دائري احترافي مع أزرار مثلث�
 console.log('  💫 مؤشر سرعة رقمي');
 console.log('  🌟 حلقة متحركة تعكس مستوى التسريع');
 console.log('  ⌨️ اختصار Shift لتغيير السرعة');
+console.log('  🎮 إضافة بوابات لألعاب خارجية (COD)');
+console.log('  🚪 فتح تلقائي عند الوقوف على البوابة');
 </script>
 </body>
 </html>
