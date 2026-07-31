@@ -158,7 +158,7 @@ canvas { display:block; width:100%; height:100%; }
 }
 #controls button:active { transform: translateY(0); }
 
-/* ===== التحكم الدائري الاحترافي ===== */
+/* ===== التحكم الدائري ===== */
 .dpad {
   position: fixed; 
   bottom: 100px; 
@@ -634,7 +634,7 @@ canvas { display:block; width:100%; height:100%; }
 
 @keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-12px); } }
 
-/* ===== إضافات COD ===== */
+/* ===== COD ===== */
 #cod-iframe {
   position: fixed;
   inset: 0;
@@ -789,7 +789,7 @@ canvas { display:block; width:100%; height:100%; }
     <button class="start-btn" style="padding:10px 30px;font-size:14px;" onclick="loadGame()">📂 تحميل</button>
     <button class="start-btn" style="padding:10px 30px;font-size:14px;" onclick="showTutorial()">❓ دليل</button>
   </div>
-  <div class="version-tag">v71.0 | العوالم الكروية</div>
+  <div class="version-tag">v72.0 | العوالم الكروية</div>
 </div>
 
 <!-- ===== دليل اللعب ===== -->
@@ -832,7 +832,7 @@ canvas { display:block; width:100%; height:100%; }
 </div>
 
 <div id="health-bar-container"><div id="health-bar"></div></div>
-<div id="game-message">⚔️ استكشف الأضلاع وانقر للدخول!</div>
+<div id="game-message">🌐 استكشف الأضلاع وانقر للدخول!</div>
 
 <div id="controls">
   <button onclick="spawnEnemy()">👾 عدو</button>
@@ -960,8 +960,8 @@ canvas { display:block; width:100%; height:100%; }
 
 <script>
 // ============================================================
-//  🌐 العوالم الكروية - التحكم الدائري v71.0
-//  كل ضلع = عالم مستقل مع جميع الوظائف
+//  🌐 العوالم الكروية - v72.0
+//  إخفاء الأرضية والشخصية، إظهار الكرة بشكل واضح
 // ============================================================
 
 // ===== 1. المتغيرات العامة =====
@@ -1013,8 +1013,6 @@ let videoElement = null;
 let isVideoPlaying = true;
 let isVideoMuted = false;
 let lon = 0, lat = 0;
-let isDragging = false;
-let onPointerDownX = 0, onPointerDownY = 0, onPointerDownLon = 0, onPointerDownLat = 0;
 let particles = [];
 let ambientLight, dirLight, dirLight2;
 
@@ -1621,7 +1619,7 @@ function toggleMute() {
   document.querySelector('#video-controls button:last-child').textContent = isVideoMuted ? '🔇' : '🔊';
 }
 
-// ===== 9. الدخول والخروج من العوالم =====
+// ===== 9. الدخول والخروج =====
 function enterWorld() {
   if (isTransitioning || currentWorldId !== 'main') return;
 
@@ -2554,7 +2552,6 @@ let sphereRotationVelocity = { x: 0.002, y: 0.005 };
 let isDraggingSphere = false;
 let previousMousePosition = { x: 0, y: 0 };
 
-// أسماء العوالم لكل ضلع
 const WORLD_NAMES = [
     '⚔️ القتال', '🌐 360', '🖼️ المعرض', '🌲 الغابة',
     '🏰 القلعة', '🌊 المحيط', '🔥 النار', '❄️ الجليد',
@@ -2585,13 +2582,11 @@ function buildSphere(facesCount) {
     selectedFacet = null;
     document.getElementById('facet-info').style.display = 'none';
 
-    // إنشاء مجموعة الكرة
     sphereGroup = new THREE.Group();
     sphereGroup.position.set(0, 0, 0);
 
-    const radius = 6;
+    const radius = 5.5;
     
-    // إنشاء هندسة الكرة مع التقسيم المناسب
     let geometry;
     if (facesCount <= 8) {
         geometry = new THREE.IcosahedronGeometry(radius, 1);
@@ -2601,7 +2596,6 @@ function buildSphere(facesCount) {
         geometry = new THREE.IcosahedronGeometry(radius, 3);
     }
 
-    // الحصول على الوجوه
     const positionAttribute = geometry.getAttribute('position');
     const indexAttribute = geometry.index;
     const vertices = [];
@@ -2614,7 +2608,6 @@ function buildSphere(facesCount) {
         );
     }
 
-    // تجميع المثلثات
     const triangles = [];
     if (indexAttribute) {
         for (let i = 0; i < indexAttribute.count; i += 3) {
@@ -2630,7 +2623,6 @@ function buildSphere(facesCount) {
         }
     }
 
-    // دمج المثلثات لتشكيل أضلاع
     const targetCount = Math.min(facesCount, triangles.length);
     const triPerFacet = Math.max(1, Math.floor(triangles.length / targetCount));
     const facets = [];
@@ -2645,7 +2637,6 @@ function buildSphere(facesCount) {
         }
         
         if (facetTriangles.length > 0) {
-            // حساب مركز الضلع
             let cx = 0, cy = 0, cz = 0;
             let count = 0;
             const pts = [];
@@ -2672,7 +2663,6 @@ function buildSphere(facesCount) {
         }
     }
 
-    // إنشاء الأضلاع
     facets.forEach((facet, index) => {
         createFacet(facet, index, facets.length);
     });
@@ -2688,35 +2678,29 @@ function createFacet(facet, index, total) {
     
     if (points.length < 3) return;
     
-    // حساب اتجاهات الضلع
     const center = facet.center;
     const normal = new THREE.Vector3(center.x, center.y, center.z).normalize();
     const up = Math.abs(normal.y) < 0.9 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
     const right = new THREE.Vector3().crossVectors(normal, up).normalize();
     const localUp = new THREE.Vector3().crossVectors(normal, right).normalize();
     
-    // تحويل النقاط إلى إحداثيات محلية على مستوى الضلع
     const localPoints = points.map(p => {
         const v = new THREE.Vector3(p.x, p.y, p.z);
         const dx = v.dot(right);
         const dy = v.dot(localUp);
-        const dz = v.dot(normal);
-        return { x: dx, y: dy, z: dz };
+        return { x: dx, y: dy };
     });
     
-    // حساب المركز المحلي
     let cx = 0, cy = 0;
     localPoints.forEach(p => { cx += p.x; cy += p.y; });
     cx /= localPoints.length; cy /= localPoints.length;
     
-    // فرز النقاط حول المركز
     const sortedPoints = localPoints.map((p, i) => ({
         ...p,
         index: i,
         angle: Math.atan2(p.y - cy, p.x - cx)
     })).sort((a, b) => a.angle - b.angle);
     
-    // إنشاء شكل المضلع
     const shape = new THREE.Shape();
     sortedPoints.forEach((p, i) => {
         const x = p.x - cx;
@@ -2729,10 +2713,8 @@ function createFacet(facet, index, total) {
     });
     shape.closePath();
 
-    // إنشاء الهندسة
     const geometry = new THREE.ShapeGeometry(shape);
     
-    // تدوير الضلع ليتناسب مع اتجاه الكرة
     const matrix = new THREE.Matrix4();
     const quaternion = new THREE.Quaternion();
     const upVec = new THREE.Vector3(0, 0, 1);
@@ -2740,7 +2722,7 @@ function createFacet(facet, index, total) {
     matrix.makeRotationFromQuaternion(quaternion);
     
     const position = geometry.getAttribute('position');
-    const radius = 6;
+    const radius = 5.5;
     for (let i = 0; i < position.count; i++) {
         const x = position.getX(i);
         const y = position.getY(i);
@@ -2755,15 +2737,14 @@ function createFacet(facet, index, total) {
     position.needsUpdate = true;
     geometry.computeVertexNormals();
 
-    // المادة
     const material = new THREE.MeshStandardMaterial({
         color: color,
         emissive: color,
-        emissiveIntensity: 0.15,
+        emissiveIntensity: 0.2,
         roughness: 0.3,
-        metalness: 0.4,
+        metalness: 0.5,
         transparent: true,
-        opacity: 0.92,
+        opacity: 0.95,
         side: THREE.DoubleSide,
         flatShading: true
     });
@@ -2777,28 +2758,27 @@ function createFacet(facet, index, total) {
         originalColor: color.clone()
     };
 
-    // الحدود
     const edges = new THREE.EdgesGeometry(geometry);
     const lineMat = new THREE.LineBasicMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.15
+        opacity: 0.2
     });
     const wireframe = new THREE.LineSegments(edges, lineMat);
     mesh.add(wireframe);
 
-    // اسم العالم
+    // اسم العالم على الضلع
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 64;
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = 'rgba(0,0,0,0)';
     ctx.fillRect(0, 0, 256, 64);
-    ctx.font = 'bold 28px Cairo, Arial';
+    ctx.font = 'bold 26px Cairo, Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 10;
+    ctx.shadowColor = 'rgba(0,0,0,0.9)';
+    ctx.shadowBlur = 12;
     ctx.fillStyle = '#ffffff';
     ctx.fillText(worldName, 128, 34);
     
@@ -2811,9 +2791,9 @@ function createFacet(facet, index, total) {
     });
     const sprite = new THREE.Sprite(spriteMat);
     const labelPos = new THREE.Vector3(
-        normal.x * 6.8,
-        normal.y * 6.8,
-        normal.z * 6.8
+        normal.x * 6.2,
+        normal.y * 6.2,
+        normal.z * 6.2
     );
     sprite.position.copy(labelPos);
     sprite.scale.set(1.8, 0.4, 1);
@@ -2849,7 +2829,6 @@ function setupFacetInteraction() {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
-    // حدث تحريك الماوس
     renderer.domElement.addEventListener('mousemove', (event) => {
         const rect = renderer.domElement.getBoundingClientRect();
         const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -2867,12 +2846,12 @@ function setupFacetInteraction() {
                 if (index !== selectedFacet) {
                     if (selectedFacet !== null && facetMeshes[selectedFacet]) {
                         const prev = facetMeshes[selectedFacet];
-                        prev.material.emissiveIntensity = 0.15;
-                        prev.material.opacity = 0.92;
+                        prev.material.emissiveIntensity = 0.2;
+                        prev.material.opacity = 0.95;
                     }
                     selectedFacet = index;
                     const current = facetMeshes[index];
-                    current.material.emissiveIntensity = 0.6;
+                    current.material.emissiveIntensity = 0.7;
                     current.material.opacity = 1.0;
                     renderer.domElement.style.cursor = 'pointer';
                     updateFacetInfo();
@@ -2883,15 +2862,14 @@ function setupFacetInteraction() {
         
         if (selectedFacet !== null && facetMeshes[selectedFacet]) {
             const prev = facetMeshes[selectedFacet];
-            prev.material.emissiveIntensity = 0.15;
-            prev.material.opacity = 0.92;
+            prev.material.emissiveIntensity = 0.2;
+            prev.material.opacity = 0.95;
         }
         selectedFacet = null;
         renderer.domElement.style.cursor = 'default';
         updateFacetInfo();
     });
 
-    // حدث النقر للدخول
     renderer.domElement.addEventListener('click', (event) => {
         if (selectedFacet !== null && facetData[selectedFacet]) {
             const worldName = facetData[selectedFacet].name;
@@ -2993,7 +2971,6 @@ function rebuildSphere() {
     showToast(`🔄 تم إعادة بناء الكرة بـ ${faceCount} ضلع`, 'info');
 }
 
-// ===== 23. تدوير الكرة =====
 function updateSphereRotation() {
     if (!sphereGroup) return;
     if (isDraggingSphere) return;
@@ -3002,16 +2979,15 @@ function updateSphereRotation() {
     sphereGroup.rotation.y += sphereRotationVelocity.y;
 }
 
-// ===== 24. تهيئة Three.js =====
+// ===== 23. تهيئة Three.js =====
 function initGame() {
     const canvas = document.getElementById('canvas');
 
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0a1a);
-    scene.fog = new THREE.Fog(0x0a0a1a, 20, 45);
+    scene.background = new THREE.Color(0x050510);
 
-    camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.1, 100);
-    camera.position.set(0, 7, 12);
+    camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
+    camera.position.set(0, 2, 12);
 
     renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
     renderer.setSize(innerWidth, innerHeight);
@@ -3019,66 +2995,24 @@ function initGame() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    ambientLight = new THREE.AmbientLight(0x8b5cf6, 0.5);
+    ambientLight = new THREE.AmbientLight(0x8b5cf6, 0.6);
     scene.add(ambientLight);
 
-    dirLight = new THREE.DirectionalLight(0xfff0dd, 0.85);
+    dirLight = new THREE.DirectionalLight(0xfff0dd, 1.2);
     dirLight.position.set(10, 20, 8);
     dirLight.castShadow = true;
-    dirLight.shadow.mapSize.width = 1024;
-    dirLight.shadow.mapSize.height = 1024;
     scene.add(dirLight);
 
-    dirLight2 = new THREE.DirectionalLight(0x4466ff, 0.3);
+    dirLight2 = new THREE.DirectionalLight(0x4466ff, 0.4);
     dirLight2.position.set(-10, 10, -10);
     scene.add(dirLight2);
 
-    const ground = new THREE.Mesh(
-        new THREE.PlaneGeometry(40, 40),
-        new THREE.MeshStandardMaterial({ color: 0x15152a, roughness: 0.9 })
-    );
-    ground.rotation.x = -Math.PI / 2;
-    ground.position.y = -0.05;
-    ground.receiveShadow = true;
-    scene.add(ground);
-
+    // ===== إخفاء الأرضية =====
+    // لم نضف أي أرضية
+    
+    // ===== إخفاء الشخصية =====
     playerGroup = new THREE.Group();
-    const body = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.32, 0.38, 0.7, 8),
-        new THREE.MeshStandardMaterial({ color: 0x8b5cf6, emissive: 0x5b21b6, emissiveIntensity: 0.2 })
-    );
-    body.position.y = 0.35;
-    body.castShadow = true;
-    playerGroup.add(body);
-
-    const head = new THREE.Mesh(
-        new THREE.SphereGeometry(0.18, 8, 8),
-        new THREE.MeshStandardMaterial({ color: 0xa78bfa })
-    );
-    head.position.y = 0.85;
-    head.castShadow = true;
-    playerGroup.add(head);
-
-    const crown = new THREE.Mesh(
-        new THREE.ConeGeometry(0.12, 0.12, 6),
-        new THREE.MeshStandardMaterial({ color: 0xffd700, emissive: 0xffa500, emissiveIntensity: 0.1 })
-    );
-    crown.position.y = 1.0;
-    playerGroup.add(crown);
-
-    const swordHandle = new THREE.Mesh(
-        new THREE.CylinderGeometry(0.02, 0.02, 0.2, 4),
-        new THREE.MeshStandardMaterial({ color: 0x8b5cf6 })
-    );
-    swordHandle.position.set(0.35, 0.5, 0);
-    playerGroup.add(swordHandle);
-    const swordBlade = new THREE.Mesh(
-        new THREE.BoxGeometry(0.04, 0.4, 0.01),
-        new THREE.MeshStandardMaterial({ color: 0xcccccc, emissive: 0x888888, emissiveIntensity: 0.2 })
-    );
-    swordBlade.position.set(0.35, 0.75, 0);
-    playerGroup.add(swordBlade);
-
+    // لم نضف أي جسم للشخصية، فقط مجموعة فارغة للتحكم
     playerGroup.position.set(0, 0, 0);
     scene.add(playerGroup);
 
@@ -3102,7 +3036,7 @@ function initGame() {
 
     showMessage('🌐 استكشف الأضلاع وانقر للدخول!', 2000);
 
-    // ===== 25. حلقة اللعب =====
+    // ===== حلقة اللعب =====
     function loop() {
         requestAnimationFrame(loop);
 
@@ -3161,7 +3095,7 @@ function startGame() {
     initGame();
 }
 
-// ===== 26. التحكم =====
+// ===== 24. التحكم =====
 function setupControls() {
     document.querySelectorAll('.dpad-btn').forEach(function(btn) {
         const dir = btn.dataset.dir;
@@ -3207,8 +3141,8 @@ function setupControls() {
         if (isDraggingSphere && sphereGroup) {
             const dx = e.clientX - previousMousePosition.x;
             const dy = e.clientY - previousMousePosition.y;
-            sphereGroup.rotation.x += dy * 0.005;
-            sphereGroup.rotation.y += dx * 0.005;
+            sphereGroup.rotation.x += dy * 0.008;
+            sphereGroup.rotation.y += dx * 0.008;
             previousMousePosition.x = e.clientX;
             previousMousePosition.y = e.clientY;
         }
@@ -3236,16 +3170,15 @@ document.addEventListener('click', function(e) {
 
 setupControls();
 
-console.log('🌐 العوالم الكروية - التحكم الدائري v71.0');
-console.log('📌 الميزات الجديدة:');
+console.log('🌐 العوالم الكروية v72.0');
+console.log('📌 الميزات:');
 console.log('  🌐 بيئة كروية بأضلاع متعددة');
 console.log('  👆 كل ضلع = عالم مستقل');
 console.log('  🖱️ سحب الكرة لتدويرها');
 console.log('  🔘 النقر على الضلع للدخول');
-console.log('  ⚡ زر تسريع دائري (1x → 3x)');
+console.log('  ⚡ زر تسريع دائري');
 console.log('  🎮 تحكم دائري احترافي');
-console.log('  💫 مؤشر سرعة رقمي');
-console.log('  🎮 إضافة بوابات لألعاب خارجية');
 </script>
 </body>
 </html>
+  
