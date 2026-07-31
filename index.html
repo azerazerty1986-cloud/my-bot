@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🌐 العوالم الكروية - التحكم الدائري</title>
+<title>🌐 العوالم الكروية</title>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
@@ -169,7 +169,6 @@ canvas { display:block; width:100%; height:100%; }
   display: none;
   filter: drop-shadow(0 0 30px rgba(139,92,246,0.1));
 }
-
 .dpad-bg {
   position: absolute;
   top: 0; left: 0;
@@ -181,7 +180,6 @@ canvas { display:block; width:100%; height:100%; }
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
-
 .dpad-ring {
   position: absolute;
   top: 5px; left: 5px;
@@ -204,7 +202,6 @@ canvas { display:block; width:100%; height:100%; }
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
-
 .dpad-btn {
   position: absolute;
   width: 48px; height: 48px;
@@ -224,12 +221,10 @@ canvas { display:block; width:100%; height:100%; }
 .dpad-btn:hover { background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.2); color: rgba(255,255,255,0.6); transform: scale(1.05); }
 .dpad-btn:active, .dpad-btn.active { background: rgba(139,92,246,0.35); border-color: rgba(139,92,246,0.5); color: #c4b5fd; transform: scale(0.88); box-shadow: 0 0 30px rgba(139,92,246,0.2), inset 0 0 20px rgba(139,92,246,0.1); }
 .dpad-btn svg { width: 18px; height: 18px; }
-
 .dpad-up { top: 0; left: 46px; }
 .dpad-down { bottom: 0; left: 46px; }
 .dpad-left { top: 46px; left: 0; }
 .dpad-right { top: 46px; right: 0; }
-
 .dpad-center {
   position: absolute;
   top: 46px; left: 46px;
@@ -263,7 +258,6 @@ canvas { display:block; width:100%; height:100%; }
   0%,100% { transform: scale(1); opacity: 0.3; }
   50% { transform: scale(0.7); opacity: 0.8; }
 }
-
 .speed-btn {
   position: absolute;
   bottom: -10px;
@@ -294,7 +288,6 @@ canvas { display:block; width:100%; height:100%; }
   0%,100% { transform: scale(0.8); opacity: 0.3; }
   50% { transform: scale(1.2); opacity: 0.8; }
 }
-
 .speed-indicator {
   position: absolute;
   top: -12px;
@@ -789,7 +782,7 @@ canvas { display:block; width:100%; height:100%; }
     <button class="start-btn" style="padding:10px 30px;font-size:14px;" onclick="loadGame()">📂 تحميل</button>
     <button class="start-btn" style="padding:10px 30px;font-size:14px;" onclick="showTutorial()">❓ دليل</button>
   </div>
-  <div class="version-tag">v72.0 | العوالم الكروية</div>
+  <div class="version-tag">v73.0 | العوالم الكروية</div>
 </div>
 
 <!-- ===== دليل اللعب ===== -->
@@ -960,11 +953,11 @@ canvas { display:block; width:100%; height:100%; }
 
 <script>
 // ============================================================
-//  🌐 العوالم الكروية - v72.0
-//  إخفاء الأرضية والشخصية، إظهار الكرة بشكل واضح
+//  🌐 العوالم الكروية - v73.0
+//  إصلاح ظهور الكرة مع إخفاء الأرضية والشخصية
 // ============================================================
 
-// ===== 1. المتغيرات العامة =====
+// ===== متغيرات عامة =====
 let scene, camera, renderer;
 let playerGroup, tileGroup;
 let tileMeshes = [];
@@ -978,7 +971,6 @@ let savedPlayerPos = null;
 let touchDirs = { up:false, down:false, left:false, right:false };
 const PLAYER_SPEED = 0.12;
 
-// إحصائيات اللاعب
 let playerHealth = 100;
 let maxHealth = 100;
 let kills = 0;
@@ -1016,7 +1008,6 @@ let lon = 0, lat = 0;
 let particles = [];
 let ambientLight, dirLight, dirLight2;
 
-// إنجازات
 let achievements = {
   first_kill: { name: 'أول قتل', desc: 'اقتل أول عدو', unlocked: false, emoji: '💀' },
   killer_10: { name: 'قاتل محترف', desc: 'اقتل 10 أعداء', unlocked: false, emoji: '⚔️' },
@@ -1036,7 +1027,7 @@ let quests = [
   { id: 'q4', name: 'جامع', desc: 'اجمع 50 نقطة', target: 50, current: 0, type: 'score', reward: 25 }
 ];
 
-// ===== 2. نظام التسريع =====
+// ===== نظام التسريع =====
 let speedMultiplier = 1;
 const SPEED_LEVELS = [1, 1.5, 2, 3];
 let speedIndex = 0;
@@ -1075,74 +1066,7 @@ function toggleSpeed() {
   }
 }
 
-// ===== 3. العوالم الافتراضية =====
-function createDefaultWorlds() {
-  worlds = [
-    {
-      id: 'main',
-      name: 'الخريطة الرئيسية',
-      grid: 12,
-      tileSize: 3,
-      startPosition: { x: 0, z: 0 },
-      background: '#0a0a1a',
-      items: [
-        { id: 'p1', type: 'portal', title: 'عالم القتال', emoji: '⚔️', row: 3, col: 3, targetWorld: 'world_fight' },
-        { id: 'p2', type: 'portal', title: 'فيديو 360', emoji: '🌐', row: 3, col: 8, targetWorld: 'world_360' },
-        { id: 'p3', type: 'portal', title: 'معرض الصور', emoji: '🖼️', row: 8, col: 3, targetWorld: 'world_gallery' },
-        { id: 'p4', type: 'portal', title: 'الغابة المظلمة', emoji: '🌲', row: 8, col: 8, targetWorld: 'world_forest' }
-      ]
-    },
-    {
-      id: 'world_fight',
-      name: '⚔️ ساحة القتال',
-      grid: 10,
-      tileSize: 3,
-      startPosition: { x: 0, z: 0 },
-      background: '#1a0a0a',
-      items: []
-    },
-    {
-      id: 'world_360',
-      name: '🌐 فيديو 360',
-      grid: 6,
-      tileSize: 4,
-      startPosition: { x: 0, z: 0 },
-      background: '#050510',
-      videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
-      items: []
-    },
-    {
-      id: 'world_gallery',
-      name: '🖼️ معرض الصور',
-      grid: 8,
-      tileSize: 3.5,
-      startPosition: { x: 0, z: 0 },
-      background: '#0a0a2e',
-      items: [
-        { id: 1, type: 'image', title: '🌊 موجة', emoji: '🌊', row: 2, col: 2 },
-        { id: 2, type: 'image', title: '🔥 نار', emoji: '🔥', row: 2, col: 5 },
-        { id: 3, type: 'image', title: '🌈 قوس قزح', emoji: '🌈', row: 5, col: 2 },
-        { id: 4, type: 'image', title: '⭐ نجمة', emoji: '⭐', row: 5, col: 5 }
-      ]
-    },
-    {
-      id: 'world_forest',
-      name: '🌲 الغابة المظلمة',
-      grid: 10,
-      tileSize: 3,
-      startPosition: { x: 0, z: 0 },
-      background: '#0a1a0a',
-      items: [
-        { id: 1, type: 'image', title: '🌳 شجرة', emoji: '🌳', row: 2, col: 2 },
-        { id: 2, type: 'image', title: '🦊 ثعلب', emoji: '🦊', row: 2, col: 7 },
-        { id: 3, type: 'image', title: '🍄 فطر', emoji: '🍄', row: 7, col: 2 },
-        { id: 4, type: 'image', title: '🦉 بومة', emoji: '🦉', row: 7, col: 7 }
-      ]
-    }
-  ];
-}
-
-// ===== 4. دوال مساعدة =====
+// ===== دوال مساعدة =====
 function showToast(msg, type) {
   const c = document.getElementById('toast-container');
   const t = document.createElement('div');
@@ -1236,7 +1160,7 @@ function getPlayerTile() {
   return { col: Math.floor(px / TILE_SIZE), row: Math.floor(pz / TILE_SIZE) };
 }
 
-// ===== 5. نظام الإنجازات =====
+// ===== الإنجازات =====
 function checkAchievement(key, condition) {
   if (condition && !achievements[key].unlocked) {
     achievements[key].unlocked = true;
@@ -1267,7 +1191,7 @@ function toggleAchievements() {
   renderAchievements();
 }
 
-// ===== 6. نظام المهام =====
+// ===== المهام =====
 function updateQuests(type, amount) {
   quests.forEach(function(q) {
     if (q.type === type && !q.complete) {
@@ -1307,7 +1231,74 @@ function toggleQuests() {
   renderQuests();
 }
 
-// ===== 7. بناء العالم =====
+// ===== العوالم =====
+function createDefaultWorlds() {
+  worlds = [
+    {
+      id: 'main',
+      name: 'الخريطة الرئيسية',
+      grid: 12,
+      tileSize: 3,
+      startPosition: { x: 0, z: 0 },
+      background: '#0a0a1a',
+      items: [
+        { id: 'p1', type: 'portal', title: 'عالم القتال', emoji: '⚔️', row: 3, col: 3, targetWorld: 'world_fight' },
+        { id: 'p2', type: 'portal', title: 'فيديو 360', emoji: '🌐', row: 3, col: 8, targetWorld: 'world_360' },
+        { id: 'p3', type: 'portal', title: 'معرض الصور', emoji: '🖼️', row: 8, col: 3, targetWorld: 'world_gallery' },
+        { id: 'p4', type: 'portal', title: 'الغابة المظلمة', emoji: '🌲', row: 8, col: 8, targetWorld: 'world_forest' }
+      ]
+    },
+    {
+      id: 'world_fight',
+      name: '⚔️ ساحة القتال',
+      grid: 10,
+      tileSize: 3,
+      startPosition: { x: 0, z: 0 },
+      background: '#1a0a0a',
+      items: []
+    },
+    {
+      id: 'world_360',
+      name: '🌐 فيديو 360',
+      grid: 6,
+      tileSize: 4,
+      startPosition: { x: 0, z: 0 },
+      background: '#050510',
+      videoUrl: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',
+      items: []
+    },
+    {
+      id: 'world_gallery',
+      name: '🖼️ معرض الصور',
+      grid: 8,
+      tileSize: 3.5,
+      startPosition: { x: 0, z: 0 },
+      background: '#0a0a2e',
+      items: [
+        { id: 1, type: 'image', title: '🌊 موجة', emoji: '🌊', row: 2, col: 2 },
+        { id: 2, type: 'image', title: '🔥 نار', emoji: '🔥', row: 2, col: 5 },
+        { id: 3, type: 'image', title: '🌈 قوس قزح', emoji: '🌈', row: 5, col: 2 },
+        { id: 4, type: 'image', title: '⭐ نجمة', emoji: '⭐', row: 5, col: 5 }
+      ]
+    },
+    {
+      id: 'world_forest',
+      name: '🌲 الغابة المظلمة',
+      grid: 10,
+      tileSize: 3,
+      startPosition: { x: 0, z: 0 },
+      background: '#0a1a0a',
+      items: [
+        { id: 1, type: 'image', title: '🌳 شجرة', emoji: '🌳', row: 2, col: 2 },
+        { id: 2, type: 'image', title: '🦊 ثعلب', emoji: '🦊', row: 2, col: 7 },
+        { id: 3, type: 'image', title: '🍄 فطر', emoji: '🍄', row: 7, col: 2 },
+        { id: 4, type: 'image', title: '🦉 بومة', emoji: '🦉', row: 7, col: 7 }
+      ]
+    }
+  ];
+}
+
+// ===== بناء العالم =====
 function clearWorld() {
   tileMeshes.forEach(function(m) {
     if (m.parent) m.parent.remove(m);
@@ -1534,7 +1525,7 @@ function buildWorld(worldId) {
   renderLandmarks();
 }
 
-// ===== 8. فيديو 360 =====
+// ===== فيديو 360 =====
 function createVideo360(url) {
   videoElement = document.createElement('video');
   videoElement.muted = isVideoMuted;
@@ -1619,7 +1610,7 @@ function toggleMute() {
   document.querySelector('#video-controls button:last-child').textContent = isVideoMuted ? '🔇' : '🔊';
 }
 
-// ===== 9. الدخول والخروج =====
+// ===== الدخول والخروج =====
 function enterWorld() {
   if (isTransitioning || currentWorldId !== 'main') return;
 
@@ -1701,7 +1692,7 @@ function exitWorld() {
   }, 600);
 }
 
-// ===== 10. المعالم =====
+// ===== المعالم =====
 function addLandmark() {
   const emojis = ['🏰','🌲','🌊','⛰️','🏜️','🌋','🏗️','🌺','🕌','🏯','🎪','🏟️'];
   const names = ['قلعة','غابة','بحيرة','جبل','صحراء','بركان','مبنى','حديقة','مسجد','معبد','سيرك','ملعب'];
@@ -1778,7 +1769,7 @@ function renderLandmarks() {
   });
 }
 
-// ===== 11. رفع فيديو/صورة =====
+// ===== رفع فيديو/صورة =====
 function openUploadModal() {
   document.getElementById('upload-modal').style.display = 'flex';
   document.getElementById('lm-name').value = '';
@@ -1838,7 +1829,7 @@ function addLandmarkFromModal() {
   renderLandmarks();
 }
 
-// ===== 12. عوالم عشوائية =====
+// ===== عوالم عشوائية =====
 function addRandomWorld() {
   const emojis = ['🎮','🎯','🎨','🌈','⭐','🌺','🌸','🌊','🔥','💫','🚀','🌙'];
   const titles = ['ملصقات','فن','طبيعة','خيال','مغامرات','ألعاب','رياضة','موسيقى'];
@@ -1898,7 +1889,7 @@ function addRandomWorld() {
   showToast('✅ تم إنشاء عالم جديد: ' + newWorld.name, 'success');
 }
 
-// ===== 13. نظام القتال =====
+// ===== نظام القتال =====
 function spawnEnemy() {
   if (!gameRunning || currentWorldId !== 'world_fight') {
     showToast('⚠️ فقط في ساحة القتال', 'warn');
@@ -2171,7 +2162,7 @@ function healPlayer() {
   checkAchievement('healer', healCount >= 5);
 }
 
-// ===== 14. نهاية اللعبة =====
+// ===== نهاية اللعبة =====
 function gameOver() {
   gameRunning = false;
   document.getElementById('final-kills').textContent = kills;
@@ -2222,7 +2213,7 @@ function resetGame() {
   setTimeout(function() { restartGame(); }, 500);
 }
 
-// ===== 15. حركة اللاعب والكاميرا =====
+// ===== حركة اللاعب والكاميرا =====
 function updatePlayer() {
   if (isTransitioning) return;
   if (!gameRunning) return;
@@ -2249,7 +2240,10 @@ function updatePlayer() {
 
 function updateCamera() {
   if (isTransitioning) return;
-  if (isInWorld && getCurrentWorld() && getCurrentWorld().id === 'world_360') return;
+  if (isInWorld && getCurrentWorld() && getCurrentWorld().id === 'world_360') {
+    // الكاميرا تبقى في وضع 360
+    return;
+  }
 
   const target = playerGroup.position.clone();
   const angle = playerGroup.rotation.y;
@@ -2266,7 +2260,7 @@ function updateCamera() {
   camera.lookAt(target.x, target.y + 0.8, target.z);
 }
 
-// ===== 16. تحديث المربع النشط =====
+// ===== تحديث المربع النشط =====
 let isCODGameOpen = false;
 let currentCODFile = '';
 
@@ -2310,7 +2304,7 @@ function updateActiveTile() {
   }
 }
 
-// ===== 17. نظام COD =====
+// ===== نظام COD =====
 function openCODModal() {
   document.getElementById('cod-modal').style.display = 'flex';
 }
@@ -2394,7 +2388,7 @@ function closeCODGame() {
   showToast('✅ تم إغلاق اللعبة', 'success');
 }
 
-// ===== 18. خريطة مصغرة =====
+// ===== خريطة مصغرة =====
 function setupMinimap() {
   const frame = document.getElementById('minimap-frame');
   const c = document.createElement('canvas');
@@ -2438,7 +2432,7 @@ function updateMinimap() {
   ctx.stroke();
 }
 
-// ===== 19. الإعدادات =====
+// ===== الإعدادات =====
 function toggleSettings() {
   const panel = document.getElementById('settings-panel');
   panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
@@ -2475,7 +2469,7 @@ function setVolume(val) {
   if (videoElement) videoElement.volume = val / 100;
 }
 
-// ===== 20. حفظ وتحميل =====
+// ===== حفظ وتحميل =====
 function saveGame() {
   const data = {
     playerHealth: playerHealth,
@@ -2542,7 +2536,7 @@ function hideTutorial() {
   document.getElementById('tutorial-panel').style.display = 'none';
 }
 
-// ===== 21. نظام الأضلاع الكروية =====
+// ===== نظام الأضلاع الكروية =====
 let sphereGroup = null;
 let facetMeshes = [];
 let facetData = [];
@@ -2565,7 +2559,7 @@ const WORLD_NAMES = [
 
 function getFacetColor(index, total) {
     const hue = (index / total) * 360 + 20;
-    return new THREE.Color(`hsl(${hue}, 75%, 55%)`);
+    return new THREE.Color(`hsl(${hue}, 80%, 60%)`);
 }
 
 function buildSphere(facesCount) {
@@ -2585,8 +2579,9 @@ function buildSphere(facesCount) {
     sphereGroup = new THREE.Group();
     sphereGroup.position.set(0, 0, 0);
 
-    const radius = 5.5;
+    const radius = 5;
     
+    // إنشاء هندسة الكرة
     let geometry;
     if (facesCount <= 8) {
         geometry = new THREE.IcosahedronGeometry(radius, 1);
@@ -2663,12 +2658,20 @@ function buildSphere(facesCount) {
         }
     }
 
+    // إنشاء الأضلاع
     facets.forEach((facet, index) => {
         createFacet(facet, index, facets.length);
     });
 
+    // إضافة إضاءة للكرة
+    const glow = new THREE.PointLight(0x8b5cf6, 0.5, 15);
+    glow.position.set(0, 0, 0);
+    sphereGroup.add(glow);
+
     scene.add(sphereGroup);
     updateFacetInfo();
+    
+    console.log('✅ تم بناء الكرة بـ ' + facets.length + ' ضلع');
 }
 
 function createFacet(facet, index, total) {
@@ -2722,7 +2725,7 @@ function createFacet(facet, index, total) {
     matrix.makeRotationFromQuaternion(quaternion);
     
     const position = geometry.getAttribute('position');
-    const radius = 5.5;
+    const radius = 5;
     for (let i = 0; i < position.count; i++) {
         const x = position.getX(i);
         const y = position.getY(i);
@@ -2740,9 +2743,9 @@ function createFacet(facet, index, total) {
     const material = new THREE.MeshStandardMaterial({
         color: color,
         emissive: color,
-        emissiveIntensity: 0.2,
-        roughness: 0.3,
-        metalness: 0.5,
+        emissiveIntensity: 0.3,
+        roughness: 0.2,
+        metalness: 0.6,
         transparent: true,
         opacity: 0.95,
         side: THREE.DoubleSide,
@@ -2758,27 +2761,27 @@ function createFacet(facet, index, total) {
         originalColor: color.clone()
     };
 
+    // حدود الضلع
     const edges = new THREE.EdgesGeometry(geometry);
     const lineMat = new THREE.LineBasicMaterial({
         color: 0xffffff,
         transparent: true,
-        opacity: 0.2
+        opacity: 0.15
     });
     const wireframe = new THREE.LineSegments(edges, lineMat);
     mesh.add(wireframe);
 
-    // اسم العالم على الضلع
+    // اسم العالم
     const canvas = document.createElement('canvas');
     canvas.width = 256;
     canvas.height = 64;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = 'rgba(0,0,0,0)';
-    ctx.fillRect(0, 0, 256, 64);
-    ctx.font = 'bold 26px Cairo, Arial';
+    ctx.clearRect(0, 0, 256, 64);
+    ctx.font = 'bold 22px Cairo, Arial';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = 'rgba(0,0,0,0.9)';
-    ctx.shadowBlur = 12;
+    ctx.shadowBlur = 15;
     ctx.fillStyle = '#ffffff';
     ctx.fillText(worldName, 128, 34);
     
@@ -2791,12 +2794,12 @@ function createFacet(facet, index, total) {
     });
     const sprite = new THREE.Sprite(spriteMat);
     const labelPos = new THREE.Vector3(
-        normal.x * 6.2,
-        normal.y * 6.2,
-        normal.z * 6.2
+        normal.x * 5.8,
+        normal.y * 5.8,
+        normal.z * 5.8
     );
     sprite.position.copy(labelPos);
-    sprite.scale.set(1.8, 0.4, 1);
+    sprite.scale.set(1.6, 0.35, 1);
     mesh.add(sprite);
 
     sphereGroup.add(mesh);
@@ -2824,7 +2827,7 @@ function updateFacetInfo() {
     }
 }
 
-// ===== 22. التفاعل مع الأضلاع =====
+// ===== التفاعل مع الأضلاع =====
 function setupFacetInteraction() {
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -2846,12 +2849,12 @@ function setupFacetInteraction() {
                 if (index !== selectedFacet) {
                     if (selectedFacet !== null && facetMeshes[selectedFacet]) {
                         const prev = facetMeshes[selectedFacet];
-                        prev.material.emissiveIntensity = 0.2;
+                        prev.material.emissiveIntensity = 0.3;
                         prev.material.opacity = 0.95;
                     }
                     selectedFacet = index;
                     const current = facetMeshes[index];
-                    current.material.emissiveIntensity = 0.7;
+                    current.material.emissiveIntensity = 0.8;
                     current.material.opacity = 1.0;
                     renderer.domElement.style.cursor = 'pointer';
                     updateFacetInfo();
@@ -2862,7 +2865,7 @@ function setupFacetInteraction() {
         
         if (selectedFacet !== null && facetMeshes[selectedFacet]) {
             const prev = facetMeshes[selectedFacet];
-            prev.material.emissiveIntensity = 0.2;
+            prev.material.emissiveIntensity = 0.3;
             prev.material.opacity = 0.95;
         }
         selectedFacet = null;
@@ -2979,15 +2982,16 @@ function updateSphereRotation() {
     sphereGroup.rotation.y += sphereRotationVelocity.y;
 }
 
-// ===== 23. تهيئة Three.js =====
+// ===== تهيئة Three.js =====
 function initGame() {
     const canvas = document.getElementById('canvas');
 
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x050510);
 
-    camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
-    camera.position.set(0, 2, 12);
+    camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 100);
+    camera.position.set(0, 3, 14);
+    camera.lookAt(0, 0, 0);
 
     renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
     renderer.setSize(innerWidth, innerHeight);
@@ -2995,24 +2999,25 @@ function initGame() {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
-    ambientLight = new THREE.AmbientLight(0x8b5cf6, 0.6);
+    // إضاءة قوية لإظهار الكرة
+    ambientLight = new THREE.AmbientLight(0x4466ff, 0.6);
     scene.add(ambientLight);
 
-    dirLight = new THREE.DirectionalLight(0xfff0dd, 1.2);
+    dirLight = new THREE.DirectionalLight(0xfff0dd, 1.5);
     dirLight.position.set(10, 20, 8);
     dirLight.castShadow = true;
     scene.add(dirLight);
 
-    dirLight2 = new THREE.DirectionalLight(0x4466ff, 0.4);
-    dirLight2.position.set(-10, 10, -10);
+    dirLight2 = new THREE.DirectionalLight(0x8888ff, 0.8);
+    dirLight2.position.set(-10, 5, -10);
     scene.add(dirLight2);
 
-    // ===== إخفاء الأرضية =====
-    // لم نضف أي أرضية
-    
-    // ===== إخفاء الشخصية =====
+    const backLight = new THREE.DirectionalLight(0x4466ff, 0.5);
+    backLight.position.set(0, -5, -10);
+    scene.add(backLight);
+
+    // ===== إخفاء الأرضية والشخصية =====
     playerGroup = new THREE.Group();
-    // لم نضف أي جسم للشخصية، فقط مجموعة فارغة للتحكم
     playerGroup.position.set(0, 0, 0);
     scene.add(playerGroup);
 
@@ -3095,7 +3100,7 @@ function startGame() {
     initGame();
 }
 
-// ===== 24. التحكم =====
+// ===== التحكم =====
 function setupControls() {
     document.querySelectorAll('.dpad-btn').forEach(function(btn) {
         const dir = btn.dataset.dir;
@@ -3170,7 +3175,7 @@ document.addEventListener('click', function(e) {
 
 setupControls();
 
-console.log('🌐 العوالم الكروية v72.0');
+console.log('🌐 العوالم الكروية v73.0');
 console.log('📌 الميزات:');
 console.log('  🌐 بيئة كروية بأضلاع متعددة');
 console.log('  👆 كل ضلع = عالم مستقل');
@@ -3178,6 +3183,7 @@ console.log('  🖱️ سحب الكرة لتدويرها');
 console.log('  🔘 النقر على الضلع للدخول');
 console.log('  ⚡ زر تسريع دائري');
 console.log('  🎮 تحكم دائري احترافي');
+console.log('  ✅ تم إخفاء الأرضية والشخصية');
 </script>
 </body>
 </html>
