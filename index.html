@@ -1,1 +1,783 @@
 
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🌀 عجلة العوالم - 6 أضلاع</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { 
+  font-family:'Cairo',sans-serif; 
+  background:#050510; 
+  color:#fff; 
+  overflow:hidden;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+canvas { display:block; width:100%; height:100%; }
+
+#hud {
+  position:fixed; top:12px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,0.85); padding:8px 20px; border-radius:16px;
+  z-index:100; display:none; gap:16px; font-size:12px;
+  border:1px solid rgba(255,255,255,0.08);
+  flex-wrap:wrap; justify-content:center;
+  backdrop-filter: blur(12px);
+}
+#hud .stat { text-align:center; min-width: 50px; }
+#hud .stat .val { font-weight:bold; font-size:14px; }
+#hud .stat .health { color:#4ade80; }
+#hud .stat .kills { color:#ffd700; }
+#hud .stat .label { font-size:9px; color:#666; display:block; margin-top:2px; }
+
+#health-bar-container {
+  position:fixed; bottom:140px; left:50%; transform:translateX(-50%);
+  width:220px; height:8px; background:rgba(255,255,255,0.05);
+  border-radius:4px; z-index:100; overflow:hidden;
+  display:none;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+#health-bar {
+  height:100%; width:100%; background:linear-gradient(90deg,#4ade80,#22d3ee);
+  border-radius:4px; transition:width 0.3s;
+}
+
+#game-message {
+  position:fixed; bottom:170px; left:50%; transform:translateX(-50%);
+  color:#ffd700; font-size:18px; font-weight:bold; z-index:100;
+  text-shadow:0 0 30px rgba(255,215,0,0.4);
+  opacity:0; transition:opacity 0.5s;
+  pointer-events: none;
+  white-space: nowrap;
+}
+#game-message.show { opacity:1; }
+
+#controls {
+  position:fixed; bottom:22px; left:50%; transform:translateX(-50%);
+  display:none; gap:6px; z-index:100; flex-wrap:wrap; justify-content:center;
+}
+#controls button {
+  background:rgba(139,92,246,0.12); color:#fff; 
+  border:1px solid rgba(139,92,246,0.25);
+  padding:6px 14px; border-radius:12px; cursor:pointer; 
+  font-size:10px; font-family:inherit;
+  transition:all 0.3s;
+}
+#controls button:hover { background:rgba(139,92,246,0.3); transform: translateY(-2px); }
+
+#facet-info {
+  position:fixed; bottom:220px; left:50%; transform:translateX(-50%);
+  z-index:150; background:rgba(0,0,0,0.9);
+  padding:10px 28px; border-radius:20px;
+  border:1px solid rgba(255,215,0,0.3);
+  color:#fff; font-size:18px; display:none;
+  backdrop-filter:blur(12px); text-align:center;
+}
+#facet-info #facet-name { font-weight:700; color:#ffd700; }
+#facet-info #facet-desc { color:#888; font-size:13px; display:block; margin-top:4px; }
+
+#start-screen {
+  position:fixed; inset:0; z-index:2000;
+  background:linear-gradient(135deg,#0a0a2a 0%,#000 50%,#0a0a1a 100%);
+  display:flex; flex-direction:column; justify-content:center; align-items:center; gap:24px;
+}
+.start-logo { 
+  font-size:48px; font-weight:900; 
+  background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-12px); } }
+.start-btn {
+  border:2px solid #00f2ff; color:#00f2ff; padding:18px 60px;
+  background:rgba(0,242,255,0.08); border-radius:60px; font-size:22px;
+  cursor:pointer; transition:all .3s; font-weight:700; font-family:inherit;
+}
+.start-btn:hover { transform:scale(1.08); background:#00f2ff; color:#000; box-shadow:0 0 60px rgba(0,242,255,0.5); }
+.version-tag { position:absolute; bottom:20px; font-size:12px; color:#555; }
+
+canvas { display:block; width:100%; height:100%; }
+</style>
+</head>
+<body>
+
+<!-- ===== شاشة البداية ===== -->
+<div id="start-screen">
+  <div class="start-logo">🌀 عجلة العوالم</div>
+  <div style="color:#888;font-size:16px;text-align:center;">6 عوالم · عجلة دائرية · تدور باللمس</div>
+  <button class="start-btn" onclick="startGame()">🚀 ابدأ</button>
+  <div class="version-tag">v77.0 | عجلة 6 أضلاع</div>
+</div>
+
+<!-- ===== HUD ===== -->
+<div id="hud">
+  <div class="stat"><span class="val health" id="health-display">100</span><span class="label">❤️ صحة</span></div>
+  <div class="stat"><span class="val kills" id="kills-display">0</span><span class="label">💀 قتلى</span></div>
+  <div class="stat"><span class="val" id="score-display" style="color:#ffd700;">0</span><span class="label">🏆 نقاط</span></div>
+  <div class="stat"><span class="val" id="level-display" style="color:#60a5fa;">1</span><span class="label">⭐ مستوى</span></div>
+  <div class="stat"><span class="val" id="world-count" style="color:#a78bfa;">1</span><span class="label">🌍 عوالم</span></div>
+</div>
+
+<div id="health-bar-container"><div id="health-bar"></div></div>
+<div id="game-message">🌀 اسحب لتدوير العجلة · انقر على أيقونة للدخول</div>
+
+<div id="controls">
+  <button onclick="healPlayer()">💚 شفاء</button>
+  <button onclick="resetGame()">🔄 إعادة</button>
+</div>
+
+<div id="facet-info">
+  <span id="facet-name">🌍 عالم</span>
+  <span id="facet-desc">اضغط للدخول</span>
+</div>
+
+<canvas id="canvas"></canvas>
+
+<script>
+// ============================================================
+//  🌀 عجلة العوالم - 6 أضلاع دائرية
+//  كل ضلع = عالم بأيقونة
+// ============================================================
+
+// ===== متغيرات عامة =====
+let scene, camera, renderer;
+let isTransitioning = false;
+let currentWorldId = 'main';
+let gameRunning = true;
+
+let playerHealth = 100;
+let maxHealth = 100;
+let kills = 0;
+let score = 0;
+let level = 1;
+let worlds = [];
+let visitedWorlds = new Set(['main']);
+
+// ===== العجلة =====
+let wheelGroup = null;
+let facetMeshes = [];
+let facetData = [];
+let selectedFacet = null;
+let isDragging = false;
+let previousMouse = { x: 0, y: 0 };
+let autoRotate = true;
+
+// بيانات العوالم الـ 6
+const WORLD_DATA = [
+  { id: 'world_fight', name: 'القتال', icon: '⚔️', color: '#ef4444', bg: '#1a0a0a' },
+  { id: 'world_forest', name: 'الغابة', icon: '🌲', color: '#22c55e', bg: '#0a1a0a' },
+  { id: 'world_ocean', name: 'المحيط', icon: '🌊', color: '#3b82f6', bg: '#0a0a2a' },
+  { id: 'world_fire', name: 'النار', icon: '🔥', color: '#f97316', bg: '#2a0a0a' },
+  { id: 'world_stars', name: 'النجوم', icon: '⭐', color: '#eab308', bg: '#0a0a1a' },
+  { id: 'world_magic', name: 'السحر', icon: '🧙', color: '#8b5cf6', bg: '#1a0a2a' }
+];
+
+// ===== دوال مساعدة =====
+function showToast(msg, type) {
+  const c = document.getElementById('toast-container');
+  if (!c) return;
+  const t = document.createElement('div');
+  t.className = 'toast ' + (type || 'info');
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 2500);
+}
+
+function showMessage(text) {
+  const el = document.getElementById('game-message');
+  el.textContent = text;
+  el.classList.add('show');
+  clearTimeout(el._timeout);
+  el._timeout = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function updateHUD() {
+  document.getElementById('health-display').textContent = Math.round(playerHealth);
+  document.getElementById('kills-display').textContent = kills;
+  document.getElementById('score-display').textContent = score;
+  document.getElementById('level-display').textContent = level;
+  document.getElementById('world-count').textContent = visitedWorlds.size;
+  const healthPercent = (playerHealth / maxHealth) * 100;
+  document.getElementById('health-bar').style.width = healthPercent + '%';
+}
+
+function getWorld(id) { return worlds.find(w => w.id === id); }
+
+// ===== العوالم =====
+function createDefaultWorlds() {
+  worlds = [
+    { id: 'main', name: 'الخريطة الرئيسية', background: '#050510' },
+    ...WORLD_DATA.map(w => ({
+      id: w.id,
+      name: w.name,
+      background: w.bg,
+      isFight: w.id === 'world_fight'
+    }))
+  ];
+}
+
+// ===== بناء العالم =====
+function buildWorld(worldId) {
+  const world = getWorld(worldId);
+  if (!world) return;
+
+  currentWorldId = worldId;
+  scene.background = new THREE.Color(world.background || '#050510');
+  
+  if (worldId === 'main') {
+    if (wheelGroup) wheelGroup.visible = true;
+    document.getElementById('facet-info').style.display = 'block';
+  } else {
+    if (wheelGroup) wheelGroup.visible = false;
+    document.getElementById('facet-info').style.display = 'none';
+  }
+  
+  updateHUD();
+}
+
+// ===== بناء العجلة =====
+function buildWheel() {
+  // تنظيف القديم
+  if (wheelGroup) {
+    wheelGroup.children.forEach(child => {
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) child.material.dispose();
+    });
+    scene.remove(wheelGroup);
+  }
+  facetMeshes = [];
+  facetData = [];
+  selectedFacet = null;
+
+  wheelGroup = new THREE.Group();
+  wheelGroup.position.set(0, 0, 0);
+
+  const radius = 4.5;
+  const numFacets = 6;
+
+  // إنشاء 6 أضلاع مثلثة (عجلة)
+  for (let i = 0; i < numFacets; i++) {
+    const startAngle = (i / numFacets) * Math.PI * 2 - Math.PI / 2;
+    const endAngle = ((i + 1) / numFacets) * Math.PI * 2 - Math.PI / 2;
+
+    // نقاط المثلث (قاعدة على الحافة الخارجية، رأس في المركز)
+    const p1 = new THREE.Vector3(0, 0, 0);
+    const p2 = new THREE.Vector3(Math.cos(startAngle) * radius, Math.sin(startAngle) * radius, 0);
+    const p3 = new THREE.Vector3(Math.cos(endAngle) * radius, Math.sin(endAngle) * radius, 0);
+
+    // إنشاء شكل المثلث
+    const shape = new THREE.Shape();
+    shape.moveTo(p1.x, p1.y);
+    shape.lineTo(p2.x, p2.y);
+    shape.lineTo(p3.x, p3.y);
+    shape.closePath();
+
+    const geo = new THREE.ShapeGeometry(shape);
+    
+    const color = new THREE.Color(WORLD_DATA[i].color);
+    const icon = WORLD_DATA[i].icon;
+    const name = WORLD_DATA[i].name;
+
+    const mat = new THREE.MeshStandardMaterial({
+      color: color,
+      emissive: color,
+      emissiveIntensity: 0.2,
+      roughness: 0.3,
+      metalness: 0.4,
+      transparent: true,
+      opacity: 0.85,
+      side: THREE.DoubleSide
+    });
+
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.z = 0;
+    
+    // مركز المثلث
+    const centroid = new THREE.Vector3(
+      (p1.x + p2.x + p3.x) / 3,
+      (p1.y + p2.y + p3.y) / 3,
+      0
+    );
+
+    mesh.userData = {
+      facetIndex: i,
+      worldName: name,
+      icon: icon,
+      color: color,
+      centroid: centroid.clone(),
+      isFacet: true,
+      angle: (startAngle + endAngle) / 2
+    };
+
+    // === الأيقونة ===
+    const iconCanvas = document.createElement('canvas');
+    iconCanvas.width = 128;
+    iconCanvas.height = 128;
+    const ctx = iconCanvas.getContext('2d');
+    ctx.clearRect(0, 0, 128, 128);
+    
+    // خلفية دائرية
+    const grad = ctx.createRadialGradient(64, 64, 10, 64, 64, 50);
+    grad.addColorStop(0, 'rgba(255,255,255,0.2)');
+    grad.addColorStop(1, 'rgba(255,255,255,0.02)');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(64, 64, 45, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    ctx.font = '56px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = 'rgba(0,0,0,0.8)';
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(icon, 64, 66);
+
+    const iconTex = new THREE.CanvasTexture(iconCanvas);
+    const spriteMat = new THREE.SpriteMaterial({
+      map: iconTex,
+      transparent: true,
+      depthTest: false,
+      sizeAttenuation: true
+    });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.position.set(centroid.x, centroid.y, 0.1);
+    sprite.scale.set(1.2, 1.2, 1);
+    mesh.add(sprite);
+
+    // === اسم العالم ===
+    const nameCanvas = document.createElement('canvas');
+    nameCanvas.width = 256;
+    nameCanvas.height = 44;
+    const nctx = nameCanvas.getContext('2d');
+    nctx.clearRect(0, 0, 256, 44);
+    nctx.font = 'bold 20px Cairo, Arial';
+    nctx.textAlign = 'center';
+    nctx.textBaseline = 'middle';
+    nctx.shadowColor = 'rgba(0,0,0,0.9)';
+    nctx.shadowBlur = 12;
+    nctx.fillStyle = '#ffffff';
+    nctx.fillText(name, 128, 24);
+
+    const nameTex = new THREE.CanvasTexture(nameCanvas);
+    const nameMat = new THREE.SpriteMaterial({
+      map: nameTex,
+      transparent: true,
+      depthTest: false,
+      sizeAttenuation: true
+    });
+    const nameSprite = new THREE.Sprite(nameMat);
+    const dist = centroid.length();
+    const angle = Math.atan2(centroid.y, centroid.x);
+    nameSprite.position.set(
+      Math.cos(angle) * (dist + 0.8),
+      Math.sin(angle) * (dist + 0.8),
+      0.1
+    );
+    nameSprite.scale.set(1.6, 0.3, 1);
+    mesh.add(nameSprite);
+
+    // حواف مضيئة
+    const edges = new THREE.EdgesGeometry(geo);
+    const edgeMat = new THREE.LineBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.15
+    });
+    const wireframe = new THREE.LineSegments(edges, edgeMat);
+    wireframe.position.z = 0.01;
+    mesh.add(wireframe);
+
+    wheelGroup.add(mesh);
+    facetMeshes.push(mesh);
+    facetData.push({
+      index: i,
+      name: name,
+      icon: icon,
+      color: color,
+      mesh: mesh,
+      centroid: centroid
+    });
+  }
+
+  // === الحلقة الخارجية ===
+  const ringPoints = [];
+  for (let i = 0; i <= 64; i++) {
+    const angle = (i / 64) * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    ringPoints.push(new THREE.Vector3(x, y, 0));
+  }
+  const ringGeo = new THREE.BufferGeometry().setFromPoints(ringPoints);
+  const ringMat = new THREE.LineBasicMaterial({
+    color: 0x8b5cf6,
+    transparent: true,
+    opacity: 0.3
+  });
+  const ringLine = new THREE.Line(ringGeo, ringMat);
+  wheelGroup.add(ringLine);
+
+  // === حلقة داخلية ===
+  const innerPoints = [];
+  for (let i = 0; i <= 64; i++) {
+    const angle = (i / 64) * Math.PI * 2;
+    const x = Math.cos(angle) * 0.8;
+    const y = Math.sin(angle) * 0.8;
+    innerPoints.push(new THREE.Vector3(x, y, 0));
+  }
+  const innerGeo = new THREE.BufferGeometry().setFromPoints(innerPoints);
+  const innerMat = new THREE.LineBasicMaterial({
+    color: 0x8b5cf6,
+    transparent: true,
+    opacity: 0.15
+  });
+  const innerLine = new THREE.Line(innerGeo, innerMat);
+  wheelGroup.add(innerLine);
+
+  // === نقاط زخرفية على الحلقة ===
+  for (let i = 0; i < 12; i++) {
+    const angle = (i / 12) * Math.PI * 2;
+    const x = Math.cos(angle) * radius;
+    const y = Math.sin(angle) * radius;
+    const dot = new THREE.Mesh(
+      new THREE.SphereGeometry(0.06, 6, 6),
+      new THREE.MeshBasicMaterial({ color: 0x8b5cf6, transparent: true, opacity: 0.3 })
+    );
+    dot.position.set(x, y, 0);
+    wheelGroup.add(dot);
+  }
+
+  // ضوء مركزي
+  const centerGlow = new THREE.PointLight(0x8b5cf6, 0.5, 8);
+  centerGlow.position.set(0, 0, 1);
+  wheelGroup.add(centerGlow);
+
+  // مركز العجلة
+  const centerDisk = new THREE.Mesh(
+    new THREE.CircleGeometry(0.5, 32),
+    new THREE.MeshBasicMaterial({
+      color: 0x8b5cf6,
+      transparent: true,
+      opacity: 0.15,
+      side: THREE.DoubleSide
+    })
+  );
+  centerDisk.position.z = 0.02;
+  wheelGroup.add(centerDisk);
+
+  scene.add(wheelGroup);
+  console.log('✅ تم بناء عجلة العوالم بـ 6 أضلاع');
+}
+
+// ===== التفاعل =====
+function setupInteraction() {
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  renderer.domElement.addEventListener('mousemove', (event) => {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObjects(facetMeshes);
+
+    if (intersects.length > 0 && currentWorldId === 'main') {
+      const hit = intersects[0].object;
+      if (hit.userData && hit.userData.isFacet) {
+        const index = hit.userData.facetIndex;
+        if (index !== selectedFacet) {
+          if (selectedFacet !== null && facetMeshes[selectedFacet]) {
+            facetMeshes[selectedFacet].material.emissiveIntensity = 0.2;
+            facetMeshes[selectedFacet].scale.set(1, 1, 1);
+          }
+          selectedFacet = index;
+          facetMeshes[index].material.emissiveIntensity = 0.8;
+          facetMeshes[index].scale.set(1.1, 1.1, 1.1);
+          renderer.domElement.style.cursor = 'pointer';
+          updateFacetInfo(index);
+        }
+        return;
+      }
+    }
+    
+    if (selectedFacet !== null && facetMeshes[selectedFacet]) {
+      facetMeshes[selectedFacet].material.emissiveIntensity = 0.2;
+      facetMeshes[selectedFacet].scale.set(1, 1, 1);
+    }
+    selectedFacet = null;
+    renderer.domElement.style.cursor = 'default';
+    document.getElementById('facet-info').style.display = 'none';
+  });
+
+  renderer.domElement.addEventListener('click', (event) => {
+    if (selectedFacet !== null && facetData[selectedFacet]) {
+      const worldName = facetData[selectedFacet].name;
+      const worldId = WORLD_DATA[selectedFacet].id;
+      
+      const target = getWorld(worldId);
+      if (target) {
+        enterWorld(worldId);
+        showToast(`🌐 دخول إلى ${worldName}`, 'success');
+      }
+    }
+  });
+
+  // سحب العجلة
+  renderer.domElement.addEventListener('mousedown', (e) => {
+    isDragging = true;
+    previousMouse.x = e.clientX;
+    previousMouse.y = e.clientY;
+    autoRotate = false;
+  });
+  
+  window.addEventListener('mousemove', (e) => {
+    if (isDragging && wheelGroup) {
+      const dx = e.clientX - previousMouse.x;
+      const dy = e.clientY - previousMouse.y;
+      wheelGroup.rotation.x += dy * 0.005;
+      wheelGroup.rotation.y += dx * 0.005;
+      previousMouse.x = e.clientX;
+      previousMouse.y = e.clientY;
+    }
+  });
+  
+  window.addEventListener('mouseup', () => {
+    isDragging = false;
+    setTimeout(() => { autoRotate = true; }, 2000);
+  });
+
+  // دعم اللمس
+  renderer.domElement.addEventListener('touchstart', (e) => {
+    const touch = e.touches[0];
+    isDragging = true;
+    previousMouse.x = touch.clientX;
+    previousMouse.y = touch.clientY;
+    autoRotate = false;
+  }, { passive: true });
+  
+  renderer.domElement.addEventListener('touchmove', (e) => {
+    if (isDragging && wheelGroup) {
+      const touch = e.touches[0];
+      const dx = touch.clientX - previousMouse.x;
+      const dy = touch.clientY - previousMouse.y;
+      wheelGroup.rotation.x += dy * 0.005;
+      wheelGroup.rotation.y += dx * 0.005;
+      previousMouse.x = touch.clientX;
+      previousMouse.y = touch.clientY;
+    }
+  }, { passive: true });
+  
+  renderer.domElement.addEventListener('touchend', () => {
+    isDragging = false;
+    setTimeout(() => { autoRotate = true; }, 2000);
+  }, { passive: true });
+}
+
+function updateFacetInfo(index) {
+  const info = document.getElementById('facet-info');
+  const nameEl = document.getElementById('facet-name');
+  const descEl = document.getElementById('facet-desc');
+  
+  if (index !== null && facetData[index]) {
+    info.style.display = 'block';
+    nameEl.textContent = facetData[index].icon + ' ' + facetData[index].name;
+    descEl.textContent = 'ضلع ' + (index + 1) + ' من 6 | اضغط للدخول';
+  } else {
+    info.style.display = 'none';
+  }
+}
+
+// ===== الدخول والخروج =====
+function enterWorld(worldId) {
+  if (isTransitioning) return;
+  
+  const target = getWorld(worldId);
+  if (!target) { showToast('❌ العالم غير موجود', 'error'); return; }
+
+  isTransitioning = true;
+  document.getElementById('transition-screen').style.display = 'flex';
+
+  setTimeout(() => {
+    buildWorld(worldId);
+    
+    if (!visitedWorlds.has(worldId)) {
+      visitedWorlds.add(worldId);
+      score += 30;
+      showToast('🏆 اكتشاف عالم جديد! +30', 'success');
+    }
+    
+    document.getElementById('transition-screen').style.display = 'none';
+    isTransitioning = false;
+    showMessage('✅ دخلت: ' + target.name);
+    updateHUD();
+  }, 700);
+}
+
+function exitWorld() {
+  if (isTransitioning || currentWorldId === 'main') return;
+
+  isTransitioning = true;
+  document.getElementById('transition-screen').style.display = 'flex';
+
+  setTimeout(() => {
+    buildWorld('main');
+    camera.position.set(0, 0, 10);
+    camera.lookAt(0, 0, 0);
+    document.getElementById('transition-screen').style.display = 'none';
+    isTransitioning = false;
+    showMessage('✅ عدت للخريطة الرئيسية');
+    updateHUD();
+  }, 600);
+}
+
+// ===== الشفاء =====
+function healPlayer() {
+  if (playerHealth >= maxHealth) {
+    showToast('❤️ صحتك كاملة!', 'info');
+    return;
+  }
+  playerHealth = Math.min(maxHealth, playerHealth + 30);
+  showMessage('💚 تم الشفاء +30');
+  updateHUD();
+}
+
+// ===== إعادة تعيين =====
+function resetGame() {
+  playerHealth = 100;
+  maxHealth = 100;
+  kills = 0;
+  score = 0;
+  level = 1;
+  gameRunning = true;
+  visitedWorlds = new Set(['main']);
+  
+  buildWorld('main');
+  if (wheelGroup) wheelGroup.visible = true;
+  camera.position.set(0, 0, 10);
+  camera.lookAt(0, 0, 0);
+  updateHUD();
+  showMessage('💪 بداية جديدة!');
+}
+
+// ===== تهيئة Three.js =====
+function initGame() {
+  const canvas = document.getElementById('canvas');
+
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x050510);
+
+  camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 100);
+  camera.position.set(0, 0, 10);
+  camera.lookAt(0, 0, 0);
+
+  renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+  renderer.setSize(innerWidth, innerHeight);
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+
+  // إضاءة
+  const ambientLight = new THREE.AmbientLight(0x4466ff, 0.6);
+  scene.add(ambientLight);
+
+  const dirLight = new THREE.DirectionalLight(0xfff0dd, 1.2);
+  dirLight.position.set(5, 10, 8);
+  scene.add(dirLight);
+
+  const dirLight2 = new THREE.DirectionalLight(0x8888ff, 0.6);
+  dirLight2.position.set(-5, 5, -8);
+  scene.add(dirLight2);
+
+  // بناء العوالم
+  createDefaultWorlds();
+  buildWorld('main');
+
+  // بناء العجلة
+  buildWheel();
+  setupInteraction();
+
+  // إضافة شاشة انتقال
+  const ts = document.createElement('div');
+  ts.id = 'transition-screen';
+  ts.style.cssText = 'position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.92);display:none;justify-content:center;align-items:center;flex-direction:column;';
+  ts.innerHTML = '<div class="spinner" style="width:50px;height:50px;border:3px solid rgba(255,215,0,0.1);border-top-color:#ffd700;border-radius:50%;animation:spin 0.8s linear infinite;"></div><div id="transition-text" style="margin-top:18px;color:#ffd700;font-size:16px;">جاري الانتقال...</div>';
+  document.body.appendChild(ts);
+
+  // إضافة toast container
+  const tc = document.createElement('div');
+  tc.id = 'toast-container';
+  tc.style.cssText = 'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;';
+  document.body.appendChild(tc);
+
+  updateHUD();
+  showMessage('🌀 اسحب لتدوير العجلة · انقر على أيقونة للدخول');
+
+  // ===== حلقة اللعب =====
+  function loop() {
+    requestAnimationFrame(loop);
+
+    if (autoRotate && wheelGroup && currentWorldId === 'main') {
+      wheelGroup.rotation.y += 0.005;
+    }
+
+    renderer.render(scene, camera);
+  }
+  loop();
+}
+
+function startGame() {
+  document.getElementById('start-screen').style.display = 'none';
+  document.getElementById('hud').style.display = 'flex';
+  document.getElementById('health-bar-container').style.display = 'block';
+  document.getElementById('controls').style.display = 'flex';
+  document.getElementById('game-message').style.display = 'block';
+
+  initGame();
+}
+
+// ===== التحكم =====
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'h' || e.key === 'H') healPlayer();
+  if (e.key === 'Escape') exitWorld();
+});
+
+window.addEventListener('resize', () => {
+  if (camera) {
+    camera.aspect = innerWidth / innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(innerWidth, innerHeight);
+  }
+});
+
+// إضافة style للـ toast
+const style = document.createElement('style');
+style.textContent = `
+.toast {
+  background:rgba(0,0,0,0.92); color:#fff; padding:8px 18px;
+  border-radius:16px; font-size:12px; border:1px solid rgba(255,255,255,0.08);
+  animation: toastIn 0.3s;
+}
+.toast.success { border-color:#4ade80; color:#4ade80; }
+.toast.error { border-color:#f87171; color:#f87171; }
+.toast.info { border-color:#60a5fa; color:#60a5fa; }
+@keyframes toastIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes spin { to { transform:rotate(360deg); } }
+`;
+document.head.appendChild(style);
+
+console.log('🌀 عجلة العوالم - 6 أضلاع');
+console.log('📌 كل ضلع = عالم بأيقونة');
+console.log('🖱️ اسحب لتدوير العجلة');
+console.log('🔘 انقر على الضلع للدخول');
+</script>
+</body>
+</html>
+
