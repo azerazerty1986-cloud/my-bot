@@ -1,1 +1,1505 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🌐 العوالم الكروية</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════
+   🌐 العوالم الكروية v78.0 — واجهة نظيفة
+   ═══════════════════════════════════════════════ */
 
+* { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; }
+body { 
+  font-family:'Cairo',sans-serif; 
+  background:#050510; 
+  color:#fff;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+canvas { display:block; width:100%; height:100%; }
+
+/* ─── Start Screen ─── */
+#start-screen {
+  position:fixed; inset:0; z-index:2000;
+  background:linear-gradient(135deg,#0a0a2a 0%,#000 50%,#0a0a1a 100%);
+  display:flex; flex-direction:column; justify-content:center; align-items:center; gap:24px;
+}
+.start-logo { 
+  font-size:52px; font-weight:900; 
+  background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: float 3s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
+}
+@keyframes glow {
+  from { filter: drop-shadow(0 0 20px rgba(255,215,0,0.3)); }
+  to { filter: drop-shadow(0 0 40px rgba(255,215,0,0.6)); }
+}
+.start-subtitle { font-size:15px; color:#888; text-align:center; max-width:420px; line-height:2; }
+.start-subtitle span { color:#ffd700; font-weight:700; background:rgba(255,215,0,0.08); padding:2px 12px; border-radius:20px; }
+.start-btn {
+  border:2px solid #00f2ff; color:#00f2ff; padding:16px 56px;
+  background:rgba(0,242,255,0.08); border-radius:60px; font-size:20px;
+  cursor:pointer; transition:all .3s; font-weight:700; font-family:inherit;
+}
+.start-btn:hover { transform:scale(1.05); background:#00f2ff; color:#000; box-shadow:0 0 40px rgba(0,242,255,0.3); }
+.start-btn-secondary {
+  border-color:rgba(255,255,255,0.15); color:#888; background:transparent;
+  padding:10px 30px; font-size:14px;
+}
+.start-btn-secondary:hover { border-color:rgba(255,255,255,0.3); color:#fff; background:rgba(255,255,255,0.05); transform:scale(1.05); box-shadow:none; }
+.version-tag { position:absolute; bottom:20px; font-size:11px; color:#555; }
+
+/* ─── Top Bar ─── */
+#top-bar {
+  position:fixed; top:12px; right:12px;
+  z-index:101; display:none; gap:8px; align-items:center;
+}
+.top-btn {
+  width:38px; height:38px; border-radius:50%;
+  background:rgba(0,0,0,0.7); border:1px solid rgba(255,255,255,0.08);
+  color:#fff; font-size:17px; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  transition:all 0.3s; backdrop-filter:blur(10px);
+}
+.top-btn:hover { background:rgba(255,215,0,0.15); border-color:rgba(255,215,0,0.3); color:#ffd700; transform:scale(1.08); }
+.top-btn:active { transform:scale(0.95); }
+
+/* ─── Score Display (في الواجهة الرئيسية) ─── */
+#score-display-main {
+  position:fixed; top:14px; right:60px;
+  z-index:101; display:none;
+  background:rgba(0,0,0,0.7); border:1px solid rgba(255,215,0,0.15);
+  border-radius:30px; padding:6px 16px;
+  font-size:14px; font-weight:700; color:#ffd700;
+  backdrop-filter:blur(10px);
+  align-items:center; gap:6px;
+}
+#score-display-main .icon { font-size:16px; }
+
+/* ─── HUD (يظهر فقط في المعالم) ─── */
+#hud {
+  position:fixed; top:12px; left:50%; transform:translateX(-50%);
+  background:rgba(0,0,0,0.85); padding:6px 16px; border-radius:14px;
+  z-index:100; display:none; gap:12px; font-size:11px;
+  border:1px solid rgba(255,255,255,0.06);
+  flex-wrap:wrap; justify-content:center;
+  backdrop-filter:blur(10px);
+}
+#hud .stat { text-align:center; min-width:40px; }
+#hud .stat .val { font-weight:bold; font-size:13px; }
+#hud .stat .health { color:#4ade80; }
+#hud .stat .kills { color:#ffd700; }
+#hud .stat .label { font-size:8px; color:#666; display:block; margin-top:1px; }
+#hud .stat .xp-bar { width:35px; height:2px; background:rgba(255,255,255,0.1); border-radius:2px; margin:2px auto 0; overflow:hidden; }
+#hud .stat .xp-fill { height:100%; background:linear-gradient(90deg,#8b5cf6,#a78bfa); border-radius:2px; transition:width 0.3s; }
+
+/* ─── Health Bar ─── */
+#health-bar-container {
+  position:fixed; bottom:110px; left:50%; transform:translateX(-50%);
+  width:200px; height:6px; background:rgba(255,255,255,0.05);
+  border-radius:4px; z-index:100; overflow:hidden; display:none;
+  border:1px solid rgba(255,255,255,0.05);
+}
+#health-bar {
+  height:100%; width:100%; background:linear-gradient(90deg,#4ade80,#22d3ee);
+  border-radius:4px; transition:width 0.3s, background 0.3s;
+}
+#health-bar.low { background:linear-gradient(90deg,#f87171,#ef4444); }
+#health-bar.mid { background:linear-gradient(90deg,#fbbf24,#f59e0b); }
+
+/* ─── Game Message ─── */
+#game-message {
+  position:fixed; bottom:130px; left:50%; transform:translateX(-50%);
+  color:#ffd700; font-size:14px; font-weight:bold; z-index:100;
+  opacity:0; transition:opacity 0.5s, transform 0.5s;
+  pointer-events:none; white-space:nowrap;
+  background:rgba(0,0,0,0.6); padding:6px 18px; border-radius:30px;
+  backdrop-filter:blur(8px);
+}
+#game-message.show { opacity:1; transform:translateX(-50%) translateY(-4px); }
+
+/* ─── D-Pad (يظهر فقط في المعالم) ─── */
+.dpad {
+  position:fixed; bottom:70px; left:20px;
+  width:130px; height:130px; z-index:200; display:none;
+}
+.dpad-btn {
+  position:absolute; width:44px; height:44px; border-radius:50%;
+  background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.06);
+  display:flex; align-items:center; justify-content:center;
+  color:rgba(255,255,255,0.3); cursor:pointer; transition:all 0.2s;
+  backdrop-filter:blur(8px);
+}
+.dpad-btn:hover { background:rgba(139,92,246,0.15); border-color:rgba(139,92,246,0.2); color:rgba(255,255,255,0.6); transform:scale(1.05); }
+.dpad-btn:active, .dpad-btn.active { background:rgba(139,92,246,0.35); border-color:rgba(139,92,246,0.5); color:#c4b5fd; transform:scale(0.88); }
+.dpad-btn svg { width:16px; height:16px; }
+.dpad-up { top:0; left:43px; }
+.dpad-down { bottom:0; left:43px; }
+.dpad-left { top:43px; left:0; }
+.dpad-right { top:43px; right:0; }
+.dpad-center {
+  position:absolute; top:43px; left:43px;
+  width:44px; height:44px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; pointer-events:none;
+}
+.dpad-center-dot { width:8px; height:8px; border-radius:50%; background:rgba(139,92,246,0.3); border:1px solid rgba(139,92,246,0.2); animation:dotPulse 2s ease-in-out infinite; }
+@keyframes dotPulse { 0%,100% { transform:scale(1); opacity:0.4; } 50% { transform:scale(0.7); opacity:0.9; } }
+
+/* ─── Speed Button ─── */
+.dpad-speed {
+  position:absolute; bottom:-8px; right:-8px;
+  width:44px; height:44px; border-radius:50%;
+  cursor:pointer; z-index:3; transition:all 0.3s;
+}
+.dpad-speed svg { width:100%; height:100%; }
+.dpad-speed:hover { transform:scale(1.1); }
+.dpad-speed:active { transform:scale(0.92); }
+.dpad-speed.active .speed-ring { stroke:#ffd700; filter:drop-shadow(0 0 10px rgba(255,215,0,0.3)); }
+
+/* ─── Fire Button ─── */
+#fire-btn {
+  position:fixed; bottom:75px; right:20px;
+  width:56px; height:56px; border-radius:50%;
+  background:rgba(255,68,68,0.12); border:2px solid rgba(255,68,68,0.3);
+  color:#ff4444; font-size:22px; cursor:pointer; z-index:200;
+  display:none; align-items:center; justify-content:center;
+  transition:all 0.15s; backdrop-filter:blur(6px);
+}
+#fire-btn:active { transform:scale(0.85); background:rgba(255,68,68,0.4); box-shadow:0 0 30px rgba(255,68,68,0.2); }
+
+/* ─── Enter/Exit Buttons ─── */
+.world-action-btn {
+  position:fixed; bottom:125px; left:50%; transform:translateX(-50%);
+  padding:8px 24px; border-radius:12px; border:none; font-size:13px;
+  font-family:inherit; cursor:pointer; z-index:150; display:none;
+  font-weight:700; transition:all 0.3s; backdrop-filter:blur(10px);
+}
+.world-action-btn.enter { background:rgba(0,242,255,0.12); color:#fff; border:1px solid rgba(0,242,255,0.25); }
+.world-action-btn.enter:hover { background:rgba(0,242,255,0.25); transform:translateX(-50%) scale(1.04); }
+.world-action-btn.exit { background:rgba(248,113,113,0.12); color:#fff; border:1px solid rgba(248,113,113,0.25); }
+.world-action-btn.exit:hover { background:rgba(248,113,113,0.25); transform:translateX(-50%) scale(1.04); }
+
+/* ─── Profile Panel ─── */
+#profile-panel {
+  position:fixed; top:55px; right:12px;
+  background:rgba(0,0,0,0.92); border:1px solid rgba(255,215,0,0.15);
+  border-radius:14px; padding:16px; z-index:102; display:none;
+  min-width:200px; backdrop-filter:blur(10px); box-shadow:0 8px 40px rgba(0,0,0,0.5);
+}
+.profile-header { display:flex; align-items:center; gap:12px; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.06); }
+.profile-avatar { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,#8b5cf6,#6d28d9); display:flex; align-items:center; justify-content:center; font-size:22px; border:2px solid rgba(255,215,0,0.2); flex-shrink:0; }
+.profile-name { font-size:15px; font-weight:700; color:#fff; }
+.profile-name .edit-icon { font-size:11px; color:#888; cursor:pointer; margin-right:4px; }
+.profile-name .edit-icon:hover { color:#ffd700; }
+.profile-stats { display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; }
+.profile-stat { display:flex; align-items:center; gap:4px; font-size:12px; color:#ccc; padding:3px 0; }
+.profile-stat .stat-icon { font-size:14px; }
+.profile-stat .stat-value { font-weight:700; color:#fff; }
+.profile-stat .stat-value.gold { color:#ffd700; }
+.profile-stat .stat-value.level { color:#60a5fa; }
+.profile-stat .stat-value.score { color:#a78bfa; }
+.profile-stat .stat-value.worlds { color:#4ade80; }
+.profile-stat .stat-value.landmarks { color:#fbbf24; }
+.profile-actions { display:flex; gap:6px; margin-top:10px; padding-top:10px; border-top:1px solid rgba(255,255,255,0.06); }
+.profile-actions button { flex:1; padding:4px 0; border:1px solid rgba(255,255,255,0.08); border-radius:6px; background:rgba(255,255,255,0.04); color:#aaa; font-size:10px; cursor:pointer; font-family:inherit; transition:all 0.3s; }
+.profile-actions button:hover { background:rgba(255,255,255,0.08); color:#fff; }
+
+/* ─── Settings Panel ─── */
+#settings-panel {
+  position:fixed; top:55px; right:12px;
+  background:rgba(0,0,0,0.92); border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px; padding:12px; z-index:102; display:none;
+  min-width:160px; backdrop-filter:blur(10px);
+}
+.setting-row { display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-bottom:1px solid rgba(255,255,255,0.04); font-size:11px; }
+.setting-row:last-child { border-bottom:none; }
+.setting-row label { color:#aaa; }
+.setting-row input[type="range"] { width:70px; height:4px; -webkit-appearance:none; background:rgba(255,255,255,0.1); border-radius:2px; outline:none; }
+.setting-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:12px; height:12px; border-radius:50%; background:#8b5cf6; cursor:pointer; }
+.setting-row button { background:rgba(139,92,246,0.15); border:1px solid rgba(139,92,246,0.2); color:#fff; padding:3px 10px; border-radius:5px; font-size:10px; cursor:pointer; font-family:inherit; }
+.setting-row button:hover { background:rgba(139,92,246,0.3); }
+
+/* ─── Name Edit Modal ─── */
+#name-edit-modal {
+  position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.85);
+  display:none; justify-content:center; align-items:center; backdrop-filter:blur(10px);
+}
+.name-modal-box { background:rgba(10,10,30,0.95); border:1px solid rgba(255,215,0,0.15); border-radius:14px; padding:24px; max-width:340px; width:90%; }
+.name-modal-box h3 { color:#ffd700; text-align:center; margin-bottom:16px; font-size:18px; }
+.name-modal-box input { width:100%; padding:10px 14px; border-radius:10px; border:1px solid rgba(255,215,0,0.1); background:rgba(255,255,255,0.04); color:#fff; font-size:16px; font-family:inherit; text-align:center; }
+.name-modal-box input:focus { outline:none; border-color:rgba(255,215,0,0.3); }
+.name-modal-actions { display:flex; gap:10px; margin-top:16px; }
+.name-modal-actions button { flex:1; padding:10px; border:none; border-radius:10px; font-weight:700; font-size:14px; cursor:pointer; font-family:inherit; }
+.btn-save { background:linear-gradient(135deg,#ffd700,#f59e0b); color:#111; }
+.btn-cancel { background:rgba(255,255,255,0.06); color:#888; }
+
+/* ─── Toast ─── */
+#toast-container {
+  position:fixed; bottom:100px; left:50%; transform:translateX(-50%);
+  z-index:1000; display:flex; flex-direction:column; gap:4px; align-items:center; pointer-events:none;
+}
+.toast {
+  background:rgba(0,0,0,0.92); color:#fff; padding:6px 16px;
+  border-radius:14px; font-size:11px; border:1px solid rgba(255,255,255,0.06);
+  animation:toastIn 0.3s ease; backdrop-filter:blur(10px); font-weight:600;
+  max-width:260px; text-align:center;
+}
+.toast.success { border-color:#4ade80; color:#4ade80; }
+.toast.error { border-color:#f87171; color:#f87171; }
+.toast.info { border-color:#60a5fa; color:#60a5fa; }
+.toast.warn { border-color:#fbbf24; color:#fbbf24; }
+@keyframes toastIn { from { opacity:0; transform:translateY(10px) scale(0.9); } to { opacity:1; transform:translateY(0) scale(1); } }
+
+/* ─── Transition ─── */
+#transition-screen {
+  position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,0.92); display:none;
+  justify-content:center; align-items:center; flex-direction:column; gap:16px;
+  backdrop-filter:blur(10px);
+}
+.transition-spinner { width:40px; height:40px; border:3px solid rgba(255,215,0,0.1); border-top-color:#ffd700; border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+#transition-text { color:#ffd700; font-size:14px; font-weight:600; }
+
+/* ─── Game Over ─── */
+#game-over {
+  position:fixed; inset:0; z-index:500;
+  background:rgba(0,0,0,0.95); display:none;
+  justify-content:center; align-items:center; flex-direction:column; gap:16px;
+  backdrop-filter:blur(15px); padding:20px;
+}
+#game-over h1 { font-size:36px; background:linear-gradient(135deg,#ef4444,#ff8c00); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; font-weight:900; }
+.game-over-stats { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; max-width:300px; width:100%; }
+.game-over-stat { background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:10px 14px; text-align:center; }
+.game-over-stat .stat-label { font-size:10px; color:#666; font-weight:600; text-transform:uppercase; }
+.game-over-stat .stat-value { font-size:18px; font-weight:800; color:#ffd700; margin-top:2px; }
+#game-over > button { padding:12px 40px; border-radius:30px; border:none; background:linear-gradient(135deg,#ffd700,#ff8c00); color:#111; font-size:16px; font-weight:800; cursor:pointer; font-family:inherit; transition:all 0.3s; box-shadow:0 4px 25px rgba(255,215,0,0.25); }
+#game-over > button:hover { transform:scale(1.05); box-shadow:0 6px 35px rgba(255,215,0,0.35); }
+
+/* ─── COD ─── */
+#cod-iframe { position:fixed; inset:0; z-index:3000; width:100%; height:100%; display:none; border:none; background:#000; }
+#close-cod-btn { position:fixed; top:16px; right:16px; z-index:3001; padding:10px 22px; background:rgba(239,68,68,0.9); color:#fff; border:none; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; display:none; font-family:inherit; box-shadow:0 4px 20px rgba(239,68,68,0.3); transition:all 0.3s; }
+#close-cod-btn:hover { transform:scale(1.05); background:rgba(239,68,68,1); }
+
+/* ─── Minimap ─── */
+#minimap-frame {
+  position:fixed; top:55px; left:12px;
+  width:90px; height:90px;
+  border:1px solid rgba(255,215,0,0.15); border-radius:8px;
+  overflow:hidden; background:rgba(5,5,16,0.85);
+  z-index:90; display:none; backdrop-filter:blur(6px);
+}
+
+/* ─── COD Modal ─── */
+#cod-modal {
+  position:fixed; inset:0; z-index:500; background:rgba(0,0,0,0.85);
+  display:none; justify-content:center; align-items:center; backdrop-filter:blur(10px);
+}
+.cod-modal-box { background:rgba(10,10,30,0.95); border:2px solid rgba(0,255,136,0.15); border-radius:16px; padding:24px; max-width:420px; width:90%; }
+.cod-modal-box h2 { color:#00ff88; text-align:center; margin-bottom:16px; font-size:18px; }
+.cod-modal-box label { color:#888; display:block; font-size:11px; margin-bottom:4px; font-weight:600; }
+.cod-modal-box input { width:100%; padding:8px 12px; border-radius:8px; border:1px solid rgba(0,255,136,0.1); background:rgba(255,255,255,0.03); color:#fff; font-size:13px; font-family:inherit; margin-bottom:12px; }
+.cod-modal-box input:focus { outline:none; border-color:rgba(0,255,136,0.3); }
+.cod-row-inputs { display:flex; gap:10px; }
+.cod-row-inputs > div { flex:1; }
+.cod-modal-actions { display:flex; gap:10px; margin-top:16px; }
+.cod-modal-actions button { flex:1; padding:10px; border:none; border-radius:8px; font-weight:700; font-size:14px; cursor:pointer; font-family:inherit; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     START SCREEN
+     ═══════════════════════════════════════════════ -->
+<div id="start-screen">
+  <div class="start-logo">🌐 العوالم الكروية</div>
+  <div class="start-subtitle">
+    <span>🏆 بيئة كروية بأضلاع متعددة</span><br>
+    كل ضلع = عالم · قتال · مهام · إنجازات
+  </div>
+  <button class="start-btn" onclick="Game.start()">🚀 ابدأ المغامرة</button>
+  <div style="display:flex;gap:10px;margin-top:4px;">
+    <button class="start-btn start-btn-secondary" onclick="Game.load()">📂 تحميل</button>
+    <button class="start-btn start-btn-secondary" onclick="UI.showTutorial()">❓ دليل</button>
+  </div>
+  <div class="version-tag">v78.0 | العوالم الكروية</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     TOP BAR (Profile + Settings)
+     ═══════════════════════════════════════════════ -->
+<div id="top-bar">
+  <button class="top-btn" id="profile-btn" onclick="Profile.toggle()">👤</button>
+  <button class="top-btn" id="settings-btn" onclick="UI.toggleSettings()">⚙️</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     SCORE DISPLAY (يظهر في الواجهة الرئيسية فقط)
+     ═══════════════════════════════════════════════ -->
+<div id="score-display-main">
+  <span class="icon">🏆</span>
+  <span id="main-score">0</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     HUD (يظهر فقط في المعالم)
+     ═══════════════════════════════════════════════ -->
+<div id="hud">
+  <div class="stat"><span class="val health" id="health-display">100</span><span class="label">❤️ صحة</span></div>
+  <div class="stat"><span class="val kills" id="kills-display">0</span><span class="label">💀 قتلى</span></div>
+  <div class="stat"><span class="val" id="score-display" style="color:#ffd700;">0</span><span class="label">🏆 نقاط</span></div>
+  <div class="stat">
+    <span class="val" id="level-display" style="color:#60a5fa;">1</span>
+    <span class="label">⭐ مستوى</span>
+    <div class="xp-bar"><div class="xp-fill" id="xp-bar-fill" style="width:0%"></div></div>
+  </div>
+  <div class="stat"><span class="val" id="world-count" style="color:#a78bfa;">1</span><span class="label">🌍 عوالم</span></div>
+  <div class="stat"><span class="val" id="landmark-count" style="color:#fbbf24;">0</span><span class="label">📍 معالم</span></div>
+  <div class="stat"><span class="val" id="coins-display" style="color:#fbbf24;">0</span><span class="label">🪙 ذهب</span></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     HEALTH BAR
+     ═══════════════════════════════════════════════ -->
+<div id="health-bar-container"><div id="health-bar"></div></div>
+
+<!-- ═══════════════════════════════════════════════
+     GAME MESSAGE
+     ═══════════════════════════════════════════════ -->
+<div id="game-message">🌐 استكشف الأضلاع وانقر للدخول!</div>
+
+<!-- ═══════════════════════════════════════════════
+     D-PAD (يظهر فقط في المعالم)
+     ═══════════════════════════════════════════════ -->
+<div class="dpad" id="dpad">
+  <div class="dpad-speed" id="dpad-speed" onclick="Speed.toggle()">
+    <svg width="40" height="40" viewBox="0 0 40 40">
+      <circle cx="20" cy="20" r="18" fill="none" stroke="rgba(255,215,0,0.12)" stroke-width="1.5"/>
+      <circle class="speed-ring" cx="20" cy="20" r="18" fill="none" stroke="#ffd700" stroke-width="1.5" stroke-dasharray="113" stroke-dashoffset="113" id="speed-ring"/>
+      <text x="20" y="16" text-anchor="middle" fill="#ffd700" font-size="14" font-weight="900">⚡</text>
+      <text x="20" y="28" text-anchor="middle" fill="rgba(255,215,0,0.6)" font-size="8" font-weight="700" id="speed-label">1x</text>
+    </svg>
+  </div>
+  <button class="dpad-btn dpad-up" data-dir="up"><svg width="16" height="16" viewBox="0 0 20 20"><polygon points="10,2 18,16 2,16" fill="currentColor"/></svg></button>
+  <button class="dpad-btn dpad-down" data-dir="down"><svg width="16" height="16" viewBox="0 0 20 20"><polygon points="2,4 18,4 10,18" fill="currentColor"/></svg></button>
+  <button class="dpad-btn dpad-left" data-dir="left"><svg width="16" height="16" viewBox="0 0 20 20"><polygon points="2,10 16,2 16,18" fill="currentColor"/></svg></button>
+  <button class="dpad-btn dpad-right" data-dir="right"><svg width="16" height="16" viewBox="0 0 20 20"><polygon points="18,10 4,2 4,18" fill="currentColor"/></svg></button>
+  <div class="dpad-center"><div class="dpad-center-dot"></div></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     FIRE BUTTON
+     ═══════════════════════════════════════════════ -->
+<button id="fire-btn" onclick="Combat.fire()">🔫</button>
+
+<!-- ═══════════════════════════════════════════════
+     WORLD ACTION BUTTONS
+     ═══════════════════════════════════════════════ -->
+<button class="world-action-btn enter" id="enter-btn" onclick="World.enter()">🌐 دخول</button>
+<button class="world-action-btn exit" id="exit-btn" onclick="World.exit()">🚪 خروج</button>
+
+<!-- ═══════════════════════════════════════════════
+     TOASTS & TRANSITIONS
+     ═══════════════════════════════════════════════ -->
+<div id="toast-container"></div>
+<div id="transition-screen"><div class="transition-spinner"></div><div id="transition-text">جاري الانتقال...</div></div>
+
+<!-- ═══════════════════════════════════════════════
+     PANELS
+     ═══════════════════════════════════════════════ -->
+<div id="profile-panel">
+  <div class="profile-header">
+    <div class="profile-avatar" id="profile-avatar">🧙</div>
+    <div>
+      <div class="profile-name" id="profile-name-display">مغامر</div>
+      <div style="font-size:10px;color:#666;">🆔 #001</div>
+    </div>
+  </div>
+  <div class="profile-stats">
+    <div class="profile-stat"><span class="stat-icon">⭐</span><span class="stat-value level" id="profile-level">1</span></div>
+    <div class="profile-stat"><span class="stat-icon">🏆</span><span class="stat-value score" id="profile-score">0</span></div>
+    <div class="profile-stat"><span class="stat-icon">💎</span><span class="stat-value gold" id="profile-coins">0</span></div>
+    <div class="profile-stat"><span class="stat-icon">🌍</span><span class="stat-value worlds" id="profile-worlds">1</span></div>
+    <div class="profile-stat" style="grid-column:span 2;"><span class="stat-icon">📍</span><span class="stat-value landmarks" id="profile-landmarks">0</span></div>
+  </div>
+  <div class="profile-actions">
+    <button onclick="Profile.openEdit()">✏️ الاسم</button>
+    <button onclick="document.getElementById('avatar-input').click()">📸 صورة</button>
+  </div>
+  <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="Profile.changeAvatar(event)">
+</div>
+
+<div id="settings-panel">
+  <div class="setting-row"><label>🔊 الصوت</label><input type="range" id="volume-slider" min="0" max="100" value="50" onchange="Audio.setVolume(this.value)"></div>
+  <div class="setting-row"><label>📍 الخريطة</label><button onclick="UI.toggleMinimap()">تبديل</button></div>
+  <div class="setting-row"><label>🌙 الليلي</label><button onclick="UI.toggleNightMode()">تبديل</button></div>
+  <div class="setting-row"><label>💾 حفظ</label><button onclick="Game.save()">حفظ</button></div>
+  <div class="setting-row"><label>📂 تحميل</label><button onclick="Game.load()">تحميل</button></div>
+</div>
+
+<div id="name-edit-modal">
+  <div class="name-modal-box">
+    <h3>✏️ تعديل الاسم</h3>
+    <input type="text" id="name-input" placeholder="أدخل اسمك..." maxlength="20">
+    <div class="name-modal-actions">
+      <button class="btn-save" onclick="Profile.saveName()">✅ حفظ</button>
+      <button class="btn-cancel" onclick="UI.closeModal('name-edit-modal')">✖ إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     MINIMAP
+     ═══════════════════════════════════════════════ -->
+<div id="minimap-frame"></div>
+
+<!-- ═══════════════════════════════════════════════
+     COD
+     ═══════════════════════════════════════════════ -->
+<iframe id="cod-iframe"></iframe>
+<button id="close-cod-btn" onclick="COD.close()">✖ إغلاق اللعبة</button>
+<div id="cod-modal">
+  <div class="cod-modal-box">
+    <h2>🎮 إضافة بوابة لعبة</h2>
+    <label>📁 اسم ملف اللعبة</label><input type="text" id="cod-filename" value="cod.html">
+    <div class="cod-row-inputs">
+      <div><label>📍 الصف</label><input type="number" id="cod-row" value="3" min="0" max="11"></div>
+      <div><label>📍 العمود</label><input type="number" id="cod-col" value="3" min="0" max="11"></div>
+    </div>
+    <label>🏷️ اسم البوابة</label><input type="text" id="cod-portal-name" value="🎮 لعبة أخرى">
+    <div class="cod-modal-actions"><button class="btn-save" onclick="COD.add()">✅ إضافة</button><button class="btn-cancel" onclick="UI.closeModal('cod-modal')">✖ إلغاء</button></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     GAME OVER
+     ═══════════════════════════════════════════════ -->
+<div id="game-over">
+  <h1>💀 انتهت اللعبة</h1>
+  <div class="game-over-stats">
+    <div class="game-over-stat"><div class="stat-label">💀 قتلى</div><div class="stat-value" id="final-kills">0</div></div>
+    <div class="game-over-stat"><div class="stat-label">🏆 نقاط</div><div class="stat-value" id="final-score">0</div></div>
+    <div class="game-over-stat"><div class="stat-label">🪙 ذهب</div><div class="stat-value" id="final-coins">0</div></div>
+    <div class="game-over-stat"><div class="stat-label">⭐ مستوى</div><div class="stat-value" id="final-level">1</div></div>
+    <div class="game-over-stat"><div class="stat-label">🌍 عوالم</div><div class="stat-value" id="final-worlds">1</div></div>
+    <div class="game-over-stat"><div class="stat-label">📍 معالم</div><div class="stat-value" id="final-landmarks">0</div></div>
+  </div>
+  <button onclick="Game.restart()">🔄 العب مجدداً</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     CANVAS
+     ═══════════════════════════════════════════════ -->
+<canvas id="canvas"></canvas>
+
+<script>
+// ═══════════════════════════════════════════════════
+// 🌐 العوالم الكروية v78.0 — واجهة نظيفة
+// ═══════════════════════════════════════════════════
+
+'use strict';
+
+// ─── CONFIG ───
+const CONFIG = {
+  GRID: 12, TILE_SIZE: 3, PLAYER_SPEED: 0.12, BULLET_SPEED: 0.6,
+  XP_PER_LEVEL: 50, SPIN_COMBO_TIMEOUT: 2000, SPIN_SPEED_THRESHOLD: 0.12,
+  SPIN_MIN_ANGLE: Math.PI * 0.7, SPEED_LEVELS: [1, 1.5, 2, 3],
+  WORLD_ICONS: [
+    { name:'⚔️ القتال', emoji:'⚔️', color:'#ef4444' },
+    { name:'🌐 360', emoji:'🌐', color:'#00f2ff' },
+    { name:'🖼️ المعرض', emoji:'🖼️', color:'#a78bfa' },
+    { name:'🌲 الغابة', emoji:'🌲', color:'#4ade80' },
+    { name:'🏰 القلعة', emoji:'🏰', color:'#fbbf24' },
+    { name:'🌊 المحيط', emoji:'🌊', color:'#60a5fa' },
+    { name:'🔥 النار', emoji:'🔥', color:'#f97316' },
+    { name:'❄️ الجليد', emoji:'❄️', color:'#22d3ee' },
+    { name:'🌈 قوس قزح', emoji:'🌈', color:'#f472b6' },
+    { name:'⭐ النجوم', emoji:'⭐', color:'#ffd700' },
+    { name:'🌙 القمر', emoji:'🌙', color:'#c084fc' },
+    { name:'☀️ الشمس', emoji:'☀️', color:'#facc15' },
+    { name:'🌺 الزهور', emoji:'🌺', color:'#fb7185' },
+    { name:'🍄 الفطر', emoji:'🍄', color:'#a3e635' },
+    { name:'🦋 الفراشات', emoji:'🦋', color:'#38bdf8' },
+    { name:'🐉 التنين', emoji:'🐉', color:'#ef4444' },
+    { name:'🧙 السحر', emoji:'🧙', color:'#a855f7' },
+    { name:'🏹 الصيد', emoji:'🏹', color:'#d97706' },
+    { name:'⚡ البرق', emoji:'⚡', color:'#fde047' },
+    { name:'💎 الماس', emoji:'💎', color:'#22d3ee' }
+  ]
+};
+
+// ─── STATE ───
+const State = {
+  scene:null, camera:null, renderer:null,
+  playerGroup:null, tileGroup:null, sphereGroup:null,
+  iconSprites:[], tileMeshes:[], gridHelper:null,
+  videoMesh:null, videoTexture:null, videoElement:null,
+  particles:[], enemies:[], bullets:[], landmarks:[], worlds:[],
+  isTransitioning:false, isInWorld:false, currentWorldId:'main',
+  savedPlayerPos:null, gameRunning:true, gridVisible:true,
+  nightMode:false, isCODGameOpen:false,
+  playerHealth:100, maxHealth:100, kills:0, score:0, level:1,
+  xp:0, coins:0, healCount:0, visitedWorlds:new Set(['main']),
+  spinCount:0, spinCombo:1, spinPoints:0, lastSpinTime:0,
+  sphereRotationHistory:[], isSwipeSpinning:false,
+  isDraggingSphere:false, isTouchingSphere:false,
+  previousMousePosition:{x:0,y:0},
+  touchStartX:0, touchStartY:0, touchLastX:0, touchLastY:0,
+  touchLastTime:0, touchVelocityX:0, touchVelocityY:0,
+  touchDirs:{up:false,down:false,left:false,right:false},
+  speedMultiplier:1, speedIndex:0,
+  enemySpawnTimer:0, lastFireTime:0,
+  lon:0, lat:0, isVideoPlaying:true, isVideoMuted:false,
+  playerName:'مغامر', playerAvatar:'🧙', selectedIcon:null,
+  ambientLight:null, dirLight:null, dirLight2:null,
+  minimapCtx:null, nextLandmarkId:1, pendingFile:null,
+  floatingSprites:[], landmarkMeshes:[],
+  iconTextureCache:new Map(),
+  achievements:{
+    first_kill:{name:'أول قتل',desc:'اقتل أول عدو',unlocked:false,emoji:'💀'},
+    killer_10:{name:'قاتل محترف',desc:'اقتل 10 أعداء',unlocked:false,emoji:'⚔️'},
+    explorer:{name:'مستكشف',desc:'اكتشف 3 عوالم',unlocked:false,emoji:'🌍'},
+    master:{name:'سيد العوالم',desc:'اكتشف 5 عوالم',unlocked:false,emoji:'👑'},
+    collector:{name:'جامع المعالم',desc:'أضف 5 معالم',unlocked:false,emoji:'📍'},
+    survivor:{name:'الناجي',desc:'وصل للمستوى 5',unlocked:false,emoji:'🛡️'},
+    rich:{name:'ثراء',desc:'اجمع 100 ذهب',unlocked:false,emoji:'🪙'},
+    healer:{name:'معالج',desc:'استخدم الشفاء 5 مرات',unlocked:false,emoji:'💚'},
+    spinner:{name:'الدوّام',desc:'أكمل 10 دورات سريعة',unlocked:false,emoji:'🌪️'},
+    spin_master:{name:'سيد الدوران',desc:'أكمل 50 دورة سريعة',unlocked:false,emoji:'🌀'}
+  },
+  quests:[
+    {id:'q1',name:'قاتل مبتدئ',desc:'اقتل 3 أعداء',target:3,current:0,type:'kills',reward:20},
+    {id:'q2',name:'مستكشف',desc:'اكتشف عالمين جديدين',target:2,current:0,type:'worlds',reward:50},
+    {id:'q3',name:'باني',desc:'أضف 3 معالم',target:3,current:0,type:'landmarks',reward:30},
+    {id:'q4',name:'جامع',desc:'اجمع 50 نقطة',target:50,current:0,type:'score',reward:25},
+    {id:'q5',name:'الدوّام',desc:'أكمل 5 دورات سريعة',target:5,current:0,type:'spins',reward:40}
+  ]
+};
+
+// ─── UTILS ───
+const Utils = {
+  getWorldSize(){return CONFIG.GRID*CONFIG.TILE_SIZE;},
+  getHalf(){return this.getWorldSize()/2;},
+  getWorld(id){return State.worlds.find(w=>w.id===id);},
+  getCurrentWorld(){return this.getWorld(State.currentWorldId);},
+  getPlayerTile(){
+    const px=State.playerGroup.position.x+this.getHalf();
+    const pz=State.playerGroup.position.z+this.getHalf();
+    return{col:Math.floor(px/CONFIG.TILE_SIZE),row:Math.floor(pz/CONFIG.TILE_SIZE)};
+  },
+  clamp(v,min,max){return Math.max(min,Math.min(max,v));},
+  disposeMesh(m){if(!m)return;if(m.geometry)m.geometry.dispose();if(m.material){if(Array.isArray(m.material)){m.material.forEach(mat=>{if(mat.map)mat.map.dispose();mat.dispose();});}else{if(m.material.map)m.material.map.dispose();m.material.dispose();}}if(m.parent)m.parent.remove(m);}
+};
+
+// ─── UI ───
+const UI = {
+  showToast(msg,type='info'){
+    const c=document.getElementById('toast-container');
+    const t=document.createElement('div');
+    t.className='toast '+type;
+    t.textContent=msg;
+    c.appendChild(t);
+    setTimeout(()=>{t.style.opacity='0';t.style.transform='translateY(-10px)';setTimeout(()=>t.remove(),300);},2500);
+  },
+  showMessage(text,dur=1500){
+    const el=document.getElementById('game-message');
+    el.textContent=text;el.classList.add('show');
+    clearTimeout(el._timeout);el._timeout=setTimeout(()=>el.classList.remove('show'),dur);
+  },
+  showTransition(text){document.getElementById('transition-text').textContent=text;document.getElementById('transition-screen').style.display='flex';},
+  hideTransition(){document.getElementById('transition-screen').style.display='none';},
+  showTutorial(){document.getElementById('tutorial-panel').style.display='flex';},
+  hideTutorial(){document.getElementById('tutorial-panel').style.display='none';},
+  toggleSettings(){
+    const p=document.getElementById('settings-panel');
+    p.style.display=p.style.display==='block'?'none':'block';
+    document.getElementById('profile-panel').style.display='none';
+  },
+  toggleMinimap(){
+    const f=document.getElementById('minimap-frame');
+    f.style.display=f.style.display==='block'?'none':'block';
+    State.gridVisible=!State.gridVisible;
+    if(State.gridHelper)State.gridHelper.material.opacity=State.gridVisible?0.15:0;
+  },
+  toggleNightMode(){
+    State.nightMode=!State.nightMode;
+    const bg=Utils.getCurrentWorld()?.background||'#0a0a1a';
+    if(State.nightMode){State.scene.fog=new THREE.Fog(bg,10,30);State.ambientLight.intensity=0.2;State.dirLight.intensity=0.4;}
+    else{State.scene.fog=new THREE.Fog(bg,20,45);State.ambientLight.intensity=0.5;State.dirLight.intensity=0.85;}
+    UI.showToast(State.nightMode?'🌙 الوضع الليلي':'☀️ الوضع النهاري','info');
+  },
+  closeModal(id){document.getElementById(id).style.display='none';},
+  updateHUD(){
+    document.getElementById('health-display').textContent=Math.round(State.playerHealth);
+    document.getElementById('kills-display').textContent=State.kills;
+    document.getElementById('score-display').textContent=State.score;
+    document.getElementById('level-display').textContent=State.level;
+    document.getElementById('world-count').textContent=State.visitedWorlds.size;
+    document.getElementById('landmark-count').textContent=State.landmarks.length;
+    document.getElementById('coins-display').textContent=State.coins;
+    document.getElementById('main-score').textContent=State.score;
+    const xpPct=(State.xp/CONFIG.XP_PER_LEVEL)*100;
+    document.getElementById('xp-bar-fill').style.width=xpPct+'%';
+    const hpPct=(State.playerHealth/State.maxHealth)*100;
+    const bar=document.getElementById('health-bar');
+    bar.style.width=hpPct+'%';
+    bar.className='';if(hpPct<30)bar.classList.add('low');else if(hpPct<60)bar.classList.add('mid');
+    Profile.updatePanel();
+  },
+  showLevelUpEffect(){
+    const el=document.getElementById('level-up-effect');
+    el.querySelector('.level-up-text').textContent='⭐ المستوى '+State.level+'!';
+    el.style.display='flex';setTimeout(()=>el.style.display='none',1500);
+  },
+  showSpinEffect(points){
+    const e=document.getElementById('spin-effect');
+    document.getElementById('spin-text').textContent='🌪️ +'+points;
+    e.style.display='flex';setTimeout(()=>e.style.display='none',1000);
+  }
+};
+
+// ─── PROFILE ─── (مختصر)
+const Profile = {
+  toggle(){const p=document.getElementById('profile-panel');p.style.display=p.style.display==='block'?'none':'block';document.getElementById('settings-panel').style.display='none';},
+  updatePanel(){
+    document.getElementById('profile-name-display').textContent=State.playerName;
+    document.getElementById('profile-avatar').textContent=State.playerAvatar;
+    document.getElementById('profile-level').textContent=State.level;
+    document.getElementById('profile-score').textContent=State.score;
+    document.getElementById('profile-coins').textContent=State.coins;
+    document.getElementById('profile-worlds').textContent=State.visitedWorlds.size;
+    document.getElementById('profile-landmarks').textContent=State.landmarks.length;
+  },
+  openEdit(){document.getElementById('name-edit-modal').style.display='flex';document.getElementById('name-input').value=State.playerName;},
+  saveName(){const n=document.getElementById('name-input').value.trim()||'مغامر';State.playerName=n;localStorage.setItem('playerName',n);this.updatePanel();UI.closeModal('name-edit-modal');UI.showToast('✅ تم تغيير الاسم','success');},
+  changeAvatar(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=(ev)=>{const img=new Image();img.onload=()=>{const c=document.createElement('canvas');c.width=64;c.height=64;const x=c.getContext('2d');x.drawImage(img,0,0,64,64);State.playerAvatar=c.toDataURL();localStorage.setItem('playerAvatar',State.playerAvatar);this.updatePanel();UI.showToast('✅ تم تغيير الصورة','success');};img.src=ev.target.result;};r.readAsDataURL(f);e.target.value='';},
+  loadData(){const sn=localStorage.getItem('playerName');if(sn)State.playerName=sn;const sa=localStorage.getItem('playerAvatar');if(sa)State.playerAvatar=sa;this.updatePanel();}
+};
+
+// ─── SPEED ───
+const Speed = {
+  toggle(){
+    State.speedIndex=(State.speedIndex+1)%CONFIG.SPEED_LEVELS.length;
+    State.speedMultiplier=CONFIG.SPEED_LEVELS[State.speedIndex];
+    const label=document.getElementById('speed-label');
+    const ring=document.getElementById('speed-ring');
+    if(label)label.textContent=State.speedMultiplier+'x';
+    const circ=113,prog=1-(State.speedIndex/(CONFIG.SPEED_LEVELS.length-1));
+    if(ring)ring.style.strokeDashoffset=circ*prog;
+    const btn=document.getElementById('dpad-speed');
+    if(State.speedMultiplier>1){if(btn)btn.classList.add('active');UI.showToast('🚀 تسريع x'+State.speedMultiplier,'info');}
+    else{if(btn)btn.classList.remove('active');UI.showToast('🐢 سرعة عادية','info');}
+  }
+};
+
+// ─── AUDIO ───
+const Audio = {setVolume(v){if(State.videoElement)State.videoElement.volume=v/100;}};
+
+// ─── PLAYER ───
+const Player = {
+  addXP(a){State.xp+=a;while(State.xp>=CONFIG.XP_PER_LEVEL){State.xp-=CONFIG.XP_PER_LEVEL;this.levelUp();}UI.updateHUD();},
+  levelUp(){State.level++;State.playerHealth=Math.min(State.maxHealth,State.playerHealth+25);State.maxHealth+=10;UI.showLevelUpEffect();UI.showMessage('⭐ ترقية! المستوى '+State.level,2500);},
+  addCoins(a){State.coins+=a;UI.updateHUD();},
+  heal(){if(State.playerHealth>=State.maxHealth){UI.showToast('❤️ صحتك كاملة!','info');return;}State.playerHealth=Math.min(State.maxHealth,State.playerHealth+30);State.healCount++;UI.showMessage('💚 تم الشفاء +30',1000);UI.updateHUD();},
+  takeDamage(a){State.playerHealth-=a;const o=document.getElementById('damage-overlay');o.classList.add('show');setTimeout(()=>o.classList.remove('show'),300);UI.updateHUD();if(State.playerHealth<=0)Game.gameOver();},
+  update(){
+    if(State.isTransitioning||!State.gameRunning)return;
+    if(State.isInWorld&&Utils.getCurrentWorld()?.id==='world_360')return;
+    const s=CONFIG.PLAYER_SPEED*State.speedMultiplier;
+    let dx=0,dz=0;
+    if(State.touchDirs.up)dz=-s;if(State.touchDirs.down)dz=s;
+    if(State.touchDirs.left)dx=-s;if(State.touchDirs.right)dx=s;
+    const l=Utils.getHalf()-CONFIG.TILE_SIZE/2;
+    State.playerGroup.position.x=Utils.clamp(State.playerGroup.position.x+dx,-l,l);
+    State.playerGroup.position.z=Utils.clamp(State.playerGroup.position.z+dz,-l,l);
+    if(dx!==0||dz!==0)State.playerGroup.rotation.y=Math.atan2(dx,dz);
+    World.updateActiveTile();
+  }
+};
+
+// ─── COMBAT ─── (مختصر)
+const Combat = {
+  spawnEnemy(){
+    if(!State.gameRunning||State.currentWorldId!=='world_fight'){UI.showToast('⚠️ فقط في ساحة القتال','warn');return;}
+    const angle=Math.random()*Math.PI*2;
+    const dist=4+Math.random()*4;
+    const x=State.playerGroup.position.x+Math.cos(angle)*dist;
+    const z=State.playerGroup.position.z+Math.sin(angle)*dist;
+    const limit=Utils.getHalf()-1;
+    const enemy=this.createEnemy(Utils.clamp(x,-limit,limit),Utils.clamp(z,-limit,limit));
+    State.enemies.push(enemy);UI.showMessage('👾 عدو ظهر!',800);
+  },
+  createEnemy(x,z){
+    const g=new THREE.Group();
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.35,0.6,8),new THREE.MeshStandardMaterial({color:0xef4444,emissive:0xdc2626,emissiveIntensity:0.3}));
+    body.position.y=0.3;body.castShadow=true;g.add(body);
+    const head=new THREE.Mesh(new THREE.SphereGeometry(0.18,8,8),new THREE.MeshStandardMaterial({color:0xfca5a5}));
+    head.position.y=0.75;head.castShadow=true;g.add(head);
+    const eyeMat=new THREE.MeshBasicMaterial({color:0xff0000});
+    const eyeGeo=new THREE.SphereGeometry(0.04,6,6);
+    const eyeL=new THREE.Mesh(eyeGeo,eyeMat);eyeL.position.set(-0.07,0.77,0.18);g.add(eyeL);
+    const eyeR=new THREE.Mesh(eyeGeo,eyeMat);eyeR.position.set(0.07,0.77,0.18);g.add(eyeR);
+    const hornGeo=new THREE.ConeGeometry(0.04,0.15,4);
+    const hornMat=new THREE.MeshStandardMaterial({color:0x991b1b});
+    const hornL=new THREE.Mesh(hornGeo,hornMat);hornL.position.set(-0.1,0.92,0);hornL.rotation.z=0.3;g.add(hornL);
+    const hornR=new THREE.Mesh(hornGeo,hornMat);hornR.position.set(0.1,0.92,0);hornR.rotation.z=-0.3;g.add(hornR);
+    g.position.set(x,0,z);
+    g.userData={health:20+State.level*5,maxHealth:20+State.level*5,speed:0.025+State.level*0.003,damage:5+State.level*2,attackCooldown:0};
+    State.scene.add(g);return g;
+  },
+  update(){
+    if(State.currentWorldId!=='world_fight')return;
+    State.enemies=State.enemies.filter(enemy=>{
+      if(!enemy.parent)return false;
+      const dx=State.playerGroup.position.x-enemy.position.x;
+      const dz=State.playerGroup.position.z-enemy.position.z;
+      const dist=Math.sqrt(dx*dx+dz*dz);
+      if(dist>0.5){enemy.position.x+=(dx/dist)*enemy.userData.speed;enemy.position.z+=(dz/dist)*enemy.userData.speed;enemy.rotation.y=Math.atan2(dx,dz);}
+      if(dist<1.0&&enemy.userData.attackCooldown<=0){Player.takeDamage(enemy.userData.damage);enemy.userData.attackCooldown=60;UI.showMessage('💥 تعرضت للهجوم! -'+enemy.userData.damage,800);}
+      if(enemy.userData.attackCooldown>0)enemy.userData.attackCooldown--;
+      return true;
+    });
+  },
+  fire(){
+    if(!State.gameRunning||State.currentWorldId!=='world_fight'){UI.showToast('⚠️ فقط في ساحة القتال','warn');return;}
+    const now=Date.now();if(now-State.lastFireTime<250)return;State.lastFireTime=now;
+    const bullet=this.createBullet();State.bullets.push(bullet);
+    const flash=new THREE.PointLight(0xff6600,3,4);flash.position.copy(State.playerGroup.position);flash.position.y+=0.6;State.scene.add(flash);setTimeout(()=>State.scene.remove(flash),80);
+    this.createMuzzleFlash();
+  },
+  createBullet(){
+    const geo=new THREE.SphereGeometry(0.07,8,8);
+    const mat=new THREE.MeshBasicMaterial({color:0x00f2ff});
+    const mesh=new THREE.Mesh(geo,mat);
+    const dir=new THREE.Vector3(0,0,-1);dir.applyQuaternion(State.playerGroup.quaternion);
+    mesh.position.copy(State.playerGroup.position);mesh.position.y+=0.6;mesh.position.x+=dir.x*0.5;mesh.position.z+=dir.z*0.5;
+    mesh.userData={direction:dir,speed:CONFIG.BULLET_SPEED,life:60};State.scene.add(mesh);return mesh;
+  },
+  createMuzzleFlash(){
+    const positions=[];for(let i=0;i<8;i++)positions.push((Math.random()-0.5)*0.2,(Math.random()-0.5)*0.2,(Math.random()-0.5)*0.2);
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    const mat=new THREE.PointsMaterial({color:0xffaa00,size:0.08,transparent:true,opacity:1});
+    const pts=new THREE.Points(geo,mat);
+    const dir=new THREE.Vector3(0,0,-1);dir.applyQuaternion(State.playerGroup.quaternion);
+    pts.position.copy(State.playerGroup.position);pts.position.y+=0.6;pts.position.x+=dir.x*0.5;pts.position.z+=dir.z*0.5;
+    State.scene.add(pts);State.particles.push({mesh:pts,life:20,type:'flash'});
+  },
+  updateBullets(){
+    if(State.currentWorldId!=='world_fight')return;
+    State.bullets=State.bullets.filter(bullet=>{
+      if(!bullet.parent)return false;
+      const dir=bullet.userData.direction;
+      bullet.position.x+=dir.x*bullet.userData.speed;
+      bullet.position.z+=dir.z*bullet.userData.speed;
+      bullet.userData.life--;
+      let hit=false;
+      State.enemies.forEach(enemy=>{
+        if(hit)return;
+        const dx=bullet.position.x-enemy.position.x;
+        const dz=bullet.position.z-enemy.position.z;
+        if(dx*dx+dz*dz<0.5){
+          hit=true;enemy.userData.health-=15+State.level*2;
+          this.createBloodEffect(enemy.position);
+          if(enemy.userData.health<=0){
+            State.kills++;State.score+=10*State.level;Player.addXP(8+State.level);Player.addCoins(5+State.level);
+            UI.showMessage('💀 قتل عدو! +'+(10*State.level),1000);
+            State.scene.remove(enemy);
+          }UI.updateHUD();
+        }
+      });
+      if(hit||bullet.userData.life<=0){State.scene.remove(bullet);return false;}return true;
+    });
+  },
+  createBloodEffect(pos){
+    const positions=[];for(let i=0;i<20;i++)positions.push((Math.random()-0.5)*0.5,(Math.random()-0.5)*0.5,(Math.random()-0.5)*0.5);
+    const geo=new THREE.BufferGeometry();geo.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+    const mat=new THREE.PointsMaterial({color:0xff4400,size:0.06,transparent:true,opacity:0.9});
+    const pts=new THREE.Points(geo,mat);pts.position.copy(pos);pts.position.y+=0.3;State.scene.add(pts);State.particles.push({mesh:pts,life:40,type:'blood'});
+  },
+  updateParticles(){
+    State.particles=State.particles.filter(p=>{
+      p.life--;if(p.life<=0){if(p.mesh.parent)p.mesh.parent.remove(p.mesh);return false;}
+      if(p.type==='blood'){p.mesh.position.y-=0.01;p.mesh.material.opacity=p.life/40;}
+      else if(p.type==='flash'){p.mesh.material.opacity=p.life/20;p.mesh.scale.multiplyScalar(0.95);}
+      return true;
+    });
+  }
+};
+
+// ─── WORLD ─── (مع إصلاح الدخول)
+const World = {
+  createDefaults(){
+    State.worlds=[
+      {id:'main',name:'الخريطة الرئيسية',grid:12,tileSize:3,startPosition:{x:0,z:0},background:'#0a0a1a',items:[
+        {id:'p1',type:'portal',title:'عالم القتال',emoji:'⚔️',row:3,col:3,targetWorld:'world_fight'},
+        {id:'p2',type:'portal',title:'فيديو 360',emoji:'🌐',row:3,col:8,targetWorld:'world_360'},
+        {id:'p3',type:'portal',title:'معرض الصور',emoji:'🖼️',row:8,col:3,targetWorld:'world_gallery'},
+        {id:'p4',type:'portal',title:'الغابة المظلمة',emoji:'🌲',row:8,col:8,targetWorld:'world_forest'}
+      ]},
+      {id:'world_fight',name:'⚔️ ساحة القتال',grid:12,tileSize:3,startPosition:{x:0,z:0},background:'#1a0a0a',items:[]},
+      {id:'world_360',name:'🌐 فيديو 360',grid:12,tileSize:3,startPosition:{x:0,z:0},background:'#050510',videoUrl:'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.webm',items:[]},
+      {id:'world_gallery',name:'🖼️ معرض الصور',grid:12,tileSize:3,startPosition:{x:0,z:0},background:'#0a0a2e',items:[
+        {id:1,type:'image',title:'🌊 موجة',emoji:'🌊',row:2,col:2},
+        {id:2,type:'image',title:'🔥 نار',emoji:'🔥',row:2,col:5},
+        {id:3,type:'image',title:'🌈 قوس قزح',emoji:'🌈',row:5,col:2},
+        {id:4,type:'image',title:'⭐ نجمة',emoji:'⭐',row:5,col:5}
+      ]},
+      {id:'world_forest',name:'🌲 الغابة المظلمة',grid:12,tileSize:3,startPosition:{x:0,z:0},background:'#0a1a0a',items:[
+        {id:1,type:'image',title:'🌳 شجرة',emoji:'🌳',row:2,col:2},
+        {id:2,type:'image',title:'🦊 ثعلب',emoji:'🦊',row:2,col:7},
+        {id:3,type:'image',title:'🍄 فطر',emoji:'🍄',row:7,col:2},
+        {id:4,type:'image',title:'🦉 بومة',emoji:'🦉',row:7,col:7}
+      ]}
+    ];
+  },
+  clear(){
+    State.tileMeshes.forEach(m=>Utils.disposeMesh(m));State.tileMeshes=[];
+    if(State.gridHelper){Utils.disposeMesh(State.gridHelper);State.gridHelper=null;}
+    if(State.videoMesh){Utils.disposeMesh(State.videoMesh);State.videoMesh=null;}
+    if(State.videoTexture){State.videoTexture.dispose();State.videoTexture=null;}
+    if(State.videoElement){try{State.videoElement.pause();State.videoElement.src='';}catch(e){}State.videoElement=null;}
+    document.getElementById('video-controls').style.display='none';
+    State.particles.forEach(p=>{if(p.mesh.parent)p.mesh.parent.remove(p.mesh);});State.particles=[];
+    if(State.floatingSprites){State.floatingSprites.forEach(s=>{if(s.parent)s.parent.remove(s);});}
+    State.scene.children.slice().forEach(c=>{if(c.userData?.isPortalRing||c.userData?.isPortalBeam)Utils.disposeMesh(c);});
+  },
+  build(wid){
+    if(State.isCODGameOpen)COD.close();
+    
+    // إظهار/إخفاء العناصر حسب العالم
+    const isMain = (wid === 'main');
+    
+    // الكرة والأرضية
+    if(isMain){Sphere.show();State.tileGroup.visible=false;if(State.gridHelper)State.gridHelper.visible=false;}
+    else{Sphere.hide();State.tileGroup.visible=true;if(State.gridHelper)State.gridHelper.visible=State.gridVisible;}
+    State.playerGroup.visible=!isMain;
+    
+    // إظهار/إخفاء عناصر الواجهة
+    document.getElementById('hud').style.display=isMain?'none':'flex';
+    document.getElementById('health-bar-container').style.display=isMain?'none':'block';
+    document.getElementById('dpad').style.display=isMain?'none':'block';
+    document.getElementById('fire-btn').style.display=isMain?'none':'flex';
+    document.getElementById('score-display-main').style.display=isMain?'flex':'none';
+    document.getElementById('exit-btn').style.display=isMain?'none':'block';
+    document.getElementById('enter-btn').style.display='none';
+    
+    const w=Utils.getWorld(wid);if(!w)return;
+    this.clear();State.currentWorldId=wid;
+    const bg=w.background||'#0a0a1a';
+    State.scene.background=new THREE.Color(bg);
+    State.scene.fog=new THREE.Fog(bg,30,80);
+    
+    for(let row=0;row<CONFIG.GRID;row++){
+      for(let col=0;col<CONFIG.GRID;col++){
+        const item=w.items?.find(i=>i.row===row&&i.col===col);
+        const tex=this.createTileTexture(item,row,col);
+        const geo=new THREE.PlaneGeometry(CONFIG.TILE_SIZE*0.96,CONFIG.TILE_SIZE*0.96);
+        const mat=new THREE.MeshStandardMaterial({map:tex,side:THREE.DoubleSide,roughness:0.3,metalness:0.15,emissive:new THREE.Color(0x000000),emissiveIntensity:0});
+        const mesh=new THREE.Mesh(geo,mat);
+        mesh.position.set(col*CONFIG.TILE_SIZE-Utils.getHalf()+CONFIG.TILE_SIZE/2,0,row*CONFIG.TILE_SIZE-Utils.getHalf()+CONFIG.TILE_SIZE/2);
+        mesh.rotation.x=-Math.PI/2;
+        mesh.userData={row,col,item:item||null};
+        State.tileGroup.add(mesh);State.tileMeshes.push(mesh);
+      }
+    }
+    if(w.items){
+      State.floatingSprites=[];
+      w.items.forEach((item,idx)=>{
+        const px=item.col*CONFIG.TILE_SIZE-Utils.getHalf()+CONFIG.TILE_SIZE/2;
+        const pz=item.row*CONFIG.TILE_SIZE-Utils.getHalf()+CONFIG.TILE_SIZE/2;
+        if(item.emoji){
+          const s=this.createFloatingSprite(item.emoji,item.isCOD);
+          s.position.set(px,1.4,pz);
+          s.userData={floatOffset:idx*0.5,floatSpeed:1.5+Math.random()*0.5};
+          State.scene.add(s);State.floatingSprites.push(s);
+        }
+        if(item.type==='portal'||item.type==='cod'){
+          const color=item.isCOD?0x00ff88:0x00f2ff;
+          const ring=new THREE.Mesh(new THREE.RingGeometry(0.6,0.9,32),new THREE.MeshBasicMaterial({color,transparent:true,opacity:item.isCOD?0.6:0.35,side:THREE.DoubleSide}));
+          ring.rotation.x=-Math.PI/2;ring.position.set(px,0.08,pz);ring.userData={isPortalRing:true};State.scene.add(ring);
+          const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.4,2,8,1,true),new THREE.MeshBasicMaterial({color,transparent:true,opacity:item.isCOD?0.2:0.08,side:THREE.DoubleSide}));
+          beam.position.set(px,1,pz);beam.userData={isPortalBeam:true};State.scene.add(beam);
+        }
+      });
+    }
+    if(w.videoUrl)this.createVideo360(w.videoUrl);
+    State.gridHelper=new THREE.GridHelper(Utils.getWorldSize(),CONFIG.GRID,0x8b5cf6,0x2a2a4a);
+    State.gridHelper.position.y=0.04;
+    State.gridHelper.material.transparent=true;
+    State.gridHelper.material.opacity=State.gridVisible?0.15:0;
+    State.tileGroup.add(State.gridHelper);
+    State.isInWorld=!isMain;
+    if(w.startPosition)State.playerGroup.position.set(w.startPosition.x,0,w.startPosition.z);
+    if(wid==='world_fight'){State.enemies.forEach(e=>State.scene.remove(e));State.enemies=[];State.enemySpawnTimer=0;}
+    UI.updateHUD();this.updateActiveTile();this.renderLandmarks();
+  },
+  createTileTexture(item,row,col){
+    const c=document.createElement('canvas');c.width=256;c.height=256;
+    const x=c.getContext('2d');
+    if(item){
+      const g=x.createLinearGradient(0,0,256,256);
+      if(item.type==='cod'){g.addColorStop(0,'#00ff88');g.addColorStop(1,'#0088ff');}
+      else if(item.type==='portal'){g.addColorStop(0,'#0a2a3a');g.addColorStop(1,'#1a3a4a');}
+      else{g.addColorStop(0,'#1a1a2e');g.addColorStop(1,'#2a2a3e');}
+      x.fillStyle=g;x.fillRect(0,0,256,256);
+      x.strokeStyle=item.isCOD?'rgba(0,255,136,0.5)':'rgba(0,242,255,0.3)';
+      x.lineWidth=item.isCOD?6:4;x.strokeRect(4,4,248,248);
+      x.fillStyle=item.isCOD?'#00ff88':'#00f2ff';
+      x.font=item.emoji?'90px Arial':'48px Arial';x.textAlign='center';x.textBaseline='middle';
+      x.fillText(item.emoji||'📌',128,100);
+      x.font='bold 20px Cairo, Arial';x.fillStyle='#ffffff';
+      x.fillText((item.title||'').substring(0,14),128,190);
+      if(item.isCOD){x.fillStyle='rgba(0,255,136,0.5)';x.font='bold 16px Cairo, Arial';x.fillText('🎮 اضغط للدخول',128,230);}
+    }else{
+      const colors=['#1a1a2e','#16213e','#0f3460','#1e293b','#2d1b3d','#1a0a2e'];
+      x.fillStyle=colors[(row+col)%colors.length];x.fillRect(0,0,256,256);
+      x.strokeStyle='rgba(255,255,255,0.03)';x.lineWidth=1;
+      x.beginPath();for(let i=0;i<=256;i+=32){x.moveTo(i,0);x.lineTo(i,256);x.moveTo(0,i);x.lineTo(256,i);}x.stroke();
+      x.fillStyle='rgba(255,255,255,0.08)';x.font='bold 18px Arial';x.textAlign='center';x.textBaseline='middle';
+      x.fillText(col+','+row,128,128);
+    }
+    const t=new THREE.CanvasTexture(c);t.magFilter=THREE.LinearFilter;return t;
+  },
+  createFloatingSprite(emoji,isCOD){
+    const c=document.createElement('canvas');c.width=256;c.height=256;
+    const x=c.getContext('2d');x.font='160px Arial';x.textAlign='center';x.textBaseline='middle';
+    x.shadowColor=isCOD?'rgba(0,255,136,0.5)':'rgba(255,255,255,0.3)';x.shadowBlur=30;
+    x.fillText(emoji,128,128);
+    return new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));
+  },
+  createVideo360(url){
+    State.videoElement=document.createElement('video');
+    State.videoElement.muted=State.isVideoMuted;State.videoElement.loop=true;State.videoElement.playsInline=true;
+    State.videoElement.crossOrigin='anonymous';State.videoElement.src=url;State.videoElement.volume=0.35;
+    State.videoElement.addEventListener('loadeddata',()=>{
+      State.videoElement.play().catch(()=>{});
+      State.videoTexture=new THREE.VideoTexture(State.videoElement);
+      State.videoTexture.minFilter=THREE.LinearFilter;State.videoTexture.magFilter=THREE.LinearFilter;
+      const geo=new THREE.SphereGeometry(8,64,64);
+      const mat=new THREE.MeshBasicMaterial({map:State.videoTexture,side:THREE.BackSide});
+      State.videoMesh=new THREE.Mesh(geo,mat);State.scene.add(State.videoMesh);
+      State.camera.position.set(0,0,0);State.lon=0;State.lat=0;
+      this.update360Camera();
+    });
+    State.videoElement.load();
+    document.getElementById('video-controls').style.display='flex';
+  },
+  update360Camera(){
+    const phi=THREE.MathUtils.degToRad(90-State.lat);
+    const theta=THREE.MathUtils.degToRad(State.lon);
+    State.camera.lookAt(new THREE.Vector3(Math.sin(phi)*Math.cos(theta),Math.cos(phi),Math.sin(phi)*Math.sin(theta)));
+  },
+  enter(){
+    if(State.isTransitioning||State.currentWorldId!=='main')return;
+    const tile=Utils.getPlayerTile();
+    const w=Utils.getCurrentWorld();
+    const item=w.items?.find(i=>i.row===tile.row&&i.col===tile.col&&i.type==='portal');
+    if(!item){UI.showToast('❌ لا توجد بوابة هنا','error');return;}
+    if(!item.targetWorld){UI.showToast('❌ هذه البوابة لا تؤدي إلى أي عالم','error');return;}
+    const target=Utils.getWorld(item.targetWorld);
+    if(!target){UI.showToast('❌ العالم غير موجود','error');return;}
+    this.transitionTo(item.targetWorld,target.name);
+  },
+  enterById(wid){
+    const t=Utils.getWorld(wid);if(!t){UI.showToast('❌ العالم غير موجود','error');return;}
+    this.transitionTo(wid,t.name);
+  },
+  transitionTo(wid,name){
+    State.isTransitioning=true;
+    State.savedPlayerPos={x:State.playerGroup.position.x,z:State.playerGroup.position.z};
+    UI.showTransition('جاري الدخول إلى '+name);
+    setTimeout(()=>{
+      this.build(wid);
+      if(!State.visitedWorlds.has(wid)){
+        State.visitedWorlds.add(wid);State.score+=50;Player.addXP(30);Player.addCoins(10);
+        UI.showToast('🏆 اكتشاف عالم جديد! +50','success');
+      }
+      if(wid==='world_360'){State.camera.position.set(0,0,0);State.lon=0;State.lat=0;this.update360Camera();}
+      else{State.camera.position.set(0,6.5,11);State.camera.lookAt(0,0.5,0);}
+      Sphere.show();UI.hideTransition();State.isTransitioning=false;
+      UI.showToast('✅ دخلت: '+name,'success');
+    },700);
+  },
+  exit(){
+    if(State.isCODGameOpen){COD.close();return;}
+    if(State.isTransitioning||State.currentWorldId==='main')return;
+    State.isTransitioning=true;UI.showTransition('جاري العودة للخريطة...');
+    setTimeout(()=>{
+      this.build('main');State.playerGroup.visible=false;
+      if(State.savedPlayerPos){State.playerGroup.position.set(State.savedPlayerPos.x,0,State.savedPlayerPos.z);State.savedPlayerPos=null;}
+      State.camera.position.set(0,1.5,10);State.camera.lookAt(0,0,0);
+      Sphere.show();UI.hideTransition();State.isTransitioning=false;
+      UI.showToast('✅ عدت للخريطة الرئيسية','success');
+    },600);
+  },
+  updateActiveTile(){
+    if(State.isTransitioning)return;
+    const tile=Utils.getPlayerTile();
+    let onPortal=false,portalTitle='',isCOD=false,codFile='';
+    State.tileMeshes.forEach(mesh=>{
+      const d=mesh.userData;
+      if(d.row===tile.row&&d.col===tile.col){
+        mesh.material.emissive=new THREE.Color(0x00ff88);mesh.material.emissiveIntensity=0.35;
+        if(d.item&&(d.item.type==='portal'||d.item.type==='cod')){onPortal=true;portalTitle=d.item.title||'عالم';if(d.item.isCOD){isCOD=true;codFile=d.item.codFile||'cod.html';}}
+      }else{mesh.material.emissive=new THREE.Color(0x000000);mesh.material.emissiveIntensity=0;}
+    });
+    if(isCOD&&State.currentWorldId==='main'&&!State.isCODGameOpen)COD.open(codFile);
+    const btn=document.getElementById('enter-btn');
+    if(onPortal&&State.currentWorldId==='main'&&!isCOD){btn.style.display='block';btn.textContent='🌐 دخول '+portalTitle;}
+    else{btn.style.display='none';}
+  },
+  addLandmark(){
+    const emojis=['🏰','🌲','🌊','⛰️','🏜️','🌋','🏗️','🌺','🕌','🏯','🎪','🏟️'];
+    const names=['قلعة','غابة','بحيرة','جبل','صحراء','بركان','مبنى','حديقة','مسجد','معبد','سيرك','ملعب'];
+    const idx=Math.floor(Math.random()*emojis.length);
+    const x=(Math.random()-0.5)*(Utils.getWorldSize()-2);
+    const z=(Math.random()-0.5)*(Utils.getWorldSize()-2);
+    State.landmarks.push({id:State.nextLandmarkId++,name:emojis[idx]+' '+names[idx],emoji:emojis[idx],x,z,color:'#'+Math.floor(Math.random()*16777215).toString(16).padStart(6,'0')});
+    UI.showToast('📍 تم إضافة معلم: '+names[idx],'success');UI.updateHUD();this.renderLandmarks();
+  },
+  renderLandmarks(){
+    if(State.landmarkMeshes)State.landmarkMeshes.forEach(m=>Utils.disposeMesh(m));
+    State.landmarkMeshes=[];
+    State.landmarks.forEach(lm=>{
+      const s=new THREE.Mesh(new THREE.SphereGeometry(0.3,12,12),new THREE.MeshStandardMaterial({color:lm.color,emissive:lm.color,emissiveIntensity:0.3,transparent:true,opacity:0.9}));
+      s.position.set(lm.x,0.3,lm.z);s.castShadow=true;State.scene.add(s);State.landmarkMeshes.push(s);
+      const p=new THREE.Mesh(new THREE.CylinderGeometry(0.02,0.05,1.8,6),new THREE.MeshBasicMaterial({color:lm.color,transparent:true,opacity:0.12}));
+      p.position.set(lm.x,0.9,lm.z);State.scene.add(p);State.landmarkMeshes.push(p);
+      const c=document.createElement('canvas');c.width=128;c.height=128;
+      const x=c.getContext('2d');x.clearRect(0,0,128,128);x.font='72px Arial';x.textAlign='center';x.textBaseline='middle';x.fillText(lm.emoji,64,64);
+      const sprite=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));
+      sprite.scale.set(0.9,0.9,1);sprite.position.set(lm.x,1.4,lm.z);State.scene.add(sprite);State.landmarkMeshes.push(sprite);
+    });
+  },
+  addRandom(){
+    const emojis=['🎮','🎯','🎨','🌈','⭐','🌺','🌸','🌊','🔥','💫','🚀','🌙'];
+    const titles=['ملصقات','فن','طبيعة','خيال','مغامرات','ألعاب','رياضة','موسيقى'];
+    const newId='world_'+Date.now();
+    const newWorld={id:newId,name:'🌍 '+titles[Math.floor(Math.random()*titles.length)],grid:12,tileSize:3,startPosition:{x:0,z:0},background:'#'+Math.floor(Math.random()*0xffffff).toString(16).padStart(6,'0'),items:[]};
+    const num=3+Math.floor(Math.random()*3);
+    for(let i=0;i<num;i++){let r,c;do{r=1+Math.floor(Math.random()*10);c=1+Math.floor(Math.random()*10);}while(newWorld.items.some(it=>it.row===r&&it.col===c));newWorld.items.push({id:Date.now()+i,type:'image',title:titles[i%titles.length],emoji:emojis[i%emojis.length],row:r,col:c});}
+    State.worlds.push(newWorld);
+    const main=Utils.getWorld('main');
+    if(main){let pr,pc;do{pr=1+Math.floor(Math.random()*10);pc=1+Math.floor(Math.random()*10);}while(main.items.some(it=>it.row===pr&&it.col===pc));main.items.push({id:'portal_'+Date.now(),type:'portal',title:newWorld.name,emoji:'🌐',row:pr,col:pc,targetWorld:newId});if(State.currentWorldId==='main')this.build('main');}
+    UI.showToast('✅ تم إنشاء عالم جديد: '+newWorld.name,'success');
+  }
+};
+
+// ─── SPHERE ─── (مع إصلاح الدخول)
+const Sphere = {
+  build(){
+    if(State.sphereGroup){
+      State.iconSprites.forEach(s=>{if(s.material?.map)s.material.map.dispose();if(s.material)s.material.dispose();});
+      State.scene.remove(State.sphereGroup);
+    }
+    State.iconSprites=[];State.selectedIcon=null;document.getElementById('facet-info').style.display='none';
+    State.sphereGroup=new THREE.Group();
+    const radius=4.5,totalIcons=CONFIG.WORLD_ICONS.length,goldenAngle=Math.PI*(3-Math.sqrt(5));
+    CONFIG.WORLD_ICONS.forEach((world,i)=>{
+      const y=1-(i/(totalIcons-1))*2;
+      const radiusAtY=Math.sqrt(1-y*y);
+      const theta=goldenAngle*i;
+      const x=Math.cos(theta)*radiusAtY;
+      const z=Math.sin(theta)*radiusAtY;
+      const position=new THREE.Vector3(x*radius,y*radius,z*radius);
+      const ck=world.emoji+'_n',chk=world.emoji+'_h';
+      if(!State.iconTextureCache.has(ck)){State.iconTextureCache.set(ck,this.createIconTexture(world.emoji,world.name,world.color,false));State.iconTextureCache.set(chk,this.createIconTexture(world.emoji,world.name,world.color,true));}
+      const mat=new THREE.SpriteMaterial({map:State.iconTextureCache.get(ck),transparent:true,depthTest:true,opacity:0.9});
+      const sprite=new THREE.Sprite(mat);
+      sprite.position.copy(position);sprite.scale.set(2.2,2.2,1);
+      sprite.userData={index:i,world,position:position.clone(),hovered:false,baseScale:2.2};
+      State.sphereGroup.add(sprite);State.iconSprites.push(sprite);
+    });
+    const glow=new THREE.PointLight(0x8b5cf6,1.5,30);State.sphereGroup.add(glow);
+    const ambientSphere=new THREE.AmbientLight(0x404080,0.4);State.sphereGroup.add(ambientSphere);
+    State.scene.add(State.sphereGroup);
+  },
+  createIconTexture(emoji,name,color,isHovered){
+    const c=document.createElement('canvas');c.width=256;c.height=256;
+    const x=c.getContext('2d');
+    x.beginPath();x.arc(128,128,120,0,Math.PI*2);x.fillStyle=isHovered?color:'rgba(20,20,40,0.85)';x.fill();
+    x.beginPath();x.arc(128,128,120,0,Math.PI*2);x.strokeStyle=isHovered?'#ffffff':color;x.lineWidth=isHovered?6:3;x.stroke();
+    x.beginPath();x.arc(128,128,110,0,Math.PI*2);x.strokeStyle=isHovered?color:'rgba(255,255,255,0.1)';x.lineWidth=2;x.stroke();
+    x.font='bold 100px Arial';x.textAlign='center';x.textBaseline='middle';
+    x.shadowColor=color;x.shadowBlur=isHovered?40:20;x.fillText(emoji,128,110);x.shadowBlur=0;
+    x.font='bold 20px Cairo, Arial';x.fillStyle='#ffffff';x.shadowColor='rgba(0,0,0,0.8)';x.shadowBlur=8;x.fillText(name,128,185);x.shadowBlur=0;
+    return new THREE.CanvasTexture(c);
+  },
+  update(){if(!State.sphereGroup||State.isDraggingSphere)return;State.sphereGroup.rotation.y+=0.002;State.sphereGroup.rotation.x+=0.001;},
+  show(){
+    if(State.sphereGroup){State.sphereGroup.visible=true;State.sphereGroup.scale.set(1,1,1);State.sphereGroup.children.forEach(c=>{if(c.isSprite&&c.material)c.material.opacity=0.9;if(c.isPointLight)c.intensity=1.5;});}
+    document.getElementById('facet-info').style.display=State.selectedIcon!==null?'block':'none';
+  },
+  hide(){if(State.sphereGroup)State.sphereGroup.visible=false;document.getElementById('facet-info').style.display='none';},
+  generateWorldItems(iconIndex){
+    const items=[],emojis=['🏰','🌲','🌊','⛰️','🏜️','🌋','🏗️','🌺','🕌','🏯'];
+    const count=2+(iconIndex%4);
+    for(let i=0;i<count;i++){let r,c;do{r=1+Math.floor(Math.random()*10);c=1+Math.floor(Math.random()*10);}while(items.some(it=>it.row===r&&it.col===c));items.push({id:'item_'+iconIndex+'_'+i,type:i%2===0?'image':'portal',title:emojis[i%emojis.length]+' '+CONFIG.WORLD_ICONS[(iconIndex+i)%CONFIG.WORLD_ICONS.length].name,emoji:emojis[i%emojis.length],row:r,col:c});}
+    return items;
+  }
+};
+
+// ─── COD ───
+const COD = {
+  open(fn){
+    if(State.isCODGameOpen)return;
+    const iframe=document.getElementById('cod-iframe');
+    iframe.src=fn;iframe.style.display='block';
+    document.getElementById('close-cod-btn').style.display='block';
+    ['hud','health-bar-container','dpad','fire-btn','game-message','minimap-frame','top-bar'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    State.isCODGameOpen=true;UI.showToast('🎮 تم فتح اللعبة: '+fn,'success');
+  },
+  close(){
+    const iframe=document.getElementById('cod-iframe');
+    iframe.style.display='none';iframe.src='';
+    document.getElementById('close-cod-btn').style.display='none';
+    document.getElementById('hud').style.display='flex';
+    document.getElementById('health-bar-container').style.display='block';
+    document.getElementById('dpad').style.display='block';
+    document.getElementById('fire-btn').style.display='flex';
+    document.getElementById('game-message').style.display='block';
+    document.getElementById('minimap-frame').style.display='block';
+    document.getElementById('top-bar').style.display='flex';
+    State.isCODGameOpen=false;UI.showToast('✅ تم إغلاق اللعبة','success');
+  }
+};
+
+// ─── SPIN ───
+const Spin = {
+  process(rotationDelta){
+    const now=Date.now();
+    if(now-State.lastSpinTime>CONFIG.SPIN_COMBO_TIMEOUT)State.spinCombo=1;
+    const fullSpins=Math.floor(Math.abs(rotationDelta)/(Math.PI*2));
+    const partialSpin=Math.abs(rotationDelta)%(Math.PI*2);
+    let totalSpins=fullSpins+(partialSpin>CONFIG.SPIN_MIN_ANGLE?1:0);
+    if(totalSpins>0){
+      const basePoints=10*totalSpins;
+      const totalPoints=basePoints*State.spinCombo;
+      State.spinCount+=totalSpins;State.spinPoints+=totalPoints;State.score+=totalPoints;
+      State.spinCombo=Math.min(State.spinCombo+1,10);State.lastSpinTime=now;
+      UI.updateHUD();
+      if(State.sphereGroup){State.sphereGroup.children.forEach(c=>{if(c.isMesh&&c.material){c.material.emissiveIntensity=Math.min(1.5,c.material.emissiveIntensity+0.3);setTimeout(()=>{if(c.material)c.material.emissiveIntensity=Math.max(0.25,c.material.emissiveIntensity-0.3);},300);}});}
+      UI.showToast('🌪️ دوران سريع! +'+totalPoints,'success');
+    }
+  },
+  detectSwipe(dx,dy,dt){
+    if(!State.sphereGroup||State.currentWorldId!=='main'||!State.sphereGroup.visible||State.isCODGameOpen)return;
+    const vx=dx/dt,vy=dy/dt;
+    const speed=Math.sqrt(vx*vx+vy*vy);
+    if(speed>CONFIG.SPIN_SPEED_THRESHOLD){
+      const rotationAmount=Math.abs(dx)*0.008+Math.abs(dy)*0.008;
+      State.sphereRotationHistory.push({angle:rotationAmount,time:Date.now(),velocity:speed});
+      const now=Date.now();
+      State.sphereRotationHistory=State.sphereRotationHistory.filter(r=>now-r.time<500);
+      const totalRotation=State.sphereRotationHistory.reduce((s,r)=>s+r.angle,0);
+      if(totalRotation>CONFIG.SPIN_MIN_ANGLE&&!State.isSwipeSpinning){
+        State.isSwipeSpinning=true;this.process(totalRotation);State.sphereRotationHistory=[];
+        setTimeout(()=>State.isSwipeSpinning=false,300);
+      }
+    }
+  }
+};
+
+// ─── GAME ───
+const Game = {
+  init(){
+    const canvas=document.getElementById('canvas');
+    State.scene=new THREE.Scene();State.scene.background=new THREE.Color(0x050510);
+    State.camera=new THREE.PerspectiveCamera(45,innerWidth/innerHeight,0.1,100);
+    State.camera.position.set(0,2,14);State.camera.lookAt(0,0,0);
+    State.renderer=new THREE.WebGLRenderer({canvas,antialias:true});
+    State.renderer.setSize(innerWidth,innerHeight);
+    State.renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    State.renderer.shadowMap.enabled=true;State.renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    State.ambientLight=new THREE.AmbientLight(0x4466ff,0.6);State.scene.add(State.ambientLight);
+    State.dirLight=new THREE.DirectionalLight(0xfff0dd,1.5);State.dirLight.position.set(10,20,8);State.dirLight.castShadow=true;State.scene.add(State.dirLight);
+    State.dirLight2=new THREE.DirectionalLight(0x8888ff,0.8);State.dirLight2.position.set(-10,5,-10);State.scene.add(State.dirLight2);
+    const backLight=new THREE.DirectionalLight(0x4466ff,0.5);backLight.position.set(0,-5,-10);State.scene.add(backLight);
+    State.playerGroup=new THREE.Group();State.playerGroup.position.set(0,0,0);State.scene.add(State.playerGroup);
+    State.tileGroup=new THREE.Group();State.scene.add(State.tileGroup);
+    this.setupMinimap();document.getElementById('minimap-frame').style.display='block';
+    World.createDefaults();World.renderLandmarks();World.build('main');
+    Sphere.build();Sphere.show();
+    Input.setup();
+    UI.updateHUD();Profile.loadData();
+    UI.showMessage('🌐 استكشف الأضلاع وانقر للدخول!',2000);
+    this.loop();
+  },
+  setupMinimap(){
+    const frame=document.getElementById('minimap-frame');
+    const c=document.createElement('canvas');c.width=120;c.height=120;
+    frame.appendChild(c);State.minimapCtx=c.getContext('2d');
+  },
+  updateMinimap(){
+    if(!State.minimapCtx||document.getElementById('minimap-frame').style.display!=='block')return;
+    const ctx=State.minimapCtx,w=120,h=120;
+    ctx.clearRect(0,0,w,h);ctx.fillStyle='rgba(8,8,20,0.92)';ctx.fillRect(0,0,w,h);
+    const scale=w/Utils.getWorldSize();
+    const world=Utils.getCurrentWorld();if(!world)return;
+    for(let y=0;y<CONFIG.GRID;y++){for(let x=0;x<CONFIG.GRID;x++){
+      const item=world.items?.find(i=>i.row===y&&i.col===x);
+      if(item)ctx.fillStyle=item.type==='portal'?'#00f2ff':item.type==='cod'?'#00ff88':'#fbbf24';
+      else ctx.fillStyle=((x+y)%2===0)?'#2a2a4a':'#1a1a2e';
+      ctx.fillRect(x*CONFIG.TILE_SIZE*scale,y*CONFIG.TILE_SIZE*scale,CONFIG.TILE_SIZE*scale*0.9,CONFIG.TILE_SIZE*scale*0.9);
+    }}
+    const px=(State.playerGroup.position.x+Utils.getHalf())*scale;
+    const py=(State.playerGroup.position.z+Utils.getHalf())*scale;
+    ctx.fillStyle='#a78bfa';ctx.beginPath();ctx.arc(px,py,3.5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();
+  },
+  updateCamera(){
+    if(State.isTransitioning)return;
+    if(State.isInWorld&&Utils.getCurrentWorld()?.id==='world_360')return;
+    if(State.currentWorldId==='main'){State.camera.position.lerp(new THREE.Vector3(0,2,14),0.08);State.camera.lookAt(0,0,0);return;}
+    const target=State.playerGroup.position.clone();
+    const angle=State.playerGroup.rotation.y;
+    const desired=new THREE.Vector3(target.x-Math.sin(angle)*6.5,target.y+4.5,target.z-Math.cos(angle)*6.5);
+    State.camera.position.lerp(desired,0.08);State.camera.lookAt(target.x,target.y+0.8,target.z);
+  },
+  loop(){
+    requestAnimationFrame(()=>this.loop());
+    if(State.gameRunning){
+      Player.update();Combat.update();Combat.updateBullets();Combat.updateParticles();Sphere.update();
+      if(State.currentWorldId==='world_fight'){
+        State.enemySpawnTimer++;
+        if(State.enemySpawnTimer>Math.max(30,100-State.level*4)&&State.enemies.length<Math.min(8,4+State.level)){State.enemySpawnTimer=0;Combat.spawnEnemy();}
+      }
+    }
+    if(State.floatingSprites){const t=Date.now()*0.001;State.floatingSprites.forEach(s=>{if(s.userData)s.position.y=1.4+Math.sin(t*s.userData.floatSpeed+s.userData.floatOffset)*0.15;});}
+    State.scene.children.forEach(c=>{if(c.userData?.isPortalRing)c.rotation.z+=0.01;});
+    this.updateCamera();this.updateMinimap();
+    if(State.videoTexture)State.videoTexture.needsUpdate=true;
+    State.renderer.render(State.scene,State.camera);
+  },
+  start(){
+    document.getElementById('start-screen').style.display='none';
+    document.getElementById('top-bar').style.display='flex';
+    document.getElementById('score-display-main').style.display='flex';
+    document.getElementById('game-message').style.display='block';
+    document.getElementById('minimap-frame').style.display='block';
+    this.init();State.playerGroup.visible=false;
+  },
+  save(){
+    const data={playerHealth:State.playerHealth,maxHealth:State.maxHealth,kills:State.kills,score:State.score,level:State.level,xp:State.xp,coins:State.coins,visitedWorlds:Array.from(State.visitedWorlds),landmarks:State.landmarks,nextLandmarkId:State.nextLandmarkId,achievements:State.achievements,healCount:State.healCount,quests:State.quests,spinCount:State.spinCount,spinCombo:State.spinCombo,spinPoints:State.spinPoints,playerName:State.playerName,playerAvatar:State.playerAvatar};
+    try{localStorage.setItem('battle_worlds_save',JSON.stringify(data));UI.showToast('💾 تم حفظ اللعبة!','success');}catch(e){UI.showToast('❌ فشل الحفظ','error');}
+  },
+  load(){
+    try{
+      const data=JSON.parse(localStorage.getItem('battle_worlds_save'));
+      if(!data){UI.showToast('❌ لا يوجد حفظ سابق','error');return;}
+      State.playerHealth=data.playerHealth||100;State.maxHealth=data.maxHealth||100;State.kills=data.kills||0;State.score=data.score||0;State.level=data.level||1;State.xp=data.xp||0;State.coins=data.coins||0;
+      State.visitedWorlds=new Set(data.visitedWorlds||['main']);State.landmarks=data.landmarks||[];State.nextLandmarkId=data.nextLandmarkId||1;
+      if(data.achievements)State.achievements=data.achievements;State.healCount=data.healCount||0;
+      if(data.quests)State.quests=data.quests;State.spinCount=data.spinCount||0;State.spinCombo=data.spinCombo||1;State.spinPoints=data.spinPoints||0;
+      if(data.playerName)State.playerName=data.playerName;if(data.playerAvatar)State.playerAvatar=data.playerAvatar;
+      UI.showToast('📂 تم تحميل اللعبة!','success');
+      if(document.getElementById('start-screen').style.display!=='none')this.start();
+      else{UI.updateHUD();World.renderLandmarks();Profile.updatePanel();}
+    }catch(e){UI.showToast('❌ فشل التحميل','error');}
+  },
+  gameOver(){
+    State.gameRunning=false;
+    document.getElementById('final-kills').textContent=State.kills;
+    document.getElementById('final-score').textContent=State.score;
+    document.getElementById('final-coins').textContent=State.coins;
+    document.getElementById('final-level').textContent=State.level;
+    document.getElementById('final-worlds').textContent=State.visitedWorlds.size;
+    document.getElementById('final-landmarks').textContent=State.landmarks.length;
+    document.getElementById('game-over').style.display='flex';
+    UI.showMessage('💀 لقد مت!',2000);
+  },
+  restart(){
+    document.getElementById('game-over').style.display='none';
+    State.playerHealth=100;State.maxHealth=100;State.kills=0;State.score=0;State.level=1;State.xp=0;State.coins=0;State.healCount=0;State.gameRunning=true;
+    State.enemies.forEach(e=>State.scene.remove(e));State.enemies=[];
+    State.bullets.forEach(b=>State.scene.remove(b));State.bullets=[];
+    State.visitedWorlds=new Set(['main']);State.landmarks=[];State.nextLandmarkId=1;
+    State.spinCount=0;State.spinCombo=1;State.spinPoints=0;
+    Object.keys(State.achievements).forEach(k=>State.achievements[k].unlocked=false);
+    State.quests.forEach(q=>{q.current=0;q.complete=false;});
+    World.createDefaults();World.build('main');
+    State.camera.position.set(0,7,12);State.camera.lookAt(0,0,0);
+    UI.updateHUD();UI.showMessage('💪 معركة جديدة!',1500);
+  }
+};
+
+// ─── INPUT ───
+const Input = {
+  setup(){
+    document.querySelectorAll('.dpad-btn').forEach(btn=>{
+      const dir=btn.dataset.dir;
+      const s=(e)=>{e.preventDefault();State.touchDirs[dir]=true;btn.classList.add('active');};
+      const en=(e)=>{e.preventDefault();State.touchDirs[dir]=false;btn.classList.remove('active');};
+      btn.addEventListener('touchstart',s,{passive:false});btn.addEventListener('touchend',en,{passive:false});
+      btn.addEventListener('mousedown',()=>{State.touchDirs[dir]=true;btn.classList.add('active');});
+      btn.addEventListener('mouseup',()=>{State.touchDirs[dir]=false;btn.classList.remove('active');});
+      btn.addEventListener('mouseleave',()=>{State.touchDirs[dir]=false;btn.classList.remove('active');});
+    });
+    window.addEventListener('keydown',e=>{
+      if(e.key==='ArrowUp')State.touchDirs.up=true;if(e.key==='ArrowDown')State.touchDirs.down=true;
+      if(e.key==='ArrowLeft')State.touchDirs.left=true;if(e.key==='ArrowRight')State.touchDirs.right=true;
+      if(e.key===' '||e.code==='Space'){e.preventDefault();Combat.fire();}
+      if(e.key==='h'||e.key==='H')Player.heal();
+      if(e.key==='Enter')World.enter();
+      if(e.key==='Escape')World.exit();
+      if(e.key==='Shift'){e.preventDefault();Speed.toggle();}
+      if(e.key==='p'||e.key==='P')Profile.toggle();
+    });
+    window.addEventListener('keyup',e=>{
+      if(e.key==='ArrowUp')State.touchDirs.up=false;if(e.key==='ArrowDown')State.touchDirs.down=false;
+      if(e.key==='ArrowLeft')State.touchDirs.left=false;if(e.key==='ArrowRight')State.touchDirs.right=false;
+    });
+    document.getElementById('fire-btn').addEventListener('touchstart',e=>{e.preventDefault();Combat.fire();});
+    this.setupSphereInteraction();
+    window.addEventListener('resize',()=>{if(State.camera){State.camera.aspect=innerWidth/innerHeight;State.camera.updateProjectionMatrix();State.renderer.setSize(innerWidth,innerHeight);}});
+    document.addEventListener('click',e=>{
+      const sp=document.getElementById('settings-panel');
+      if(!sp.contains(e.target)&&e.target!==document.getElementById('settings-btn'))sp.style.display='none';
+      const pp=document.getElementById('profile-panel');
+      if(!pp.contains(e.target)&&e.target!==document.getElementById('profile-btn'))pp.style.display='none';
+    });
+  },
+  setupSphereInteraction(){
+    const raycaster=new THREE.Raycaster();
+    const mouse=new THREE.Vector2();
+    State.renderer.domElement.addEventListener('mousemove',event=>{
+      if(State.isDraggingSphere)return;
+      const rect=State.renderer.domElement.getBoundingClientRect();
+      mouse.x=((event.clientX-rect.left)/rect.width)*2-1;
+      mouse.y=-((event.clientY-rect.top)/rect.height)*2+1;
+      raycaster.setFromCamera(mouse,State.camera);
+      const intersects=raycaster.intersectObjects(State.iconSprites);
+      if(intersects.length>0){
+        const hit=intersects[0].object;const index=hit.userData.index;
+        if(index!==State.selectedIcon){
+          if(State.selectedIcon!==null&&State.iconSprites[State.selectedIcon]){
+            const prev=State.iconSprites[State.selectedIcon];
+            prev.material.map=State.iconTextureCache.get(prev.userData.world.emoji+'_n');
+            prev.scale.set(prev.userData.baseScale,prev.userData.baseScale,1);prev.userData.hovered=false;
+          }
+          State.selectedIcon=index;
+          const cur=State.iconSprites[index];
+          cur.material.map=State.iconTextureCache.get(cur.userData.world.emoji+'_h');
+          cur.scale.set(cur.userData.baseScale*1.3,cur.userData.baseScale*1.3,1);cur.userData.hovered=true;
+          State.renderer.domElement.style.cursor='pointer';
+        }return;
+      }
+      if(State.selectedIcon!==null&&State.iconSprites[State.selectedIcon]){
+        const prev=State.iconSprites[State.selectedIcon];
+        prev.material.map=State.iconTextureCache.get(prev.userData.world.emoji+'_n');
+        prev.scale.set(prev.userData.baseScale,prev.userData.baseScale,1);prev.userData.hovered=false;
+      }
+      State.selectedIcon=null;State.renderer.domElement.style.cursor='default';
+    });
+    
+    // ===== الدخول إلى العالم من الأيقونة (الإصلاح الرئيسي) =====
+    State.renderer.domElement.addEventListener('click', () => {
+      if (State.selectedIcon !== null && State.iconSprites[State.selectedIcon]) {
+        const world = State.iconSprites[State.selectedIcon].userData.world;
+        const wid = 'world_icon_' + State.selectedIcon;
+        
+        // التحقق من وجود العالم
+        let targetWorld = Utils.getWorld(wid);
+        
+        if (!targetWorld) {
+          // إنشاء عالم جديد
+          const newWorld = {
+            id: wid,
+            name: world.name,
+            grid: 12,
+            tileSize: 3,
+            startPosition: { x: 0, z: 0 },
+            background: world.color,
+            items: Sphere.generateWorldItems(State.selectedIcon)
+          };
+          State.worlds.push(newWorld);
+          
+          // إضافة بوابة في العالم الرئيسي
+          const main = Utils.getWorld('main');
+          if (main) {
+            let pr, pc;
+            let attempts = 0;
+            do {
+              pr = 1 + Math.floor(Math.random() * 10);
+              pc = 1 + Math.floor(Math.random() * 10);
+              attempts++;
+            } while (main.items.some(it => it.row === pr && it.col === pc) && attempts < 50);
+            
+            main.items.push({
+              id: 'portal_icon_' + State.selectedIcon,
+              type: 'portal',
+              title: world.name,
+              emoji: world.emoji,
+              row: pr,
+              col: pc,
+              targetWorld: wid
+            });
+            
+            // إعادة بناء العالم الرئيسي إذا كنا فيه
+            if (State.currentWorldId === 'main') {
+              World.build('main');
+            }
+          }
+          targetWorld = Utils.getWorld(wid);
+        }
+        
+        // الدخول إلى العالم
+        if (targetWorld) {
+          World.enterById(wid);
+        } else {
+          UI.showToast('❌ فشل إنشاء العالم', 'error');
+        }
+      }
+    });
+    
+    // سحب الماوس
+    State.renderer.domElement.addEventListener('mousedown',e=>{if(e.target===State.renderer.domElement){State.isDraggingSphere=true;State.previousMousePosition.x=e.clientX;State.previousMousePosition.y=e.clientY;}});
+    window.addEventListener('mousemove',e=>{
+      if(State.isDraggingSphere&&State.sphereGroup?.visible&&State.currentWorldId==='main'){
+        const dx=e.clientX-State.previousMousePosition.x;
+        const dy=e.clientY-State.previousMousePosition.y;
+        State.sphereGroup.rotation.y+=dx*0.008;State.sphereGroup.rotation.x+=dy*0.008;
+        const dt=Date.now()-State.lastSwipeTime;if(dt>0)Spin.detectSwipe(dx,dy,dt);State.lastSwipeTime=Date.now();
+        State.previousMousePosition.x=e.clientX;State.previousMousePosition.y=e.clientY;
+      }
+    });
+    window.addEventListener('mouseup',()=>{State.isDraggingSphere=false;});
+    
+    // اللمس
+    State.renderer.domElement.addEventListener('touchstart',e=>{
+      if(e.touches.length===1&&State.currentWorldId==='main'&&State.sphereGroup?.visible){
+        const touch=e.touches[0];State.touchStartX=touch.clientX;State.touchStartY=touch.clientY;State.touchLastX=touch.clientX;State.touchLastY=touch.clientY;State.touchLastTime=Date.now();State.isTouchingSphere=true;State.isDraggingSphere=true;e.preventDefault();
+      }
+    },{passive:false});
+    State.renderer.domElement.addEventListener('touchmove',e=>{
+      if(State.isTouchingSphere&&State.isDraggingSphere&&e.touches.length===1&&State.currentWorldId==='main'&&State.sphereGroup?.visible){
+        e.preventDefault();
+        const touch=e.touches[0];
+        const dx=touch.clientX-State.touchLastX;
+        const dy=touch.clientY-State.touchLastY;
+        State.sphereGroup.rotation.y+=dx*0.008;State.sphereGroup.rotation.x+=dy*0.008;
+        const now=Date.now();const dt=now-State.touchLastTime;
+        if(dt>0&&dt<100){State.touchVelocityX=dx/dt;State.touchVelocityY=dy/dt;const speed=Math.sqrt(State.touchVelocityX**2+State.touchVelocityY**2);if(speed>CONFIG.SPIN_SPEED_THRESHOLD){const rotationAmount=Math.abs(dx)*0.008+Math.abs(dy)*0.008;State.sphereRotationHistory.push({angle:rotationAmount,time:now,velocity:speed});const cutoff=now-500;State.sphereRotationHistory=State.sphereRotationHistory.filter(r=>r.time>cutoff);const totalRotation=State.sphereRotationHistory.reduce((s,r)=>s+r.angle,0);if(totalRotation>CONFIG.SPIN_MIN_ANGLE&&!State.isSwipeSpinning){State.isSwipeSpinning=true;Spin.process(totalRotation);State.sphereRotationHistory=[];setTimeout(()=>State.isSwipeSpinning=false,300);}}}
+        State.touchLastX=touch.clientX;State.touchLastY=touch.clientY;State.touchLastTime=now;
+      }
+    },{passive:false});
+    State.renderer.domElement.addEventListener('touchend',()=>{State.isTouchingSphere=false;State.isDraggingSphere=false;State.sphereRotationHistory=[];},{passive:false});
+    State.renderer.domElement.addEventListener('touchcancel',()=>{State.isTouchingSphere=false;State.isDraggingSphere=false;State.sphereRotationHistory=[];},{passive:false});
+  }
+};
+
+console.log('🌐 العوالم الكروية v78.0 — واجهة نظيفة');
+console.log('📌 الميزات:');
+console.log('  🎨 واجهة نظيفة: أيقونة المستخدم + الإعدادات + النقاط فقط');
+console.log('  ⚔️ تظهر عناصر التحكم عند دخول المعلم');
+console.log('  🔧 تم إصلاح مشكلة الدخول إلى العوالم');
+</script>
+</body>
+</html>
+  
