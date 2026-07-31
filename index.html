@@ -379,6 +379,19 @@ canvas { display:block; width:100%; height:100%; }
   60% { transform:scale(1) rotate(0deg); opacity:1; }
   100% { transform:scale(0.7) translateY(-100px); opacity:0; }
 }
+
+/* ─── Video Controls ─── */
+#video-controls {
+  position:fixed; bottom:80px; left:50%; transform:translateX(-50%);
+  z-index:100; display:none; gap:8px; align-items:center;
+  background:rgba(0,0,0,0.85); padding:6px 14px; border-radius:16px;
+  border:1px solid rgba(255,255,255,0.06); backdrop-filter:blur(8px);
+}
+#video-controls button { background:rgba(255,255,255,0.08); border:none; color:#fff; width:28px; height:28px; border-radius:50%; cursor:pointer; font-size:12px; transition:all 0.2s; }
+#video-controls button:hover { background:rgba(255,255,255,0.16); transform:scale(1.08); }
+#video-controls input[type="range"] { width:80px; height:3px; -webkit-appearance:none; background:rgba(255,255,255,0.15); border-radius:2px; }
+#video-controls input[type="range"]::-webkit-slider-thumb { -webkit-appearance:none; width:10px; height:10px; border-radius:50%; background:#ffd700; cursor:pointer; }
+#video-controls .video-time { font-size:10px; color:#aaa; min-width:70px; text-align:center; }
 </style>
 </head>
 <body>
@@ -553,6 +566,16 @@ canvas { display:block; width:100%; height:100%; }
 <div id="minimap-frame"></div>
 
 <!-- ═══════════════════════════════════════════════
+     VIDEO CONTROLS
+     ═══════════════════════════════════════════════ -->
+<div id="video-controls">
+  <button onclick="Video.togglePlay()">⏸️</button>
+  <input type="range" id="video-progress" min="0" max="100" value="0" oninput="Video.seek(this.value)">
+  <span class="video-time" id="video-time">00:00 / 00:00</span>
+  <button onclick="Video.toggleMute()">🔊</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════
      COD
      ═══════════════════════════════════════════════ -->
 <iframe id="cod-iframe"></iframe>
@@ -677,14 +700,21 @@ const State = {
 
 // ─── UTILS ───
 const Utils = {
-  getWorldSize(){return CONFIG.GRID*CONFIG.TILE_SIZE;},
-  getHalf(){return this.getWorldSize()/2;},
+  getWorldSize(world) {
+    const g = world?.grid || CONFIG.GRID;
+    const ts = world?.tileSize || CONFIG.TILE_SIZE;
+    return g * ts;
+  },
+  getHalf(world) { return this.getWorldSize(world) / 2; },
   getWorld(id){return State.worlds.find(w=>w.id===id);},
   getCurrentWorld(){return this.getWorld(State.currentWorldId);},
   getPlayerTile(){
-    const px=State.playerGroup.position.x+this.getHalf();
-    const pz=State.playerGroup.position.z+this.getHalf();
-    return{col:Math.floor(px/CONFIG.TILE_SIZE),row:Math.floor(pz/CONFIG.TILE_SIZE)};
+    const w = this.getCurrentWorld() || { grid: CONFIG.GRID, tileSize: CONFIG.TILE_SIZE };
+    const half = this.getHalf(w);
+    const ts = w.tileSize || CONFIG.TILE_SIZE;
+    const px = State.playerGroup.position.x + half;
+    const pz = State.playerGroup.position.z + half;
+    return{col:Math.floor(px/ts),row:Math.floor(pz/ts)};
   },
   clamp(v,min,max){return Math.max(min,Math.min(max,v));},
   disposeMesh(m){if(!m)return;if(m.geometry)m.geometry.dispose();if(m.material){if(Array.isArray(m.material)){m.material.forEach(mat=>{if(mat.map)mat.map.dispose();mat.dispose();});}else{if(m.material.map)m.material.map.dispose();m.material.dispose();}}if(m.parent)m.parent.remove(m);}
@@ -775,6 +805,33 @@ const Profile = {
   loadData(){const sn=localStorage.getItem('playerName');if(sn)State.playerName=sn;const sa=localStorage.getItem('playerAvatar');if(sa)State.playerAvatar=sa;this.updatePanel();}
 };
 
+// ─── VIDEO ───
+const Video = {
+  togglePlay(){
+    if(!State.videoElement)return;
+    if(State.isVideoPlaying){State.videoElement.pause();document.querySelector('#video-controls button:first-child').textContent='▶️';}
+    else{State.videoElement.play();document.querySelector('#video-controls button:first-child').textContent='⏸️';}
+    State.isVideoPlaying=!State.isVideoPlaying;
+  },
+  toggleMute(){
+    if(!State.videoElement)return;
+    State.isVideoMuted=!State.isVideoMuted;
+    State.videoElement.muted=State.isVideoMuted;
+    document.querySelector('#video-controls button:last-child').textContent=State.isVideoMuted?'🔇':'🔊';
+  },
+  seek(val){if(!State.videoElement||!State.videoElement.duration)return;State.videoElement.currentTime=(val/100)*State.videoElement.duration;},
+  updateTime(){
+    if(!State.videoElement)return;
+    const cur=this.formatTime(State.videoElement.currentTime);
+    const dur=this.formatTime(State.videoElement.duration||0);
+    document.getElementById('video-time').textContent=cur+' / '+dur;
+    if(State.videoElement.duration){
+      document.getElementById('video-progress').value=(State.videoElement.currentTime/State.videoElement.duration)*100;
+    }
+  },
+  formatTime(sec){if(!sec||isNaN(sec))return '00:00';const m=Math.floor(sec/60);const s=Math.floor(sec%60);return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0');}
+};
+
 // ─── SPEED ───
 const Speed = {
   toggle(){
@@ -808,7 +865,9 @@ const Player = {
     let dx=0,dz=0;
     if(State.touchDirs.up)dz=-s;if(State.touchDirs.down)dz=s;
     if(State.touchDirs.left)dx=-s;if(State.touchDirs.right)dx=s;
-    const l=Utils.getHalf()-CONFIG.TILE_SIZE/2;
+    const w=Utils.getCurrentWorld()||{tileSize:CONFIG.TILE_SIZE};
+    const half=Utils.getHalf(w);
+    const l=half-w.tileSize/2;
     State.playerGroup.position.x=Utils.clamp(State.playerGroup.position.x+dx,-l,l);
     State.playerGroup.position.z=Utils.clamp(State.playerGroup.position.z+dz,-l,l);
     if(dx!==0||dz!==0)State.playerGroup.rotation.y=Math.atan2(dx,dz);
@@ -824,7 +883,9 @@ const Combat = {
     const dist=4+Math.random()*4;
     const x=State.playerGroup.position.x+Math.cos(angle)*dist;
     const z=State.playerGroup.position.z+Math.sin(angle)*dist;
-    const limit=Utils.getHalf()-1;
+    const w=Utils.getCurrentWorld()||{grid:CONFIG.GRID,tileSize:CONFIG.TILE_SIZE};
+    const half=Utils.getHalf(w);
+    const limit=half-w.tileSize/2;
     const enemy=this.createEnemy(Utils.clamp(x,-limit,limit),Utils.clamp(z,-limit,limit));
     State.enemies.push(enemy);UI.showMessage('👾 عدو ظهر!',800);
   },
@@ -960,108 +1021,248 @@ const World = {
     State.particles.forEach(p=>{if(p.mesh.parent)p.mesh.parent.remove(p.mesh);});State.particles=[];
     if(State.floatingSprites){State.floatingSprites.forEach(s=>{if(s.parent)s.parent.remove(s);});}
     State.scene.children.slice().forEach(c=>{if(c.userData?.isPortalRing||c.userData?.isPortalBeam)Utils.disposeMesh(c);});
+    document.getElementById('video-controls').style.display='none';
   },
-  build(wid){
-    if(State.isCODGameOpen)COD.close();
-    
+  
+  // ═══════════════════════════════════════════════
+  // 🟢 دالة إنشاء نسيج المربع (كل مربع 144)
+  // ═══════════════════════════════════════════════
+  createTileTexture(item, row, col) {
+    const c = document.createElement('canvas');
+    c.width = 256;
+    c.height = 256;
+    const x = c.getContext('2d');
+
+    if (item) {
+      // ── مربع يحتوي على عنصر (بوابة / معلم / COD) ──
+      const grad = x.createLinearGradient(0, 0, 256, 256);
+      if (item.type === 'cod') {
+        grad.addColorStop(0, '#00ff88');
+        grad.addColorStop(1, '#0088ff');
+      } else if (item.type === 'portal') {
+        grad.addColorStop(0, '#0a2a3a');
+        grad.addColorStop(1, '#1a3a4a');
+      } else {
+        grad.addColorStop(0, '#1a1a2e');
+        grad.addColorStop(1, '#2a2a3e');
+      }
+      x.fillStyle = grad;
+      x.fillRect(0, 0, 256, 256);
+
+      // إطار مميز
+      const borderColor = item.isCOD ? 'rgba(0,255,136,0.5)' : 'rgba(0,242,255,0.3)';
+      x.strokeStyle = borderColor;
+      x.lineWidth = item.isCOD ? 6 : 4;
+      x.strokeRect(4, 4, 248, 248);
+
+      // الإيموجي
+      x.fillStyle = item.isCOD ? '#00ff88' : '#00f2ff';
+      x.font = item.emoji ? '90px Arial' : '48px Arial';
+      x.textAlign = 'center';
+      x.textBaseline = 'middle';
+      x.shadowColor = item.isCOD ? '#00ff88' : '#00f2ff';
+      x.shadowBlur = 20;
+      x.fillText(item.emoji || '📌', 128, 100);
+      x.shadowBlur = 0;
+
+      // العنوان
+      x.font = 'bold 20px Cairo, Arial';
+      x.fillStyle = '#ffffff';
+      x.fillText((item.title || '').substring(0, 14), 128, 190);
+
+      // علامة COD
+      if (item.isCOD) {
+        x.fillStyle = 'rgba(0,255,136,0.5)';
+        x.font = 'bold 16px Cairo, Arial';
+        x.fillText('🎮 اضغط للدخول', 128, 230);
+      }
+    } else {
+      // ── مربع فارغ ──
+      const colors = ['#1a1a2e', '#16213e', '#0f3460', '#1e293b', '#2d1b3d', '#1a0a2e'];
+      x.fillStyle = colors[(row + col) % colors.length];
+      x.fillRect(0, 0, 256, 256);
+
+      // شبكة خطوط داخل المربع
+      x.strokeStyle = 'rgba(255,255,255,0.03)';
+      x.lineWidth = 1;
+      x.beginPath();
+      for (let i = 0; i <= 256; i += 32) {
+        x.moveTo(i, 0);
+        x.lineTo(i, 256);
+        x.moveTo(0, i);
+        x.lineTo(256, i);
+      }
+      x.stroke();
+
+      // إحداثيات المربع
+      x.fillStyle = 'rgba(255,255,255,0.08)';
+      x.font = 'bold 18px Arial';
+      x.textAlign = 'center';
+      x.textBaseline = 'middle';
+      x.fillText(col + ',' + row, 128, 128);
+    }
+
+    const tex = new THREE.CanvasTexture(c);
+    tex.magFilter = THREE.LinearFilter;
+    return tex;
+  },
+
+  // ═══════════════════════════════════════════════
+  // 🟢 دالة إنشاء أيقونة عائمة فوق المربع
+  // ═══════════════════════════════════════════════
+  createFloatingSprite(emoji, isCOD) {
+    const c = document.createElement('canvas');
+    c.width = 256;
+    c.height = 256;
+    const x = c.getContext('2d');
+    x.font = '160px Arial';
+    x.textAlign = 'center';
+    x.textBaseline = 'middle';
+    x.shadowColor = isCOD ? 'rgba(0,255,136,0.5)' : 'rgba(255,255,255,0.3)';
+    x.shadowBlur = 30;
+    x.fillText(emoji, 128, 128);
+    return new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(c),
+      transparent: true,
+      depthTest: false
+    }));
+  },
+
+  // ═══════════════════════════════════════════════
+  // 🟢 بناء العالم بالكامل (يشمل 144 مربع)
+  // ═══════════════════════════════════════════════
+  build(wid) {
+    if (State.isCODGameOpen) COD.close();
+
     const isMain = (wid === 'main');
-    
-    if(isMain){Sphere.show();State.tileGroup.visible=false;if(State.gridHelper)State.gridHelper.visible=false;}
-    else{Sphere.hide();State.tileGroup.visible=true;if(State.gridHelper)State.gridHelper.visible=State.gridVisible;}
-    State.playerGroup.visible=!isMain;
-    
-    document.getElementById('hud').style.display=isMain?'none':'flex';
-    document.getElementById('health-bar-container').style.display=isMain?'none':'block';
-    document.getElementById('dpad').style.display=isMain?'none':'block';
-    document.getElementById('fire-btn').style.display=isMain?'none':'flex';
-    document.getElementById('score-display-main').style.display=isMain?'flex':'none';
-    document.getElementById('exit-btn').style.display=isMain?'none':'block';
-    document.getElementById('enter-btn').style.display='none';
-    
-    const w=Utils.getWorld(wid);if(!w)return;
-    this.clear();State.currentWorldId=wid;
-    const bg=w.background||'#0a0a1a';
-    State.scene.background=new THREE.Color(bg);
-    State.scene.fog=new THREE.Fog(bg,30,80);
-    
-    for(let row=0;row<CONFIG.GRID;row++){
-      for(let col=0;col<CONFIG.GRID;col++){
-        const item=w.items?.find(i=>i.row===row&&i.col===col);
-        const tex=this.createTileTexture(item,row,col);
-        const geo=new THREE.PlaneGeometry(CONFIG.TILE_SIZE*0.96,CONFIG.TILE_SIZE*0.96);
-        const mat=new THREE.MeshStandardMaterial({map:tex,side:THREE.DoubleSide,roughness:0.3,metalness:0.15,emissive:new THREE.Color(0x000000),emissiveIntensity:0});
-        const mesh=new THREE.Mesh(geo,mat);
-        mesh.position.set(col*CONFIG.TILE_SIZE-Utils.getHalf()+CONFIG.TILE_SIZE/2,0,row*CONFIG.TILE_SIZE-Utils.getHalf()+CONFIG.TILE_SIZE/2);
-        mesh.rotation.x=-Math.PI/2;
-        mesh.userData={row,col,item:item||null};
-        State.tileGroup.add(mesh);State.tileMeshes.push(mesh);
+    const world = Utils.getWorld(wid);
+    if (!world) return;
+
+    // ✅ استخدام حجم الشبكة الخاص بالعالم
+    const gridSize = world.grid || CONFIG.GRID;
+    const tileSize = world.tileSize || CONFIG.TILE_SIZE;
+    const half = (gridSize * tileSize) / 2;
+
+    // إظهار/إخفاء العناصر
+    if (isMain) { Sphere.show(); State.tileGroup.visible = false; if (State.gridHelper) State.gridHelper.visible = false; }
+    else { Sphere.hide(); State.tileGroup.visible = true; if (State.gridHelper) State.gridHelper.visible = State.gridVisible; }
+    State.playerGroup.visible = !isMain;
+
+    // إظهار/إخفاء واجهة المستخدم
+    document.getElementById('hud').style.display = isMain ? 'none' : 'flex';
+    document.getElementById('health-bar-container').style.display = isMain ? 'none' : 'block';
+    document.getElementById('dpad').style.display = isMain ? 'none' : 'block';
+    document.getElementById('fire-btn').style.display = isMain ? 'none' : 'flex';
+    document.getElementById('score-display-main').style.display = isMain ? 'flex' : 'none';
+    document.getElementById('exit-btn').style.display = isMain ? 'none' : 'block';
+    document.getElementById('enter-btn').style.display = 'none';
+
+    // تنظيف العالم السابق
+    this.clear();
+
+    // تحديث المتغيرات العامة
+    State.currentWorldId = wid;
+    const bg = world.background || '#0a0a1a';
+    State.scene.background = new THREE.Color(bg);
+    State.scene.fog = new THREE.Fog(bg, 30, 80);
+
+    // ✅ إنشاء المربعات (12×12 = 144 مربع)
+    for (let row = 0; row < gridSize; row++) {
+      for (let col = 0; col < gridSize; col++) {
+        const item = world.items?.find(i => i.row === row && i.col === col);
+        const tex = this.createTileTexture(item, row, col);
+        const geo = new THREE.PlaneGeometry(tileSize * 0.96, tileSize * 0.96);
+        const mat = new THREE.MeshStandardMaterial({
+          map: tex,
+          side: THREE.DoubleSide,
+          roughness: 0.3,
+          metalness: 0.15,
+          emissive: new THREE.Color(0x000000),
+          emissiveIntensity: 0
+        });
+        const mesh = new THREE.Mesh(geo, mat);
+        const posX = col * tileSize - half + tileSize / 2;
+        const posZ = row * tileSize - half + tileSize / 2;
+        mesh.position.set(posX, 0, posZ);
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.userData = { row, col, item: item || null };
+        State.tileGroup.add(mesh);
+        State.tileMeshes.push(mesh);
       }
     }
-    if(w.items){
-      State.floatingSprites=[];
-      w.items.forEach((item,idx)=>{
-        const px=item.col*CONFIG.TILE_SIZE-Utils.getHalf()+CONFIG.TILE_SIZE/2;
-        const pz=item.row*CONFIG.TILE_SIZE-Utils.getHalf()+CONFIG.TILE_SIZE/2;
-        if(item.emoji){
-          const s=this.createFloatingSprite(item.emoji,item.isCOD);
-          s.position.set(px,1.4,pz);
-          s.userData={floatOffset:idx*0.5,floatSpeed:1.5+Math.random()*0.5};
-          State.scene.add(s);State.floatingSprites.push(s);
+
+    // ✅ إضافة العناصر الخاصة (بوابات، أيقونات عائمة)
+    if (world.items) {
+      State.floatingSprites = [];
+      world.items.forEach((item, idx) => {
+        const px = item.col * tileSize - half + tileSize / 2;
+        const pz = item.row * tileSize - half + tileSize / 2;
+
+        // أيقونة عائمة
+        if (item.emoji) {
+          const s = this.createFloatingSprite(item.emoji, item.isCOD);
+          s.position.set(px, 1.4, pz);
+          s.userData = { floatOffset: idx * 0.5, floatSpeed: 1.5 + Math.random() * 0.5 };
+          State.scene.add(s);
+          State.floatingSprites.push(s);
         }
-        if(item.type==='portal'||item.type==='cod'){
-          const color=item.isCOD?0x00ff88:0x00f2ff;
-          const ring=new THREE.Mesh(new THREE.RingGeometry(0.6,0.9,32),new THREE.MeshBasicMaterial({color,transparent:true,opacity:item.isCOD?0.6:0.35,side:THREE.DoubleSide}));
-          ring.rotation.x=-Math.PI/2;ring.position.set(px,0.08,pz);ring.userData={isPortalRing:true};State.scene.add(ring);
-          const beam=new THREE.Mesh(new THREE.CylinderGeometry(0.1,0.4,2,8,1,true),new THREE.MeshBasicMaterial({color,transparent:true,opacity:item.isCOD?0.2:0.08,side:THREE.DoubleSide}));
-          beam.position.set(px,1,pz);beam.userData={isPortalBeam:true};State.scene.add(beam);
+
+        // حلقة البوابة وشعاع الضوء
+        if (item.type === 'portal' || item.type === 'cod') {
+          const color = item.isCOD ? 0x00ff88 : 0x00f2ff;
+          const ring = new THREE.Mesh(
+            new THREE.RingGeometry(0.6, 0.9, 32),
+            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: item.isCOD ? 0.6 : 0.35, side: THREE.DoubleSide })
+          );
+          ring.rotation.x = -Math.PI / 2;
+          ring.position.set(px, 0.08, pz);
+          ring.userData = { isPortalRing: true };
+          State.scene.add(ring);
+
+          const beam = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.1, 0.4, 2, 8, 1, true),
+            new THREE.MeshBasicMaterial({ color, transparent: true, opacity: item.isCOD ? 0.2 : 0.08, side: THREE.DoubleSide })
+          );
+          beam.position.set(px, 1, pz);
+          beam.userData = { isPortalBeam: true };
+          State.scene.add(beam);
         }
       });
     }
-    if(w.videoUrl)this.createVideo360(w.videoUrl);
-    State.gridHelper=new THREE.GridHelper(Utils.getWorldSize(),CONFIG.GRID,0x8b5cf6,0x2a2a4a);
-    State.gridHelper.position.y=0.04;
-    State.gridHelper.material.transparent=true;
-    State.gridHelper.material.opacity=State.gridVisible?0.15:0;
-    State.tileGroup.add(State.gridHelper);
-    State.isInWorld=!isMain;
-    if(w.startPosition)State.playerGroup.position.set(w.startPosition.x,0,w.startPosition.z);
-    if(wid==='world_fight'){State.enemies.forEach(e=>State.scene.remove(e));State.enemies=[];State.enemySpawnTimer=0;}
-    UI.updateHUD();this.updateActiveTile();this.renderLandmarks();
-  },
-  createTileTexture(item,row,col){
-    const c=document.createElement('canvas');c.width=256;c.height=256;
-    const x=c.getContext('2d');
-    if(item){
-      const g=x.createLinearGradient(0,0,256,256);
-      if(item.type==='cod'){g.addColorStop(0,'#00ff88');g.addColorStop(1,'#0088ff');}
-      else if(item.type==='portal'){g.addColorStop(0,'#0a2a3a');g.addColorStop(1,'#1a3a4a');}
-      else{g.addColorStop(0,'#1a1a2e');g.addColorStop(1,'#2a2a3e');}
-      x.fillStyle=g;x.fillRect(0,0,256,256);
-      x.strokeStyle=item.isCOD?'rgba(0,255,136,0.5)':'rgba(0,242,255,0.3)';
-      x.lineWidth=item.isCOD?6:4;x.strokeRect(4,4,248,248);
-      x.fillStyle=item.isCOD?'#00ff88':'#00f2ff';
-      x.font=item.emoji?'90px Arial':'48px Arial';x.textAlign='center';x.textBaseline='middle';
-      x.fillText(item.emoji||'📌',128,100);
-      x.font='bold 20px Cairo, Arial';x.fillStyle='#ffffff';
-      x.fillText((item.title||'').substring(0,14),128,190);
-      if(item.isCOD){x.fillStyle='rgba(0,255,136,0.5)';x.font='bold 16px Cairo, Arial';x.fillText('🎮 اضغط للدخول',128,230);}
-    }else{
-      const colors=['#1a1a2e','#16213e','#0f3460','#1e293b','#2d1b3d','#1a0a2e'];
-      x.fillStyle=colors[(row+col)%colors.length];x.fillRect(0,0,256,256);
-      x.strokeStyle='rgba(255,255,255,0.03)';x.lineWidth=1;
-      x.beginPath();for(let i=0;i<=256;i+=32){x.moveTo(i,0);x.lineTo(i,256);x.moveTo(0,i);x.lineTo(256,i);}x.stroke();
-      x.fillStyle='rgba(255,255,255,0.08)';x.font='bold 18px Arial';x.textAlign='center';x.textBaseline='middle';
-      x.fillText(col+','+row,128,128);
+
+    // ✅ فيديو 360
+    if (world.videoUrl) {
+      this.createVideo360(world.videoUrl);
+      document.getElementById('video-controls').style.display = 'flex';
     }
-    const t=new THREE.CanvasTexture(c);t.magFilter=THREE.LinearFilter;return t;
+
+    // ✅ شبكة مساعدة
+    State.gridHelper = new THREE.GridHelper(gridSize * tileSize, gridSize, 0x8b5cf6, 0x2a2a4a);
+    State.gridHelper.position.y = 0.04;
+    State.gridHelper.material.transparent = true;
+    State.gridHelper.material.opacity = State.gridVisible ? 0.15 : 0;
+    State.tileGroup.add(State.gridHelper);
+
+    State.isInWorld = !isMain;
+
+    // ✅ موقع البداية
+    if (world.startPosition) {
+      State.playerGroup.position.set(world.startPosition.x, 0, world.startPosition.z);
+    }
+
+    // ✅ تنظيف الأعداء إذا كان عالم القتال
+    if (wid === 'world_fight') {
+      State.enemies.forEach(e => State.scene.remove(e));
+      State.enemies = [];
+      State.enemySpawnTimer = 0;
+    }
+
+    // ✅ تحديث الواجهة
+    UI.updateHUD();
+    this.updateActiveTile();
+    this.renderLandmarks();
   },
-  createFloatingSprite(emoji,isCOD){
-    const c=document.createElement('canvas');c.width=256;c.height=256;
-    const x=c.getContext('2d');x.font='160px Arial';x.textAlign='center';x.textBaseline='middle';
-    x.shadowColor=isCOD?'rgba(0,255,136,0.5)':'rgba(255,255,255,0.3)';x.shadowBlur=30;
-    x.fillText(emoji,128,128);
-    return new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,depthTest:false}));
-  },
+
   createVideo360(url){
     State.videoElement=document.createElement('video');
     State.videoElement.muted=State.isVideoMuted;State.videoElement.loop=true;State.videoElement.playsInline=true;
@@ -1075,6 +1276,7 @@ const World = {
       State.videoMesh=new THREE.Mesh(geo,mat);State.scene.add(State.videoMesh);
       State.camera.position.set(0,0,0);State.lon=0;State.lat=0;
       this.update360Camera();
+      setInterval(Video.updateTime, 500);
     });
     State.videoElement.load();
   },
@@ -1083,6 +1285,10 @@ const World = {
     const theta=THREE.MathUtils.degToRad(State.lon);
     State.camera.lookAt(new THREE.Vector3(Math.sin(phi)*Math.cos(theta),Math.cos(phi),Math.sin(phi)*Math.sin(theta)));
   },
+  
+  // ═══════════════════════════════════════════════
+  // 🟢 الدخول إلى العالم من البوابة
+  // ═══════════════════════════════════════════════
   enter(){
     if(State.isTransitioning||State.currentWorldId!=='main')return;
     const tile=Utils.getPlayerTile();
@@ -1094,10 +1300,68 @@ const World = {
     if(!target){UI.showToast('❌ العالم غير موجود','error');return;}
     this.transitionTo(item.targetWorld,target.name);
   },
-  enterById(wid){
-    const t=Utils.getWorld(wid);if(!t){UI.showToast('❌ العالم غير موجود','error');return;}
-    this.transitionTo(wid,t.name);
+
+  // ═══════════════════════════════════════════════
+  // 🟢 الدخول إلى العالم من الأيقونة (الكرة)
+  // ═══════════════════════════════════════════════
+  enterById(wid) {
+    let target = Utils.getWorld(wid);
+    
+    // ✅ إذا لم يكن العالم موجوداً، نقوم بإنشائه بـ 144 مربع
+    if (!target) {
+      const iconIndex = parseInt(wid.split('_')[2]) || 0;
+      const worldData = CONFIG.WORLD_ICONS[iconIndex] || CONFIG.WORLD_ICONS[0];
+      
+      const newWorld = {
+        id: wid,
+        name: worldData.name || '🌍 عالم جديد',
+        grid: 12,           // ✅ 12×12 = 144 مربع
+        tileSize: 3,        // ✅ حجم المربع
+        startPosition: { x: 0, z: 0 },
+        background: worldData.color || '#1a1a2e',
+        items: Sphere.generateWorldItems(iconIndex)
+      };
+      
+      State.worlds.push(newWorld);
+      target = newWorld;
+      
+      // ✅ إضافة بوابة في العالم الرئيسي لهذا العالم
+      const main = Utils.getWorld('main');
+      if (main) {
+        let pr, pc;
+        let attempts = 0;
+        do {
+          pr = 1 + Math.floor(Math.random() * 10);
+          pc = 1 + Math.floor(Math.random() * 10);
+          attempts++;
+        } while (main.items.some(it => it.row === pr && it.col === pc) && attempts < 50);
+        
+        if (attempts < 50) {
+          main.items.push({
+            id: 'portal_icon_' + iconIndex,
+            type: 'portal',
+            title: worldData.name || '🌍 عالم جديد',
+            emoji: worldData.emoji || '🌐',
+            row: pr,
+            col: pc,
+            targetWorld: wid
+          });
+          
+          // إعادة بناء العالم الرئيسي لإضافة البوابة
+          if (State.currentWorldId === 'main') {
+            this.build('main');
+          }
+        }
+      }
+    }
+    
+    if (target) {
+      this.transitionTo(wid, target.name);
+    } else {
+      UI.showToast('❌ فشل إنشاء العالم', 'error');
+    }
   },
+
   transitionTo(wid,name){
     State.isTransitioning=true;
     State.savedPlayerPos={x:State.playerGroup.position.x,z:State.playerGroup.position.z};
@@ -1114,6 +1378,7 @@ const World = {
       UI.showToast('✅ دخلت: '+name,'success');
     },700);
   },
+
   exit(){
     if(State.isCODGameOpen){COD.close();return;}
     if(State.isTransitioning||State.currentWorldId==='main')return;
@@ -1126,6 +1391,7 @@ const World = {
       UI.showToast('✅ عدت للخريطة الرئيسية','success');
     },600);
   },
+
   updateActiveTile(){
     if(State.isTransitioning)return;
     const tile=Utils.getPlayerTile();
@@ -1142,15 +1408,20 @@ const World = {
     if(onPortal&&State.currentWorldId==='main'&&!isCOD){btn.style.display='block';btn.textContent='🌐 دخول '+portalTitle;}
     else{btn.style.display='none';}
   },
+
   addLandmark(){
     const emojis=['🏰','🌲','🌊','⛰️','🏜️','🌋','🏗️','🌺','🕌','🏯','🎪','🏟️'];
     const names=['قلعة','غابة','بحيرة','جبل','صحراء','بركان','مبنى','حديقة','مسجد','معبد','سيرك','ملعب'];
     const idx=Math.floor(Math.random()*emojis.length);
-    const x=(Math.random()-0.5)*(Utils.getWorldSize()-2);
-    const z=(Math.random()-0.5)*(Utils.getWorldSize()-2);
+    const w=Utils.getCurrentWorld()||{grid:CONFIG.GRID,tileSize:CONFIG.TILE_SIZE};
+    const half=Utils.getHalf(w);
+    const limit=half-w.tileSize/2;
+    const x=(Math.random()-0.5)*limit*1.8;
+    const z=(Math.random()-0.5)*limit*1.8;
     State.landmarks.push({id:State.nextLandmarkId++,name:emojis[idx]+' '+names[idx],emoji:emojis[idx],x,z,color:'#'+Math.floor(Math.random()*16777215).toString(16).padStart(6,'0')});
     UI.showToast('📍 تم إضافة معلم: '+names[idx],'success');UI.updateHUD();this.renderLandmarks();
   },
+
   renderLandmarks(){
     if(State.landmarkMeshes)State.landmarkMeshes.forEach(m=>Utils.disposeMesh(m));
     State.landmarkMeshes=[];
@@ -1165,6 +1436,7 @@ const World = {
       sprite.scale.set(0.9,0.9,1);sprite.position.set(lm.x,1.4,lm.z);State.scene.add(sprite);State.landmarkMeshes.push(sprite);
     });
   },
+
   addRandom(){
     const emojis=['🎮','🎯','🎨','🌈','⭐','🌺','🌸','🌊','🔥','💫','🚀','🌙'];
     const titles=['ملصقات','فن','طبيعة','خيال','مغامرات','ألعاب','رياضة','موسيقى'];
@@ -1219,17 +1491,68 @@ const Sphere = {
     x.font='bold 20px Cairo, Arial';x.fillStyle='#ffffff';x.shadowColor='rgba(0,0,0,0.8)';x.shadowBlur=8;x.fillText(name,128,185);x.shadowBlur=0;
     return new THREE.CanvasTexture(c);
   },
+  
+  // ═══════════════════════════════════════════════
+  // 🟢 إنشاء عناصر العالم الجديد (لكل أيقونة)
+  // ═══════════════════════════════════════════════
+  generateWorldItems(iconIndex) {
+    const items = [];
+    const emojis = ['🏰', '🌲', '🌊', '⛰️', '🏜️', '🌋', '🏗️', '🌺', '🕌', '🏯', '🎪', '🏟️'];
+    const names = ['قلعة', 'غابة', 'بحيرة', 'جبل', 'صحراء', 'بركان', 'مبنى', 'حديقة', 'مسجد', 'معبد', 'سيرك', 'ملعب'];
+    
+    // ✅ عدد العناصر في العالم (2-5 عناصر)
+    const count = 2 + (iconIndex % 4);
+    
+    for (let i = 0; i < count; i++) {
+      let r, c;
+      let attempts = 0;
+      do {
+        r = 1 + Math.floor(Math.random() * 10); // 1-10 (تجنب الحواف)
+        c = 1 + Math.floor(Math.random() * 10);
+        attempts++;
+      } while (items.some(it => it.row === r && it.col === c) && attempts < 50);
+      
+      if (attempts < 50) {
+        items.push({
+          id: 'item_' + iconIndex + '_' + i,
+          type: i % 2 === 0 ? 'image' : 'portal',
+          title: emojis[i % emojis.length] + ' ' + names[(iconIndex + i) % names.length],
+          emoji: emojis[i % emojis.length],
+          row: r,
+          col: c
+        });
+      }
+    }
+    
+    // ✅ إضافة بوابة للعودة إلى العالم الرئيسي
+    let exitR, exitC;
+    let exitAttempts = 0;
+    do {
+      exitR = 1 + Math.floor(Math.random() * 10);
+      exitC = 1 + Math.floor(Math.random() * 10);
+      exitAttempts++;
+    } while (items.some(it => it.row === exitR && it.col === exitC) && exitAttempts < 30);
+    
+    if (exitAttempts < 30 && items.length < 10) {
+      items.push({
+        id: 'portal_exit_' + iconIndex,
+        type: 'portal',
+        title: '🚪 العودة للخريطة',
+        emoji: '🚪',
+        row: exitR,
+        col: exitC,
+        targetWorld: 'main'
+      });
+    }
+    
+    return items;
+  },
+  
   update(){if(!State.sphereGroup||State.isDraggingSphere)return;State.sphereGroup.rotation.y+=0.002;State.sphereGroup.rotation.x+=0.001;},
   show(){
     if(State.sphereGroup){State.sphereGroup.visible=true;State.sphereGroup.scale.set(1,1,1);State.sphereGroup.children.forEach(c=>{if(c.isSprite&&c.material)c.material.opacity=0.9;if(c.isPointLight)c.intensity=1.5;});}
   },
-  hide(){if(State.sphereGroup)State.sphereGroup.visible=false;},
-  generateWorldItems(iconIndex){
-    const items=[],emojis=['🏰','🌲','🌊','⛰️','🏜️','🌋','🏗️','🌺','🕌','🏯'];
-    const count=2+(iconIndex%4);
-    for(let i=0;i<count;i++){let r,c;do{r=1+Math.floor(Math.random()*10);c=1+Math.floor(Math.random()*10);}while(items.some(it=>it.row===r&&it.col===c));items.push({id:'item_'+iconIndex+'_'+i,type:i%2===0?'image':'portal',title:emojis[i%emojis.length]+' '+CONFIG.WORLD_ICONS[(iconIndex+i)%CONFIG.WORLD_ICONS.length].name,emoji:emojis[i%emojis.length],row:r,col:c});}
-    return items;
-  }
+  hide(){if(State.sphereGroup)State.sphereGroup.visible=false;}
 };
 
 // ─── COD ───
@@ -1239,7 +1562,7 @@ const COD = {
     const iframe=document.getElementById('cod-iframe');
     iframe.src=fn;iframe.style.display='block';
     document.getElementById('close-cod-btn').style.display='block';
-    ['hud','health-bar-container','dpad','fire-btn','game-message','minimap-frame','top-bar'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    ['hud','health-bar-container','dpad','fire-btn','game-message','minimap-frame','top-bar','score-display-main'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
     State.isCODGameOpen=true;UI.showToast('🎮 تم فتح اللعبة: '+fn,'success');
   },
   close(){
@@ -1253,6 +1576,7 @@ const COD = {
     document.getElementById('game-message').style.display='block';
     document.getElementById('minimap-frame').style.display='block';
     document.getElementById('top-bar').style.display='flex';
+    document.getElementById('score-display-main').style.display='flex';
     State.isCODGameOpen=false;UI.showToast('✅ تم إغلاق اللعبة','success');
   },
   add(){
@@ -1280,6 +1604,7 @@ const Spin = {
       State.spinCount+=totalSpins;State.spinPoints+=totalPoints;State.score+=totalPoints;
       State.spinCombo=Math.min(State.spinCombo+1,10);State.lastSpinTime=now;
       UI.updateHUD();
+      UI.showSpinEffect(totalPoints);
       if(State.sphereGroup){State.sphereGroup.children.forEach(c=>{if(c.isMesh&&c.material){c.material.emissiveIntensity=Math.min(1.5,c.material.emissiveIntensity+0.3);setTimeout(()=>{if(c.material)c.material.emissiveIntensity=Math.max(0.25,c.material.emissiveIntensity-0.3);},300);}});}
       UI.showToast('🌪️ دوران سريع! +'+totalPoints,'success');
     }
@@ -1336,16 +1661,19 @@ const Game = {
     if(!State.minimapCtx||document.getElementById('minimap-frame').style.display!=='block')return;
     const ctx=State.minimapCtx,w=120,h=120;
     ctx.clearRect(0,0,w,h);ctx.fillStyle='rgba(8,8,20,0.92)';ctx.fillRect(0,0,w,h);
-    const scale=w/Utils.getWorldSize();
-    const world=Utils.getCurrentWorld();if(!world)return;
-    for(let y=0;y<CONFIG.GRID;y++){for(let x=0;x<CONFIG.GRID;x++){
-      const item=world.items?.find(i=>i.row===y&&i.col===x);
+    const wd=Utils.getCurrentWorld();
+    const gridSize=wd?.grid||CONFIG.GRID;
+    const tileSize=wd?.tileSize||CONFIG.TILE_SIZE;
+    const scale=w/(gridSize*tileSize);
+    if(!wd)return;
+    for(let y=0;y<gridSize;y++){for(let x=0;x<gridSize;x++){
+      const item=wd.items?.find(i=>i.row===y&&i.col===x);
       if(item)ctx.fillStyle=item.type==='portal'?'#00f2ff':item.type==='cod'?'#00ff88':'#fbbf24';
       else ctx.fillStyle=((x+y)%2===0)?'#2a2a4a':'#1a1a2e';
-      ctx.fillRect(x*CONFIG.TILE_SIZE*scale,y*CONFIG.TILE_SIZE*scale,CONFIG.TILE_SIZE*scale*0.9,CONFIG.TILE_SIZE*scale*0.9);
+      ctx.fillRect(x*tileSize*scale,y*tileSize*scale,tileSize*scale*0.9,tileSize*scale*0.9);
     }}
-    const px=(State.playerGroup.position.x+Utils.getHalf())*scale;
-    const py=(State.playerGroup.position.z+Utils.getHalf())*scale;
+    const px=(State.playerGroup.position.x+(gridSize*tileSize)/2)*scale;
+    const py=(State.playerGroup.position.z+(gridSize*tileSize)/2)*scale;
     ctx.fillStyle='#a78bfa';ctx.beginPath();ctx.arc(px,py,3.5,0,Math.PI*2);ctx.fill();
     ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();
   },
@@ -1494,58 +1822,14 @@ const Input = {
       State.selectedIcon=null;State.renderer.domElement.style.cursor='default';
     });
     
-    // ===== الدخول إلى العالم من الأيقونة =====
+    // ═══════════════════════════════════════════════
+    // ✅ الدخول إلى العالم عند النقر على الأيقونة
+    // ═══════════════════════════════════════════════
     State.renderer.domElement.addEventListener('click', () => {
       if (State.selectedIcon !== null && State.iconSprites[State.selectedIcon]) {
         const world = State.iconSprites[State.selectedIcon].userData.world;
         const wid = 'world_icon_' + State.selectedIcon;
-        
-        let targetWorld = Utils.getWorld(wid);
-        
-        if (!targetWorld) {
-          const newWorld = {
-            id: wid,
-            name: world.name,
-            grid: 12,
-            tileSize: 3,
-            startPosition: { x: 0, z: 0 },
-            background: world.color,
-            items: Sphere.generateWorldItems(State.selectedIcon)
-          };
-          State.worlds.push(newWorld);
-          
-          const main = Utils.getWorld('main');
-          if (main) {
-            let pr, pc;
-            let attempts = 0;
-            do {
-              pr = 1 + Math.floor(Math.random() * 10);
-              pc = 1 + Math.floor(Math.random() * 10);
-              attempts++;
-            } while (main.items.some(it => it.row === pr && it.col === pc) && attempts < 50);
-            
-            main.items.push({
-              id: 'portal_icon_' + State.selectedIcon,
-              type: 'portal',
-              title: world.name,
-              emoji: world.emoji,
-              row: pr,
-              col: pc,
-              targetWorld: wid
-            });
-            
-            if (State.currentWorldId === 'main') {
-              World.build('main');
-            }
-          }
-          targetWorld = Utils.getWorld(wid);
-        }
-        
-        if (targetWorld) {
-          World.enterById(wid);
-        } else {
-          UI.showToast('❌ فشل إنشاء العالم', 'error');
-        }
+        World.enterById(wid);
       }
     });
     
@@ -1587,11 +1871,12 @@ const Input = {
 
 console.log('🌐 العوالم الكروية v78.0 — واجهة نظيفة');
 console.log('📌 الميزات:');
-console.log('  🎨 واجهة نظيفة: أيقونة المستخدم + الإعدادات + النقاط فقط');
-console.log('  ⚔️ تظهر عناصر التحكم عند دخول المعلم');
-console.log('  🔧 تم إصلاح مشكلة الدخول إلى العوالم');
+console.log('  ✅ كل أيقونة = عالم جديد بـ 144 مربع (12×12)');
+console.log('  ✅ دوال إنشاء المربعات: createTileTexture() و createFloatingSprite()');
+console.log('  ✅ الدخول عبر الأيقونة: World.enterById()');
+console.log('  🎨 واجهة نظيفة: أيقونة المستخدم + الإعدادات + النقاط');
+console.log('  ⚔️ تظهر عناصر التحكم عند دخول العالم');
 </script>
 </body>
 </html>
-
-                                                                                           
+   
