@@ -1778,212 +1778,247 @@ function clearWorld() {
   });
 }
 
+
+// ============================================================
+//   دالة بناء العالم (كاملة مع التعديلات)
+// ============================================================
+
 function buildWorld(worldId) {
-  if (isCODGameOpen) closeCODGame();
-
-  if (worldId === 'main') {
-    showSphere();
-    tileGroup.visible = false;
-    if (gridHelper) gridHelper.visible = false;
-    document.getElementById('spin-counter').style.display = 'flex';
-    
-    // إخفاء أزرار القتال في الخريطة الرئيسية
-    document.getElementById('combat-buttons').style.display = 'none';
-  } else {
-    hideSphere();
-    tileGroup.visible = true;
-    if (gridHelper) gridHelper.visible = gridVisible;
-    document.getElementById('spin-counter').style.display = 'none';
-    
-    
-    // إظهار أزرار القتال فقط في ساحة القتال
-    if (worldId === 'world_fight') {
-      document.getElementById('combat-buttons').style.display = 'flex';
+    // ====== التحكم في رؤية الكرة ======
+    if (worldId === 'main') {
+        // الخريطة الرئيسية: إظهار الكرة
+        if (sphereGroup) {
+            sphereGroup.visible = true;
+        }
+        tileGroup.visible = false;
+        playerGroup.visible = false;
+        document.getElementById('spin-counter').style.display = 'flex';
+        document.getElementById('combat-buttons').style.display = 'none';
     } else {
-      document.getElementById('combat-buttons').style.display = 'none';
-    }
-  }
-  playerGroup.visible = (worldId !== 'main');
-
-  const world = getWorld(worldId);
-  if (!world) return;
-
-  clearWorld();
-  currentWorldId = worldId;
-  GRID = world.grid || 12;
-  TILE_SIZE = world.tileSize || 3;
-  WORLD_SIZE = GRID * TILE_SIZE;
-  HALF = WORLD_SIZE / 2;
-
-  const bg = world.background || '#0a0a1a';
-  scene.background = new THREE.Color(bg);
-  scene.fog = new THREE.Fog(bg, 30, 80);
-
-  // إنشاء المربعات
-  for (let row = 0; row < GRID; row++) {
-    for (let col = 0; col < GRID; col++) {
-      const canvas = document.createElement('canvas');
-      canvas.width = 256; canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-
-      const item = world.items ? world.items.find(function(i) { return i.row === row && i.col === col; }) : null;
-
-      if (item) {
-        const grad = ctx.createLinearGradient(0, 0, 256, 256);
-        if (item.type === 'cod') {
-          grad.addColorStop(0, '#00ff88'); grad.addColorStop(1, '#0088ff');
-        } else if (item.type === 'portal') {
-          grad.addColorStop(0, '#0a2a3a'); grad.addColorStop(1, '#1a3a4a');
+        // العوالم الأخرى: إخفاء الكرة
+        if (sphereGroup) {
+            sphereGroup.visible = false;
+        }
+        tileGroup.visible = true;
+        playerGroup.visible = true;
+        document.getElementById('spin-counter').style.display = 'none';
+        
+        if (worldId === 'world_fight') {
+            document.getElementById('combat-buttons').style.display = 'flex';
         } else {
-          grad.addColorStop(0, '#1a1a2e'); grad.addColorStop(1, '#2a2a3e');
+            document.getElementById('combat-buttons').style.display = 'none';
         }
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, 256, 256);
-
-        const borderColor = item.isCOD ? 'rgba(0,255,136,0.5)' : 'rgba(0,242,255,0.3)';
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = item.isCOD ? 6 : 4;
-        ctx.strokeRect(4, 4, 248, 248);
-
-        ctx.fillStyle = item.isCOD ? '#00ff88' : '#00f2ff';
-        ctx.font = item.emoji ? '90px Arial' : '48px Arial';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.shadowColor = item.isCOD ? '#00ff88' : '#00f2ff';
-        ctx.shadowBlur = 20;
-        ctx.fillText(item.emoji || '📌', 128, 100);
-        ctx.shadowBlur = 0;
-
-        ctx.font = 'bold 20px Cairo, Arial';
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText((item.title || '').substring(0, 14), 128, 190);
-
-        if (item.isCOD) {
-          ctx.fillStyle = 'rgba(0,255,136,0.5)';
-          ctx.font = 'bold 16px Cairo, Arial';
-          ctx.fillText('🎮 اضغط للدخول', 128, 230);
-        }
-      } else {
-        const colors = ['#1a1a2e', '#16213e', '#0f3460', '#1e293b', '#2d1b3d', '#1a0a2e'];
-        ctx.fillStyle = colors[(row + col) % colors.length];
-        ctx.fillRect(0, 0, 256, 256);
-
-        ctx.strokeStyle = 'rgba(255,255,255,0.03)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for (let i = 0; i <= 256; i += 32) {
-          ctx.moveTo(i, 0); ctx.lineTo(i, 256);
-          ctx.moveTo(0, i); ctx.lineTo(256, i);
-        }
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.font = 'bold 18px Arial';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(col + ',' + row, 128, 128);
-      }
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.magFilter = THREE.LinearFilter;
-      const geo = new THREE.PlaneGeometry(TILE_SIZE * 0.96, TILE_SIZE * 0.96);
-      const mat = new THREE.MeshStandardMaterial({
-        map: tex, side: THREE.DoubleSide,
-        roughness: 0.3, metalness: 0.15,
-        emissive: new THREE.Color(0x000000),
-        emissiveIntensity: 0
-      });
-      const mesh = new THREE.Mesh(geo, mat);
-      const posX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
-      const posZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
-      mesh.position.set(posX, 0, posZ);
-      mesh.rotation.x = -Math.PI / 2;
-      mesh.userData = { row: row, col: col, item: item || null };
-      tileGroup.add(mesh);
-      tileMeshes.push(mesh);
     }
-  }
+    // ================================
 
-  // العناصر الخاصة
-  if (world.items) {
-    window.floatingSprites = [];
-    world.items.forEach(function(item, idx) {
-      const posX = item.col * TILE_SIZE - HALF + TILE_SIZE / 2;
-      const posZ = item.row * TILE_SIZE - HALF + TILE_SIZE / 2;
+    const world = getWorld(worldId);
+    if (!world) return;
 
-      if (item.emoji) {
-        const c = document.createElement('canvas');
-        c.width = 256; c.height = 256;
-        const cx = c.getContext('2d');
-        cx.font = '160px Arial';
-        cx.textAlign = 'center'; cx.textBaseline = 'middle';
-        cx.shadowColor = item.isCOD ? 'rgba(0,255,136,0.5)' : 'rgba(255,255,255,0.3)';
-        cx.shadowBlur = 30;
-        cx.fillText(item.emoji, 128, 128);
-        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-          map: new THREE.CanvasTexture(c), transparent: true, depthTest: false
-        }));
-        sprite.scale.set(1.6, 1.6, 1);
-        sprite.position.set(posX, 1.4, posZ);
-        sprite.userData = { floatOffset: idx * 0.5, floatSpeed: 1.5 + Math.random() * 0.5 };
-        scene.add(sprite);
-        window.floatingSprites.push(sprite);
-      }
+    clearWorld();
+    currentWorldId = worldId;
+    GRID = world.grid || 12;
+    TILE_SIZE = world.tileSize || 3;
+    WORLD_SIZE = GRID * TILE_SIZE;
+    HALF = WORLD_SIZE / 2;
 
-      if (item.type === 'portal' || item.type === 'cod') {
-        const color = item.isCOD ? 0x00ff88 : 0x00f2ff;
-        const ring = new THREE.Mesh(
-          new THREE.RingGeometry(0.6, 0.9, 32),
-          new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: item.isCOD ? 0.6 : 0.35, side: THREE.DoubleSide })
-        );
-        ring.rotation.x = -Math.PI / 2;
-        ring.position.set(posX, 0.08, posZ);
-        ring.userData = { isPortalRing: true };
-        scene.add(ring);
+    const bg = world.background || '#0a0a1a';
+    scene.background = new THREE.Color(bg);
+    scene.fog = new THREE.Fog(bg, 30, 80);
 
-        const beam = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.1, 0.4, 2, 8, 1, true),
-          new THREE.MeshBasicMaterial({ color: color, transparent: true, opacity: item.isCOD ? 0.2 : 0.08, side: THREE.DoubleSide })
-        );
-        beam.position.set(posX, 1, posZ);
-        beam.userData = { isPortalBeam: true };
-        scene.add(beam);
-      }
-    });
-  }
+    // إنشاء المربعات
+    for (let row = 0; row < GRID; row++) {
+        for (let col = 0; col < GRID; col++) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
 
-  if (world.type === 'video360' && world.videoUrl) {
-    createVideo360(world.videoUrl);
-    document.getElementById('video-controls').style.display = 'flex';
-  }
+            const item = world.items ? world.items.find(function(i) {
+                return i.row === row && i.col === col;
+            }) : null;
 
-  gridHelper = new THREE.GridHelper(WORLD_SIZE, GRID, 0x8b5cf6, 0x2a2a4a);
-  gridHelper.position.y = 0.04;
-  gridHelper.material.transparent = true;
-  gridHelper.material.opacity = gridVisible ? 0.15 : 0;
-  tileGroup.add(gridHelper);
+            if (item) {
+                const grad = ctx.createLinearGradient(0, 0, 256, 256);
+                if (item.type === 'cod') {
+                    grad.addColorStop(0, '#00ff88');
+                    grad.addColorStop(1, '#0088ff');
+                } else if (item.type === 'portal') {
+                    grad.addColorStop(0, '#0a2a3a');
+                    grad.addColorStop(1, '#1a3a4a');
+                } else {
+                    grad.addColorStop(0, '#1a1a2e');
+                    grad.addColorStop(1, '#2a2a3e');
+                }
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, 256, 256);
 
-  document.getElementById('exit-btn').style.display = (worldId !== 'main') ? 'block' : 'none';
-  document.getElementById('enter-btn').style.display = 'none';
-  document.getElementById('dpad').style.display = (worldId !== 'main') ? 'block' : 'none';
-  document.getElementById('health-bar-container').style.display = (worldId !== 'main') ? 'block' : 'none';
-  document.getElementById('hud').style.display = (worldId !== 'main') ? 'flex' : 'none';
+                const borderColor = item.isCOD ? 'rgba(0,255,136,0.5)' : 'rgba(0,242,255,0.3)';
+                ctx.strokeStyle = borderColor;
+                ctx.lineWidth = item.isCOD ? 6 : 4;
+                ctx.strokeRect(4, 4, 248, 248);
 
-  isInWorld = (worldId !== 'main');
+                ctx.fillStyle = item.isCOD ? '#00ff88' : '#00f2ff';
+                ctx.font = item.emoji ? '90px Arial' : '48px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowColor = item.isCOD ? '#00ff88' : '#00f2ff';
+                ctx.shadowBlur = 20;
+                ctx.fillText(item.emoji || '📌', 128, 100);
+                ctx.shadowBlur = 0;
 
-  if (world.startPosition) {
-    playerGroup.position.set(world.startPosition.x, 0, world.startPosition.z);
-  }
+                ctx.font = 'bold 20px Cairo, Arial';
+                ctx.fillStyle = '#ffffff';
+                ctx.fillText((item.title || '').substring(0, 14), 128, 190);
 
-  if (worldId === 'world_fight') {
-    enemies.forEach(function(e) { scene.remove(e); });
-    enemies = [];
-    enemySpawnTimer = 0;
-  }
+                if (item.isCOD) {
+                    ctx.fillStyle = 'rgba(0,255,136,0.5)';
+                    ctx.font = 'bold 16px Cairo, Arial';
+                    ctx.fillText('🎮 اضغط للدخول', 128, 230);
+                }
+            } else {
+                const colors = ['#1a1a2e', '#16213e', '#0f3460', '#1e293b', '#2d1b3d', '#1a0a2e'];
+                ctx.fillStyle = colors[(row + col) % colors.length];
+                ctx.fillRect(0, 0, 256, 256);
 
-  updateHUD();
-  updateActiveTile();
-  renderLandmarks();
+                ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                for (let i = 0; i <= 256; i += 32) {
+                    ctx.moveTo(i, 0);
+                    ctx.lineTo(i, 256);
+                    ctx.moveTo(0, i);
+                    ctx.lineTo(256, i);
+                }
+                ctx.stroke();
+
+                ctx.fillStyle = 'rgba(255,255,255,0.08)';
+                ctx.font = 'bold 18px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(col + ',' + row, 128, 128);
+            }
+
+            const tex = new THREE.CanvasTexture(canvas);
+            tex.magFilter = THREE.LinearFilter;
+            const geo = new THREE.PlaneGeometry(TILE_SIZE * 0.96, TILE_SIZE * 0.96);
+            const mat = new THREE.MeshStandardMaterial({
+                map: tex,
+                side: THREE.DoubleSide,
+                roughness: 0.3,
+                metalness: 0.15,
+                emissive: new THREE.Color(0x000000),
+                emissiveIntensity: 0
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            const posX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
+            const posZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
+            mesh.position.set(posX, 0, posZ);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.userData = { row: row, col: col, item: item || null };
+            tileGroup.add(mesh);
+            tileMeshes.push(mesh);
+        }
+    }
+
+    // العناصر الخاصة
+    if (world.items) {
+        window.floatingSprites = [];
+        world.items.forEach(function(item, idx) {
+            const posX = item.col * TILE_SIZE - HALF + TILE_SIZE / 2;
+            const posZ = item.row * TILE_SIZE - HALF + TILE_SIZE / 2;
+
+            if (item.emoji) {
+                const c = document.createElement('canvas');
+                c.width = 256;
+                c.height = 256;
+                const cx = c.getContext('2d');
+                cx.font = '160px Arial';
+                cx.textAlign = 'center';
+                cx.textBaseline = 'middle';
+                cx.shadowColor = item.isCOD ? 'rgba(0,255,136,0.5)' : 'rgba(255,255,255,0.3)';
+                cx.shadowBlur = 30;
+                cx.fillText(item.emoji, 128, 128);
+                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+                    map: new THREE.CanvasTexture(c),
+                    transparent: true,
+                    depthTest: false
+                }));
+                sprite.scale.set(1.6, 1.6, 1);
+                sprite.position.set(posX, 1.4, posZ);
+                sprite.userData = { floatOffset: idx * 0.5, floatSpeed: 1.5 + Math.random() * 0.5 };
+                scene.add(sprite);
+                window.floatingSprites.push(sprite);
+            }
+
+            if (item.type === 'portal' || item.type === 'cod') {
+                const color = item.isCOD ? 0x00ff88 : 0x00f2ff;
+                const ring = new THREE.Mesh(
+                    new THREE.RingGeometry(0.6, 0.9, 32),
+                    new THREE.MeshBasicMaterial({
+                        color: color,
+                        transparent: true,
+                        opacity: item.isCOD ? 0.6 : 0.35,
+                        side: THREE.DoubleSide
+                    })
+                );
+                ring.rotation.x = -Math.PI / 2;
+                ring.position.set(posX, 0.08, posZ);
+                ring.userData = { isPortalRing: true };
+                scene.add(ring);
+
+                const beam = new THREE.Mesh(
+                    new THREE.CylinderGeometry(0.1, 0.4, 2, 8, 1, true),
+                    new THREE.MeshBasicMaterial({
+                        color: color,
+                        transparent: true,
+                        opacity: item.isCOD ? 0.2 : 0.08,
+                        side: THREE.DoubleSide
+                    })
+                );
+                beam.position.set(posX, 1, posZ);
+                beam.userData = { isPortalBeam: true };
+                scene.add(beam);
+            }
+        });
+    }
+
+    if (world.type === 'video360' && world.videoUrl) {
+        createVideo360(world.videoUrl);
+        document.getElementById('video-controls').style.display = 'flex';
+    }
+
+    gridHelper = new THREE.GridHelper(WORLD_SIZE, GRID, 0x8b5cf6, 0x2a2a4a);
+    gridHelper.position.y = 0.04;
+    gridHelper.material.transparent = true;
+    gridHelper.material.opacity = gridVisible ? 0.15 : 0;
+    tileGroup.add(gridHelper);
+
+    document.getElementById('exit-btn').style.display = (worldId !== 'main') ? 'block' : 'none';
+    document.getElementById('enter-btn').style.display = 'none';
+    document.getElementById('dpad').style.display = (worldId !== 'main') ? 'block' : 'none';
+    document.getElementById('health-bar-container').style.display = (worldId !== 'main') ? 'block' : 'none';
+    document.getElementById('hud').style.display = (worldId !== 'main') ? 'flex' : 'none';
+
+    isInWorld = (worldId !== 'main');
+
+    if (world.startPosition) {
+        playerGroup.position.set(world.startPosition.x, 0, world.startPosition.z);
+    }
+
+    if (worldId === 'world_fight') {
+        enemies.forEach(function(e) { scene.remove(e); });
+        enemies = [];
+        enemySpawnTimer = 0;
+    }
+
+    updateHUD();
+    updateActiveTile();
+    renderLandmarks();
 }
 
+
+
+ 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 16. فيديو 360
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2034,79 +2069,120 @@ function update360Camera() {
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 17. الدخول والخروج من العوالم
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ============================================================
+//   دالة الدخول إلى العالم (كاملة مع التعديلات)
+// ============================================================
+
 function enterWorld() {
-  if (isTransitioning || currentWorldId !== 'main') return;
+    if (isTransitioning || currentWorldId !== 'main') return;
 
-  const tile = getPlayerTile();
-  const world = getCurrentWorld();
-  const item = world.items ? world.items.find(function(i) {
-    return i.row === tile.row && i.col === tile.col && i.type === 'portal';
-  }) : null;
+    const tile = getPlayerTile();
+    const world = getCurrentWorld();
+    const item = world.items ? world.items.find(function(i) {
+        return i.row === tile.row && i.col === tile.col && i.type === 'portal';
+    }) : null;
 
-  if (!item) { showToast('❌ لا توجد بوابة هنا', 'error'); return; }
-  if (!item.targetWorld) { showToast('❌ هذه البوابة لا تؤدي إلى أي عالم', 'error'); return; }
-
-  const target = getWorld(item.targetWorld);
-  if (!target) { showToast('❌ العالم غير موجود', 'error'); return; }
-
-  isTransitioning = true;
-  savedPlayerPos = { x: playerGroup.position.x, z: playerGroup.position.z };
-  showTransition('جاري الدخول إلى ' + target.name);
-
-  setTimeout(function() {
-    buildWorld(item.targetWorld);
-
-    if (!visitedWorlds.has(item.targetWorld)) {
-      visitedWorlds.add(item.targetWorld);
-      score += 50;
-      addXP(30);
-      addCoins(10);
-      showToast('🏆 اكتشاف عالم جديد! +50', 'success');
-      updateQuests('worlds', 1);
-      checkAchievement('explorer', visitedWorlds.size >= 3);
-      checkAchievement('master', visitedWorlds.size >= 5);
+    if (!item) {
+        showToast('❌ لا توجد بوابة هنا', 'error');
+        return;
+    }
+    if (!item.targetWorld) {
+        showToast('❌ هذه البوابة لا تؤدي إلى أي عالم', 'error');
+        return;
     }
 
-    if (target.id === 'world_360') {
-      camera.position.set(0, 0, 0);
-      lon = 0; lat = 0;
-      update360Camera();
-    } else {
-      camera.position.set(0, 6.5, 11);
-      camera.lookAt(0, 0.5, 0);
+    const target = getWorld(item.targetWorld);
+    if (!target) {
+        showToast('❌ العالم غير موجود', 'error');
+        return;
     }
 
-    showSphere();
-    hideTransition();
-    isTransitioning = false;
-    showToast('✅ دخلت: ' + target.name, 'success');
-  }, 700);
+    isTransitioning = true;
+    savedPlayerPos = { x: playerGroup.position.x, z: playerGroup.position.z };
+    showTransition('جاري الدخول إلى ' + target.name);
+
+    setTimeout(function() {
+        buildWorld(item.targetWorld);
+
+        // ====== التأكد من إخفاء الكرة ======
+        if (sphereGroup) {
+            sphereGroup.visible = false;
+        }
+        // ==================================
+
+        if (!visitedWorlds.has(item.targetWorld)) {
+            visitedWorlds.add(item.targetWorld);
+            score += 50;
+            addXP(30);
+            addCoins(10);
+            showToast('🏆 اكتشاف عالم جديد! +50', 'success');
+            updateQuests('worlds', 1);
+            checkAchievement('explorer', visitedWorlds.size >= 3);
+            checkAchievement('master', visitedWorlds.size >= 5);
+        }
+
+        if (target.id === 'world_360') {
+            camera.position.set(0, 0, 0);
+            lon = 0;
+            lat = 0;
+            update360Camera();
+        } else {
+            camera.position.set(0, 6.5, 11);
+            camera.lookAt(0, 0.5, 0);
+        }
+
+        showSphere();
+        hideTransition();
+        isTransitioning = false;
+        showToast('✅ دخلت: ' + target.name, 'success');
+    }, 700);
 }
+
+
+
+// ============================================================
+//   دالة الخروج من العالم (كاملة مع التعديلات)
+// ============================================================
 
 function exitWorld() {
-  const iframe = document.getElementById('cod-iframe');
-  if (iframe.style.display === 'block') { closeCODGame(); return; }
-
-  if (isTransitioning || currentWorldId === 'main') return;
-
-  isTransitioning = true;
-  showTransition('جاري العودة للخريطة...');
-
-  setTimeout(function() {
-    buildWorld('main');
-    playerGroup.visible = false;
-    if (savedPlayerPos) {
-      playerGroup.position.set(savedPlayerPos.x, 0, savedPlayerPos.z);
-      savedPlayerPos = null;
+    // إذا كانت لعبة COD مفتوحة، أغلقها أولاً
+    const iframe = document.getElementById('cod-iframe');
+    if (iframe.style.display === 'block') {
+        closeCODGame();
+        return;
     }
-    camera.position.set(0, 1.5, 10);
-    camera.lookAt(0, 0, 0);
-    showSphere();
-    hideTransition();
-    isTransitioning = false;
-    showToast('✅ عدت للخريطة الرئيسية', 'success');
-  }, 600);
+
+    if (isTransitioning || currentWorldId === 'main') return;
+
+    isTransitioning = true;
+    showTransition('جاري العودة للخريطة...');
+
+    setTimeout(function() {
+        buildWorld('main');
+
+        // ====== التأكد من إظهار الكرة ======
+        if (sphereGroup) {
+            sphereGroup.visible = true;
+        }
+        // ==================================
+
+        playerGroup.visible = false;
+        if (savedPlayerPos) {
+            playerGroup.position.set(savedPlayerPos.x, 0, savedPlayerPos.z);
+            savedPlayerPos = null;
+        }
+        camera.position.set(0, 1.5, 10);
+        camera.lookAt(0, 0, 0);
+        showSphere();
+        hideTransition();
+        isTransitioning = false;
+        showToast('✅ عدت للخريطة الرئيسية', 'success');
+    }, 600);
 }
+
+
+
+
 
 function enterWorldById(worldId) {
   const target = getWorld(worldId);
@@ -2910,22 +2986,34 @@ function updateSphereRotation() {
 }
 
 
+
+
+
+// ============================================================
+//   دوال التحكم في الكرة (Sphere)
+// ============================================================
+
 function showSphere() {
-  if (sphereGroup) {
-    sphereGroup.visible = true;
-    sphereGroup.scale.set(1, 1, 1);
-    sphereGroup.children.forEach(function(child) {
-      if (child.isSprite && child.material) child.material.opacity = 0.9;
-      if (child.isPointLight) child.intensity = 1.5;
-    });
-  }
-  document.getElementById('facet-info').style.display = selectedIcon !== null ? 'block' : 'none';
+    if (sphereGroup) {
+        sphereGroup.visible = true;
+        sphereGroup.scale.set(1, 1, 1);
+        sphereGroup.children.forEach(function(child) {
+            if (child.isSprite && child.material) child.material.opacity = 0.9;
+            if (child.isPointLight) child.intensity = 1.5;
+        });
+    }
+    document.getElementById('facet-info').style.display = selectedIcon !== null ? 'block' : 'none';
 }
 
 function hideSphere() {
-  if (sphereGroup) sphereGroup.visible = false;
-  document.getElementById('facet-info').style.display = 'none';
+    if (sphereGroup) {
+        sphereGroup.visible = false;
+    }
+    document.getElementById('facet-info').style.display = 'none';
 }
+
+
+    
 
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3360,23 +3448,32 @@ function initGame() {
 }
 
 
+// ============================================================
+//   دالة بدء اللعبة (للتأكد من الإعدادات)
+// ============================================================
+
 function startGame() {
-  document.getElementById('start-screen').style.display = 'none';
-  document.getElementById('top-bar').style.display = 'flex';
-  document.getElementById('game-message').style.display = 'block';
-  document.getElementById('minimap-frame').style.display = 'block';
-  document.getElementById('health-bar-container').style.display = 'none';
-  document.getElementById('hud').style.display = 'none';
-  document.getElementById('dpad').style.display = 'none';
-  document.getElementById('enter-btn').style.display = 'none';
-  document.getElementById('spin-counter').style.display = 'none';
-  document.getElementById('combat-buttons').style.display = 'none';
-  initGame();
-  playerGroup.visible = false;
-  if (sphereGroup) sphereGroup.visible = true;
+    document.getElementById('start-screen').style.display = 'none';
+    document.getElementById('top-bar').style.display = 'flex';
+    document.getElementById('game-message').style.display = 'block';
+    document.getElementById('minimap-frame').style.display = 'block';
+    document.getElementById('health-bar-container').style.display = 'none';
+    document.getElementById('hud').style.display = 'none';
+    document.getElementById('dpad').style.display = 'none';
+    document.getElementById('enter-btn').style.display = 'none';
+    document.getElementById('spin-counter').style.display = 'none';
+    document.getElementById('combat-buttons').style.display = 'none';
+
+    initGame();
+
+    // ====== التأكد من إعدادات الكرة ======
+    playerGroup.visible = false;
+    if (sphereGroup) {
+        sphereGroup.visible = true;  // الكرة ظاهرة في البداية
+    }
+    // ====================================
 }
-
-
+ 
   
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -3478,3 +3575,5 @@ console.log('  ✅ الإنجازات والمهام في أيقونات منف�
 
 
   
+
+   
