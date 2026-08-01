@@ -1,854 +1,840 @@
-
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>🌐 العوالم الكروية</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<style>
-/* ═══════════════════════════════════════════════════════════════
-   🌐 العوالم الكروية - v79.0 - واجهة معاد تنظيمها
-   ═══════════════════════════════════════════════════════════════ */
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>🌐 العوالم الكروية - واجهة متقنة</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <style>
+    /* ─── Reset & Base ─── */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: #0a0a1a;
+      color: #fff;
+      overflow: hidden;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+    canvas { display: block; width: 100%; height: 100%; }
 
-/* ─── Reset & Base ─── */
-* { margin: 0; padding: 0; box-sizing: border-box; }
+    /* ═══════════════════════════════════════════════════════════════
+       شريط الأدوات العلوي المتقن - جميع الأزرار في سطر واحد
+       ═══════════════════════════════════════════════════════════════ */
+    #top-bar {
+      position: fixed;
+      top: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 200;
+      display: flex;
+      gap: 4px;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(16px);
+      padding: 6px 12px;
+      border-radius: 50px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.6);
+    }
+    .top-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.04);
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 15px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+    .top-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      transform: scale(1.08);
+    }
+    .top-btn:active {
+      transform: scale(0.92);
+    }
+    .top-btn.active {
+      background: rgba(139, 92, 246, 0.3);
+      color: #c4b5fd;
+      box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+    }
+    .top-btn.gold { background: rgba(255, 215, 0, 0.12); color: #ffd700; }
+    .top-btn.gold:hover { background: rgba(255, 215, 0, 0.25); }
+    .top-btn.green { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+    .top-btn.green:hover { background: rgba(74, 222, 128, 0.25); }
+    .top-btn.blue { background: rgba(96, 165, 250, 0.12); color: #60a5fa; }
+    .top-btn.blue:hover { background: rgba(96, 165, 250, 0.25); }
+    .top-btn.purple { background: rgba(167, 139, 250, 0.12); color: #a78bfa; }
+    .top-btn.purple:hover { background: rgba(167, 139, 250, 0.25); }
+    .top-btn.red { background: rgba(239, 68, 68, 0.12); color: #f87171; }
+    .top-btn.red:hover { background: rgba(239, 68, 68, 0.25); }
+    .top-btn.cyan { background: rgba(34, 211, 238, 0.12); color: #22d3ee; }
+    .top-btn.cyan:hover { background: rgba(34, 211, 238, 0.25); }
+    .top-divider {
+      width: 1px;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.06);
+      margin: 0 2px;
+    }
 
-canvas { display: block; width: 100%; height: 100%; }
+    /* ═══════════════════════════════════════════════════════════════
+       اللوحات المنبثقة المتقنة
+       ═══════════════════════════════════════════════════════════════ */
+    .panel {
+      position: fixed;
+      top: 62px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(10, 10, 30, 0.96);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 18px 22px;
+      z-index: 150;
+      display: none;
+      min-width: 280px;
+      max-width: 380px;
+      max-height: 70vh;
+      overflow-y: auto;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 8px 50px rgba(0, 0, 0, 0.7);
+      animation: panelFade 0.25s ease;
+    }
+    @keyframes panelFade {
+      from { opacity: 0; transform: translateX(-50%) translateY(-8px) scale(0.96); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    }
+    .panel::-webkit-scrollbar { width: 4px; }
+    .panel::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 2px; }
+    .panel::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 2px; }
 
-body {
-  font-family: 'Cairo', sans-serif;
-  background: #050510;
-  color: #fff;
-  overflow: hidden;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-}
+    .panel-title {
+      color: #ffd700;
+      font-size: 16px;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .panel-title .close-btn {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      background: none;
+      border: none;
+      color: #666;
+      font-size: 18px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .panel-title .close-btn:hover { color: #fff; transform: rotate(90deg); }
 
-/* ═══════════════════════════════════════════════════════════════
-   1. شاشة البداية
-   ═══════════════════════════════════════════════════════════════ */
-#start-screen {
-  position: fixed; inset: 0; z-index: 2000;
-  background: linear-gradient(135deg, #0a0a2a 0%, #000 50%, #0a0a1a 100%);
-  display: flex; flex-direction: column;
-  justify-content: center; align-items: center; gap: 24px;
-}
+    /* عناصر الإعدادات */
+    .setting-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      font-size: 12px;
+    }
+    .setting-row:last-child { border-bottom: none; }
+    .setting-row label { color: #aaa; font-weight: 500; }
+    .setting-row .value { color: #ffd700; font-weight: 700; }
+    .setting-row button {
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      color: #fff;
+      padding: 3px 14px;
+      border-radius: 6px;
+      font-size: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.3s;
+    }
+    .setting-row button:hover { background: rgba(139, 92, 246, 0.3); transform: scale(1.04); }
+    .setting-row .btn-green { background: rgba(74, 222, 128, 0.15); border-color: rgba(74, 222, 128, 0.2); color: #4ade80; }
+    .setting-row .btn-green:hover { background: rgba(74, 222, 128, 0.3); }
+    .setting-row .btn-gold { background: rgba(255, 215, 0, 0.15); border-color: rgba(255, 215, 0, 0.2); color: #ffd700; }
+    .setting-row .btn-gold:hover { background: rgba(255, 215, 0, 0.3); }
+    .setting-row .btn-red { background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .setting-row .btn-red:hover { background: rgba(239, 68, 68, 0.3); }
+    .setting-row .btn-cyan { background: rgba(34, 211, 238, 0.15); border-color: rgba(34, 211, 238, 0.2); color: #22d3ee; }
+    .setting-row .btn-cyan:hover { background: rgba(34, 211, 238, 0.3); }
+    .setting-row input[type="range"] {
+      width: 80px;
+      height: 3px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      outline: none;
+    }
+    .setting-row input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #8b5cf6;
+      cursor: pointer;
+    }
 
-.start-logo {
-  font-size: 52px; font-weight: 900;
-  background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: float 3s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
-}
+    .settings-section-title {
+      color: #ffd700;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 10px 0 4px;
+      border-bottom: 1px solid rgba(255, 215, 0, 0.06);
+      margin-top: 2px;
+    }
 
-@keyframes glow {
-  from { filter: drop-shadow(0 0 20px rgba(255,215,0,0.3)); }
-  to   { filter: drop-shadow(0 0 40px rgba(255,215,0,0.6)); }
-}
+    /* الملف الشخصي */
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .profile-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      border: 2px solid rgba(255, 215, 0, 0.2);
+      flex-shrink: 0;
+    }
+    .profile-info { flex: 1; }
+    .profile-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: #fff;
+    }
+    .profile-name .edit-icon {
+      font-size: 12px;
+      color: #888;
+      cursor: pointer;
+      margin-right: 6px;
+      transition: all 0.3s;
+    }
+    .profile-name .edit-icon:hover { color: #ffd700; }
+    .profile-id { font-size: 10px; color: #666; margin-top: 2px; }
 
-.start-subtitle {
-  font-size: 15px; color: #888; text-align: center;
-  max-width: 420px; line-height: 2;
-}
-.start-subtitle span {
-  color: #ffd700; font-weight: 700;
-  background: rgba(255,215,0,0.08);
-  padding: 2px 10px; border-radius: 20px;
-}
+    .profile-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 4px 8px;
+    }
+    .profile-stat {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #ccc;
+      padding: 3px 0;
+    }
+    .profile-stat .stat-icon { font-size: 13px; }
+    .profile-stat .stat-value { font-weight: 700; color: #fff; }
+    .profile-stat .stat-value.gold { color: #ffd700; }
+    .profile-stat .stat-value.level { color: #60a5fa; }
+    .profile-stat .stat-value.score { color: #a78bfa; }
+    .profile-stat .stat-value.worlds { color: #4ade80; }
+    .profile-stat .stat-value.landmarks { color: #fbbf24; }
 
-.start-btn {
-  border: 2px solid #00f2ff; color: #00f2ff;
-  padding: 18px 60px; background: rgba(0,242,255,0.08);
-  border-radius: 60px; font-size: 22px; cursor: pointer;
-  transition: all .3s; font-weight: 700; font-family: inherit;
-  position: relative; overflow: hidden;
-}
-.start-btn::before {
-  content: ''; position: absolute; top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
-}
-.start-btn:hover::before { left: 100%; }
-.start-btn:hover {
-  transform: scale(1.08); background: #00f2ff; color: #000;
-  box-shadow: 0 0 60px rgba(0,242,255,0.5), 0 0 100px rgba(0,242,255,0.2);
-}
+    .profile-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .profile-actions button {
+      flex: 1;
+      padding: 5px 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.04);
+      color: #aaa;
+      font-size: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.3s;
+    }
+    .profile-actions button:hover { background: rgba(255, 255, 255, 0.08); color: #fff; }
 
-.start-features {
-  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
-  max-width: 400px;
-}
-.start-features .feat {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  padding: 6px 14px; border-radius: 20px;
-  font-size: 11px; color: #aaa;
-}
+    /* الإنجازات والمهام */
+    .achievement-item {
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-size: 12px;
+      transition: all 0.3s;
+    }
+    .achievement-item.locked {
+      background: rgba(255, 255, 255, 0.03);
+      color: #666;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .achievement-item.unlocked {
+      background: rgba(255, 215, 0, 0.08);
+      color: #ffd700;
+      border: 1px solid rgba(255, 215, 0, 0.15);
+    }
 
-.version-tag { position: absolute; bottom: 20px; font-size: 12px; color: #555; }
+    .quest-item {
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 4px;
+      font-size: 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .quest-item.complete {
+      background: rgba(74, 222, 128, 0.08);
+      border-color: rgba(74, 222, 128, 0.15);
+      color: #4ade80;
+    }
+    .quest-progress {
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 2px;
+      margin-top: 4px;
+      overflow: hidden;
+    }
+    .quest-progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
 
-/* ═══════════════════════════════════════════════════════════════
-   2. دليل اللعب
-   ═══════════════════════════════════════════════════════════════ */
-#tutorial-panel {
-  position: fixed; inset: 0; z-index: 2001;
-  background: rgba(0,0,0,0.95);
-  display: none;
-  justify-content: center; align-items: center;
-  flex-direction: column; gap: 20px; padding: 20px;
-}
-#tutorial-panel h2 { color: #ffd700; font-size: 28px; }
-#tutorial-panel .tutorial-content {
-  max-width: 400px; color: #aaa;
-  font-size: 13px; line-height: 2; text-align: center;
-}
-#tutorial-panel .tutorial-content b { color: #fff; }
+    /* ═══════════════════════════════════════════════════════════════
+       باقي العناصر
+       ═══════════════════════════════════════════════════════════════ */
+    #start-screen {
+      position: fixed; inset: 0; z-index: 2000;
+      background: linear-gradient(135deg, #0a0a2a, #000, #0a0a1a);
+      display: flex; flex-direction: column;
+      justify-content: center; align-items: center; gap: 24px;
+    }
+    .start-logo {
+      font-size: 52px; font-weight: 900;
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+    @keyframes glow {
+      from { filter: drop-shadow(0 0 20px rgba(255,215,0,0.3)); }
+      to { filter: drop-shadow(0 0 40px rgba(255,215,0,0.6)); }
+    }
+    .start-subtitle {
+      font-size: 15px; color: #888; text-align: center;
+      max-width: 420px; line-height: 2;
+    }
+    .start-subtitle span { color: #ffd700; font-weight: 700; }
+    .start-btn {
+      border: 2px solid #00f2ff; color: #00f2ff;
+      padding: 18px 60px; background: rgba(0,242,255,0.08);
+      border-radius: 60px; font-size: 22px; cursor: pointer;
+      transition: all .3s; font-weight: 700; font-family: inherit;
+    }
+    .start-btn:hover {
+      transform: scale(1.08); background: #00f2ff; color: #000;
+      box-shadow: 0 0 60px rgba(0,242,255,0.5);
+    }
+    .start-features {
+      display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
+      max-width: 400px;
+    }
+    .start-features .feat {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      padding: 6px 14px; border-radius: 20px;
+      font-size: 11px; color: #aaa;
+    }
+    .version-tag { position: absolute; bottom: 20px; font-size: 12px; color: #555; }
 
-/* ═══════════════════════════════════════════════════════════════
-   3. HUD العلوي
-   ═══════════════════════════════════════════════════════════════ */
-#hud {
-  position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
-  background: rgba(0,0,0,0.85); padding: 6px 16px; border-radius: 14px;
-  z-index: 100; display: none; gap: 12px; font-size: 11px;
-  border: 1px solid rgba(255,255,255,0.06);
-  flex-wrap: wrap; justify-content: center;
-  backdrop-filter: blur(10px);
-}
-#hud .stat { text-align: center; min-width: 40px; }
-#hud .stat .val { font-weight: bold; font-size: 13px; }
-#hud .stat .health { color: #4ade80; }
-#hud .stat .kills  { color: #ffd700; }
-#hud .stat .label { font-size: 8px; color: #666; display: block; margin-top: 1px; }
-#hud .stat .xp-bar {
-  width: 35px; height: 2px;
-  background: rgba(255,255,255,0.1); border-radius: 2px;
-  margin: 2px auto 0; overflow: hidden;
-}
-#hud .stat .xp-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
-  border-radius: 2px; transition: width 0.3s;
-}
+    #tutorial-panel {
+      position: fixed; inset: 0; z-index: 2001;
+      background: rgba(0,0,0,0.95);
+      display: none;
+      justify-content: center; align-items: center;
+      flex-direction: column; gap: 20px; padding: 20px;
+    }
+    #tutorial-panel h2 { color: #ffd700; font-size: 28px; }
+    .tutorial-content {
+      max-width: 400px; color: #aaa;
+      font-size: 13px; line-height: 2; text-align: center;
+    }
+    .tutorial-content b { color: #fff; }
 
-/* ═══════════════════════════════════════════════════════════════
-   4. عداد الدوران
-   ═══════════════════════════════════════════════════════════════ */
-#spin-counter {
-  position: fixed; top: 55px; left: 50%; transform: translateX(-50%);
-  z-index: 103; background: rgba(0,0,0,0.9);
-  border: 1px solid rgba(255,215,0,0.3); border-radius: 12px;
-  padding: 6px 16px; display: none; gap: 12px;
-  align-items: center; backdrop-filter: blur(10px); font-size: 13px;
-}
-#spin-counter .spin-stat { text-align: center; }
-#spin-counter .spin-stat .spin-val { font-weight: 900; font-size: 16px; color: #ffd700; }
-#spin-counter .spin-stat .spin-val.combo { color: #ff6b6b; animation: comboPulse 0.5s ease-in-out; }
-#spin-counter .spin-stat .spin-label { font-size: 9px; color: #888; }
+    #hud {
+      position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.85); padding: 6px 16px; border-radius: 14px;
+      z-index: 100; display: none; gap: 12px; font-size: 11px;
+      border: 1px solid rgba(255,255,255,0.06);
+      flex-wrap: wrap; justify-content: center;
+      backdrop-filter: blur(10px);
+    }
+    #hud .stat { text-align: center; min-width: 40px; }
+    #hud .stat .val { font-weight: bold; font-size: 13px; }
+    #hud .stat .health { color: #4ade80; }
+    #hud .stat .kills { color: #ffd700; }
+    #hud .stat .label { font-size: 8px; color: #666; display: block; margin-top: 1px; }
+    #hud .stat .xp-bar {
+      width: 35px; height: 2px;
+      background: rgba(255,255,255,0.1); border-radius: 2px;
+      margin: 2px auto 0; overflow: hidden;
+    }
+    #hud .stat .xp-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+      border-radius: 2px; transition: width 0.3s;
+    }
 
-@keyframes comboPulse {
-  0%   { transform: scale(1); }
-  50%  { transform: scale(1.3); }
-  100% { transform: scale(1); }
-}
+    #spin-counter {
+      position: fixed; top: 62px; left: 50%; transform: translateX(-50%);
+      z-index: 103; background: rgba(0,0,0,0.9);
+      border: 1px solid rgba(255,215,0,0.3); border-radius: 12px;
+      padding: 4px 14px; display: none; gap: 12px;
+      align-items: center; backdrop-filter: blur(10px); font-size: 12px;
+    }
+    #spin-counter .spin-stat { text-align: center; }
+    #spin-counter .spin-stat .spin-val { font-weight: 900; font-size: 15px; color: #ffd700; }
+    #spin-counter .spin-stat .spin-label { font-size: 8px; color: #888; }
 
-/* ═══════════════════════════════════════════════════════════════
-   5. شريط الأدوات العلوي
-   ═══════════════════════════════════════════════════════════════ */
-#top-bar {
-  display: none;
-  position: fixed; top: 12px; right: 12px; z-index: 101;
-  gap: 8px; align-items: center;
-}
-.top-btn {
-  width: 40px; height: 40px; border-radius: 50%;
-  background: rgba(0,0,0,0.7);
-  border: 1px solid rgba(255,255,255,0.1);
-  color: #fff; font-size: 20px; cursor: pointer;
-  backdrop-filter: blur(10px); transition: all 0.3s;
-}
-.top-btn:hover { background: rgba(255,255,255,0.1); transform: scale(1.1); }
+    #health-bar-container {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      width: 200px; height: 6px;
+      background: rgba(255,255,255,0.05); border-radius: 4px;
+      z-index: 100; overflow: hidden; display: none;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    #health-bar {
+      height: 100%; width: 100%;
+      background: linear-gradient(90deg, #4ade80, #22d3ee);
+      border-radius: 4px; transition: width 0.3s, background 0.3s;
+    }
+    #health-bar.low { background: linear-gradient(90deg, #f87171, #ef4444); }
+    #health-bar.mid { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
 
-#score-display-main {
-  display: none;
-  position: fixed; top: 14px; right: 60px; z-index: 101;
-  background: rgba(0,0,0,0.7);
-  border: 1px solid rgba(255,215,0,0.15); border-radius: 30px;
-  padding: 6px 16px; font-size: 14px; font-weight: 700;
-  color: #ffd700; backdrop-filter: blur(10px);
-  align-items: center; gap: 6px;
-}
+    #game-message {
+      position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
+      color: #ffd700; font-size: 14px; font-weight: bold; z-index: 100;
+      opacity: 0; transition: opacity 0.5s, transform 0.5s;
+      pointer-events: none; white-space: nowrap;
+      background: rgba(0,0,0,0.6); padding: 6px 18px; border-radius: 30px;
+      backdrop-filter: blur(8px);
+    }
+    #game-message.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
 
-/* ═══════════════════════════════════════════════════════════════
-   6. لوحة الإعدادات - موسعة
-   ═══════════════════════════════════════════════════════════════ */
-#settings-panel {
-  position: fixed; top: 55px; right: 12px;
-  background: rgba(0,0,0,0.92);
-  border: 1px solid rgba(255,255,255,0.06); border-radius: 12px;
-  padding: 12px; z-index: 102; display: none;
-  min-width: 200px; backdrop-filter: blur(10px);
-  max-height: 80vh; overflow-y: auto;
-}
-.setting-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
-  font-size: 11px;
-}
-.setting-row:last-child { border-bottom: none; }
-.setting-row label { color: #aaa; }
-.setting-row input[type="range"] {
-  width: 70px; height: 4px; -webkit-appearance: none;
-  background: rgba(255,255,255,0.1); border-radius: 2px; outline: none;
-}
-.setting-row input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 12px; height: 12px;
-  border-radius: 50%; background: #8b5cf6; cursor: pointer;
-}
-.setting-row button {
-  background: rgba(139,92,246,0.15);
-  border: 1px solid rgba(139,92,246,0.2);
-  color: #fff; padding: 3px 10px; border-radius: 5px;
-  font-size: 10px; cursor: pointer; font-family: inherit;
-}
-.setting-row button:hover { background: rgba(139,92,246,0.3); }
-.setting-row .btn-green { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.2); }
-.setting-row .btn-green:hover { background: rgba(74,222,128,0.3); }
-.setting-row .btn-gold { background: rgba(255,215,0,0.15); border-color: rgba(255,215,0,0.2); }
-.setting-row .btn-gold:hover { background: rgba(255,215,0,0.3); }
-.setting-row .btn-red { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.2); }
-.setting-row .btn-red:hover { background: rgba(239,68,68,0.3); }
+    .dpad {
+      position: fixed; bottom: 40px; left: 20px;
+      width: 130px; height: 130px; z-index: 200; display: none;
+    }
+    .dpad-btn {
+      position: absolute; width: 44px; height: 44px; border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      display: flex; align-items: center; justify-content: center;
+      color: rgba(255,255,255,0.3); cursor: pointer;
+      transition: all 0.2s; backdrop-filter: blur(8px);
+    }
+    .dpad-btn:hover {
+      background: rgba(139,92,246,0.15);
+      border-color: rgba(139,92,246,0.2);
+      color: rgba(255,255,255,0.6); transform: scale(1.05);
+    }
+    .dpad-btn:active, .dpad-btn.active {
+      background: rgba(139,92,246,0.35);
+      border-color: rgba(139,92,246,0.5);
+      color: #c4b5fd; transform: scale(0.88);
+    }
+    .dpad-btn svg { width: 16px; height: 16px; }
+    .dpad-up { top: 0; left: 43px; }
+    .dpad-down { bottom: 0; left: 43px; }
+    .dpad-left { top: 43px; left: 0; }
+    .dpad-right { top: 43px; right: 0; }
+    .dpad-center {
+      position: absolute; top: 43px; left: 43px;
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .dpad-center-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(139,92,246,0.3);
+      border: 1px solid rgba(139,92,246,0.2);
+      animation: dotPulse 2s ease-in-out infinite;
+    }
+    @keyframes dotPulse {
+      0%, 100% { transform: scale(1); opacity: 0.4; }
+      50% { transform: scale(0.7); opacity: 0.9; }
+    }
+    .dpad-speed {
+      position: absolute; bottom: -8px; right: -8px;
+      width: 44px; height: 44px; border-radius: 50%;
+      cursor: pointer; z-index: 3; transition: all 0.3s;
+    }
+    .dpad-speed:hover { transform: scale(1.1); }
+    .dpad-speed:active { transform: scale(0.92); }
 
-.settings-section-title {
-  color: #ffd700; font-size: 12px; font-weight: 700;
-  padding: 6px 0 2px; border-bottom: 1px solid rgba(255,215,0,0.1);
-  margin-top: 4px;
-}
+    #combat-buttons {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+      z-index: 100; display: none; gap: 10px; align-items: center;
+    }
+    .combat-btn {
+      padding: 10px 24px; border-radius: 12px; border: none;
+      font-size: 14px; font-weight: 700; font-family: inherit;
+      cursor: pointer; transition: all 0.3s; backdrop-filter: blur(10px);
+    }
+    .combat-btn.enemy {
+      background: rgba(239,68,68,0.15); color: #f87171;
+      border: 1px solid rgba(239,68,68,0.25);
+    }
+    .combat-btn.enemy:hover { background: rgba(239,68,68,0.3); transform: scale(1.05); }
+    .combat-btn.heal {
+      background: rgba(74,222,128,0.15); color: #4ade80;
+      border: 1px solid rgba(74,222,128,0.25);
+    }
+    .combat-btn.heal:hover { background: rgba(74,222,128,0.3); transform: scale(1.05); }
+    .combat-btn.fire {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: rgba(255,68,68,0.12);
+      border: 2px solid rgba(255,68,68,0.3);
+      color: #ff4444; font-size: 22px;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.15s;
+    }
+    .combat-btn.fire:active {
+      transform: scale(0.85);
+      background: rgba(255,68,68,0.4);
+      box-shadow: 0 0 30px rgba(255,68,68,0.2);
+    }
 
-/* ═══════════════════════════════════════════════════════════════
-   7. لوحة الملف الشخصي
-   ═══════════════════════════════════════════════════════════════ */
-#profile-panel {
-  position: fixed; top: 55px; right: 12px;
-  background: rgba(0,0,0,0.92);
-  border: 1px solid rgba(255,215,0,0.15); border-radius: 14px;
-  padding: 16px; z-index: 102; display: none;
-  min-width: 200px; backdrop-filter: blur(10px);
-  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
-}
-.profile-header {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 12px; padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.profile-avatar {
-  width: 44px; height: 44px; border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; border: 2px solid rgba(255,215,0,0.2); flex-shrink: 0;
-}
-.profile-name { font-size: 15px; font-weight: 700; color: #fff; }
-.profile-name .edit-icon { font-size: 11px; color: #888; cursor: pointer; margin-right: 4px; }
-.profile-name .edit-icon:hover { color: #ffd700; }
+    .world-action-btn {
+      position: fixed; bottom: 125px; left: 50%; transform: translateX(-50%);
+      padding: 8px 24px; border-radius: 12px; border: none;
+      font-size: 13px; font-family: inherit; cursor: pointer;
+      z-index: 150; display: none; font-weight: 700;
+      transition: all 0.3s; backdrop-filter: blur(10px);
+    }
+    .world-action-btn.enter {
+      background: rgba(0,242,255,0.12); color: #fff;
+      border: 1px solid rgba(0,242,255,0.25);
+    }
+    .world-action-btn.enter:hover { background: rgba(0,242,255,0.25); transform: translateX(-50%) scale(1.04); }
+    .world-action-btn.exit {
+      background: rgba(248,113,113,0.12); color: #fff;
+      border: 1px solid rgba(248,113,113,0.25);
+    }
+    .world-action-btn.exit:hover { background: rgba(248,113,113,0.25); transform: translateX(-50%) scale(1.04); }
 
-.profile-stats {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px;
-}
-.profile-stat {
-  display: flex; align-items: center; gap: 4px;
-  font-size: 12px; color: #ccc; padding: 3px 0;
-}
-.profile-stat .stat-icon { font-size: 14px; }
-.profile-stat .stat-value { font-weight: 700; color: #fff; }
-.profile-stat .stat-value.gold      { color: #ffd700; }
-.profile-stat .stat-value.level     { color: #60a5fa; }
-.profile-stat .stat-value.score     { color: #a78bfa; }
-.profile-stat .stat-value.worlds    { color: #4ade80; }
-.profile-stat .stat-value.landmarks { color: #fbbf24; }
+    #transition-screen {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.92);
+      display: none;
+      justify-content: center; align-items: center;
+      flex-direction: column; gap: 16px;
+      backdrop-filter: blur(10px);
+    }
+    .transition-spinner {
+      width: 40px; height: 40px;
+      border: 3px solid rgba(255,215,0,0.1);
+      border-top-color: #ffd700; border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #transition-text { color: #ffd700; font-size: 14px; font-weight: 600; }
 
-.profile-actions {
-  display: flex; gap: 6px; margin-top: 10px; padding-top: 10px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-}
-.profile-actions button {
-  flex: 1; padding: 4px 0;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 6px; background: rgba(255,255,255,0.04);
-  color: #aaa; font-size: 10px; cursor: pointer;
-  font-family: inherit; transition: all 0.3s;
-}
-.profile-actions button:hover { background: rgba(255,255,255,0.08); color: #fff; }
+    #toast-container {
+      position: fixed; bottom: 160px; left: 50%; transform: translateX(-50%);
+      z-index: 1000; display: flex; flex-direction: column;
+      gap: 4px; align-items: center; pointer-events: none;
+    }
+    .toast {
+      background: rgba(0,0,0,0.92); color: #fff;
+      padding: 6px 16px; border-radius: 14px; font-size: 11px;
+      border: 1px solid rgba(255,255,255,0.06);
+      animation: toastIn 0.3s ease;
+      backdrop-filter: blur(10px); font-weight: 600;
+      max-width: 260px; text-align: center;
+    }
+    .toast.success { border-color: #4ade80; color: #4ade80; }
+    .toast.error { border-color: #f87171; color: #f87171; }
+    .toast.info { border-color: #60a5fa; color: #60a5fa; }
+    .toast.warn { border-color: #fbbf24; color: #fbbf24; }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(10px) scale(0.9); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
 
-/* ═══════════════════════════════════════════════════════════════
-   8. نوافذ منبثقة
-   ═══════════════════════════════════════════════════════════════ */
-.modal-overlay {
-  position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,0.85);
-  display: none;
-  justify-content: center; align-items: center;
-  backdrop-filter: blur(10px);
-}
-.modal-box {
-  background: rgba(10,10,30,0.95);
-  border-radius: 14px; padding: 24px;
-  max-width: 420px; width: 90%;
-}
-.modal-box h2, .modal-box h3 { text-align: center; margin-bottom: 16px; }
-.modal-box h2 { color: #00ff88; font-size: 18px; }
-.modal-box h3 { color: #ffd700; font-size: 18px; }
-.modal-box label { color: #888; display: block; font-size: 11px; margin-bottom: 4px; font-weight: 600; }
-.modal-box input[type="text"], .modal-box input[type="number"] {
-  width: 100%; padding: 10px 14px; border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04); color: #fff;
-  font-size: 16px; font-family: inherit; text-align: center;
-  margin-bottom: 12px;
-}
-.modal-box input:focus { outline: none; border-color: rgba(255,215,0,0.3); }
-.modal-box .row-inputs { display: flex; gap: 10px; }
-.modal-box .row-inputs > div { flex: 1; }
-.modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-.modal-actions button {
-  flex: 1; padding: 10px; border: none; border-radius: 10px;
-  font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit;
-}
-.btn-save   { background: linear-gradient(135deg, #ffd700, #f59e0b); color: #111; }
-.btn-cancel { background: rgba(255,255,255,0.06); color: #888; }
-.btn-success { background: linear-gradient(135deg, #4ade80, #22c55e); color: #111; }
-.btn-secondary { background: rgba(255,255,255,0.08); color: #aaa; }
+    #minimap-frame {
+      position: fixed; top: 68px; left: 12px;
+      width: 80px; height: 80px;
+      border: 1px solid rgba(255,215,0,0.15); border-radius: 8px;
+      overflow: hidden; background: rgba(5,5,16,0.85);
+      z-index: 90; display: none; backdrop-filter: blur(6px);
+    }
 
-#name-edit-modal .modal-box { border: 1px solid rgba(255,215,0,0.15); max-width: 340px; }
-#cod-modal .modal-box { border: 2px solid rgba(0,255,136,0.15); }
+    #video-controls {
+      position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+      z-index: 100; display: none; gap: 8px; align-items: center;
+      background: rgba(0,0,0,0.85); padding: 6px 14px; border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(8px);
+    }
+    #video-controls button {
+      background: rgba(255,255,255,0.08); border: none; color: #fff;
+      width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+      font-size: 12px; transition: all 0.2s;
+    }
+    #video-controls button:hover { background: rgba(255,255,255,0.16); transform: scale(1.08); }
+    #video-controls input[type="range"] {
+      width: 80px; height: 3px; -webkit-appearance: none;
+      background: rgba(255,255,255,0.15); border-radius: 2px;
+    }
+    #video-controls input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 10px; height: 10px;
+      border-radius: 50%; background: #ffd700; cursor: pointer;
+    }
+    #video-controls .video-time { font-size: 10px; color: #aaa; min-width: 70px; text-align: center; }
 
-/* ═══════════════════════════════════════════════════════════════
-   9. شريط الصحة
-   ═══════════════════════════════════════════════════════════════ */
-#health-bar-container {
-  position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
-  width: 200px; height: 6px;
-  background: rgba(255,255,255,0.05); border-radius: 4px;
-  z-index: 100; overflow: hidden; display: none;
-  border: 1px solid rgba(255,255,255,0.05);
-}
-#health-bar {
-  height: 100%; width: 100%;
-  background: linear-gradient(90deg, #4ade80, #22d3ee);
-  border-radius: 4px; transition: width 0.3s, background 0.3s;
-}
-#health-bar.low { background: linear-gradient(90deg, #f87171, #ef4444); }
-#health-bar.mid { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+    #facet-info {
+      position: fixed; bottom: 170px; left: 50%; transform: translateX(-50%);
+      z-index: 150; background: rgba(0,0,0,0.9);
+      padding: 6px 18px; border-radius: 12px;
+      border: 1px solid rgba(255,215,0,0.2);
+      color: #fff; font-size: 13px; display: none;
+      backdrop-filter: blur(10px); text-align: center;
+    }
+    #facet-name { font-weight: 700; color: #ffd700; }
+    #facet-desc { color: #888; font-size: 11px; }
 
-/* ═══════════════════════════════════════════════════════════════
-   10. رسائل اللعبة
-   ═══════════════════════════════════════════════════════════════ */
-#game-message {
-  position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%);
-  color: #ffd700; font-size: 14px; font-weight: bold; z-index: 100;
-  opacity: 0; transition: opacity 0.5s, transform 0.5s;
-  pointer-events: none; white-space: nowrap;
-  background: rgba(0,0,0,0.6); padding: 6px 18px; border-radius: 30px;
-  backdrop-filter: blur(8px);
-}
-#game-message.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+    #damage-overlay {
+      position: fixed; inset: 0;
+      background: radial-gradient(circle, transparent 35%, rgba(239,68,68,0.35) 100%);
+      pointer-events: none; z-index: 80;
+      opacity: 0; transition: opacity 0.3s ease;
+    }
+    #damage-overlay.show { opacity: 1; }
 
-/* ═══════════════════════════════════════════════════════════════
-   11. شريط التحكم السفلي - مخفي الآن
-   ═══════════════════════════════════════════════════════════════ */
-#controls {
-  display: none !important;
-}
+    #level-up-effect {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 400;
+      display: none;
+      justify-content: center; align-items: center;
+    }
+    .level-up-text {
+      font-size: clamp(40px, 10vw, 72px);
+      font-weight: 900; color: #ffd700;
+      text-shadow: 0 0 60px rgba(255,215,0,0.5), 0 0 120px rgba(255,215,0,0.2);
+      animation: levelUpPop 1.8s ease-out forwards;
+    }
+    @keyframes levelUpPop {
+      0% { transform: scale(0) rotate(-12deg); opacity: 0; }
+      25% { transform: scale(1.3) rotate(4deg); opacity: 1; }
+      55% { transform: scale(1) rotate(0deg); opacity: 1; }
+      100% { transform: scale(1.6) translateY(-120px); opacity: 0; }
+    }
 
-/* ═══════════════════════════════════════════════════════════════
-   12. لوحة التحكم الدائرية (D-Pad)
-   ═══════════════════════════════════════════════════════════════ */
-.dpad {
-  position: fixed; bottom: 70px; left: 20px;
-  width: 130px; height: 130px; z-index: 200; display: none;
-}
-.dpad-btn {
-  position: absolute; width: 44px; height: 44px; border-radius: 50%;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.06);
-  display: flex; align-items: center; justify-content: center;
-  color: rgba(255,255,255,0.3); cursor: pointer;
-  transition: all 0.2s; backdrop-filter: blur(8px);
-}
-.dpad-btn:hover {
-  background: rgba(139,92,246,0.15);
-  border-color: rgba(139,92,246,0.2);
-  color: rgba(255,255,255,0.6); transform: scale(1.05);
-}
-.dpad-btn:active, .dpad-btn.active {
-  background: rgba(139,92,246,0.35);
-  border-color: rgba(139,92,246,0.5);
-  color: #c4b5fd; transform: scale(0.88);
-}
-.dpad-btn svg { width: 16px; height: 16px; }
-.dpad-up    { top: 0; left: 43px; }
-.dpad-down  { bottom: 0; left: 43px; }
-.dpad-left  { top: 43px; left: 0; }
-.dpad-right { top: 43px; right: 0; }
+    #spin-effect {
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 300;
+      display: none;
+      justify-content: center; align-items: center;
+    }
+    .spin-ring {
+      position: absolute; width: 300px; height: 300px;
+      border-radius: 50%; border: 3px solid rgba(255,215,0,0.25);
+      animation: spinRingExpand 0.8s ease-out forwards;
+    }
+    @keyframes spinRingExpand {
+      0% { transform: scale(0.4); opacity: 1; border-width: 5px; }
+      100% { transform: scale(2.8); opacity: 0; border-width: 0; }
+    }
+    .spin-text {
+      font-size: 40px; font-weight: 900; color: #ffd700;
+      text-shadow: 0 0 50px rgba(255,215,0,0.6);
+      animation: spinTextPop 1s ease-out forwards;
+    }
+    @keyframes spinTextPop {
+      0% { transform: scale(0) rotate(-20deg); opacity: 0; }
+      30% { transform: scale(1.3) rotate(8deg); opacity: 1; }
+      60% { transform: scale(1) rotate(0deg); opacity: 1; }
+      100% { transform: scale(0.7) translateY(-100px); opacity: 0; }
+    }
 
-.dpad-center {
-  position: absolute; top: 43px; left: 43px;
-  width: 44px; height: 44px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  pointer-events: none;
-}
-.dpad-center-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: rgba(139,92,246,0.3);
-  border: 1px solid rgba(139,92,246,0.2);
-  animation: dotPulse 2s ease-in-out infinite;
-}
-@keyframes dotPulse {
-  0%, 100% { transform: scale(1); opacity: 0.4; }
-  50%      { transform: scale(0.7); opacity: 0.9; }
-}
+    #game-over {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.95);
+      display: none;
+      justify-content: center; align-items: center;
+      flex-direction: column; gap: 16px;
+      backdrop-filter: blur(15px); padding: 20px;
+    }
+    #game-over h1 {
+      font-size: 36px;
+      background: linear-gradient(135deg, #ef4444, #ff8c00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text; font-weight: 900;
+    }
+    .game-over-stats {
+      display: grid; grid-template-columns: repeat(2, 1fr);
+      gap: 8px; max-width: 300px; width: 100%;
+    }
+    .game-over-stat {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px; padding: 10px 14px; text-align: center;
+    }
+    .game-over-stat .stat-label { font-size: 10px; color: #666; font-weight: 600; text-transform: uppercase; }
+    .game-over-stat .stat-value { font-size: 18px; font-weight: 800; color: #ffd700; margin-top: 2px; }
+    #game-over > button {
+      padding: 12px 40px; border-radius: 30px; border: none;
+      background: linear-gradient(135deg, #ffd700, #ff8c00);
+      color: #111; font-size: 16px; font-weight: 800;
+      cursor: pointer; font-family: inherit;
+      transition: all 0.3s;
+      box-shadow: 0 4px 25px rgba(255,215,0,0.25);
+    }
+    #game-over > button:hover {
+      transform: scale(1.05);
+      box-shadow: 0 6px 35px rgba(255,215,0,0.35);
+    }
 
-.dpad-speed {
-  position: absolute; bottom: -8px; right: -8px;
-  width: 44px; height: 44px; border-radius: 50%;
-  cursor: pointer; z-index: 3; transition: all 0.3s;
-}
-.dpad-speed svg { width: 100%; height: 100%; }
-.dpad-speed:hover { transform: scale(1.1); }
-.dpad-speed:active { transform: scale(0.92); }
-.dpad-speed.active .speed-ring {
-  stroke: #ffd700;
-  filter: drop-shadow(0 0 10px rgba(255,215,0,0.3));
-}
+    #cod-iframe {
+      position: fixed; inset: 0; z-index: 3000;
+      width: 100%; height: 100%; display: none;
+      border: none; background: #000;
+    }
+    #close-cod-btn {
+      position: fixed; top: 16px; right: 16px; z-index: 3001;
+      padding: 10px 22px; background: rgba(239,68,68,0.9);
+      color: #fff; border: none; border-radius: 10px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      display: none; font-family: inherit;
+      box-shadow: 0 4px 20px rgba(239,68,68,0.3);
+      transition: all 0.3s;
+    }
+    #close-cod-btn:hover { transform: scale(1.05); background: rgba(239,68,68,1); }
 
-/* ═══════════════════════════════════════════════════════════════
-   13. أزرار القتال (تظهر فقط في ساحة القتال)
-   ═══════════════════════════════════════════════════════════════ */
-#combat-buttons {
-  position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
-  z-index: 100; display: none; gap: 10px; align-items: center;
-}
-.combat-btn {
-  padding: 10px 24px; border-radius: 12px; border: none;
-  font-size: 14px; font-weight: 700; font-family: inherit;
-  cursor: pointer; transition: all 0.3s; backdrop-filter: blur(10px);
-}
-.combat-btn.enemy {
-  background: rgba(239,68,68,0.15); color: #f87171;
-  border: 1px solid rgba(239,68,68,0.25);
-}
-.combat-btn.enemy:hover {
-  background: rgba(239,68,68,0.3); transform: scale(1.05);
-}
-.combat-btn.heal {
-  background: rgba(74,222,128,0.15); color: #4ade80;
-  border: 1px solid rgba(74,222,128,0.25);
-}
-.combat-btn.heal:hover {
-  background: rgba(74,222,128,0.3); transform: scale(1.05);
-}
-.combat-btn.fire {
-  width: 56px; height: 56px; border-radius: 50%;
-  background: rgba(255,68,68,0.12);
-  border: 2px solid rgba(255,68,68,0.3);
-  color: #ff4444; font-size: 22px;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.15s;
-}
-.combat-btn.fire:active {
-  transform: scale(0.85);
-  background: rgba(255,68,68,0.4);
-  box-shadow: 0 0 30px rgba(255,68,68,0.2);
-}
+    #upload-modal {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      justify-content: center; align-items: center;
+      backdrop-filter: blur(10px);
+    }
+    #upload-modal .modal-content {
+      background: rgba(10,10,30,0.95);
+      border: 1px solid rgba(139,92,246,0.15);
+      border-radius: 16px; padding: 24px;
+      max-width: 420px; width: 90%;
+    }
+    #upload-modal .modal-title {
+      color: #a78bfa; text-align: center;
+      font-size: 18px; font-weight: 700; margin-bottom: 16px;
+    }
+    #upload-modal .modal-field {
+      margin-bottom: 12px;
+    }
+    #upload-modal .modal-field label {
+      color: #888; display: block; font-size: 11px;
+      margin-bottom: 4px; font-weight: 600;
+    }
+    #upload-modal .modal-field input,
+    #upload-modal .modal-field select {
+      width: 100%; padding: 8px 12px; border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03); color: #fff;
+      font-size: 13px; font-family: inherit;
+    }
+    #upload-modal .modal-field input:focus,
+    #upload-modal .modal-field select:focus {
+      outline: none; border-color: rgba(139,92,246,0.3);
+    }
+    .file-upload-area {
+      border: 2px dashed rgba(139,92,246,0.2);
+      border-radius: 12px; padding: 20px;
+      text-align: center; cursor: pointer;
+      transition: all 0.3s; margin-bottom: 16px;
+    }
+    .file-upload-area:hover {
+      border-color: rgba(139,92,246,0.4);
+      background: rgba(139,92,246,0.05);
+    }
+    .file-upload-area .icon { font-size: 32px; display: block; margin-bottom: 8px; }
+    .file-upload-area .text { color: #888; font-size: 13px; }
+    .file-upload-area .file-name {
+      color: #4ade80; font-size: 11px; margin-top: 8px; display: none;
+    }
 
-/* ═══════════════════════════════════════════════════════════════
-   14. أزرار إجراءات العالم
-   ═══════════════════════════════════════════════════════════════ */
-.world-action-btn {
-  position: fixed; bottom: 125px; left: 50%; transform: translateX(-50%);
-  padding: 8px 24px; border-radius: 12px; border: none;
-  font-size: 13px; font-family: inherit; cursor: pointer;
-  z-index: 150; display: none; font-weight: 700;
-  transition: all 0.3s; backdrop-filter: blur(10px);
-}
-.world-action-btn.enter {
-  background: rgba(0,242,255,0.12); color: #fff;
-  border: 1px solid rgba(0,242,255,0.25);
-}
-.world-action-btn.enter:hover {
-  background: rgba(0,242,255,0.25);
-  transform: translateX(-50%) scale(1.04);
-}
-.world-action-btn.exit {
-  background: rgba(248,113,113,0.12); color: #fff;
-  border: 1px solid rgba(248,113,113,0.25);
-}
-.world-action-btn.exit:hover {
-  background: rgba(248,113,113,0.25);
-  transform: translateX(-50%) scale(1.04);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   15. شاشة الانتقال
-   ═══════════════════════════════════════════════════════════════ */
-#transition-screen {
-  position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,0.92);
-  display: none;
-  justify-content: center; align-items: center;
-  flex-direction: column; gap: 16px;
-  backdrop-filter: blur(10px);
-}
-.transition-spinner {
-  width: 40px; height: 40px;
-  border: 3px solid rgba(255,215,0,0.1);
-  border-top-color: #ffd700; border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-@keyframes spin { to { transform: rotate(360deg); } }
-#transition-text { color: #ffd700; font-size: 14px; font-weight: 600; }
-
-/* ═══════════════════════════════════════════════════════════════
-   16. إشعارات Toast
-   ═══════════════════════════════════════════════════════════════ */
-#toast-container {
-  position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%);
-  z-index: 1000; display: flex; flex-direction: column;
-  gap: 4px; align-items: center; pointer-events: none;
-}
-.toast {
-  background: rgba(0,0,0,0.92); color: #fff;
-  padding: 6px 16px; border-radius: 14px; font-size: 11px;
-  border: 1px solid rgba(255,255,255,0.06);
-  animation: toastIn 0.3s ease;
-  backdrop-filter: blur(10px); font-weight: 600;
-  max-width: 260px; text-align: center;
-}
-.toast.success { border-color: #4ade80; color: #4ade80; }
-.toast.error   { border-color: #f87171; color: #f87171; }
-.toast.info    { border-color: #60a5fa; color: #60a5fa; }
-.toast.warn    { border-color: #fbbf24; color: #fbbf24; }
-
-@keyframes toastIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.9); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   17. خريطة مصغرة
-   ═══════════════════════════════════════════════════════════════ */
-#minimap-frame {
-  position: fixed; top: 55px; left: 12px;
-  width: 90px; height: 90px;
-  border: 1px solid rgba(255,215,0,0.15); border-radius: 8px;
-  overflow: hidden; background: rgba(5,5,16,0.85);
-  z-index: 90; display: none; backdrop-filter: blur(6px);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   18. تحكم الفيديو
-   ═══════════════════════════════════════════════════════════════ */
-#video-controls {
-  position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
-  z-index: 100; display: none; gap: 8px; align-items: center;
-  background: rgba(0,0,0,0.85); padding: 6px 14px; border-radius: 16px;
-  border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(8px);
-}
-#video-controls button {
-  background: rgba(255,255,255,0.08); border: none; color: #fff;
-  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
-  font-size: 12px; transition: all 0.2s;
-}
-#video-controls button:hover { background: rgba(255,255,255,0.16); transform: scale(1.08); }
-#video-controls input[type="range"] {
-  width: 80px; height: 3px; -webkit-appearance: none;
-  background: rgba(255,255,255,0.15); border-radius: 2px;
-}
-#video-controls input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 10px; height: 10px;
-  border-radius: 50%; background: #ffd700; cursor: pointer;
-}
-#video-controls .video-time { font-size: 10px; color: #aaa; min-width: 70px; text-align: center; }
-
-/* ═══════════════════════════════════════════════════════════════
-   19. تحكم الأضلاع
-   ═══════════════════════════════════════════════════════════════ */
-#sphere-controls {
-  position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
-  z-index: 150; background: rgba(0,0,0,0.85);
-  padding: 8px 16px; border-radius: 16px;
-  border: 1px solid rgba(139,92,246,0.3);
-  display: none; gap: 12px; align-items: center;
-  backdrop-filter: blur(10px);
-}
-#sphere-controls span { color: #a78bfa; font-size: 12px; font-weight: 700; }
-#sphere-controls input[type="range"] {
-  width: 100px; height: 4px; -webkit-appearance: none;
-  background: rgba(139,92,246,0.3); border-radius: 2px;
-}
-#sphere-controls input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 14px; height: 14px;
-  border-radius: 50%; background: #8b5cf6; cursor: pointer;
-}
-#sphere-controls #faces-count { color: #ffd700; font-weight: 900; font-size: 14px; min-width: 25px; }
-#sphere-controls button {
-  background: rgba(139,92,246,0.2);
-  border: 1px solid rgba(139,92,246,0.3);
-  color: #fff; padding: 4px 12px; border-radius: 8px;
-  cursor: pointer; font-family: inherit; font-size: 10px;
-  transition: all 0.3s;
-}
-#sphere-controls button:hover { background: rgba(139,92,246,0.4); }
-
-/* ═══════════════════════════════════════════════════════════════
-   20. معلومات الضلع
-   ═══════════════════════════════════════════════════════════════ */
-#facet-info {
-  position: fixed; bottom: 220px; left: 50%; transform: translateX(-50%);
-  z-index: 150; background: rgba(0,0,0,0.9);
-  padding: 8px 20px; border-radius: 12px;
-  border: 1px solid rgba(255,215,0,0.2);
-  color: #fff; font-size: 14px; display: none;
-  backdrop-filter: blur(10px); text-align: center;
-}
-#facet-name { font-weight: 700; color: #ffd700; }
-#facet-desc { color: #888; font-size: 11px; }
-
-/* ═══════════════════════════════════════════════════════════════
-   21. تأثيرات
-   ═══════════════════════════════════════════════════════════════ */
-
-/* تأثير الضرر */
-#damage-overlay {
-  position: fixed; inset: 0;
-  background: radial-gradient(circle, transparent 35%, rgba(239,68,68,0.35) 100%);
-  pointer-events: none; z-index: 80;
-  opacity: 0; transition: opacity 0.3s ease;
-}
-#damage-overlay.show { opacity: 1; }
-
-/* تأثير الترقية */
-#level-up-effect {
-  position: fixed; inset: 0;
-  pointer-events: none; z-index: 400;
-  display: none;
-  justify-content: center; align-items: center;
-}
-.level-up-text {
-  font-size: clamp(40px, 10vw, 72px);
-  font-weight: 900; color: #ffd700;
-  text-shadow: 0 0 60px rgba(255,215,0,0.5), 0 0 120px rgba(255,215,0,0.2);
-  animation: levelUpPop 1.8s ease-out forwards;
-}
-@keyframes levelUpPop {
-  0%   { transform: scale(0) rotate(-12deg); opacity: 0; }
-  25%  { transform: scale(1.3) rotate(4deg); opacity: 1; }
-  55%  { transform: scale(1) rotate(0deg); opacity: 1; }
-  100% { transform: scale(1.6) translateY(-120px); opacity: 0; }
-}
-
-/* تأثير الدوران */
-#spin-effect {
-  position: fixed; inset: 0;
-  pointer-events: none; z-index: 300;
-  display: none;
-  justify-content: center; align-items: center;
-}
-.spin-ring {
-  position: absolute; width: 300px; height: 300px;
-  border-radius: 50%; border: 3px solid rgba(255,215,0,0.25);
-  animation: spinRingExpand 0.8s ease-out forwards;
-}
-@keyframes spinRingExpand {
-  0%   { transform: scale(0.4); opacity: 1; border-width: 5px; }
-  100% { transform: scale(2.8); opacity: 0; border-width: 0; }
-}
-.spin-text {
-  font-size: 40px; font-weight: 900; color: #ffd700;
-  text-shadow: 0 0 50px rgba(255,215,0,0.6);
-  animation: spinTextPop 1s ease-out forwards;
-}
-@keyframes spinTextPop {
-  0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
-  30%  { transform: scale(1.3) rotate(8deg); opacity: 1; }
-  60%  { transform: scale(1) rotate(0deg); opacity: 1; }
-  100% { transform: scale(0.7) translateY(-100px); opacity: 0; }
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   22. نهاية اللعبة
-   ═══════════════════════════════════════════════════════════════ */
-#game-over {
-  position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,0.95);
-  display: none;
-  justify-content: center; align-items: center;
-  flex-direction: column; gap: 16px;
-  backdrop-filter: blur(15px); padding: 20px;
-}
-#game-over h1 {
-  font-size: 36px;
-  background: linear-gradient(135deg, #ef4444, #ff8c00);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text; font-weight: 900;
-}
-.game-over-stats {
-  display: grid; grid-template-columns: repeat(2, 1fr);
-  gap: 8px; max-width: 300px; width: 100%;
-}
-.game-over-stat {
-  background: rgba(0,0,0,0.5);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 10px; padding: 10px 14px; text-align: center;
-}
-.game-over-stat .stat-label { font-size: 10px; color: #666; font-weight: 600; text-transform: uppercase; }
-.game-over-stat .stat-value { font-size: 18px; font-weight: 800; color: #ffd700; margin-top: 2px; }
-#game-over > button {
-  padding: 12px 40px; border-radius: 30px; border: none;
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
-  color: #111; font-size: 16px; font-weight: 800;
-  cursor: pointer; font-family: inherit;
-  transition: all 0.3s;
-  box-shadow: 0 4px 25px rgba(255,215,0,0.25);
-}
-#game-over > button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 35px rgba(255,215,0,0.35);
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   23. COD Game
-   ═══════════════════════════════════════════════════════════════ */
-#cod-iframe {
-  position: fixed; inset: 0; z-index: 3000;
-  width: 100%; height: 100%; display: none;
-  border: none; background: #000;
-}
-#close-cod-btn {
-  position: fixed; top: 16px; right: 16px; z-index: 3001;
-  padding: 10px 22px; background: rgba(239,68,68,0.9);
-  color: #fff; border: none; border-radius: 10px;
-  font-size: 14px; font-weight: 700; cursor: pointer;
-  display: none; font-family: inherit;
-  box-shadow: 0 4px 20px rgba(239,68,68,0.3);
-  transition: all 0.3s;
-}
-#close-cod-btn:hover { transform: scale(1.05); background: rgba(239,68,68,1); }
-
-/* ═══════════════════════════════════════════════════════════════
-   24. رفع الملفات
-   ═══════════════════════════════════════════════════════════════ */
-#upload-modal {
-  position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,0.85);
-  display: none;
-  justify-content: center; align-items: center;
-  backdrop-filter: blur(10px);
-}
-#upload-modal .modal-content {
-  background: rgba(10,10,30,0.95);
-  border: 1px solid rgba(139,92,246,0.15);
-  border-radius: 16px; padding: 24px;
-  max-width: 420px; width: 90%;
-}
-#upload-modal .modal-title {
-  color: #a78bfa; text-align: center;
-  font-size: 18px; font-weight: 700; margin-bottom: 16px;
-}
-#upload-modal .modal-field {
-  margin-bottom: 12px;
-}
-#upload-modal .modal-field label {
-  color: #888; display: block; font-size: 11px;
-  margin-bottom: 4px; font-weight: 600;
-}
-#upload-modal .modal-field input,
-#upload-modal .modal-field select {
-  width: 100%; padding: 8px 12px; border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03); color: #fff;
-  font-size: 13px; font-family: inherit;
-}
-#upload-modal .modal-field input:focus,
-#upload-modal .modal-field select:focus {
-  outline: none; border-color: rgba(139,92,246,0.3);
-}
-.file-upload-area {
-  border: 2px dashed rgba(139,92,246,0.2);
-  border-radius: 12px; padding: 20px;
-  text-align: center; cursor: pointer;
-  transition: all 0.3s; margin-bottom: 16px;
-}
-.file-upload-area:hover {
-  border-color: rgba(139,92,246,0.4);
-  background: rgba(139,92,246,0.05);
-}
-.file-upload-area .icon { font-size: 32px; display: block; margin-bottom: 8px; }
-.file-upload-area .text { color: #888; font-size: 13px; }
-.file-upload-area .file-name {
-  color: #4ade80; font-size: 11px; margin-top: 8px; display: none;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   25. الإنجازات والمtasks
-   ═══════════════════════════════════════════════════════════════ */
-#achievements-panel, #quest-panel {
-  position: fixed; top: 55px; right: 12px;
-  background: rgba(0,0,0,0.92);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 12px; padding: 16px; z-index: 102;
-  display: none; min-width: 220px; max-height: 300px; overflow-y: auto;
-  backdrop-filter: blur(10px);
-}
-#achievements-panel h3, #quest-panel h3 {
-  color: #ffd700; font-size: 16px; margin-bottom: 12px;
-  text-align: center;
-}
-.achievement-item {
-  padding: 8px 12px; border-radius: 8px; margin-bottom: 6px;
-  font-size: 12px; transition: all 0.3s;
-}
-.achievement-item.locked {
-  background: rgba(255,255,255,0.03);
-  color: #666; border: 1px solid rgba(255,255,255,0.04);
-}
-.achievement-item.unlocked {
-  background: rgba(255,215,0,0.08);
-  color: #ffd700; border: 1px solid rgba(255,215,0,0.15);
-}
-
-.quest-item {
-  padding: 8px 12px; border-radius: 8px; margin-bottom: 6px;
-  font-size: 12px; background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.04);
-}
-.quest-item.complete {
-  background: rgba(74,222,128,0.08);
-  border-color: rgba(74,222,128,0.15); color: #4ade80;
-}
-.quest-progress {
-  width: 100%; height: 3px;
-  background: rgba(255,255,255,0.1); border-radius: 2px;
-  margin-top: 6px; overflow: hidden;
-}
-.quest-progress-fill {
-  height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa);
-  border-radius: 2px; transition: width 0.3s;
-}
-</style>
+    #cod-modal {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      justify-content: center; align-items: center;
+      backdrop-filter: blur(10px);
+    }
+    #cod-modal .modal-box {
+      background: rgba(10,10,30,0.95);
+      border: 2px solid rgba(0,255,136,0.15);
+      border-radius: 16px; padding: 24px;
+      max-width: 420px; width: 90%;
+    }
+    #cod-modal .modal-box h2 {
+      color: #00ff88; text-align: center;
+      font-size: 18px; margin-bottom: 16px;
+    }
+    #cod-modal .modal-box label {
+      color: #888; display: block; font-size: 11px; margin-bottom: 4px; font-weight: 600;
+    }
+    #cod-modal .modal-box input {
+      width: 100%; padding: 8px 12px; border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03); color: #fff;
+      font-size: 13px; font-family: inherit;
+      margin-bottom: 10px;
+    }
+    #cod-modal .modal-box input:focus { outline: none; border-color: rgba(0,255,136,0.3); }
+    .modal-actions {
+      display: flex; gap: 10px; margin-top: 16px;
+    }
+    .modal-actions button {
+      flex: 1; padding: 10px; border: none; border-radius: 10px;
+      font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit;
+    }
+    .btn-save { background: linear-gradient(135deg, #ffd700, #f59e0b); color: #111; }
+    .btn-cancel { background: rgba(255,255,255,0.06); color: #888; }
+    .btn-success { background: linear-gradient(135deg, #4ade80, #22c55e); color: #111; }
+    .btn-secondary { background: rgba(255,255,255,0.08); color: #aaa; }
+  </style>
 </head>
 <body>
 
 <!-- ═══════════════════════════════════════════════════════════════
-     BODY STRUCTURE
+     شاشة البداية
      ═══════════════════════════════════════════════════════════════ -->
-
-<!-- 1. شاشة البداية -->
 <div id="start-screen">
   <div class="start-logo">🌐 العوالم الكروية</div>
   <div class="start-subtitle">
@@ -867,104 +853,47 @@ body {
     <button class="start-btn" style="padding:10px 30px;font-size:14px;" onclick="loadGame()">📂 تحميل</button>
     <button class="start-btn" style="padding:10px 30px;font-size:14px;" onclick="showTutorial()">❓ دليل</button>
   </div>
-  <div class="version-tag">v79.0 | العوالم الكروية - واجهة محسنة</div>
+  <div class="version-tag">v80.0 | واجهة متقنة</div>
 </div>
 
-<!-- 2. دليل اللعب -->
-<div id="tutorial-panel">
-  <h2>📖 دليل اللعب</h2>
-  <div class="tutorial-content">
-    <div>🌐 <b>الأضلاع:</b> كل ضلع هو عالم مختلف</div>
-    <div>👆 <b>التنقل:</b> اسحب الكرة لتدويرها</div>
-    <div>🖱️ <b>الدخول:</b> انقر على أي ضلع</div>
-    <div>⚡ <b>التسريع:</b> زر ⚡ أو Shift</div>
-    <div>🔫 <b>الإطلاق:</b> زر النار أو مسافة</div>
-    <div>💚 <b>الشفاء:</b> مفتاح H</div>
-    <div>🌪️ <b>التدوير السريع:</b> اسحب الكرة بسرعة لجمع نقاط!</div>
-  </div>
-  <button class="start-btn" style="padding:10px 40px;font-size:16px;" onclick="hideTutorial()">✅ فهمت</button>
-</div>
-
-<!-- 3. HUD -->
-<div id="hud">
-  <div class="stat"><span class="val health" id="health-display">100</span><span class="label">❤️ صحة</span></div>
-  <div class="stat"><span class="val kills" id="kills-display">0</span><span class="label">💀 قتلى</span></div>
-  <div class="stat"><span class="val" id="score-display" style="color:#ffd700;">0</span><span class="label">🏆 نقاط</span></div>
-  <div class="stat">
-    <span class="val" id="level-display" style="color:#60a5fa;">1</span>
-    <span class="label">⭐ مستوى</span>
-    <div class="xp-bar"><div class="xp-fill" id="xp-bar-fill" style="width:0%"></div></div>
-  </div>
-  <div class="stat"><span class="val" id="world-count" style="color:#a78bfa;">1</span><span class="label">🌍 عوالم</span></div>
-  <div class="stat"><span class="val" id="landmark-count" style="color:#fbbf24;">0</span><span class="label">📍 معالم</span></div>
-  <div class="stat"><span class="val" id="coins-display" style="color:#fbbf24;">0</span><span class="label">🪙 ذهب</span></div>
-</div>
-
-<!-- 4. عداد الدورات -->
-<div id="spin-counter">
-  <div class="spin-stat">
-    <div class="spin-val" id="spin-count">0</div>
-    <div class="spin-label">🌪️ دورات</div>
-  </div>
-  <div class="spin-stat">
-    <div class="spin-val" id="spin-combo">x1</div>
-    <div class="spin-label">🔥 تتابع</div>
-  </div>
-  <div class="spin-stat">
-    <div class="spin-val" id="spin-points">0</div>
-    <div class="spin-label">⭐ نقاط الدوران</div>
-  </div>
-</div>
-
-<!-- 5. تأثير الدوران السريع -->
-<div id="spin-effect">
-  <div class="spin-ring"></div>
-  <div class="spin-text" id="spin-text">🌪️ +50</div>
-</div>
-
-<!-- 6. شريط الأدوات العلوي -->
+<!-- ═══════════════════════════════════════════════════════════════
+     شريط الأدوات العلوي - جميع الأزرار في سطر واحد
+     ═══════════════════════════════════════════════════════════════ -->
 <div id="top-bar">
-  <button class="top-btn" id="profile-btn" onclick="toggleProfile()">👤</button>
-  <button class="top-btn" id="settings-btn" onclick="toggleSettings()">⚙️</button>
-  <button class="top-btn" id="quests-btn" onclick="toggleQuestsPanel()">🎯</button>
-  <button class="top-btn" id="achievements-btn" onclick="toggleAchievementsPanel()">🏆</button>
+  <button class="top-btn gold" onclick="toggleProfile()" title="الملف الشخصي">👤</button>
+  <button class="top-btn purple" onclick="toggleSettings()" title="الإعدادات">⚙️</button>
+  <div class="top-divider"></div>
+  <button class="top-btn blue" onclick="toggleQuestsPanel()" title="المهام">🎯</button>
+  <button class="top-btn gold" onclick="toggleAchievementsPanel()" title="الإنجازات">🏆</button>
+  <div class="top-divider"></div>
+  <button class="top-btn green" onclick="addRandomWorld()" title="إضافة عالم">🌍</button>
+  <button class="top-btn gold" onclick="addLandmark()" title="إضافة معلم">📍</button>
+  <button class="top-btn cyan" onclick="openUploadModal()" title="رفع ملف">📁</button>
+  <button class="top-btn purple" onclick="openCODModal()" title="إضافة لعبة">🎮</button>
+  <div class="top-divider"></div>
+  <button class="top-btn blue" onclick="saveGame()" title="حفظ">💾</button>
+  <button class="top-btn purple" onclick="loadGame()" title="تحميل">📂</button>
+  <button class="top-btn red" onclick="resetGame()" title="إعادة تعيين">🔄</button>
 </div>
 
-<div id="score-display-main">
-  <span style="font-size:16px;">🏆</span>
-  <span id="main-score">0</span>
-</div>
+<!-- ═══════════════════════════════════════════════════════════════
+     اللوحات المنبثقة
+     ═══════════════════════════════════════════════════════════════ -->
 
-<!-- 7. لوحة الإعدادات - موسعة -->
-<div id="settings-panel">
-  <div class="settings-section-title">🔊 الصوت</div>
-  <div class="setting-row"><label>مستوى الصوت</label><input type="range" id="volume-slider" min="0" max="100" value="50" onchange="setVolume(this.value)"></div>
-  
-  <div class="settings-section-title">🗺️ العرض</div>
-  <div class="setting-row"><label>📍 الخريطة</label><button onclick="toggleMinimap()">تبديل</button></div>
-  <div class="setting-row"><label>🌙 الوضع الليلي</label><button onclick="toggleNightMode()">تبديل</button></div>
-  
-  <div class="settings-section-title">🌍 العوالم والمعالم</div>
-  <div class="setting-row"><label>📍 إضافة معلم</label><button class="btn-gold" onclick="addLandmark()">إضافة</button></div>
-  <div class="setting-row"><label>🌍 عالم عشوائي</label><button class="btn-green" onclick="addRandomWorld()">إضافة</button></div>
-  <div class="setting-row"><label>📁 رفع ملف</label><button class="btn-purple" onclick="openUploadModal()">رفع</button></div>
-  <div class="setting-row"><label>🎮 إضافة لعبة</label><button class="btn-green" onclick="openCODModal()">إضافة</button></div>
-  
-  <div class="settings-section-title">💾 حفظ اللعبة</div>
-  <div class="setting-row"><label>💾 حفظ</label><button onclick="saveGame()">حفظ</button></div>
-  <div class="setting-row"><label>📂 تحميل</label><button onclick="loadGame()">تحميل</button></div>
-  
-  <div class="settings-section-title">🔄 إعادة</div>
-  <div class="setting-row"><label>🔄 إعادة تعيين</label><button class="btn-red" onclick="resetGame()">إعادة</button></div>
-</div>
-
-<!-- 8. لوحة الملف الشخصي -->
-<div id="profile-panel">
+<!-- لوحة الملف الشخصي -->
+<div id="profile-panel" class="panel">
+  <div class="panel-title">
+    👤 الملف الشخصي
+    <button class="close-btn" onclick="document.getElementById('profile-panel').style.display='none'">✕</button>
+  </div>
   <div class="profile-header">
     <div class="profile-avatar" id="profile-avatar">🧙</div>
-    <div>
-      <div class="profile-name" id="profile-name-display">مغامر</div>
-      <div style="font-size:10px;color:#666;">🆔 #001</div>
+    <div class="profile-info">
+      <div class="profile-name">
+        <span id="profile-name-display">مغامر</span>
+        <span class="edit-icon" onclick="openNameEdit()">✏️</span>
+      </div>
+      <div class="profile-id">🆔 #001</div>
     </div>
   </div>
   <div class="profile-stats">
@@ -981,32 +910,129 @@ body {
   <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="changeAvatar(event)">
 </div>
 
-<!-- 9. نافذة تعديل الاسم -->
-<div id="name-edit-modal" class="modal-overlay">
-  <div class="modal-box">
-    <h3>✏️ تعديل الاسم</h3>
-    <input type="text" id="name-input" placeholder="أدخل اسمك..." maxlength="20">
-    <div class="modal-actions">
-      <button class="btn-save" onclick="saveName()">✅ حفظ</button>
-      <button class="btn-cancel" onclick="closeModal('name-edit-modal')">✖ إلغاء</button>
-    </div>
+<!-- لوحة الإعدادات -->
+<div id="settings-panel" class="panel">
+  <div class="panel-title">
+    ⚙️ الإعدادات
+    <button class="close-btn" onclick="document.getElementById('settings-panel').style.display='none'">✕</button>
+  </div>
+  <div class="settings-section-title">🔊 الصوت</div>
+  <div class="setting-row"><label>مستوى الصوت</label><input type="range" id="volume-slider" min="0" max="100" value="50" onchange="setVolume(this.value)"></div>
+  
+  <div class="settings-section-title">🗺️ العرض</div>
+  <div class="setting-row"><label>📍 الخريطة</label><button onclick="toggleMinimap()">تبديل</button></div>
+  <div class="setting-row"><label>🌙 الوضع الليلي</label><button onclick="toggleNightMode()">تبديل</button></div>
+  
+  <div class="settings-section-title">🌍 العوالم والمعالم</div>
+  <div class="setting-row"><label>📍 إضافة معلم</label><button class="btn-gold" onclick="addLandmark(); closePanel('settings-panel')">إضافة</button></div>
+  <div class="setting-row"><label>🌍 عالم عشوائي</label><button class="btn-green" onclick="addRandomWorld(); closePanel('settings-panel')">إضافة</button></div>
+  <div class="setting-row"><label>📁 رفع ملف</label><button class="btn-cyan" onclick="openUploadModal(); closePanel('settings-panel')">رفع</button></div>
+  <div class="setting-row"><label>🎮 إضافة لعبة</label><button class="btn-green" onclick="openCODModal(); closePanel('settings-panel')">إضافة</button></div>
+  
+  <div class="settings-section-title">💾 حفظ اللعبة</div>
+  <div class="setting-row"><label>💾 حفظ</label><button onclick="saveGame(); closePanel('settings-panel')">حفظ</button></div>
+  <div class="setting-row"><label>📂 تحميل</label><button onclick="loadGame(); closePanel('settings-panel')">تحميل</button></div>
+  
+  <div class="settings-section-title">🔄 إعادة</div>
+  <div class="setting-row"><label>🔄 إعادة تعيين</label><button class="btn-red" onclick="resetGame(); closePanel('settings-panel')">إعادة</button></div>
+</div>
+
+<!-- لوحة الإنجازات -->
+<div id="achievements-panel" class="panel">
+  <div class="panel-title">
+    🏆 الإنجازات
+    <button class="close-btn" onclick="document.getElementById('achievements-panel').style.display='none'">✕</button>
+  </div>
+  <div id="achievements-list"></div>
+</div>
+
+<!-- لوحة المهام -->
+<div id="quest-panel" class="panel">
+  <div class="panel-title">
+    🎯 المهام الحالية
+    <button class="close-btn" onclick="document.getElementById('quest-panel').style.display='none'">✕</button>
+  </div>
+  <div id="quest-list"></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     دليل اللعب
+     ═══════════════════════════════════════════════════════════════ -->
+<div id="tutorial-panel">
+  <h2>📖 دليل اللعب</h2>
+  <div class="tutorial-content">
+    <div>🌐 <b>الأضلاع:</b> كل ضلع هو عالم مختلف</div>
+    <div>👆 <b>التنقل:</b> اسحب الكرة لتدويرها</div>
+    <div>🖱️ <b>الدخول:</b> انقر على أي ضلع</div>
+    <div>⚡ <b>التسريع:</b> زر ⚡ أو Shift</div>
+    <div>🔫 <b>الإطلاق:</b> زر النار أو مسافة</div>
+    <div>💚 <b>الشفاء:</b> مفتاح H</div>
+    <div>🌪️ <b>التدوير السريع:</b> اسحب الكرة بسرعة لجمع نقاط!</div>
+  </div>
+  <button class="start-btn" style="padding:10px 40px;font-size:16px;" onclick="hideTutorial()">✅ فهمت</button>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     باقي عناصر الواجهة
+     ═══════════════════════════════════════════════════════════════ -->
+
+<!-- HUD -->
+<div id="hud">
+  <div class="stat"><span class="val health" id="health-display">100</span><span class="label">❤️ صحة</span></div>
+  <div class="stat"><span class="val kills" id="kills-display">0</span><span class="label">💀 قتلى</span></div>
+  <div class="stat"><span class="val" id="score-display" style="color:#ffd700;">0</span><span class="label">🏆 نقاط</span></div>
+  <div class="stat">
+    <span class="val" id="level-display" style="color:#60a5fa;">1</span>
+    <span class="label">⭐ مستوى</span>
+    <div class="xp-bar"><div class="xp-fill" id="xp-bar-fill" style="width:0%"></div></div>
+  </div>
+  <div class="stat"><span class="val" id="world-count" style="color:#a78bfa;">1</span><span class="label">🌍 عوالم</span></div>
+  <div class="stat"><span class="val" id="landmark-count" style="color:#fbbf24;">0</span><span class="label">📍 معالم</span></div>
+  <div class="stat"><span class="val" id="coins-display" style="color:#fbbf24;">0</span><span class="label">🪙 ذهب</span></div>
+</div>
+
+<!-- عداد الدورات -->
+<div id="spin-counter">
+  <div class="spin-stat">
+    <div class="spin-val" id="spin-count">0</div>
+    <div class="spin-label">🌪️ دورات</div>
+  </div>
+  <div class="spin-stat">
+    <div class="spin-val" id="spin-combo">x1</div>
+    <div class="spin-label">🔥 تتابع</div>
+  </div>
+  <div class="spin-stat">
+    <div class="spin-val" id="spin-points">0</div>
+    <div class="spin-label">⭐ نقاط الدوران</div>
   </div>
 </div>
 
-<!-- 10. شريط الصحة -->
+<!-- تأثير الدوران -->
+<div id="spin-effect">
+  <div class="spin-ring"></div>
+  <div class="spin-text" id="spin-text">🌪️ +50</div>
+</div>
+
+<!-- معلومات الضلع -->
+<div id="facet-info">
+  <span id="facet-name">🌍 عالم</span>
+  <span id="facet-desc">اضغط للدخول</span>
+</div>
+
+<!-- شريط الصحة -->
 <div id="health-bar-container"><div id="health-bar"></div></div>
 
-<!-- 11. رسائل اللعبة -->
+<!-- رسائل اللعبة -->
 <div id="game-message">🌐 استكشف الأضلاع وانقر للدخول!</div>
 
-<!-- 12. أزرار القتال (تظهر فقط في ساحة القتال) -->
+<!-- أزرار القتال -->
 <div id="combat-buttons">
   <button class="combat-btn enemy" onclick="spawnEnemy()">👾 عدو</button>
   <button class="combat-btn heal" onclick="healPlayer()">💚 شفاء</button>
   <button class="combat-btn fire" id="fire-btn" onclick="fireWeapon()">🔫</button>
 </div>
 
-<!-- 13. D-Pad -->
+<!-- D-Pad -->
 <div class="dpad" id="dpad">
   <div class="dpad-speed" id="dpad-speed" onclick="toggleSpeed()">
     <svg width="40" height="40" viewBox="0 0 40 40">
@@ -1023,23 +1049,23 @@ body {
   <div class="dpad-center"><div class="dpad-center-dot"></div></div>
 </div>
 
-<!-- 14. أزرار إجراءات العالم -->
+<!-- أزرار إجراءات العالم -->
 <button class="world-action-btn enter" id="enter-btn" onclick="enterWorld()">🌐 دخول</button>
 <button class="world-action-btn exit" id="exit-btn" onclick="exitWorld()">🚪 خروج</button>
 
-<!-- 15. شاشة الانتقال -->
+<!-- شاشة الانتقال -->
 <div id="transition-screen">
   <div class="transition-spinner"></div>
   <div id="transition-text">جاري الانتقال...</div>
 </div>
 
-<!-- 16. Toast -->
+<!-- Toast -->
 <div id="toast-container"></div>
 
-<!-- 17. خريطة مصغرة -->
+<!-- خريطة مصغرة -->
 <div id="minimap-frame"></div>
 
-<!-- 18. تحكم الفيديو -->
+<!-- تحكم الفيديو -->
 <div id="video-controls">
   <button onclick="togglePlay()">⏸️</button>
   <input type="range" id="video-progress" min="0" max="100" value="0" oninput="seekVideo(this.value)">
@@ -1047,16 +1073,7 @@ body {
   <button onclick="toggleMute()">🔊</button>
 </div>
 
-<!-- 19. تحكم الأضلاع -->
-
-
-<!-- 20. معلومات الضلع -->
-<div id="facet-info">
-  <span id="facet-name">🌍 عالم</span>
-  <span id="facet-desc">اضغط للدخول</span>
-</div>
-
-<!-- 21. نافذة رفع الملفات -->
+<!-- نافذة رفع الملفات -->
 <div id="upload-modal">
   <div class="modal-content">
     <div class="modal-title">📁 رفع فيديو/صورة</div>
@@ -1089,17 +1106,42 @@ body {
   </div>
 </div>
 
-<!-- 22. الإنجازات -->
-<div id="achievements-panel"><h3>🏆 الإنجازات</h3><div id="achievements-list"></div></div>
+<!-- نافذة COD -->
+<div id="cod-modal" class="modal-overlay">
+  <div class="modal-box">
+    <h2>🎮 إضافة بوابة لعبة</h2>
+    <label>📁 اسم ملف اللعبة</label>
+    <input type="text" id="cod-filename" value="cod.html">
+    <div class="row-inputs" style="display:flex;gap:10px;">
+      <div style="flex:1;"><label>📍 الصف</label><input type="number" id="cod-row" value="3" min="0" max="11"></div>
+      <div style="flex:1;"><label>📍 العمود</label><input type="number" id="cod-col" value="3" min="0" max="11"></div>
+    </div>
+    <label>🏷️ اسم البوابة</label>
+    <input type="text" id="cod-portal-name" value="🎮 لعبة أخرى">
+    <div class="modal-actions">
+      <button class="btn-save" onclick="addCOD()">✅ إضافة</button>
+      <button class="btn-cancel" onclick="closeModal('cod-modal')">✖ إلغاء</button>
+    </div>
+  </div>
+</div>
 
-<!-- 23. المهام -->
-<div id="quest-panel"><h3>🎯 المهام الحالية</h3><div id="quest-list"></div></div>
+<!-- نافذة تعديل الاسم -->
+<div id="name-edit-modal" class="modal-overlay" style="display:none;">
+  <div class="modal-box" style="background:rgba(10,10,30,0.95);border-radius:16px;padding:24px;max-width:340px;width:90%;">
+    <h3 style="text-align:center;color:#ffd700;font-size:18px;margin-bottom:16px;">✏️ تعديل الاسم</h3>
+    <input type="text" id="name-input" placeholder="أدخل اسمك..." maxlength="20" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-size:16px;font-family:inherit;text-align:center;margin-bottom:12px;">
+    <div class="modal-actions">
+      <button class="btn-save" onclick="saveName()">✅ حفظ</button>
+      <button class="btn-cancel" onclick="closeModal('name-edit-modal')">✖ إلغاء</button>
+    </div>
+  </div>
+</div>
 
-<!-- 24. تأثيرات -->
+<!-- تأثيرات -->
 <div id="damage-overlay"></div>
 <div id="level-up-effect"><div class="level-up-text">⭐ مستوى جديد!</div></div>
 
-<!-- 25. نهاية اللعبة -->
+<!-- نهاية اللعبة -->
 <div id="game-over">
   <h1>💀 انتهت اللعبة</h1>
   <div class="game-over-stats">
@@ -1113,35 +1155,16 @@ body {
   <button onclick="restartGame()">🔄 العب مجدداً</button>
 </div>
 
-<!-- 26. COD -->
+<!-- COD Iframe -->
 <iframe id="cod-iframe"></iframe>
 <button id="close-cod-btn" onclick="closeCODGame()">✖ إغلاق اللعبة</button>
 
-<!-- 27. COD Modal -->
-<div id="cod-modal" class="modal-overlay">
-  <div class="modal-box">
-    <h2>🎮 إضافة بوابة لعبة</h2>
-    <label>📁 اسم ملف اللعبة</label>
-    <input type="text" id="cod-filename" value="cod.html">
-    <div class="row-inputs">
-      <div><label>📍 الصف</label><input type="number" id="cod-row" value="3" min="0" max="11"></div>
-      <div><label>📍 العمود</label><input type="number" id="cod-col" value="3" min="0" max="11"></div>
-    </div>
-    <label>🏷️ اسم البوابة</label>
-    <input type="text" id="cod-portal-name" value="🎮 لعبة أخرى">
-    <div class="modal-actions">
-      <button class="btn-save" onclick="addCOD()">✅ إضافة</button>
-      <button class="btn-cancel" onclick="closeModal('cod-modal')">✖ إلغاء</button>
-    </div>
-  </div>
-</div>
-
-<!-- 28. Canvas -->
+<!-- Canvas -->
 <canvas id="canvas"></canvas>
 
 <script>
 /* ═══════════════════════════════════════════════════════════════
-   🌐 العوالم الكروية - v79.0 - واجهة معاد تنظيمها
+   🌐 العوالم الكروية - v80.0 - واجهة متقنة
    ═══════════════════════════════════════════════════════════════ */
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -1236,63 +1259,9 @@ let lastSwipeTime = 0;
 let healCount = 0;
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 3. بيانات الأيقونات الكروية
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-const WORLD_ICONS = [
-  { name: '⚔️ القتال',    emoji: '⚔️', color: '#ef4444' },
-  { name: '🌐 360',       emoji: '🌐', color: '#00f2ff' },
-  { name: '🖼️ المعرض',    emoji: '🖼️', color: '#a78bfa' },
-  { name: '🌲 الغابة',    emoji: '🌲', color: '#4ade80' },
-  { name: '🏰 القلعة',    emoji: '🏰', color: '#fbbf24' },
-  { name: '🌊 المحيط',    emoji: '🌊', color: '#60a5fa' },
-  { name: '🔥 النار',     emoji: '🔥', color: '#f97316' },
-  { name: '❄️ الجليد',    emoji: '❄️', color: '#22d3ee' },
-  { name: '🌈 قوس قزح',   emoji: '🌈', color: '#f472b6' },
-  { name: '⭐ النجوم',    emoji: '⭐', color: '#ffd700' },
-  { name: '🌙 القمر',     emoji: '🌙', color: '#c084fc' },
-  { name: '☀️ الشمس',     emoji: '☀️', color: '#facc15' },
-  { name: '🌺 الزهور',    emoji: '🌺', color: '#fb7185' },
-  { name: '🍄 الفطر',     emoji: '🍄', color: '#a3e635' },
-  { name: '🦋 الفراشات',  emoji: '🦋', color: '#38bdf8' },
-  { name: '🐉 التنين',    emoji: '🐉', color: '#ef4444' },
-  { name: '🧙 السحر',     emoji: '🧙', color: '#a855f7' },
-  { name: '🏹 الصيد',     emoji: '🏹', color: '#d97706' },
-  { name: '⚡ البرق',     emoji: '⚡', color: '#fde047' },
-  { name: '💎 الماس',     emoji: '💎', color: '#22d3ee' }
-];
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 4. الإنجازات
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-let achievements = {
-  first_kill:   { name: 'أول قتل',      desc: 'اقتل أول عدو',         unlocked: false, emoji: '💀' },
-  killer_10:    { name: 'قاتل محترف',   desc: 'اقتل 10 أعداء',        unlocked: false, emoji: '⚔️' },
-  explorer:     { name: 'مستكشف',       desc: 'اكتشف 3 عوالم',        unlocked: false, emoji: '🌍' },
-  master:       { name: 'سيد العوالم',  desc: 'اكتشف 5 عوالم',        unlocked: false, emoji: '👑' },
-  collector:    { name: 'جامع المعالم', desc: 'أضف 5 معالم',          unlocked: false, emoji: '📍' },
-  survivor:     { name: 'الناجي',       desc: 'وصل للمستوى 5',        unlocked: false, emoji: '🛡️' },
-  rich:         { name: 'ثراء',         desc: 'اجمع 100 ذهب',         unlocked: false, emoji: '🪙' },
-  healer:       { name: 'معالج',        desc: 'استخدم الشفاء 5 مرات', unlocked: false, emoji: '💚' },
-  spinner:      { name: 'الدوّام',      desc: 'أكمل 10 دورات سريعة',  unlocked: false, emoji: '🌪️' },
-  spin_master:  { name: 'سيد الدوران',  desc: 'أكمل 50 دورة سريعة',   unlocked: false, emoji: '🌀' }
-};
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 5. المهام
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-let quests = [
-  { id: 'q1', name: 'قاتل مبتدئ', desc: 'اقتل 3 أعداء',              target: 3,  current: 0, type: 'kills',     reward: 20 },
-  { id: 'q2', name: 'مستكشف',     desc: 'اكتشف عالمين جديدين',       target: 2,  current: 0, type: 'worlds',    reward: 50 },
-  { id: 'q3', name: 'باني',       desc: 'أضف 3 معالم',               target: 3,  current: 0, type: 'landmarks', reward: 30 },
-  { id: 'q4', name: 'جامع',       desc: 'اجمع 50 نقطة',              target: 50, current: 0, type: 'score',     reward: 25 },
-  { id: 'q5', name: 'الدوّام',    desc: 'أكمل 5 دورات سريعة',        target: 5,  current: 0, type: 'spins',     reward: 40 }
-];
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 6. دوال مساعدة عامة
+// 3. دوال مساعدة
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-/** عرض إشعار Toast */
 function showToast(msg, type) {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
@@ -1306,7 +1275,6 @@ function showToast(msg, type) {
   }, 2500);
 }
 
-/** عرض رسالة مؤقتة */
 function showMessage(text, duration) {
   duration = duration || 1500;
   const el = document.getElementById('game-message');
@@ -1316,7 +1284,6 @@ function showMessage(text, duration) {
   el._timeout = setTimeout(function() { el.classList.remove('show'); }, duration);
 }
 
-/** شاشة الانتقال */
 function showTransition(text) {
   document.getElementById('transition-text').textContent = text;
   document.getElementById('transition-screen').style.display = 'flex';
@@ -1325,12 +1292,14 @@ function hideTransition() {
   document.getElementById('transition-screen').style.display = 'none';
 }
 
-/** إغلاق نافذة منبثقة */
 function closeModal(id) {
   document.getElementById(id).style.display = 'none';
 }
 
-/** الحصول على العالم */
+function closePanel(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
 function getWorld(id) {
   return worlds.find(function(w) { return w.id === id; });
 }
@@ -1338,14 +1307,12 @@ function getCurrentWorld() {
   return getWorld(currentWorldId);
 }
 
-/** تحديد مربع اللاعب */
 function getPlayerTile() {
   const px = playerGroup.position.x + HALF;
   const pz = playerGroup.position.z + HALF;
   return { col: Math.floor(px / TILE_SIZE), row: Math.floor(pz / TILE_SIZE) };
 }
 
-/** تنسيق الوقت */
 function formatTime(sec) {
   if (!sec || isNaN(sec)) return '00:00';
   const m = Math.floor(sec / 60);
@@ -1354,7 +1321,7 @@ function formatTime(sec) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 7. تحديث الواجهة
+// 4. تحديث الواجهة
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function updateHUD() {
   document.getElementById('health-display').textContent = Math.round(playerHealth);
@@ -1364,7 +1331,6 @@ function updateHUD() {
   document.getElementById('world-count').textContent = visitedWorlds.size;
   document.getElementById('landmark-count').textContent = landmarks.length;
   document.getElementById('coins-display').textContent = coins;
-  document.getElementById('main-score').textContent = score;
 
   const xpPercent = (xp / CONFIG.XP_PER_LEVEL) * 100;
   document.getElementById('xp-bar-fill').style.width = xpPercent + '%';
@@ -1415,8 +1381,29 @@ function showLevelUpEffect() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 8. الإنجازات والمهام - أزرار جديدة
+// 5. الإنجازات والمهام
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+let achievements = {
+  first_kill:   { name: 'أول قتل',      desc: 'اقتل أول عدو',         unlocked: false, emoji: '💀' },
+  killer_10:    { name: 'قاتل محترف',   desc: 'اقتل 10 أعداء',        unlocked: false, emoji: '⚔️' },
+  explorer:     { name: 'مستكشف',       desc: 'اكتشف 3 عوالم',        unlocked: false, emoji: '🌍' },
+  master:       { name: 'سيد العوالم',  desc: 'اكتشف 5 عوالم',        unlocked: false, emoji: '👑' },
+  collector:    { name: 'جامع المعالم', desc: 'أضف 5 معالم',          unlocked: false, emoji: '📍' },
+  survivor:     { name: 'الناجي',       desc: 'وصل للمستوى 5',        unlocked: false, emoji: '🛡️' },
+  rich:         { name: 'ثراء',         desc: 'اجمع 100 ذهب',         unlocked: false, emoji: '🪙' },
+  healer:       { name: 'معالج',        desc: 'استخدم الشفاء 5 مرات', unlocked: false, emoji: '💚' },
+  spinner:      { name: 'الدوّام',      desc: 'أكمل 10 دورات سريعة',  unlocked: false, emoji: '🌪️' },
+  spin_master:  { name: 'سيد الدوران',  desc: 'أكمل 50 دورة سريعة',   unlocked: false, emoji: '🌀' }
+};
+
+let quests = [
+  { id: 'q1', name: 'قاتل مبتدئ', desc: 'اقتل 3 أعداء',              target: 3,  current: 0, type: 'kills',     reward: 20, complete: false },
+  { id: 'q2', name: 'مستكشف',     desc: 'اكتشف عالمين جديدين',       target: 2,  current: 0, type: 'worlds',    reward: 50, complete: false },
+  { id: 'q3', name: 'باني',       desc: 'أضف 3 معالم',               target: 3,  current: 0, type: 'landmarks', reward: 30, complete: false },
+  { id: 'q4', name: 'جامع',       desc: 'اجمع 50 نقطة',              target: 50, current: 0, type: 'score',     reward: 25, complete: false },
+  { id: 'q5', name: 'الدوّام',    desc: 'أكمل 5 دورات سريعة',        target: 5,  current: 0, type: 'spins',     reward: 40, complete: false }
+];
+
 function toggleAchievementsPanel() {
   const panel = document.getElementById('achievements-panel');
   document.getElementById('quest-panel').style.display = 'none';
@@ -1485,7 +1472,7 @@ function renderQuests() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 9. نظام اللاعب
+// 6. نظام اللاعب
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function addXP(amount) {
   xp += amount;
@@ -1525,7 +1512,7 @@ function healPlayer() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 10. الملف الشخصي
+// 7. الملف الشخصي
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function toggleProfile() {
   const panel = document.getElementById('profile-panel');
@@ -1580,7 +1567,7 @@ function loadProfileData() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 11. الإعدادات - موسعة
+// 8. الإعدادات
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function toggleSettings() {
   const panel = document.getElementById('settings-panel');
@@ -1617,9 +1604,6 @@ function setVolume(val) {
   if (videoElement) videoElement.volume = val / 100;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 12. نظام التسريع
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function toggleSpeed() {
   speedIndex = (speedIndex + 1) % CONFIG.SPEED_LEVELS.length;
   speedMultiplier = CONFIG.SPEED_LEVELS[speedIndex];
@@ -1639,44 +1623,7 @@ function toggleSpeed() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 13. نظام الفيديو
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function togglePlay() {
-  if (!videoElement) return;
-  if (isVideoPlaying) {
-    videoElement.pause();
-    document.querySelector('#video-controls button:first-child').textContent = '▶️';
-  } else {
-    videoElement.play();
-    document.querySelector('#video-controls button:first-child').textContent = '⏸️';
-  }
-  isVideoPlaying = !isVideoPlaying;
-}
-
-function toggleMute() {
-  if (!videoElement) return;
-  isVideoMuted = !isVideoMuted;
-  videoElement.muted = isVideoMuted;
-  document.querySelector('#video-controls button:last-child').textContent = isVideoMuted ? '🔇' : '🔊';
-}
-
-function seekVideo(val) {
-  if (!videoElement || !videoElement.duration) return;
-  videoElement.currentTime = (val / 100) * videoElement.duration;
-}
-
-function updateVideoTime() {
-  if (!videoElement) return;
-  const cur = formatTime(videoElement.currentTime);
-  const dur = formatTime(videoElement.duration || 0);
-  document.getElementById('video-time').textContent = cur + ' / ' + dur;
-  if (videoElement.duration) {
-    document.getElementById('video-progress').value = (videoElement.currentTime / videoElement.duration) * 100;
-  }
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 14. إنشاء العوالم الافتراضية
+// 9. إنشاء العوالم الافتراضية
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function createDefaultWorlds() {
   worlds = [
@@ -1740,7 +1687,410 @@ function createDefaultWorlds() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 15. تنظيف وبناء العالم
+// 10. نظام الأيقونات الكروية
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+const WORLD_ICONS = [
+  { name: '⚔️ القتال',    emoji: '⚔️', color: '#ef4444' },
+  { name: '🌐 360',       emoji: '🌐', color: '#00f2ff' },
+  { name: '🖼️ المعرض',    emoji: '🖼️', color: '#a78bfa' },
+  { name: '🌲 الغابة',    emoji: '🌲', color: '#4ade80' },
+  { name: '🏰 القلعة',    emoji: '🏰', color: '#fbbf24' },
+  { name: '🌊 المحيط',    emoji: '🌊', color: '#60a5fa' },
+  { name: '🔥 النار',     emoji: '🔥', color: '#f97316' },
+  { name: '❄️ الجليد',    emoji: '❄️', color: '#22d3ee' },
+  { name: '🌈 قوس قزح',   emoji: '🌈', color: '#f472b6' },
+  { name: '⭐ النجوم',    emoji: '⭐', color: '#ffd700' },
+  { name: '🌙 القمر',     emoji: '🌙', color: '#c084fc' },
+  { name: '☀️ الشمس',     emoji: '☀️', color: '#facc15' },
+  { name: '🌺 الزهور',    emoji: '🌺', color: '#fb7185' },
+  { name: '🍄 الفطر',     emoji: '🍄', color: '#a3e635' },
+  { name: '🦋 الفراشات',  emoji: '🦋', color: '#38bdf8' },
+  { name: '🐉 التنين',    emoji: '🐉', color: '#ef4444' },
+  { name: '🧙 السحر',     emoji: '🧙', color: '#a855f7' },
+  { name: '🏹 الصيد',     emoji: '🏹', color: '#d97706' },
+  { name: '⚡ البرق',     emoji: '⚡', color: '#fde047' },
+  { name: '💎 الماس',     emoji: '💎', color: '#22d3ee' }
+];
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 11. بناء الكرة
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function createIconTexture(emoji, name, color, isHovered) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256; canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  ctx.beginPath();
+  ctx.arc(128, 128, 120, 0, Math.PI * 2);
+  ctx.fillStyle = isHovered ? color : 'rgba(20,20,40,0.85)';
+  ctx.fill();
+
+  ctx.beginPath();
+  ctx.arc(128, 128, 120, 0, Math.PI * 2);
+  ctx.strokeStyle = isHovered ? '#ffffff' : color;
+  ctx.lineWidth = isHovered ? 6 : 3;
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(128, 128, 110, 0, Math.PI * 2);
+  ctx.strokeStyle = isHovered ? color : 'rgba(255,255,255,0.1)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.font = 'bold 100px Arial';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = isHovered ? 40 : 20;
+  ctx.fillText(emoji, 128, 110);
+  ctx.shadowBlur = 0;
+
+  ctx.font = 'bold 20px Cairo, Arial';
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0,0,0,0.8)';
+  ctx.shadowBlur = 8;
+  ctx.fillText(name, 128, 185);
+  ctx.shadowBlur = 0;
+
+  return new THREE.CanvasTexture(canvas);
+}
+
+function buildSphere() {
+  if (sphereGroup) {
+    iconSprites.forEach(function(s) {
+      if (s.material && s.material.map) s.material.map.dispose();
+      if (s.material) s.material.dispose();
+    });
+    scene.remove(sphereGroup);
+  }
+  iconSprites = [];
+  selectedIcon = null;
+  document.getElementById('facet-info').style.display = 'none';
+
+  sphereGroup = new THREE.Group();
+  const radius = 4.5;
+  const totalIcons = WORLD_ICONS.length;
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+
+  WORLD_ICONS.forEach(function(world, i) {
+    const y = 1 - (i / (totalIcons - 1)) * 2;
+    const radiusAtY = Math.sqrt(1 - y * y);
+    const theta = goldenAngle * i;
+    const x = Math.cos(theta) * radiusAtY;
+    const z = Math.sin(theta) * radiusAtY;
+    const position = new THREE.Vector3(x * radius, y * radius, z * radius);
+
+    const tex = createIconTexture(world.emoji, world.name, world.color, false);
+    const mat = new THREE.SpriteMaterial({
+      map: tex, transparent: true, depthTest: true, opacity: 0.9
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.position.copy(position);
+    sprite.scale.set(2.2, 2.2, 1);
+    sprite.userData = {
+      index: i, world: world,
+      position: position.clone(),
+      hovered: false, baseScale: 2.2
+    };
+    sphereGroup.add(sprite);
+    iconSprites.push(sprite);
+  });
+
+  const glow = new THREE.PointLight(0x8b5cf6, 1.5, 30);
+  sphereGroup.add(glow);
+  const ambientSphere = new THREE.AmbientLight(0x404080, 0.4);
+  sphereGroup.add(ambientSphere);
+  scene.add(sphereGroup);
+}
+
+function showSphere() {
+  if (sphereGroup) {
+    sphereGroup.visible = true;
+    sphereGroup.scale.set(1, 1, 1);
+    sphereGroup.children.forEach(function(child) {
+      if (child.isSprite && child.material) child.material.opacity = 0.9;
+      if (child.isPointLight) child.intensity = 1.5;
+    });
+  }
+  document.getElementById('facet-info').style.display = selectedIcon !== null ? 'block' : 'none';
+}
+
+function hideSphere() {
+  if (sphereGroup) sphereGroup.visible = false;
+  document.getElementById('facet-info').style.display = 'none';
+}
+
+function updateSphereRotation() {
+  if (!sphereGroup || isDraggingSphere) return;
+  sphereGroup.rotation.y += 0.002;
+  sphereGroup.rotation.x += 0.001;
+}
+
+function updateFacetInfo() {
+  const info = document.getElementById('facet-info');
+  const nameEl = document.getElementById('facet-name');
+  const descEl = document.getElementById('facet-desc');
+
+  if (selectedIcon !== null && iconSprites[selectedIcon]) {
+    info.style.display = 'block';
+    nameEl.textContent = iconSprites[selectedIcon].userData.world.name;
+    descEl.textContent = '🌐 أيقونة ' + (selectedIcon + 1) + ' من ' + iconSprites.length + ' | اضغط للدخول';
+  } else {
+    info.style.display = 'none';
+  }
+}
+
+function generateWorldItems(iconIndex) {
+  const items = [];
+  const emojis = ['🏰', '🌲', '🌊', '⛰️', '🏜️', '🌋', '🏗️', '🌺', '🕌', '🏯', '🎪', '🏟️'];
+  const count = 2 + (iconIndex % 4);
+
+  for (let i = 0; i < count; i++) {
+    let r, c, attempts = 0;
+    do {
+      r = 1 + Math.floor(Math.random() * 10);
+      c = 1 + Math.floor(Math.random() * 10);
+      attempts++;
+    } while (items.some(function(it) { return it.row === r && it.col === c; }) && attempts < 50);
+
+    if (attempts < 50) {
+      items.push({
+        id: 'item_' + iconIndex + '_' + i,
+        type: i % 2 === 0 ? 'image' : 'portal',
+        title: emojis[i % emojis.length] + ' ' + WORLD_ICONS[(iconIndex + i) % WORLD_ICONS.length].name,
+        emoji: emojis[i % emojis.length],
+        row: r, col: c
+      });
+    }
+  }
+
+  let exitR, exitC, exitAttempts = 0;
+  do {
+    exitR = 1 + Math.floor(Math.random() * 10);
+    exitC = 1 + Math.floor(Math.random() * 10);
+    exitAttempts++;
+  } while (items.some(function(it) { return it.row === exitR && it.col === exitC; }) && exitAttempts < 30);
+
+  if (exitAttempts < 30 && items.length < 10) {
+    items.push({
+      id: 'portal_exit_' + iconIndex,
+      type: 'portal',
+      title: '🚪 العودة للخريطة',
+      emoji: '🚪',
+      row: exitR, col: exitC,
+      targetWorld: 'main'
+    });
+  }
+  return items;
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 12. تفاعل الأيقونات
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function setupFacetInteraction() {
+  const raycaster = new THREE.Raycaster();
+  const mouse = new THREE.Vector2();
+
+  renderer.domElement.addEventListener('mousemove', function(event) {
+    if (isDraggingSphere) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(iconSprites);
+
+    if (intersects.length > 0) {
+      const hit = intersects[0].object;
+      const index = hit.userData.index;
+      if (index !== selectedIcon) {
+        if (selectedIcon !== null && iconSprites[selectedIcon]) {
+          const prev = iconSprites[selectedIcon];
+          const world = prev.userData.world;
+          prev.material.map = createIconTexture(world.emoji, world.name, world.color, false);
+          prev.scale.set(prev.userData.baseScale, prev.userData.baseScale, 1);
+          prev.userData.hovered = false;
+        }
+        selectedIcon = index;
+        const cur = iconSprites[index];
+        const world = cur.userData.world;
+        cur.material.map = createIconTexture(world.emoji, world.name, world.color, true);
+        cur.scale.set(cur.userData.baseScale * 1.3, cur.userData.baseScale * 1.3, 1);
+        cur.userData.hovered = true;
+        renderer.domElement.style.cursor = 'pointer';
+        updateFacetInfo();
+      }
+      return;
+    }
+
+    if (selectedIcon !== null && iconSprites[selectedIcon]) {
+      const prev = iconSprites[selectedIcon];
+      const world = prev.userData.world;
+      prev.material.map = createIconTexture(world.emoji, world.name, world.color, false);
+      prev.scale.set(prev.userData.baseScale, prev.userData.baseScale, 1);
+      prev.userData.hovered = false;
+    }
+    selectedIcon = null;
+    renderer.domElement.style.cursor = 'default';
+    updateFacetInfo();
+  });
+
+  renderer.domElement.addEventListener('click', function(event) {
+    if (selectedIcon !== null && iconSprites[selectedIcon]) {
+      const world = iconSprites[selectedIcon].userData.world;
+      const worldId = 'world_icon_' + selectedIcon;
+
+      const existingWorld = getWorld(worldId);
+      if (!existingWorld) {
+        const newWorld = {
+          id: worldId,
+          name: world.name,
+          grid: 12, tileSize: 3,
+          startPosition: { x: 0, z: 0 },
+          background: world.color,
+          items: generateWorldItems(selectedIcon)
+        };
+        worlds.push(newWorld);
+
+        const main = getWorld('main');
+        if (main) {
+          let pr, pc, attempts = 0;
+          do {
+            pr = 1 + Math.floor(Math.random() * 10);
+            pc = 1 + Math.floor(Math.random() * 10);
+            attempts++;
+          } while (main.items.some(function(it) { return it.row === pr && it.col === pc; }) && attempts < 50);
+
+          if (attempts < 50) {
+            main.items.push({
+              id: 'portal_icon_' + selectedIcon,
+              type: 'portal',
+              title: world.name,
+              emoji: world.emoji,
+              row: pr, col: pc,
+              targetWorld: worldId
+            });
+            if (currentWorldId === 'main') buildWorld('main');
+          }
+        }
+      }
+      enterWorldById(worldId);
+    }
+  });
+
+  renderer.domElement.addEventListener('mousedown', function(e) {
+    if (e.target === renderer.domElement && selectedIcon === null) {
+      isDraggingSphere = true;
+      previousMousePosition.x = e.clientX;
+      previousMousePosition.y = e.clientY;
+    }
+  });
+
+  window.addEventListener('mousemove', function(e) {
+    if (isDraggingSphere && sphereGroup) {
+      const dx = e.clientX - previousMousePosition.x;
+      const dy = e.clientY - previousMousePosition.y;
+      sphereGroup.rotation.y += dx * 0.008;
+      sphereGroup.rotation.x += dy * 0.008;
+      const dt = Date.now() - lastSwipeTime;
+      if (dt > 0) detectSwipeSpin(dx, dy, dt);
+      lastSwipeTime = Date.now();
+      previousMousePosition.x = e.clientX;
+      previousMousePosition.y = e.clientY;
+    }
+  });
+
+  window.addEventListener('mouseup', function() { isDraggingSphere = false; });
+
+  let touchStartX = 0, touchStartY = 0;
+  renderer.domElement.addEventListener('touchstart', function(e) {
+    if (e.touches.length === 1 && currentWorldId === 'main') {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      isDraggingSphere = true;
+      lastSwipeTime = Date.now();
+    }
+  }, { passive: false });
+
+  renderer.domElement.addEventListener('touchmove', function(e) {
+    if (isDraggingSphere && sphereGroup && e.touches.length === 1 && currentWorldId === 'main') {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = e.touches[0].clientY - touchStartY;
+      sphereGroup.rotation.y += dx * 0.008;
+      sphereGroup.rotation.x += dy * 0.008;
+      const dt = Date.now() - lastSwipeTime;
+      if (dt > 0) detectSwipeSpin(dx, dy, dt);
+      lastSwipeTime = Date.now();
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }
+  }, { passive: false });
+
+  renderer.domElement.addEventListener('touchend', function() { isDraggingSphere = false; });
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 13. نظام التدوير السريع (Spin)
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+function processSpin(rotationDelta) {
+  const now = Date.now();
+  if (now - lastSpinTime > CONFIG.SPIN_COMBO_TIMEOUT) spinCombo = 1;
+
+  const fullSpins = Math.floor(Math.abs(rotationDelta) / (Math.PI * 2));
+  const partialSpin = Math.abs(rotationDelta) % (Math.PI * 2);
+  let totalSpins = fullSpins + (partialSpin > CONFIG.SPIN_MIN_ANGLE ? 1 : 0);
+
+  if (totalSpins > 0) {
+    const basePoints = 10 * totalSpins;
+    const totalPoints = basePoints * spinCombo;
+    spinCount += totalSpins;
+    spinPoints += totalPoints;
+    score += totalPoints;
+    spinCombo = Math.min(spinCombo + 1, 10);
+    lastSpinTime = now;
+
+    updateSpinCounter();
+    updateHUD();
+    showSpinEffect(totalPoints);
+    updateQuests('spins', totalSpins);
+    checkAchievement('spinner', spinCount >= 10);
+    checkAchievement('spin_master', spinCount >= 50);
+
+    if (sphereGroup) {
+      sphereGroup.children.forEach(function(child) {
+        if (child.isMesh && child.material) {
+          child.material.emissiveIntensity = Math.min(1.5, child.material.emissiveIntensity + 0.3);
+          setTimeout(function() {
+            if (child.material) {
+              child.material.emissiveIntensity = Math.max(0.25, child.material.emissiveIntensity - 0.3);
+            }
+          }, 300);
+        }
+      });
+    }
+    showToast('🌪️ دوران سريع! +' + totalPoints + ' (x' + spinCombo + ')', 'success');
+  }
+}
+
+function detectSwipeSpin(dx, dy, dt) {
+  if (!sphereGroup || currentWorldId !== 'main') return;
+  const speed = Math.sqrt((dx/dt)*(dx/dt) + (dy/dt)*(dy/dt));
+  if (speed > CONFIG.SPIN_SPEED_THRESHOLD) {
+    const rotationAmount = Math.abs(dx) * 0.008 + Math.abs(dy) * 0.008;
+    sphereRotationHistory.push({ angle: rotationAmount, time: Date.now() });
+    const now = Date.now();
+    sphereRotationHistory = sphereRotationHistory.filter(function(r) { return now - r.time < 500; });
+    const totalRotation = sphereRotationHistory.reduce(function(s, r) { return s + r.angle; }, 0);
+    if (totalRotation > CONFIG.SPIN_MIN_ANGLE && !isSwipeSpinning) {
+      isSwipeSpinning = true;
+      processSpin(totalRotation);
+      sphereRotationHistory = [];
+      setTimeout(function() { isSwipeSpinning = false; }, 300);
+    }
+  }
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 14. بناء وتنظيف العالم
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function clearWorld() {
   tileMeshes.forEach(function(m) {
@@ -1792,17 +2142,12 @@ function buildWorld(worldId) {
     tileGroup.visible = false;
     if (gridHelper) gridHelper.visible = false;
     document.getElementById('spin-counter').style.display = 'flex';
-    document.getElementById('score-display-main').style.display = 'flex';
-    // إخفاء أزرار القتال في الخريطة الرئيسية
     document.getElementById('combat-buttons').style.display = 'none';
   } else {
     hideSphere();
     tileGroup.visible = true;
     if (gridHelper) gridHelper.visible = gridVisible;
     document.getElementById('spin-counter').style.display = 'none';
-    document.getElementById('score-display-main').style.display = 'none';
-    
-    // إظهار أزرار القتال فقط في ساحة القتال
     if (worldId === 'world_fight') {
       document.getElementById('combat-buttons').style.display = 'flex';
     } else {
@@ -1991,7 +2336,7 @@ function buildWorld(worldId) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 16. فيديو 360
+// 15. فيديو 360
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function createVideo360(url) {
   videoElement = document.createElement('video');
@@ -2038,7 +2383,7 @@ function update360Camera() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 17. الدخول والخروج من العوالم
+// 16. الدخول والخروج من العوالم
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function enterWorld() {
   if (isTransitioning || currentWorldId !== 'main') return;
@@ -2141,7 +2486,7 @@ function enterWorldById(worldId) {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 18. نظام المعالم
+// 17. نظام المعالم
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function addLandmark() {
   const emojis = ['🏰','🌲','🌊','⛰️','🏜️','🌋','🏗️','🌺','🕌','🏯','🎪','🏟️'];
@@ -2218,7 +2563,7 @@ function renderLandmarks() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 19. رفع الملفات
+// 18. رفع الملفات
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function openUploadModal() {
   document.getElementById('upload-modal').style.display = 'flex';
@@ -2274,7 +2619,7 @@ function addLandmarkFromModal() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 20. عوالم عشوائية
+// 19. عوالم عشوائية
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function addRandomWorld() {
   const emojis = ['🎮','🎯','🎨','🌈','⭐','🌺','🌸','🌊','🔥','💫','🚀','🌙'];
@@ -2333,7 +2678,7 @@ function addRandomWorld() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 21. نظام القتال
+// 20. نظام القتال
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function spawnEnemy() {
   if (!gameRunning || currentWorldId !== 'world_fight') {
@@ -2584,68 +2929,7 @@ function updateParticles() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 22. نظام التدوير السريع (Spin)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function processSpin(rotationDelta) {
-  const now = Date.now();
-  if (now - lastSpinTime > CONFIG.SPIN_COMBO_TIMEOUT) spinCombo = 1;
-
-  const fullSpins = Math.floor(Math.abs(rotationDelta) / (Math.PI * 2));
-  const partialSpin = Math.abs(rotationDelta) % (Math.PI * 2);
-  let totalSpins = fullSpins + (partialSpin > CONFIG.SPIN_MIN_ANGLE ? 1 : 0);
-
-  if (totalSpins > 0) {
-    const basePoints = 10 * totalSpins;
-    const totalPoints = basePoints * spinCombo;
-    spinCount += totalSpins;
-    spinPoints += totalPoints;
-    score += totalPoints;
-    spinCombo = Math.min(spinCombo + 1, 10);
-    lastSpinTime = now;
-
-    updateSpinCounter();
-    updateHUD();
-    showSpinEffect(totalPoints);
-    updateQuests('spins', totalSpins);
-    checkAchievement('spinner', spinCount >= 10);
-    checkAchievement('spin_master', spinCount >= 50);
-
-    if (sphereGroup) {
-      sphereGroup.children.forEach(function(child) {
-        if (child.isMesh && child.material) {
-          child.material.emissiveIntensity = Math.min(1.5, child.material.emissiveIntensity + 0.3);
-          setTimeout(function() {
-            if (child.material) {
-              child.material.emissiveIntensity = Math.max(0.25, child.material.emissiveIntensity - 0.3);
-            }
-          }, 300);
-        }
-      });
-    }
-    showToast('🌪️ دوران سريع! +' + totalPoints + ' (x' + spinCombo + ')', 'success');
-  }
-}
-
-function detectSwipeSpin(dx, dy, dt) {
-  if (!sphereGroup || currentWorldId !== 'main') return;
-  const speed = Math.sqrt((dx/dt)*(dx/dt) + (dy/dt)*(dy/dt));
-  if (speed > CONFIG.SPIN_SPEED_THRESHOLD) {
-    const rotationAmount = Math.abs(dx) * 0.008 + Math.abs(dy) * 0.008;
-    sphereRotationHistory.push({ angle: rotationAmount, time: Date.now() });
-    const now = Date.now();
-    sphereRotationHistory = sphereRotationHistory.filter(function(r) { return now - r.time < 500; });
-    const totalRotation = sphereRotationHistory.reduce(function(s, r) { return s + r.angle; }, 0);
-    if (totalRotation > CONFIG.SPIN_MIN_ANGLE && !isSwipeSpinning) {
-      isSwipeSpinning = true;
-      processSpin(totalRotation);
-      sphereRotationHistory = [];
-      setTimeout(function() { isSwipeSpinning = false; }, 300);
-    }
-  }
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 23. COD Game
+// 21. COD Game
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function openCODModal() {
   document.getElementById('cod-modal').style.display = 'flex';
@@ -2690,7 +2974,7 @@ function openCODGame(filename) {
   iframe.src = filename;
   iframe.style.display = 'block';
   document.getElementById('close-cod-btn').style.display = 'block';
-  ['hud','health-bar-container','dpad','fire-btn','game-message','minimap-frame','top-bar','score-display-main','spin-counter','combat-buttons'].forEach(function(id) {
+  ['hud','health-bar-container','dpad','fire-btn','game-message','minimap-frame','spin-counter','combat-buttons'].forEach(function(id) {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
@@ -2703,7 +2987,7 @@ function closeCODGame() {
   iframe.style.display = 'none';
   iframe.src = '';
   document.getElementById('close-cod-btn').style.display = 'none';
-  ['hud','health-bar-container','dpad','fire-btn','game-message','minimap-frame','top-bar','score-display-main','spin-counter','combat-buttons'].forEach(function(id) {
+  ['hud','health-bar-container','dpad','fire-btn','game-message','minimap-frame','spin-counter','combat-buttons'].forEach(function(id) {
     const el = document.getElementById(id);
     if (el) el.style.display = '';
   });
@@ -2712,7 +2996,7 @@ function closeCODGame() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 24. خريطة مصغرة
+// 22. خريطة مصغرة
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function setupMinimap() {
   const frame = document.getElementById('minimap-frame');
@@ -2757,330 +3041,7 @@ function updateMinimap() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 25. نظام الأيقونات الكروية
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function createIconTexture(emoji, name, color, isHovered) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 256; canvas.height = 256;
-  const ctx = canvas.getContext('2d');
-
-  ctx.beginPath();
-  ctx.arc(128, 128, 120, 0, Math.PI * 2);
-  ctx.fillStyle = isHovered ? color : 'rgba(20,20,40,0.85)';
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.arc(128, 128, 120, 0, Math.PI * 2);
-  ctx.strokeStyle = isHovered ? '#ffffff' : color;
-  ctx.lineWidth = isHovered ? 6 : 3;
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.arc(128, 128, 110, 0, Math.PI * 2);
-  ctx.strokeStyle = isHovered ? color : 'rgba(255,255,255,0.1)';
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  ctx.font = 'bold 100px Arial';
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.shadowColor = color;
-  ctx.shadowBlur = isHovered ? 40 : 20;
-  ctx.fillText(emoji, 128, 110);
-  ctx.shadowBlur = 0;
-
-  ctx.font = 'bold 20px Cairo, Arial';
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0,0,0,0.8)';
-  ctx.shadowBlur = 8;
-  ctx.fillText(name, 128, 185);
-  ctx.shadowBlur = 0;
-
-  return new THREE.CanvasTexture(canvas);
-}
-
-function buildSphere() {
-  if (sphereGroup) {
-    iconSprites.forEach(function(s) {
-      if (s.material && s.material.map) s.material.map.dispose();
-      if (s.material) s.material.dispose();
-    });
-    scene.remove(sphereGroup);
-  }
-  iconSprites = [];
-  selectedIcon = null;
-  document.getElementById('facet-info').style.display = 'none';
-
-  sphereGroup = new THREE.Group();
-  const radius = 4.5;
-  const totalIcons = WORLD_ICONS.length;
-  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
-
-  WORLD_ICONS.forEach(function(world, i) {
-    const y = 1 - (i / (totalIcons - 1)) * 2;
-    const radiusAtY = Math.sqrt(1 - y * y);
-    const theta = goldenAngle * i;
-    const x = Math.cos(theta) * radiusAtY;
-    const z = Math.sin(theta) * radiusAtY;
-    const position = new THREE.Vector3(x * radius, y * radius, z * radius);
-
-    const tex = createIconTexture(world.emoji, world.name, world.color, false);
-    const mat = new THREE.SpriteMaterial({
-      map: tex, transparent: true, depthTest: true, opacity: 0.9
-    });
-    const sprite = new THREE.Sprite(mat);
-    sprite.position.copy(position);
-    sprite.scale.set(2.2, 2.2, 1);
-    sprite.userData = {
-      index: i, world: world,
-      position: position.clone(),
-      hovered: false, baseScale: 2.2
-    };
-    sphereGroup.add(sprite);
-    iconSprites.push(sprite);
-  });
-
-  const glow = new THREE.PointLight(0x8b5cf6, 1.5, 30);
-  sphereGroup.add(glow);
-  const ambientSphere = new THREE.AmbientLight(0x404080, 0.4);
-  sphereGroup.add(ambientSphere);
-  scene.add(sphereGroup);
-}
-
-function updateFacetInfo() {
-  const info = document.getElementById('facet-info');
-  const nameEl = document.getElementById('facet-name');
-  const descEl = document.getElementById('facet-desc');
-
-  if (selectedIcon !== null && iconSprites[selectedIcon]) {
-    info.style.display = 'block';
-    nameEl.textContent = iconSprites[selectedIcon].userData.world.name;
-    descEl.textContent = '🌐 أيقونة ' + (selectedIcon + 1) + ' من ' + iconSprites.length + ' | اضغط للدخول';
-  } else {
-    info.style.display = 'none';
-  }
-}
-
-function generateWorldItems(iconIndex) {
-  const items = [];
-  const emojis = ['🏰', '🌲', '🌊', '⛰️', '🏜️', '🌋', '🏗️', '🌺', '🕌', '🏯', '🎪', '🏟️'];
-  const count = 2 + (iconIndex % 4);
-
-  for (let i = 0; i < count; i++) {
-    let r, c, attempts = 0;
-    do {
-      r = 1 + Math.floor(Math.random() * 10);
-      c = 1 + Math.floor(Math.random() * 10);
-      attempts++;
-    } while (items.some(function(it) { return it.row === r && it.col === c; }) && attempts < 50);
-
-    if (attempts < 50) {
-      items.push({
-        id: 'item_' + iconIndex + '_' + i,
-        type: i % 2 === 0 ? 'image' : 'portal',
-        title: emojis[i % emojis.length] + ' ' + WORLD_ICONS[(iconIndex + i) % WORLD_ICONS.length].name,
-        emoji: emojis[i % emojis.length],
-        row: r, col: c
-      });
-    }
-  }
-
-  let exitR, exitC, exitAttempts = 0;
-  do {
-    exitR = 1 + Math.floor(Math.random() * 10);
-    exitC = 1 + Math.floor(Math.random() * 10);
-    exitAttempts++;
-  } while (items.some(function(it) { return it.row === exitR && it.col === exitC; }) && exitAttempts < 30);
-
-  if (exitAttempts < 30 && items.length < 10) {
-    items.push({
-      id: 'portal_exit_' + iconIndex,
-      type: 'portal',
-      title: '🚪 العودة للخريطة',
-      emoji: '🚪',
-      row: exitR, col: exitC,
-      targetWorld: 'main'
-    });
-  }
-  return items;
-}
-
-function rebuildSphere() {
-  buildSphere();
-  showToast('🔄 تم إعادة بناء شبكة الأيقونات', 'info');
-}
-
-function updateSphereRotation() {
-  if (!sphereGroup || isDraggingSphere) return;
-  sphereGroup.rotation.y += 0.002;
-  sphereGroup.rotation.x += 0.001;
-}
-
-
-function showSphere() {
-  if (sphereGroup) {
-    sphereGroup.visible = true;
-    sphereGroup.scale.set(1, 1, 1);
-    sphereGroup.children.forEach(function(child) {
-      if (child.isSprite && child.material) child.material.opacity = 0.9;
-      if (child.isPointLight) child.intensity = 1.5;
-    });
-  }
-  document.getElementById('facet-info').style.display = selectedIcon !== null ? 'block' : 'none';
-}
-
-function hideSphere() {
-  if (sphereGroup) sphereGroup.visible = false;
-  document.getElementById('facet-info').style.display = 'none';
-}
-
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 26. تفاعل الأيقونات
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-function setupFacetInteraction() {
-  const raycaster = new THREE.Raycaster();
-  const mouse = new THREE.Vector2();
-
-  renderer.domElement.addEventListener('mousemove', function(event) {
-    if (isDraggingSphere) return;
-    const rect = renderer.domElement.getBoundingClientRect();
-    mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(iconSprites);
-
-    if (intersects.length > 0) {
-      const hit = intersects[0].object;
-      const index = hit.userData.index;
-      if (index !== selectedIcon) {
-        if (selectedIcon !== null && iconSprites[selectedIcon]) {
-          const prev = iconSprites[selectedIcon];
-          const world = prev.userData.world;
-          prev.material.map = createIconTexture(world.emoji, world.name, world.color, false);
-          prev.scale.set(prev.userData.baseScale, prev.userData.baseScale, 1);
-          prev.userData.hovered = false;
-        }
-        selectedIcon = index;
-        const cur = iconSprites[index];
-        const world = cur.userData.world;
-        cur.material.map = createIconTexture(world.emoji, world.name, world.color, true);
-        cur.scale.set(cur.userData.baseScale * 1.3, cur.userData.baseScale * 1.3, 1);
-        cur.userData.hovered = true;
-        renderer.domElement.style.cursor = 'pointer';
-        updateFacetInfo();
-      }
-      return;
-    }
-
-    if (selectedIcon !== null && iconSprites[selectedIcon]) {
-      const prev = iconSprites[selectedIcon];
-      const world = prev.userData.world;
-      prev.material.map = createIconTexture(world.emoji, world.name, world.color, false);
-      prev.scale.set(prev.userData.baseScale, prev.userData.baseScale, 1);
-      prev.userData.hovered = false;
-    }
-    selectedIcon = null;
-    renderer.domElement.style.cursor = 'default';
-    updateFacetInfo();
-  });
-
-  renderer.domElement.addEventListener('click', function(event) {
-    if (selectedIcon !== null && iconSprites[selectedIcon]) {
-      const world = iconSprites[selectedIcon].userData.world;
-      const worldId = 'world_icon_' + selectedIcon;
-
-      const existingWorld = getWorld(worldId);
-      if (!existingWorld) {
-        const newWorld = {
-          id: worldId,
-          name: world.name,
-          grid: 12, tileSize: 3,
-          startPosition: { x: 0, z: 0 },
-          background: world.color,
-          items: generateWorldItems(selectedIcon)
-        };
-        worlds.push(newWorld);
-
-        const main = getWorld('main');
-        if (main) {
-          let pr, pc, attempts = 0;
-          do {
-            pr = 1 + Math.floor(Math.random() * 10);
-            pc = 1 + Math.floor(Math.random() * 10);
-            attempts++;
-          } while (main.items.some(function(it) { return it.row === pr && it.col === pc; }) && attempts < 50);
-
-          if (attempts < 50) {
-            main.items.push({
-              id: 'portal_icon_' + selectedIcon,
-              type: 'portal',
-              title: world.name,
-              emoji: world.emoji,
-              row: pr, col: pc,
-              targetWorld: worldId
-            });
-            if (currentWorldId === 'main') buildWorld('main');
-          }
-        }
-      }
-      enterWorldById(worldId);
-    }
-  });
-
-  renderer.domElement.addEventListener('mousedown', function(e) {
-    if (e.target === renderer.domElement && selectedIcon === null) {
-      isDraggingSphere = true;
-      previousMousePosition.x = e.clientX;
-      previousMousePosition.y = e.clientY;
-    }
-  });
-
-  window.addEventListener('mousemove', function(e) {
-    if (isDraggingSphere && sphereGroup) {
-      const dx = e.clientX - previousMousePosition.x;
-      const dy = e.clientY - previousMousePosition.y;
-      sphereGroup.rotation.y += dx * 0.008;
-      sphereGroup.rotation.x += dy * 0.008;
-      const dt = Date.now() - lastSwipeTime;
-      if (dt > 0) detectSwipeSpin(dx, dy, dt);
-      lastSwipeTime = Date.now();
-      previousMousePosition.x = e.clientX;
-      previousMousePosition.y = e.clientY;
-    }
-  });
-
-  window.addEventListener('mouseup', function() { isDraggingSphere = false; });
-
-  let touchStartX = 0, touchStartY = 0;
-  renderer.domElement.addEventListener('touchstart', function(e) {
-    if (e.touches.length === 1 && currentWorldId === 'main') {
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-      isDraggingSphere = true;
-      lastSwipeTime = Date.now();
-    }
-  }, { passive: false });
-
-  renderer.domElement.addEventListener('touchmove', function(e) {
-    if (isDraggingSphere && sphereGroup && e.touches.length === 1 && currentWorldId === 'main') {
-      e.preventDefault();
-      const dx = e.touches[0].clientX - touchStartX;
-      const dy = e.touches[0].clientY - touchStartY;
-      sphereGroup.rotation.y += dx * 0.008;
-      sphereGroup.rotation.x += dy * 0.008;
-      const dt = Date.now() - lastSwipeTime;
-      if (dt > 0) detectSwipeSpin(dx, dy, dt);
-      lastSwipeTime = Date.now();
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-    }
-  }, { passive: false });
-
-  renderer.domElement.addEventListener('touchend', function() { isDraggingSphere = false; });
-}
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 27. تحديثات اللاعب والكاميرا
+// 23. تحديثات اللاعب والكاميرا
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function updatePlayer() {
   if (isTransitioning || !gameRunning) return;
@@ -3156,7 +3117,7 @@ function updateCamera() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 28. حفظ وتحميل
+// 24. حفظ وتحميل
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function saveGame() {
   const data = {
@@ -3215,7 +3176,7 @@ function loadGame() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 29. نهاية اللعبة وإعادة التشغيل
+// 25. نهاية اللعبة وإعادة التشغيل
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function gameOver() {
   gameRunning = false;
@@ -3263,7 +3224,7 @@ function hideTutorial() {
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 30. تهيئة اللعبة
+// 26. تهيئة اللعبة
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function initGame() {
   const canvas = document.getElementById('canvas');
@@ -3365,15 +3326,11 @@ function initGame() {
   loop();
 }
 
-
-
-
 function startGame() {
   document.getElementById('start-screen').style.display = 'none';
   document.getElementById('top-bar').style.display = 'flex';
   document.getElementById('game-message').style.display = 'block';
   document.getElementById('minimap-frame').style.display = 'block';
-  document.getElementById('score-display-main').style.display = 'flex';
   document.getElementById('health-bar-container').style.display = 'none';
   document.getElementById('hud').style.display = 'none';
   document.getElementById('dpad').style.display = 'none';
@@ -3383,13 +3340,11 @@ function startGame() {
 
   initGame();
   playerGroup.visible = false;
-  
-  // إضافة هذا السطر لإظهار الكرة
   if (sphereGroup) sphereGroup.visible = true;
 }
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 31. التحكم
+// 27. التحكم
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 function setupControls() {
   document.querySelectorAll('.dpad-btn').forEach(function(btn) {
@@ -3442,6 +3397,22 @@ function setupControls() {
   });
 }
 
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 28. إخفاء اللوحات عند النقر خارجها
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+document.addEventListener('click', function(e) {
+  const panels = ['settings-panel', 'profile-panel', 'achievements-panel', 'quest-panel'];
+  const buttons = ['settings-btn', 'profile-btn', 'achievements-btn', 'quests-btn'];
+  
+  panels.forEach(function(panelId, index) {
+    const panel = document.getElementById(panelId);
+    const btn = document.getElementById(buttons[index]);
+    if (panel && !panel.contains(e.target) && e.target !== btn) {
+      panel.style.display = 'none';
+    }
+  });
+});
+
 window.addEventListener('resize', function() {
   if (camera) {
     camera.aspect = innerWidth / innerHeight;
@@ -3450,40 +3421,13 @@ window.addEventListener('resize', function() {
   }
 });
 
-document.addEventListener('click', function(e) {
-  const settingsPanel = document.getElementById('settings-panel');
-  const settingsBtn = document.getElementById('settings-btn');
-  if (!settingsPanel.contains(e.target) && e.target !== settingsBtn) {
-    settingsPanel.style.display = 'none';
-  }
-  const profilePanel = document.getElementById('profile-panel');
-  const profileBtn = document.getElementById('profile-btn');
-  if (!profilePanel.contains(e.target) && e.target !== profileBtn) {
-    profilePanel.style.display = 'none';
-  }
-  const achievementsPanel = document.getElementById('achievements-panel');
-  const achievementsBtn = document.getElementById('achievements-btn');
-  if (!achievementsPanel.contains(e.target) && e.target !== achievementsBtn) {
-    achievementsPanel.style.display = 'none';
-  }
-  const questPanel = document.getElementById('quest-panel');
-  const questBtn = document.getElementById('quests-btn');
-  if (!questPanel.contains(e.target) && e.target !== questBtn) {
-    questPanel.style.display = 'none';
-  }
-});
-
 setupControls();
 
-console.log('🌐 العوالم الكروية v79.0 - واجهة معاد تنظيمها');
-console.log('📌 التغييرات:');
-console.log('  ✅ شريط التحكم السفلي مخفي');
-console.log('  ✅ أزرار رفع ملف، معلم، عالم في الإعدادات');
-console.log('  ✅ أزرار عدو وشفاء تظهر فقط في ساحة القتال');
-console.log('  ✅ الإنجازات والمهام في أيقونات منفصلة');
+console.log('🌐 العوالم الكروية v80.0 - واجهة متقنة');
+console.log('✅ جميع الأزرار في شريط علوي واحد');
+console.log('✅ لوحات منبثقة أنيقة');
+console.log('✅ تحكم كامل باللعبة');
 </script>
 </body>
 </html>
-
-
-  
+   
