@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -8,1163 +7,237 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
-/* ═══════════════════════════════════════════════════════════════
-   🌐 العوالم الكروية - v79.0 - واجهة معاد تنظيمها
-   ═══════════════════════════════════════════════════════════════ */
-
-/* ─── Reset & Base ─── */
 * { margin: 0; padding: 0; box-sizing: border-box; }
-
 canvas { display: block; width: 100%; height: 100%; }
+body { font-family: 'Cairo', sans-serif; background: #050510; color: #fff; overflow: hidden; -webkit-tap-highlight-color: transparent; user-select: none; }
 
-body {
-  font-family: 'Cairo', sans-serif;
-  background: #050510;
-  color: #fff;
-  overflow: hidden;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   1. شاشة البداية
-   ═══════════════════════════════════════════════════════════════ */
-#start-screen {
-  position: fixed; inset: 0; z-index: 2000;
-  background: linear-gradient(135deg, #0a0a2a 0%, #000 50%, #0a0a1a 100%);
-  display: flex; flex-direction: column;
-  justify-content: center; align-items: center; gap: 24px;
-}
-
-.start-logo {
-  font-size: 52px; font-weight: 900;
-  background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: float 3s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
-}
-
-@keyframes glow {
-  from { filter: drop-shadow(0 0 20px rgba(255,215,0,0.3)); }
-  to   { filter: drop-shadow(0 0 40px rgba(255,215,0,0.6)); }
-}
-
-.start-subtitle {
-  font-size: 15px; color: #888; text-align: center;
-  max-width: 420px; line-height: 2;
-}
-.start-subtitle span {
-  color: #ffd700; font-weight: 700;
-  background: rgba(255,215,0,0.08);
-  padding: 2px 10px; border-radius: 20px;
-}
-
-.start-btn {
-  border: 2px solid #00f2ff; color: #00f2ff;
-  padding: 18px 60px; background: rgba(0,242,255,0.08);
-  border-radius: 60px; font-size: 22px; cursor: pointer;
-  transition: all .3s; font-weight: 700; font-family: inherit;
-  position: relative; overflow: hidden;
-}
-.start-btn::before {
-  content: ''; position: absolute; top: 0; left: -100%;
-  width: 100%; height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  transition: left 0.5s;
-}
+#start-screen { position: fixed; inset: 0; z-index: 2000; background: linear-gradient(135deg, #0a0a2a 0%, #000 50%, #0a0a1a 100%); display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 24px; }
+.start-logo { font-size: 52px; font-weight: 900; background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: float 3s ease-in-out infinite, glow 2s ease-in-out infinite alternate; }
+@keyframes glow { from { filter: drop-shadow(0 0 20px rgba(255,215,0,0.3)); } to { filter: drop-shadow(0 0 40px rgba(255,215,0,0.6)); } }
+.start-subtitle { font-size: 15px; color: #888; text-align: center; max-width: 420px; line-height: 2; }
+.start-subtitle span { color: #ffd700; font-weight: 700; background: rgba(255,215,0,0.08); padding: 2px 10px; border-radius: 20px; }
+.start-btn { border: 2px solid #00f2ff; color: #00f2ff; padding: 18px 60px; background: rgba(0,242,255,0.08); border-radius: 60px; font-size: 22px; cursor: pointer; transition: all .3s; font-weight: 700; font-family: inherit; position: relative; overflow: hidden; }
+.start-btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); transition: left 0.5s; }
 .start-btn:hover::before { left: 100%; }
-.start-btn:hover {
-  transform: scale(1.08); background: #00f2ff; color: #000;
-  box-shadow: 0 0 60px rgba(0,242,255,0.5), 0 0 100px rgba(0,242,255,0.2);
-}
-
-.start-features {
-  display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;
-  max-width: 400px;
-}
-.start-features .feat {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  padding: 6px 14px; border-radius: 20px;
-  font-size: 11px; color: #aaa;
-}
-
+.start-btn:hover { transform: scale(1.08); background: #00f2ff; color: #000; box-shadow: 0 0 60px rgba(0,242,255,0.5), 0 0 100px rgba(0,242,255,0.2); }
+.start-features { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; max-width: 400px; }
+.start-features .feat { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); padding: 6px 14px; border-radius: 20px; font-size: 11px; color: #aaa; }
 .version-tag { position: absolute; bottom: 20px; font-size: 12px; color: #555; }
 
-/* ═══════════════════════════════════════════════════════════════
-   2. دليل اللعب
-   ═══════════════════════════════════════════════════════════════ */
-#tutorial-panel {
-  position: fixed; inset: 0; z-index: 2001;
-  background: rgba(0,0,0,0.95);
-  display: none;
-  justify-content: center; align-items: center;
-  flex-direction: column; gap: 20px; padding: 20px;
-}
+#tutorial-panel { position: fixed; inset: 0; z-index: 2001; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; flex-direction: column; gap: 20px; padding: 20px; }
 #tutorial-panel h2 { color: #ffd700; font-size: 28px; }
-#tutorial-panel .tutorial-content {
-  max-width: 400px; color: #aaa;
-  font-size: 13px; line-height: 2; text-align: center;
-}
+#tutorial-panel .tutorial-content { max-width: 400px; color: #aaa; font-size: 13px; line-height: 2; text-align: center; }
 #tutorial-panel .tutorial-content b { color: #fff; }
 
-
-
-
-/* ═══════════════════════════════════════════════════════════════
-   5. شريط الأدوات الجانبي (احترافي)
-   ═══════════════════════════════════════════════════════════════ */
-#side-toolbar {
-  display: none;
-  position: fixed; top: 50%; right: 12px;
-  transform: translateY(-50%);
-  z-index: 101;
-  flex-direction: column;
-  gap: 6px;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 16px;
-  padding: 8px 6px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-}
-.toolbar-btn {
-  width: 38px; height: 38px;
-  border-radius: 12px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.06);
-  color: #fff;
-  font-size: 17px;
-  cursor: pointer;
-  backdrop-filter: blur(10px);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-}
-.toolbar-btn:hover {
-  background: rgba(139,92,246,0.2);
-  border-color: rgba(139,92,246,0.4);
-  transform: scale(1.12);
-  box-shadow: 0 0 20px rgba(139,92,246,0.15);
-}
+#side-toolbar { display: none; position: fixed; top: 50%; right: 12px; transform: translateY(-50%); z-index: 101; flex-direction: column; gap: 6px; background: rgba(0,0,0,0.6); backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 8px 6px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+.toolbar-btn { width: 38px; height: 38px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); color: #fff; font-size: 17px; cursor: pointer; backdrop-filter: blur(10px); transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: center; position: relative; }
+.toolbar-btn:hover { background: rgba(139,92,246,0.2); border-color: rgba(139,92,246,0.4); transform: scale(1.12); box-shadow: 0 0 20px rgba(139,92,246,0.15); }
 .toolbar-btn:active { transform: scale(0.95); }
-.toolbar-btn .badge {
-  position: absolute;
-  top: -2px; right: -2px;
-  background: #ef4444;
-  color: #fff;
-  font-size: 9px;
-  font-weight: 800;
-  width: 16px; height: 16px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid rgba(0,0,0,0.8);
-}
+.toolbar-btn .badge { position: absolute; top: -2px; right: -2px; background: #ef4444; color: #fff; font-size: 9px; font-weight: 800; width: 16px; height: 16px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(0,0,0,0.8); }
 
-/* ═══════════════════════════════════════════════════════════════
-   5b. شريط HUD علوي مدمج (احترافي)
-   ═══════════════════════════════════════════════════════════════ */
-#hud {
-  position: fixed;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: rgba(0,0,0,0.75);
-  padding: 8px 20px;
-  border-radius: 20px;
-  z-index: 100;
-  display: none;
-  gap: 16px;
-  font-size: 11px;
-  border: 1px solid rgba(255,255,255,0.06);
-  flex-wrap: wrap;
-  justify-content: center;
-  backdrop-filter: blur(16px);
-  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
-}
-#hud .stat {
-  text-align: center;
-  min-width: 36px;
-  position: relative;
-  padding: 0 4px;
-}
-#hud .stat:not(:last-child)::after {
-  content: '';
-  position: absolute;
-  right: -8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1px;
-  height: 60%;
-  background: rgba(255,255,255,0.08);
-}
-#hud .stat .val {
-  font-weight: 800;
-  font-size: 15px;
-  display: block;
-  line-height: 1.2;
-}
+#hud { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); padding: 8px 20px; border-radius: 20px; z-index: 100; display: none; gap: 16px; font-size: 11px; border: 1px solid rgba(255,255,255,0.06); flex-wrap: wrap; justify-content: center; backdrop-filter: blur(16px); box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+#hud .stat { text-align: center; min-width: 36px; position: relative; padding: 0 4px; }
+#hud .stat:not(:last-child)::after { content: ''; position: absolute; right: -8px; top: 50%; transform: translateY(-50%); width: 1px; height: 60%; background: rgba(255,255,255,0.08); }
+#hud .stat .val { font-weight: 800; font-size: 15px; display: block; line-height: 1.2; }
 #hud .stat .health { color: #4ade80; }
 #hud .stat .kills  { color: #f87171; }
-#hud .stat .label {
-  font-size: 8px;
-  color: #666;
-  display: block;
-  margin-top: 2px;
-  letter-spacing: 0.3px;
-}
-#hud .stat .xp-bar {
-  width: 28px;
-  height: 2px;
-  background: rgba(255,255,255,0.08);
-  border-radius: 2px;
-  margin: 3px auto 0;
-  overflow: hidden;
-}
-#hud .stat .xp-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #8b5cf6, #a78bfa);
-  border-radius: 2px;
-  transition: width 0.3s;
-}
+#hud .stat .label { font-size: 8px; color: #666; display: block; margin-top: 2px; letter-spacing: 0.3px; }
+#hud .stat .xp-bar { width: 28px; height: 2px; background: rgba(255,255,255,0.08); border-radius: 2px; margin: 3px auto 0; overflow: hidden; }
+#hud .stat .xp-fill { height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa); border-radius: 2px; transition: width 0.3s; }
 
-/* ═══════════════════════════════════════════════════════════════
-   5c. عداد الدوران المدمج
-   ═══════════════════════════════════════════════════════════════ */
-#spin-counter {
-  position: fixed;
-  top: 55px;
-  right: 68px;
-  z-index: 102;
-  background: rgba(0,0,0,0.75);
-  border: 1px solid rgba(255,215,0,0.2);
-  border-radius: 16px;
-  padding: 10px 14px;
-  display: none;
-  gap: 6px;
-  flex-direction: column;
-  backdrop-filter: blur(16px);
-  font-size: 11px;
-  min-width: 110px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
-}
-@keyframes spinCounterSlide {
-  from { opacity: 0; transform: translateY(-8px) scale(0.95); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
-#spin-counter .spin-stat {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 2px 0;
-}
-#spin-counter .spin-stat .spin-val {
-  font-weight: 800;
-  font-size: 14px;
-}
-#spin-counter .spin-stat .spin-val.combo {
-  color: #ff6b6b;
-  animation: comboPulse 0.5s ease-in-out;
-}
-@keyframes comboPulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.3); color: #ff4444; }
-  100% { transform: scale(1); }
-}
+#spin-counter { position: fixed; top: 55px; right: 68px; z-index: 102; background: rgba(0,0,0,0.75); border: 1px solid rgba(255,215,0,0.2); border-radius: 16px; padding: 10px 14px; display: none; gap: 6px; flex-direction: column; backdrop-filter: blur(16px); font-size: 11px; min-width: 110px; box-shadow: 0 4px 24px rgba(0,0,0,0.3); }
+#spin-counter .spin-stat { display: flex; justify-content: space-between; align-items: center; padding: 2px 0; }
+#spin-counter .spin-stat .spin-val { font-weight: 800; font-size: 14px; }
+#spin-counter .spin-stat .spin-val.combo { color: #ff6b6b; animation: comboPulse 0.5s ease-in-out; }
+@keyframes comboPulse { 0% { transform: scale(1); } 50% { transform: scale(1.3); color: #ff4444; } 100% { transform: scale(1); } }
 
-/* ═══════════════════════════════════════════════════════════════
-   6. لوحة الإعدادات - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-#settings-panel {
-  position: fixed;
-  top: 50%;
-  right: 62px;
-  transform: translateY(-50%);
-  background: rgba(8,8,20,0.95);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 16px;
-  z-index: 102;
-  display: none;
-  min-width: 220px;
-  backdrop-filter: blur(20px);
-  max-height: 80vh;
-  overflow-y: auto;
-  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
-}
-.setting-row {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
-  font-size: 11px;
-}
+#settings-panel { position: fixed; top: 50%; right: 62px; transform: translateY(-50%); background: rgba(8,8,20,0.95); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 16px; z-index: 102; display: none; min-width: 220px; backdrop-filter: blur(20px); max-height: 80vh; overflow-y: auto; box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+.setting-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.04); font-size: 11px; }
 .setting-row:last-child { border-bottom: none; }
 .setting-row label { color: #aaa; }
-.setting-row input[type="range"] {
-  width: 70px; height: 4px; -webkit-appearance: none;
-  background: rgba(255,255,255,0.1); border-radius: 2px; outline: none;
-}
-.setting-row input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 12px; height: 12px;
-  border-radius: 50%; background: #8b5cf6; cursor: pointer;
-}
-.setting-row button {
-  background: rgba(139,92,246,0.12);
-  border: 1px solid rgba(139,92,246,0.2);
-  color: #fff;
-  padding: 4px 12px;
-  border-radius: 8px;
-  font-size: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
-  letter-spacing: 0.3px;
-}
-.setting-row button:hover {
-  background: rgba(139,92,246,0.25);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(139,92,246,0.15);
-}
+.setting-row input[type="range"] { width: 70px; height: 4px; -webkit-appearance: none; background: rgba(255,255,255,0.1); border-radius: 2px; outline: none; }
+.setting-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #8b5cf6; cursor: pointer; }
+.setting-row button { background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.2); color: #fff; padding: 4px 12px; border-radius: 8px; font-size: 10px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; letter-spacing: 0.3px; }
+.setting-row button:hover { background: rgba(139,92,246,0.25); transform: translateY(-1px); box-shadow: 0 2px 8px rgba(139,92,246,0.15); }
 .setting-row .btn-green { background: rgba(74,222,128,0.15); border-color: rgba(74,222,128,0.2); }
 .setting-row .btn-green:hover { background: rgba(74,222,128,0.3); }
 .setting-row .btn-gold { background: rgba(255,215,0,0.15); border-color: rgba(255,215,0,0.2); }
 .setting-row .btn-gold:hover { background: rgba(255,215,0,0.3); }
 .setting-row .btn-red { background: rgba(239,68,68,0.15); border-color: rgba(239,68,68,0.2); }
 .setting-row .btn-red:hover { background: rgba(239,68,68,0.3); }
+.settings-section-title { color: #ffd700; font-size: 11px; font-weight: 800; padding: 8px 0 4px; border-bottom: 1px solid rgba(255,215,0,0.1); margin-top: 6px; letter-spacing: 0.5px; text-transform: uppercase; }
 
-.settings-section-title {
-  color: #ffd700;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 8px 0 4px;
-  border-bottom: 1px solid rgba(255,215,0,0.1);
-  margin-top: 6px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   7. لوحة الملف الشخصي - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-#profile-panel {
-  position: fixed;
-  top: 50%;
-  right: 62px;
-  transform: translateY(-50%);
-  background: rgba(8,8,20,0.95);
-  border: 1px solid rgba(255,215,0,0.15);
-  border-radius: 16px;
-  padding: 20px;
-  z-index: 102;
-  display: none;
-  min-width: 220px;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
-}
-.profile-header {
-  display: flex; align-items: center; gap: 12px;
-  margin-bottom: 12px; padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-}
-.profile-avatar {
-  width: 44px; height: 44px; border-radius: 50%;
-  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 22px; border: 2px solid rgba(255,215,0,0.2); flex-shrink: 0;
-}
+#profile-panel { position: fixed; top: 50%; right: 62px; transform: translateY(-50%); background: rgba(8,8,20,0.95); border: 1px solid rgba(255,215,0,0.15); border-radius: 16px; padding: 20px; z-index: 102; display: none; min-width: 220px; backdrop-filter: blur(20px); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+.profile-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.profile-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #8b5cf6, #6d28d9); display: flex; align-items: center; justify-content: center; font-size: 22px; border: 2px solid rgba(255,215,0,0.2); flex-shrink: 0; }
 .profile-name { font-size: 15px; font-weight: 700; color: #fff; }
 .profile-name .edit-icon { font-size: 11px; color: #888; cursor: pointer; margin-right: 4px; }
 .profile-name .edit-icon:hover { color: #ffd700; }
-
-.profile-stats {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px;
-}
-.profile-stat {
-  display: flex; align-items: center; gap: 4px;
-  font-size: 12px; color: #ccc; padding: 3px 0;
-}
+.profile-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 10px; }
+.profile-stat { display: flex; align-items: center; gap: 4px; font-size: 12px; color: #ccc; padding: 3px 0; }
 .profile-stat .stat-icon { font-size: 14px; }
 .profile-stat .stat-value { font-weight: 700; color: #fff; }
-.profile-stat .stat-value.gold      { color: #ffd700; }
-.profile-stat .stat-value.level     { color: #60a5fa; }
-.profile-stat .stat-value.score     { color: #a78bfa; }
-.profile-stat .stat-value.worlds    { color: #4ade80; }
+.profile-stat .stat-value.gold { color: #ffd700; }
+.profile-stat .stat-value.level { color: #60a5fa; }
+.profile-stat .stat-value.score { color: #a78bfa; }
+.profile-stat .stat-value.worlds { color: #4ade80; }
 .profile-stat .stat-value.landmarks { color: #fbbf24; }
-
-.profile-actions {
-  display: flex; gap: 6px; margin-top: 10px; padding-top: 10px;
-  border-top: 1px solid rgba(255,255,255,0.06);
-}
-.profile-actions button {
-  flex: 1; padding: 4px 0;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 6px; background: rgba(255,255,255,0.04);
-  color: #aaa; font-size: 10px; cursor: pointer;
-  font-family: inherit; transition: all 0.3s;
-}
+.profile-actions { display: flex; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); }
+.profile-actions button { flex: 1; padding: 4px 0; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: rgba(255,255,255,0.04); color: #aaa; font-size: 10px; cursor: pointer; font-family: inherit; transition: all 0.3s; }
 .profile-actions button:hover { background: rgba(255,255,255,0.08); color: #fff; }
 
-/* ═══════════════════════════════════════════════════════════════
-   8. نوافذ منبثقة
-   ═══════════════════════════════════════════════════════════════ */
-.modal-overlay {
-  position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,0.85);
-  display: none;
-  justify-content: center; align-items: center;
-  backdrop-filter: blur(10px);
-}
-.modal-box {
-  background: rgba(10,10,30,0.95);
-  border-radius: 14px; padding: 24px;
-  max-width: 420px; width: 90%;
-}
+.modal-overlay { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
+.modal-box { background: rgba(10,10,30,0.95); border-radius: 14px; padding: 24px; max-width: 420px; width: 90%; }
 .modal-box h2, .modal-box h3 { text-align: center; margin-bottom: 16px; }
 .modal-box h2 { color: #00ff88; font-size: 18px; }
 .modal-box h3 { color: #ffd700; font-size: 18px; }
 .modal-box label { color: #888; display: block; font-size: 11px; margin-bottom: 4px; font-weight: 600; }
-.modal-box input[type="text"], .modal-box input[type="number"] {
-  width: 100%; padding: 10px 14px; border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04); color: #fff;
-  font-size: 16px; font-family: inherit; text-align: center;
-  margin-bottom: 12px;
-}
+.modal-box input[type="text"], .modal-box input[type="number"] { width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.04); color: #fff; font-size: 16px; font-family: inherit; text-align: center; margin-bottom: 12px; }
 .modal-box input:focus { outline: none; border-color: rgba(255,215,0,0.3); }
 .modal-box .row-inputs { display: flex; gap: 10px; }
 .modal-box .row-inputs > div { flex: 1; }
 .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
-.modal-actions button {
-  flex: 1; padding: 10px; border: none; border-radius: 10px;
-  font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit;
-}
-.btn-save   { background: linear-gradient(135deg, #ffd700, #f59e0b); color: #111; }
+.modal-actions button { flex: 1; padding: 10px; border: none; border-radius: 10px; font-weight: 700; font-size: 14px; cursor: pointer; font-family: inherit; }
+.btn-save { background: linear-gradient(135deg, #ffd700, #f59e0b); color: #111; }
 .btn-cancel { background: rgba(255,255,255,0.06); color: #888; }
 .btn-success { background: linear-gradient(135deg, #4ade80, #22c55e); color: #111; }
 .btn-secondary { background: rgba(255,255,255,0.08); color: #aaa; }
-
 #name-edit-modal .modal-box { border: 1px solid rgba(255,215,0,0.15); max-width: 340px; }
 #cod-modal .modal-box { border: 2px solid rgba(0,255,136,0.15); }
 
-/* ═══════════════════════════════════════════════════════════════
-   9. شريط الصحة - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-#health-bar-container {
-  position: fixed;
-  bottom: 72px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 180px;
-  height: 5px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 4px;
-  z-index: 100;
-  overflow: hidden;
-  display: none;
-  border: 1px solid rgba(255,255,255,0.06);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-#health-bar {
-  height: 100%; width: 100%;
-  background: linear-gradient(90deg, #4ade80, #22d3ee);
-  border-radius: 4px; transition: width 0.3s, background 0.3s;
-}
+#health-bar-container { position: fixed; bottom: 72px; left: 50%; transform: translateX(-50%); width: 180px; height: 5px; background: rgba(255,255,255,0.05); border-radius: 4px; z-index: 100; overflow: hidden; display: none; border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+#health-bar { height: 100%; width: 100%; background: linear-gradient(90deg, #4ade80, #22d3ee); border-radius: 4px; transition: width 0.3s, background 0.3s; }
 #health-bar.low { background: linear-gradient(90deg, #f87171, #ef4444); }
 #health-bar.mid { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
 
-/* ═══════════════════════════════════════════════════════════════
-   10. رسائل اللعبة - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-#game-message {
-  position: fixed;
-  bottom: 100px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #ffd700;
-  font-size: 13px;
-  font-weight: 700;
-  z-index: 100;
-  opacity: 0;
-  transition: opacity 0.4s, transform 0.4s;
-  pointer-events: none;
-  white-space: nowrap;
-  background: rgba(0,0,0,0.7);
-  padding: 8px 22px;
-  border-radius: 30px;
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,215,0,0.1);
-  letter-spacing: 0.3px;
-}
-#game-message.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(-4px);
-}
+#game-message { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); color: #ffd700; font-size: 13px; font-weight: 700; z-index: 100; opacity: 0; transition: opacity 0.4s, transform 0.4s; pointer-events: none; white-space: nowrap; background: rgba(0,0,0,0.7); padding: 8px 22px; border-radius: 30px; backdrop-filter: blur(12px); border: 1px solid rgba(255,215,0,0.1); letter-spacing: 0.3px; }
+#game-message.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
 
-/* ═══════════════════════════════════════════════════════════════
-   11. شريط التحكم السفلي - مخفي الآن
-   ═══════════════════════════════════════════════════════════════ */
-#controls {
-  display: none !important;
-}
+#controls { display: none !important; }
 
-/* ═══════════════════════════════════════════════════════════════
-   12. لوحة التحكم الدائرية (D-Pad) - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-.dpad {
-  position: fixed;
-  bottom: 24px;
-  left: 24px;
-  width: 140px;
-  height: 140px;
-  z-index: 200;
-  display: none;
-}
-.dpad-btn {
-  position: absolute;
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: rgba(255,255,255,0.4);
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(12px);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-}
-.dpad-btn:hover {
-  background: rgba(139,92,246,0.18);
-  border-color: rgba(139,92,246,0.35);
-  color: rgba(255,255,255,0.7);
-  transform: scale(1.08);
-}
-.dpad-btn:active, .dpad-btn.active {
-  background: rgba(139,92,246,0.4);
-  border-color: rgba(139,92,246,0.6);
-  color: #c4b5fd;
-  transform: scale(0.9);
-  box-shadow: 0 0 20px rgba(139,92,246,0.2);
-}
+.dpad { position: fixed; bottom: 24px; left: 24px; width: 140px; height: 140px; z-index: 200; display: none; }
+.dpad-btn { position: absolute; width: 46px; height: 46px; border-radius: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.4); cursor: pointer; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(12px); box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+.dpad-btn:hover { background: rgba(139,92,246,0.18); border-color: rgba(139,92,246,0.35); color: rgba(255,255,255,0.7); transform: scale(1.08); }
+.dpad-btn:active, .dpad-btn.active { background: rgba(139,92,246,0.4); border-color: rgba(139,92,246,0.6); color: #c4b5fd; transform: scale(0.9); box-shadow: 0 0 20px rgba(139,92,246,0.2); }
 .dpad-btn svg { width: 16px; height: 16px; }
-.dpad-up    { top: 0; left: 47px; }
-.dpad-down  { bottom: 0; left: 47px; }
-.dpad-left  { top: 47px; left: 0; }
+.dpad-up { top: 0; left: 47px; }
+.dpad-down { bottom: 0; left: 47px; }
+.dpad-left { top: 47px; left: 0; }
 .dpad-right { top: 47px; right: 0; }
-
-.dpad-center {
-  position: absolute;
-  top: 47px;
-  left: 47px;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
-}
-.dpad-center-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: rgba(139,92,246,0.4);
-  border: 1px solid rgba(139,92,246,0.3);
-  animation: dotPulse 2s ease-in-out infinite;
-}
-@keyframes dotPulse {
-  0%, 100% { transform: scale(1); opacity: 0.4; }
-  50%      { transform: scale(0.7); opacity: 0.9; }
-}
-
-.dpad-speed {
-  position: absolute;
-  bottom: -10px;
-  right: -10px;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  cursor: pointer;
-  z-index: 3;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background: rgba(0,0,0,0.5);
-  border: 1px solid rgba(255,215,0,0.15);
-  backdrop-filter: blur(8px);
-}
+.dpad-center { position: absolute; top: 47px; left: 47px; width: 46px; height: 46px; border-radius: 50%; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+.dpad-center-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(139,92,246,0.4); border: 1px solid rgba(139,92,246,0.3); animation: dotPulse 2s ease-in-out infinite; }
+@keyframes dotPulse { 0%, 100% { transform: scale(1); opacity: 0.4; } 50% { transform: scale(0.7); opacity: 0.9; } }
+.dpad-speed { position: absolute; bottom: -10px; right: -10px; width: 46px; height: 46px; border-radius: 50%; cursor: pointer; z-index: 3; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); background: rgba(0,0,0,0.5); border: 1px solid rgba(255,215,0,0.15); backdrop-filter: blur(8px); }
 .dpad-speed svg { width: 100%; height: 100%; }
-.dpad-speed:hover {
-  transform: scale(1.12);
-  border-color: rgba(255,215,0,0.4);
-}
+.dpad-speed:hover { transform: scale(1.12); border-color: rgba(255,215,0,0.4); }
 .dpad-speed:active { transform: scale(0.92); }
-.dpad-speed.active {
-  border-color: rgba(255,215,0,0.5);
-  box-shadow: 0 0 20px rgba(255,215,0,0.15);
-}
-.dpad-speed.active .speed-ring {
-  stroke: #ffd700;
-  filter: drop-shadow(0 0 10px rgba(255,215,0,0.3));
-}
+.dpad-speed.active { border-color: rgba(255,215,0,0.5); box-shadow: 0 0 20px rgba(255,215,0,0.15); }
+.dpad-speed.active .speed-ring { stroke: #ffd700; filter: drop-shadow(0 0 10px rgba(255,215,0,0.3)); }
 
-/* ═══════════════════════════════════════════════════════════════
-   13. أزرار القتال - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-#combat-buttons {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  display: none;
-  gap: 12px;
-  align-items: center;
-  background: rgba(0,0,0,0.6);
-  backdrop-filter: blur(16px);
-  padding: 10px 18px;
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.06);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-}
-.combat-btn {
-  padding: 10px 22px;
-  border-radius: 14px;
-  border: none;
-  font-size: 13px;
-  font-weight: 700;
-  font-family: inherit;
-  cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(10px);
-  letter-spacing: 0.3px;
-}
-.combat-btn.enemy {
-  background: rgba(239,68,68,0.12);
-  color: #f87171;
-  border: 1px solid rgba(239,68,68,0.2);
-}
-.combat-btn.enemy:hover {
-  background: rgba(239,68,68,0.25);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(239,68,68,0.2);
-}
-.combat-btn.heal {
-  background: rgba(74,222,128,0.12);
-  color: #4ade80;
-  border: 1px solid rgba(74,222,128,0.2);
-}
-.combat-btn.heal:hover {
-  background: rgba(74,222,128,0.25);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(74,222,128,0.2);
-}
-.combat-btn.fire {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(255,68,68,0.15), rgba(255,100,50,0.1));
-  border: 2px solid rgba(255,68,68,0.3);
-  color: #ff4444;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
-  box-shadow: 0 0 20px rgba(255,68,68,0.1);
-}
-.combat-btn.fire:hover {
-  transform: scale(1.08);
-  box-shadow: 0 0 30px rgba(255,68,68,0.25);
-}
-.combat-btn.fire:active {
-  transform: scale(0.88);
-  background: rgba(255,68,68,0.4);
-  box-shadow: 0 0 40px rgba(255,68,68,0.3);
-}
+#combat-buttons { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 100; display: none; gap: 12px; align-items: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(16px); padding: 10px 18px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.06); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+.combat-btn { padding: 10px 22px; border-radius: 14px; border: none; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(10px); letter-spacing: 0.3px; }
+.combat-btn.enemy { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+.combat-btn.enemy:hover { background: rgba(239,68,68,0.25); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(239,68,68,0.2); }
+.combat-btn.heal { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+.combat-btn.heal:hover { background: rgba(74,222,128,0.25); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(74,222,128,0.2); }
+.combat-btn.fire { width: 52px; height: 52px; border-radius: 50%; background: linear-gradient(135deg, rgba(255,68,68,0.15), rgba(255,100,50,0.1)); border: 2px solid rgba(255,68,68,0.3); color: #ff4444; font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; box-shadow: 0 0 20px rgba(255,68,68,0.1); }
+.combat-btn.fire:hover { transform: scale(1.08); box-shadow: 0 0 30px rgba(255,68,68,0.25); }
+.combat-btn.fire:active { transform: scale(0.88); background: rgba(255,68,68,0.4); box-shadow: 0 0 40px rgba(255,68,68,0.3); }
 
-/* ═══════════════════════════════════════════════════════════════
-   14. أزرار إجراءات العالم - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-.world-action-btn {
-  position: fixed;
-  bottom: 90px;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 10px 28px;
-  border-radius: 16px;
-  border: none;
-  font-size: 13px;
-  font-family: inherit;
-  cursor: pointer;
-  z-index: 150;
-  display: none;
-  font-weight: 700;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  backdrop-filter: blur(16px);
-  letter-spacing: 0.3px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-}
-.world-action-btn.enter {
-  background: linear-gradient(135deg, rgba(0,242,255,0.15), rgba(0,180,255,0.1));
-  color: #fff;
-  border: 1px solid rgba(0,242,255,0.3);
-}
-.world-action-btn.enter:hover {
-  background: linear-gradient(135deg, rgba(0,242,255,0.25), rgba(0,180,255,0.2));
-  transform: translateX(-50%) translateY(-2px) scale(1.03);
-  box-shadow: 0 8px 30px rgba(0,242,255,0.2);
-}
-.world-action-btn.exit {
-  background: linear-gradient(135deg, rgba(248,113,113,0.15), rgba(239,68,68,0.1));
-  color: #fff;
-  border: 1px solid rgba(248,113,113,0.3);
-}
-.world-action-btn.exit:hover {
-  background: linear-gradient(135deg, rgba(248,113,113,0.25), rgba(239,68,68,0.2));
-  transform: translateX(-50%) translateY(-2px) scale(1.03);
-  box-shadow: 0 8px 30px rgba(248,113,113,0.2);
-}
+.world-action-btn { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); padding: 10px 28px; border-radius: 16px; border: none; font-size: 13px; font-family: inherit; cursor: pointer; z-index: 150; display: none; font-weight: 700; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(16px); letter-spacing: 0.3px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+.world-action-btn.enter { background: linear-gradient(135deg, rgba(0,242,255,0.15), rgba(0,180,255,0.1)); color: #fff; border: 1px solid rgba(0,242,255,0.3); }
+.world-action-btn.enter:hover { background: linear-gradient(135deg, rgba(0,242,255,0.25), rgba(0,180,255,0.2)); transform: translateX(-50%) translateY(-2px) scale(1.03); box-shadow: 0 8px 30px rgba(0,242,255,0.2); }
+.world-action-btn.exit { background: linear-gradient(135deg, rgba(248,113,113,0.15), rgba(239,68,68,0.1)); color: #fff; border: 1px solid rgba(248,113,113,0.3); }
+.world-action-btn.exit:hover { background: linear-gradient(135deg, rgba(248,113,113,0.25), rgba(239,68,68,0.2)); transform: translateX(-50%) translateY(-2px) scale(1.03); box-shadow: 0 8px 30px rgba(248,113,113,0.2); }
 
-/* ═══════════════════════════════════════════════════════════════
-   15. شاشة الانتقال - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-#transition-screen {
-  position: fixed;
-  inset: 0;
-  z-index: 500;
-  background: rgba(0,0,0,0.95);
-  display: none;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  gap: 20px;
-  backdrop-filter: blur(20px);
-}
-.transition-spinner {
-  width: 44px;
-  height: 44px;
-  border: 3px solid rgba(255,215,0,0.08);
-  border-top-color: #ffd700;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  box-shadow: 0 0 20px rgba(255,215,0,0.1);
-}
+#transition-screen { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; flex-direction: column; gap: 20px; backdrop-filter: blur(20px); }
+.transition-spinner { width: 44px; height: 44px; border: 3px solid rgba(255,215,0,0.08); border-top-color: #ffd700; border-radius: 50%; animation: spin 0.8s linear infinite; box-shadow: 0 0 20px rgba(255,215,0,0.1); }
 @keyframes spin { to { transform: rotate(360deg); } }
-#transition-text {
-  color: #ffd700;
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
+#transition-text { color: #ffd700; font-size: 15px; font-weight: 700; letter-spacing: 1px; }
 
-/* ═══════════════════════════════════════════════════════════════
-   16. إشعارات Toast - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-#toast-container {
-  position: fixed;
-  bottom: 90px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: center;
-  pointer-events: none;
-}
-.toast {
-  background: rgba(8,8,20,0.95);
-  color: #fff;
-  padding: 8px 18px;
-  border-radius: 16px;
-  font-size: 11px;
-  border: 1px solid rgba(255,255,255,0.08);
-  animation: toastIn 0.3s ease;
-  backdrop-filter: blur(16px);
-  font-weight: 600;
-  max-width: 280px;
-  text-align: center;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  letter-spacing: 0.2px;
-}
+#toast-container { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 1000; display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; }
+.toast { background: rgba(8,8,20,0.95); color: #fff; padding: 8px 18px; border-radius: 16px; font-size: 11px; border: 1px solid rgba(255,255,255,0.08); animation: toastIn 0.3s ease; backdrop-filter: blur(16px); font-weight: 600; max-width: 280px; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.3); letter-spacing: 0.2px; }
 .toast.success { border-color: #4ade80; color: #4ade80; }
-.toast.error   { border-color: #f87171; color: #f87171; }
-.toast.info    { border-color: #60a5fa; color: #60a5fa; }
-.toast.warn    { border-color: #fbbf24; color: #fbbf24; }
+.toast.error { border-color: #f87171; color: #f87171; }
+.toast.info { border-color: #60a5fa; color: #60a5fa; }
+.toast.warn { border-color: #fbbf24; color: #fbbf24; }
+@keyframes toastIn { from { opacity: 0; transform: translateY(10px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-@keyframes toastIn {
-  from { opacity: 0; transform: translateY(10px) scale(0.9); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
-}
+#minimap-frame { position: fixed; top: 12px; left: 12px; width: 100px; height: 100px; border: 1px solid rgba(255,215,0,0.15); border-radius: 12px; overflow: hidden; background: rgba(5,5,16,0.85); z-index: 90; display: none; backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); cursor: pointer; transition: all 0.3s; }
+#minimap-frame:hover { border-color: rgba(255,215,0,0.3); box-shadow: 0 4px 24px rgba(255,215,0,0.1); }
+#minimap-frame::after { content: '📍'; position: absolute; top: 2px; right: 2px; font-size: 10px; opacity: 0.5; pointer-events: none; }
 
-/* ═══════════════════════════════════════════════════════════════
-   17. خريطة مصغرة - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-#minimap-frame {
-  position: fixed;
-  top: 12px;
-  left: 12px;
-  width: 100px;
-  height: 100px;
-  border: 1px solid rgba(255,215,0,0.15);
-  border-radius: 12px;
-  overflow: hidden;
-  background: rgba(5,5,16,0.85);
-  z-index: 90;
-  display: none;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-  cursor: pointer;
-  transition: all 0.3s;
-}
-#minimap-frame:hover {
-  border-color: rgba(255,215,0,0.3);
-  box-shadow: 0 4px 24px rgba(255,215,0,0.1);
-}
-#minimap-frame::after {
-  content: '📍';
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  font-size: 10px;
-  opacity: 0.5;
-  pointer-events: none;
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   18. تحكم الفيديو - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-#video-controls {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 100;
-  display: none;
-  gap: 10px;
-  align-items: center;
-  background: rgba(0,0,0,0.75);
-  padding: 8px 18px;
-  border-radius: 20px;
-  border: 1px solid rgba(255,255,255,0.06);
-  backdrop-filter: blur(16px);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-}
-#video-controls button {
-  background: rgba(255,255,255,0.08); border: none; color: #fff;
-  width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
-  font-size: 12px; transition: all 0.2s;
-}
+#video-controls { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); z-index: 100; display: none; gap: 10px; align-items: center; background: rgba(0,0,0,0.75); padding: 8px 18px; border-radius: 20px; border: 1px solid rgba(255,255,255,0.06); backdrop-filter: blur(16px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+#video-controls button { background: rgba(255,255,255,0.08); border: none; color: #fff; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 12px; transition: all 0.2s; }
 #video-controls button:hover { background: rgba(255,255,255,0.16); transform: scale(1.08); }
-#video-controls input[type="range"] {
-  width: 80px; height: 3px; -webkit-appearance: none;
-  background: rgba(255,255,255,0.15); border-radius: 2px;
-}
-#video-controls input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 10px; height: 10px;
-  border-radius: 50%; background: #ffd700; cursor: pointer;
-}
+#video-controls input[type="range"] { width: 80px; height: 3px; -webkit-appearance: none; background: rgba(255,255,255,0.15); border-radius: 2px; }
+#video-controls input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 10px; height: 10px; border-radius: 50%; background: #ffd700; cursor: pointer; }
 #video-controls .video-time { font-size: 10px; color: #aaa; min-width: 70px; text-align: center; }
 
-/* ═══════════════════════════════════════════════════════════════
-   19. تحكم الأضلاع
-   ═══════════════════════════════════════════════════════════════ */
-#sphere-controls {
-  position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
-  z-index: 150; background: rgba(0,0,0,0.85);
-  padding: 8px 16px; border-radius: 16px;
-  border: 1px solid rgba(139,92,246,0.3);
-  display: none; gap: 12px; align-items: center;
-  backdrop-filter: blur(10px);
-}
+#sphere-controls { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 150; background: rgba(0,0,0,0.85); padding: 8px 16px; border-radius: 16px; border: 1px solid rgba(139,92,246,0.3); display: none; gap: 12px; align-items: center; backdrop-filter: blur(10px); }
 #sphere-controls span { color: #a78bfa; font-size: 12px; font-weight: 700; }
-#sphere-controls input[type="range"] {
-  width: 100px; height: 4px; -webkit-appearance: none;
-  background: rgba(139,92,246,0.3); border-radius: 2px;
-}
-#sphere-controls input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 14px; height: 14px;
-  border-radius: 50%; background: #8b5cf6; cursor: pointer;
-}
+#sphere-controls input[type="range"] { width: 100px; height: 4px; -webkit-appearance: none; background: rgba(139,92,246,0.3); border-radius: 2px; }
+#sphere-controls input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #8b5cf6; cursor: pointer; }
 #sphere-controls #faces-count { color: #ffd700; font-weight: 900; font-size: 14px; min-width: 25px; }
-#sphere-controls button {
-  background: rgba(139,92,246,0.2);
-  border: 1px solid rgba(139,92,246,0.3);
-  color: #fff; padding: 4px 12px; border-radius: 8px;
-  cursor: pointer; font-family: inherit; font-size: 10px;
-  transition: all 0.3s;
-}
+#sphere-controls button { background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.3); color: #fff; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 10px; transition: all 0.3s; }
 #sphere-controls button:hover { background: rgba(139,92,246,0.4); }
 
-/* ═══════════════════════════════════════════════════════════════
-   20. معلومات الضلع - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-#facet-info {
-  position: fixed;
-  bottom: 140px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 150;
-  background: rgba(8,8,20,0.9);
-  padding: 10px 24px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,215,0,0.15);
-  color: #fff;
-  font-size: 13px;
-  display: none;
-  backdrop-filter: blur(16px);
-  text-align: center;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-}
+#facet-info { position: fixed; bottom: 140px; left: 50%; transform: translateX(-50%); z-index: 150; background: rgba(8,8,20,0.9); padding: 10px 24px; border-radius: 14px; border: 1px solid rgba(255,215,0,0.15); color: #fff; font-size: 13px; display: none; backdrop-filter: blur(16px); text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,0.3); }
 #facet-name { font-weight: 700; color: #ffd700; }
 #facet-desc { color: #888; font-size: 11px; }
 
-/* ═══════════════════════════════════════════════════════════════
-   21. تأثيرات
-   ═══════════════════════════════════════════════════════════════ */
-
-/* تأثير الضرر */
-#damage-overlay {
-  position: fixed; inset: 0;
-  background: radial-gradient(circle, transparent 35%, rgba(239,68,68,0.35) 100%);
-  pointer-events: none; z-index: 80;
-  opacity: 0; transition: opacity 0.3s ease;
-}
+#damage-overlay { position: fixed; inset: 0; background: radial-gradient(circle, transparent 35%, rgba(239,68,68,0.35) 100%); pointer-events: none; z-index: 80; opacity: 0; transition: opacity 0.3s ease; }
 #damage-overlay.show { opacity: 1; }
 
-/* تأثير الترقية */
-#level-up-effect {
-  position: fixed; inset: 0;
-  pointer-events: none; z-index: 400;
-  display: none;
-  justify-content: center; align-items: center;
-}
-.level-up-text {
-  font-size: clamp(40px, 10vw, 72px);
-  font-weight: 900; color: #ffd700;
-  text-shadow: 0 0 60px rgba(255,215,0,0.5), 0 0 120px rgba(255,215,0,0.2);
-  animation: levelUpPop 1.8s ease-out forwards;
-}
-@keyframes levelUpPop {
-  0%   { transform: scale(0) rotate(-12deg); opacity: 0; }
-  25%  { transform: scale(1.3) rotate(4deg); opacity: 1; }
-  55%  { transform: scale(1) rotate(0deg); opacity: 1; }
-  100% { transform: scale(1.6) translateY(-120px); opacity: 0; }
-}
+#level-up-effect { position: fixed; inset: 0; pointer-events: none; z-index: 400; display: none; justify-content: center; align-items: center; }
+.level-up-text { font-size: clamp(40px, 10vw, 72px); font-weight: 900; color: #ffd700; text-shadow: 0 0 60px rgba(255,215,0,0.5), 0 0 120px rgba(255,215,0,0.2); animation: levelUpPop 1.8s ease-out forwards; }
+@keyframes levelUpPop { 0% { transform: scale(0) rotate(-12deg); opacity: 0; } 25% { transform: scale(1.3) rotate(4deg); opacity: 1; } 55% { transform: scale(1) rotate(0deg); opacity: 1; } 100% { transform: scale(1.6) translateY(-120px); opacity: 0; } }
 
-/* تأثير الدوران */
-#spin-effect {
-  position: fixed; inset: 0;
-  pointer-events: none; z-index: 300;
-  display: none;
-  justify-content: center; align-items: center;
-}
-.spin-ring {
-  position: absolute; width: 300px; height: 300px;
-  border-radius: 50%; border: 3px solid rgba(255,215,0,0.25);
-  animation: spinRingExpand 0.8s ease-out forwards;
-}
-@keyframes spinRingExpand {
-  0%   { transform: scale(0.4); opacity: 1; border-width: 5px; }
-  100% { transform: scale(2.8); opacity: 0; border-width: 0; }
-}
-.spin-text {
-  font-size: 40px; font-weight: 900; color: #ffd700;
-  text-shadow: 0 0 50px rgba(255,215,0,0.6);
-  animation: spinTextPop 1s ease-out forwards;
-}
-@keyframes spinTextPop {
-  0%   { transform: scale(0) rotate(-20deg); opacity: 0; }
-  30%  { transform: scale(1.3) rotate(8deg); opacity: 1; }
-  60%  { transform: scale(1) rotate(0deg); opacity: 1; }
-  100% { transform: scale(0.7) translateY(-100px); opacity: 0; }
-}
+#spin-effect { position: fixed; inset: 0; pointer-events: none; z-index: 300; display: none; justify-content: center; align-items: center; }
+.spin-ring { position: absolute; width: 300px; height: 300px; border-radius: 50%; border: 3px solid rgba(255,215,0,0.25); animation: spinRingExpand 0.8s ease-out forwards; }
+@keyframes spinRingExpand { 0% { transform: scale(0.4); opacity: 1; border-width: 5px; } 100% { transform: scale(2.8); opacity: 0; border-width: 0; } }
+.spin-text { font-size: 40px; font-weight: 900; color: #ffd700; text-shadow: 0 0 50px rgba(255,215,0,0.6); animation: spinTextPop 1s ease-out forwards; }
+@keyframes spinTextPop { 0% { transform: scale(0) rotate(-20deg); opacity: 0; } 30% { transform: scale(1.3) rotate(8deg); opacity: 1; } 60% { transform: scale(1) rotate(0deg); opacity: 1; } 100% { transform: scale(0.7) translateY(-100px); opacity: 0; } }
 
-/* ═══════════════════════════════════════════════════════════════
-   22. نهاية اللعبة
-   ═══════════════════════════════════════════════════════════════ */
-#game-over {
-  position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,0.95);
-  display: none;
-  justify-content: center; align-items: center;
-  flex-direction: column; gap: 16px;
-  backdrop-filter: blur(15px); padding: 20px;
-}
-#game-over h1 {
-  font-size: 36px;
-  background: linear-gradient(135deg, #ef4444, #ff8c00);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text; font-weight: 900;
-}
-.game-over-stats {
-  display: grid; grid-template-columns: repeat(2, 1fr);
-  gap: 8px; max-width: 300px; width: 100%;
-}
-.game-over-stat {
-  background: rgba(0,0,0,0.5);
-  border: 1px solid rgba(255,255,255,0.06);
-  border-radius: 10px; padding: 10px 14px; text-align: center;
-}
+#game-over { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.95); display: none; justify-content: center; align-items: center; flex-direction: column; gap: 16px; backdrop-filter: blur(15px); padding: 20px; }
+#game-over h1 { font-size: 36px; background: linear-gradient(135deg, #ef4444, #ff8c00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: 900; }
+.game-over-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-width: 300px; width: 100%; }
+.game-over-stat { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 10px 14px; text-align: center; }
 .game-over-stat .stat-label { font-size: 10px; color: #666; font-weight: 600; text-transform: uppercase; }
 .game-over-stat .stat-value { font-size: 18px; font-weight: 800; color: #ffd700; margin-top: 2px; }
-#game-over > button {
-  padding: 12px 40px; border-radius: 30px; border: none;
-  background: linear-gradient(135deg, #ffd700, #ff8c00);
-  color: #111; font-size: 16px; font-weight: 800;
-  cursor: pointer; font-family: inherit;
-  transition: all 0.3s;
-  box-shadow: 0 4px 25px rgba(255,215,0,0.25);
-}
-#game-over > button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 35px rgba(255,215,0,0.35);
-}
+#game-over > button { padding: 12px 40px; border-radius: 30px; border: none; background: linear-gradient(135deg, #ffd700, #ff8c00); color: #111; font-size: 16px; font-weight: 800; cursor: pointer; font-family: inherit; transition: all 0.3s; box-shadow: 0 4px 25px rgba(255,215,0,0.25); }
+#game-over > button:hover { transform: scale(1.05); box-shadow: 0 6px 35px rgba(255,215,0,0.35); }
 
-/* ═══════════════════════════════════════════════════════════════
-   23. COD Game
-   ═══════════════════════════════════════════════════════════════ */
-#cod-iframe {
-  position: fixed; inset: 0; z-index: 3000;
-  width: 100%; height: 100%; display: none;
-  border: none; background: #000;
-}
-#close-cod-btn {
-  position: fixed; top: 16px; right: 16px; z-index: 3001;
-  padding: 10px 22px; background: rgba(239,68,68,0.9);
-  color: #fff; border: none; border-radius: 10px;
-  font-size: 14px; font-weight: 700; cursor: pointer;
-  display: none; font-family: inherit;
-  box-shadow: 0 4px 20px rgba(239,68,68,0.3);
-  transition: all 0.3s;
-}
+#cod-iframe { position: fixed; inset: 0; z-index: 3000; width: 100%; height: 100%; display: none; border: none; background: #000; }
+#close-cod-btn { position: fixed; top: 16px; right: 16px; z-index: 3001; padding: 10px 22px; background: rgba(239,68,68,0.9); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; display: none; font-family: inherit; box-shadow: 0 4px 20px rgba(239,68,68,0.3); transition: all 0.3s; }
 #close-cod-btn:hover { transform: scale(1.05); background: rgba(239,68,68,1); }
 
-/* ═══════════════════════════════════════════════════════════════
-   24. رفع الملفات
-   ═══════════════════════════════════════════════════════════════ */
-#upload-modal {
-  position: fixed; inset: 0; z-index: 500;
-  background: rgba(0,0,0,0.85);
-  display: none;
-  justify-content: center; align-items: center;
-  backdrop-filter: blur(10px);
-}
-#upload-modal .modal-content {
-  background: rgba(10,10,30,0.95);
-  border: 1px solid rgba(139,92,246,0.15);
-  border-radius: 16px; padding: 24px;
-  max-width: 420px; width: 90%;
-}
-#upload-modal .modal-title {
-  color: #a78bfa; text-align: center;
-  font-size: 18px; font-weight: 700; margin-bottom: 16px;
-}
-#upload-modal .modal-field {
-  margin-bottom: 12px;
-}
-#upload-modal .modal-field label {
-  color: #888; display: block; font-size: 11px;
-  margin-bottom: 4px; font-weight: 600;
-}
-#upload-modal .modal-field input,
-#upload-modal .modal-field select {
-  width: 100%; padding: 8px 12px; border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03); color: #fff;
-  font-size: 13px; font-family: inherit;
-}
-#upload-modal .modal-field input:focus,
-#upload-modal .modal-field select:focus {
-  outline: none; border-color: rgba(139,92,246,0.3);
-}
-.file-upload-area {
-  border: 2px dashed rgba(139,92,246,0.2);
-  border-radius: 12px; padding: 20px;
-  text-align: center; cursor: pointer;
-  transition: all 0.3s; margin-bottom: 16px;
-}
-.file-upload-area:hover {
-  border-color: rgba(139,92,246,0.4);
-  background: rgba(139,92,246,0.05);
-}
+#upload-modal { position: fixed; inset: 0; z-index: 500; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; backdrop-filter: blur(10px); }
+#upload-modal .modal-content { background: rgba(10,10,30,0.95); border: 1px solid rgba(139,92,246,0.15); border-radius: 16px; padding: 24px; max-width: 420px; width: 90%; }
+#upload-modal .modal-title { color: #a78bfa; text-align: center; font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+#upload-modal .modal-field { margin-bottom: 12px; }
+#upload-modal .modal-field label { color: #888; display: block; font-size: 11px; margin-bottom: 4px; font-weight: 600; }
+#upload-modal .modal-field input, #upload-modal .modal-field select { width: 100%; padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); color: #fff; font-size: 13px; font-family: inherit; }
+#upload-modal .modal-field input:focus, #upload-modal .modal-field select:focus { outline: none; border-color: rgba(139,92,246,0.3); }
+.file-upload-area { border: 2px dashed rgba(139,92,246,0.2); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s; margin-bottom: 16px; }
+.file-upload-area:hover { border-color: rgba(139,92,246,0.4); background: rgba(139,92,246,0.05); }
 .file-upload-area .icon { font-size: 32px; display: block; margin-bottom: 8px; }
 .file-upload-area .text { color: #888; font-size: 13px; }
-.file-upload-area .file-name {
-  color: #4ade80; font-size: 11px; margin-top: 8px; display: none;
-}
+.file-upload-area .file-name { color: #4ade80; font-size: 11px; margin-top: 8px; display: none; }
 
-/* ═══════════════════════════════════════════════════════════════
-   25. الإنجازات والمهام - تصميم احترافي
-   ═══════════════════════════════════════════════════════════════ */
-#achievements-panel, #quest-panel {
-  position: fixed;
-  top: 50%;
-  right: 62px;
-  transform: translateY(-50%);
-  background: rgba(8,8,20,0.95);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px;
-  padding: 18px;
-  z-index: 102;
-  display: none;
-  min-width: 240px;
-  max-height: 320px;
-  overflow-y: auto;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
-}
-#achievements-panel h3, #quest-panel h3 {
-  color: #ffd700; font-size: 16px; margin-bottom: 12px;
-  text-align: center;
-}
-.achievement-item {
-  padding: 8px 12px; border-radius: 8px; margin-bottom: 6px;
-  font-size: 12px; transition: all 0.3s;
-}
-.achievement-item.locked {
-  background: rgba(255,255,255,0.03);
-  color: #666; border: 1px solid rgba(255,255,255,0.04);
-}
-.achievement-item.unlocked {
-  background: rgba(255,215,0,0.08);
-  color: #ffd700; border: 1px solid rgba(255,215,0,0.15);
-}
-
-.quest-item {
-  padding: 8px 12px; border-radius: 8px; margin-bottom: 6px;
-  font-size: 12px; background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.04);
-}
-.quest-item.complete {
-  background: rgba(74,222,128,0.08);
-  border-color: rgba(74,222,128,0.15); color: #4ade80;
-}
-.quest-progress {
-  width: 100%; height: 3px;
-  background: rgba(255,255,255,0.1); border-radius: 2px;
-  margin-top: 6px; overflow: hidden;
-}
-.quest-progress-fill {
-  height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa);
-  border-radius: 2px; transition: width 0.3s;
-}
+#achievements-panel, #quest-panel { position: fixed; top: 50%; right: 62px; transform: translateY(-50%); background: rgba(8,8,20,0.95); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px; z-index: 102; display: none; min-width: 240px; max-height: 320px; overflow-y: auto; backdrop-filter: blur(20px); box-shadow: 0 16px 48px rgba(0,0,0,0.5); }
+#achievements-panel h3, #quest-panel h3 { color: #ffd700; font-size: 16px; margin-bottom: 12px; text-align: center; }
+.achievement-item { padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 12px; transition: all 0.3s; }
+.achievement-item.locked { background: rgba(255,255,255,0.03); color: #666; border: 1px solid rgba(255,255,255,0.04); }
+.achievement-item.unlocked { background: rgba(255,215,0,0.08); color: #ffd700; border: 1px solid rgba(255,215,0,0.15); }
+.quest-item { padding: 8px 12px; border-radius: 8px; margin-bottom: 6px; font-size: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.04); }
+.quest-item.complete { background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.15); color: #4ade80; }
+.quest-progress { width: 100%; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+.quest-progress-fill { height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa); border-radius: 2px; transition: width 0.3s; }
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════════
-     BODY STRUCTURE
-     ═══════════════════════════════════════════════════════════════ -->
-
-<!-- 1. شاشة البداية -->
 <div id="start-screen">
   <div class="start-logo">🌐 العوالم الكروية</div>
   <div class="start-subtitle">
@@ -1183,10 +256,9 @@ body {
     <button class="start-btn" style="padding:10px 30px;font-size:14px;" onclick="loadGame()">📂 تحميل</button>
     <button class="start-btn" style="padding:10px 30px;font-size:14px;" onclick="showTutorial()">❓ دليل</button>
   </div>
-  <div class="version-tag">v79.0 | العوالم الكروية - واجهة محسنة</div>
+  <div class="version-tag">v80.0 | العوالم الكروية - كل مربع = عالم</div>
 </div>
 
-<!-- 2. دليل اللعب -->
 <div id="tutorial-panel">
   <h2>📖 دليل اللعب</h2>
   <div class="tutorial-content">
@@ -1197,11 +269,11 @@ body {
     <div>🔫 <b>الإطلاق:</b> زر النار أو مسافة</div>
     <div>💚 <b>الشفاء:</b> مفتاح H</div>
     <div>🌪️ <b>التدوير السريع:</b> اسحب الكرة بسرعة لجمع نقاط!</div>
+    <div>🌍 <b>كل مربع = عالم:</b> قف على أي مربع واضغط "دخول"!</div>
   </div>
   <button class="start-btn" style="padding:10px 40px;font-size:16px;" onclick="hideTutorial()">✅ فهمت</button>
 </div>
 
-<!-- 3. HUD -->
 <div id="hud">
   <div class="stat"><span class="val health" id="health-display">100</span><span class="label">❤️ صحة</span></div>
   <div class="stat"><span class="val kills" id="kills-display">0</span><span class="label">💀 قتلى</span></div>
@@ -1216,29 +288,17 @@ body {
   <div class="stat"><span class="val" id="coins-display" style="color:#fbbf24;">0</span><span class="label">🪙 ذهب</span></div>
 </div>
 
-<!-- 4. عداد الدورات -->
 <div id="spin-counter">
-  <div class="spin-stat">
-    <span style="color:#888;">🌪️ دورات</span>
-    <span class="spin-val" id="spin-count" style="color:#ffd700;">0</span>
-  </div>
-  <div class="spin-stat">
-    <span style="color:#888;">🔥 تتابع</span>
-    <span class="spin-val" id="spin-combo" style="color:#ff6b6b;">x1</span>
-  </div>
-  <div class="spin-stat">
-    <span style="color:#888;">⭐ نقاط</span>
-    <span class="spin-val" id="spin-points" style="color:#a78bfa;">0</span>
-  </div>
+  <div class="spin-stat"><span style="color:#888;">🌪️ دورات</span><span class="spin-val" id="spin-count" style="color:#ffd700;">0</span></div>
+  <div class="spin-stat"><span style="color:#888;">🔥 تتابع</span><span class="spin-val" id="spin-combo" style="color:#ff6b6b;">x1</span></div>
+  <div class="spin-stat"><span style="color:#888;">⭐ نقاط</span><span class="spin-val" id="spin-points" style="color:#a78bfa;">0</span></div>
 </div>
 
-<!-- 5. تأثير الدوران السريع -->
 <div id="spin-effect">
   <div class="spin-ring"></div>
   <div class="spin-text" id="spin-text">🌪️ +50</div>
 </div>
 
-<!-- 6. شريط الأدوات الجانبي -->
 <div id="side-toolbar">
   <button class="toolbar-btn" id="profile-btn" onclick="toggleProfile()" title="الملف الشخصي">👤</button>
   <button class="toolbar-btn" id="quests-btn" onclick="toggleQuestsPanel()" title="المهام">🎯</button>
@@ -1246,36 +306,29 @@ body {
   <button class="toolbar-btn" id="settings-btn" onclick="toggleSettings()" title="الإعدادات">⚙️</button>
 </div>
 
-<!-- عرض النقاط الرئيسي - مدمج في الأعلى -->
 <div id="score-display-main" style="display:none; position:fixed; top:12px; right:68px; z-index:101; background:rgba(0,0,0,0.8); border:1px solid rgba(255,215,0,0.25); border-radius:30px; padding:8px 18px; font-size:15px; font-weight:800; color:#ffd700; backdrop-filter:blur(12px); align-items:center; gap:8px; box-shadow:0 4px 20px rgba(0,0,0,0.3);">
   <span style="font-size:16px;">🏆</span>
   <span id="main-score">0</span>
 </div>
 
-<!-- 7. لوحة الإعدادات - موسعة -->
 <div id="settings-panel">
   <div class="settings-section-title">🔊 الصوت</div>
   <div class="setting-row"><label>مستوى الصوت</label><input type="range" id="volume-slider" min="0" max="100" value="50" onchange="setVolume(this.value)"></div>
-  
   <div class="settings-section-title">🗺️ العرض</div>
   <div class="setting-row"><label>📍 الخريطة</label><button onclick="toggleMinimap()">تبديل</button></div>
   <div class="setting-row"><label>🌙 الوضع الليلي</label><button onclick="toggleNightMode()">تبديل</button></div>
-  
   <div class="settings-section-title">🌍 العوالم والمعالم</div>
   <div class="setting-row"><label>📍 إضافة معلم</label><button class="btn-gold" onclick="addLandmark()">إضافة</button></div>
   <div class="setting-row"><label>🌍 عالم عشوائي</label><button class="btn-green" onclick="addRandomWorld()">إضافة</button></div>
   <div class="setting-row"><label>📁 رفع ملف</label><button class="btn-purple" onclick="openUploadModal()">رفع</button></div>
   <div class="setting-row"><label>🎮 إضافة لعبة</label><button class="btn-green" onclick="openCODModal()">إضافة</button></div>
-  
   <div class="settings-section-title">💾 حفظ اللعبة</div>
   <div class="setting-row"><label>💾 حفظ</label><button onclick="saveGame()">حفظ</button></div>
   <div class="setting-row"><label>📂 تحميل</label><button onclick="loadGame()">تحميل</button></div>
-  
   <div class="settings-section-title">🔄 إعادة</div>
   <div class="setting-row"><label>🔄 إعادة تعيين</label><button class="btn-red" onclick="resetGame()">إعادة</button></div>
 </div>
 
-<!-- 8. لوحة الملف الشخصي -->
 <div id="profile-panel">
   <div class="profile-header">
     <div class="profile-avatar" id="profile-avatar">🧙</div>
@@ -1298,7 +351,6 @@ body {
   <input type="file" id="avatar-input" accept="image/*" style="display:none" onchange="changeAvatar(event)">
 </div>
 
-<!-- 9. نافذة تعديل الاسم -->
 <div id="name-edit-modal" class="modal-overlay">
   <div class="modal-box">
     <h3>✏️ تعديل الاسم</h3>
@@ -1310,20 +362,16 @@ body {
   </div>
 </div>
 
-<!-- 10. شريط الصحة -->
 <div id="health-bar-container"><div id="health-bar"></div></div>
 
-<!-- 11. رسائل اللعبة -->
 <div id="game-message">🌐 استكشف الأضلاع وانقر للدخول!</div>
 
-<!-- 12. أزرار القتال (تظهر فقط في ساحة القتال) -->
 <div id="combat-buttons">
   <button class="combat-btn enemy" onclick="spawnEnemy()">👾 عدو</button>
   <button class="combat-btn heal" onclick="healPlayer()">💚 شفاء</button>
   <button class="combat-btn fire" id="fire-btn" onclick="fireWeapon()">🔫</button>
 </div>
 
-<!-- 13. D-Pad -->
 <div class="dpad" id="dpad">
   <div class="dpad-speed" id="dpad-speed" onclick="toggleSpeed()">
     <svg width="40" height="40" viewBox="0 0 40 40">
@@ -1340,23 +388,18 @@ body {
   <div class="dpad-center"><div class="dpad-center-dot"></div></div>
 </div>
 
-<!-- 14. أزرار إجراءات العالم -->
 <button class="world-action-btn enter" id="enter-btn" onclick="enterWorld()">🌐 دخول</button>
 <button class="world-action-btn exit" id="exit-btn" onclick="exitWorld()">🚪 خروج</button>
 
-<!-- 15. شاشة الانتقال -->
 <div id="transition-screen">
   <div class="transition-spinner"></div>
   <div id="transition-text">جاري الانتقال...</div>
 </div>
 
-<!-- 16. Toast -->
 <div id="toast-container"></div>
 
-<!-- 17. خريطة مصغرة -->
 <div id="minimap-frame"></div>
 
-<!-- 18. تحكم الفيديو -->
 <div id="video-controls">
   <button onclick="togglePlay()">⏸️</button>
   <input type="range" id="video-progress" min="0" max="100" value="0" oninput="seekVideo(this.value)">
@@ -1364,16 +407,11 @@ body {
   <button onclick="toggleMute()">🔊</button>
 </div>
 
-<!-- 19. تحكم الأضلاع -->
-
-
-<!-- 20. معلومات الضلع -->
 <div id="facet-info">
   <span id="facet-name">🌍 عالم</span>
   <span id="facet-desc">اضغط للدخول</span>
 </div>
 
-<!-- 21. نافذة رفع الملفات -->
 <div id="upload-modal">
   <div class="modal-content">
     <div class="modal-title">📁 رفع فيديو/صورة</div>
@@ -1406,17 +444,13 @@ body {
   </div>
 </div>
 
-<!-- 22. الإنجازات -->
 <div id="achievements-panel"><h3>🏆 الإنجازات</h3><div id="achievements-list"></div></div>
 
-<!-- 23. المهام -->
 <div id="quest-panel"><h3>🎯 المهام الحالية</h3><div id="quest-list"></div></div>
 
-<!-- 24. تأثيرات -->
 <div id="damage-overlay"></div>
 <div id="level-up-effect"><div class="level-up-text">⭐ مستوى جديد!</div></div>
 
-<!-- 25. نهاية اللعبة -->
 <div id="game-over">
   <h1>💀 انتهت اللعبة</h1>
   <div class="game-over-stats">
@@ -1430,11 +464,9 @@ body {
   <button onclick="restartGame()">🔄 العب مجدداً</button>
 </div>
 
-<!-- 26. COD -->
 <iframe id="cod-iframe"></iframe>
 <button id="close-cod-btn" onclick="closeCODGame()">✖ إغلاق اللعبة</button>
 
-<!-- 27. COD Modal -->
 <div id="cod-modal" class="modal-overlay">
   <div class="modal-box">
     <h2>🎮 إضافة بوابة لعبة</h2>
@@ -1453,17 +485,14 @@ body {
   </div>
 </div>
 
-<!-- 28. Canvas -->
 <canvas id="canvas"></canvas>
 
 <script>
+
 /* ═══════════════════════════════════════════════════════════════
-   🌐 العوالم الكروية - v79.0 - واجهة معاد تنظيمها
+   🌐 العوالم الكروية - v80.0 - كل مربع = عالم
    ═══════════════════════════════════════════════════════════════ */
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 1. الثوابت والإعدادات العامة
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const CONFIG = {
   PLAYER_SPEED: 0.12,
   BULLET_SPEED: 0.6,
@@ -1476,9 +505,6 @@ const CONFIG = {
   SPIN_MIN_ANGLE: Math.PI * 0.7,
 };
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 2. المتغيرات العامة
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 let scene, camera, renderer;
 let playerGroup, tileGroup;
 let tileMeshes = [];
@@ -1489,6 +515,7 @@ let isTransitioning = false;
 let isInWorld = false;
 let currentWorldId = 'main';
 let savedPlayerPos = null;
+let window.returnPositions = {};  // ← جديد: حفظ مواقع العودة لكل عالم
 
 let touchDirs = { up: false, down: false, left: false, right: false };
 
@@ -1552,64 +579,53 @@ let lastSwipeTime = 0;
 
 let healCount = 0;
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 3. بيانات الأيقونات الكروية
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 const WORLD_ICONS = [
-  { name: '⚔️ القتال',    emoji: '⚔️', color: '#ef4444' },
-  { name: '🌐 360',       emoji: '🌐', color: '#00f2ff' },
-  { name: '🖼️ المعرض',    emoji: '🖼️', color: '#a78bfa' },
-  { name: '🌲 الغابة',    emoji: '🌲', color: '#4ade80' },
-  { name: '🏰 القلعة',    emoji: '🏰', color: '#fbbf24' },
-  { name: '🌊 المحيط',    emoji: '🌊', color: '#60a5fa' },
-  { name: '🔥 النار',     emoji: '🔥', color: '#f97316' },
-  { name: '❄️ الجليد',    emoji: '❄️', color: '#22d3ee' },
-  { name: '🌈 قوس قزح',   emoji: '🌈', color: '#f472b6' },
-  { name: '⭐ النجوم',    emoji: '⭐', color: '#ffd700' },
-  { name: '🌙 القمر',     emoji: '🌙', color: '#c084fc' },
-  { name: '☀️ الشمس',     emoji: '☀️', color: '#facc15' },
-  { name: '🌺 الزهور',    emoji: '🌺', color: '#fb7185' },
-  { name: '🍄 الفطر',     emoji: '🍄', color: '#a3e635' },
-  { name: '🦋 الفراشات',  emoji: '🦋', color: '#38bdf8' },
-  { name: '🐉 التنين',    emoji: '🐉', color: '#ef4444' },
-  { name: '🧙 السحر',     emoji: '🧙', color: '#a855f7' },
-  { name: '🏹 الصيد',     emoji: '🏹', color: '#d97706' },
-  { name: '⚡ البرق',     emoji: '⚡', color: '#fde047' },
-  { name: '💎 الماس',     emoji: '💎', color: '#22d3ee' }
+  { name: '⚔️ القتال', emoji: '⚔️', color: '#ef4444' },
+  { name: '🌐 360', emoji: '🌐', color: '#00f2ff' },
+  { name: '🖼️ المعرض', emoji: '🖼️', color: '#a78bfa' },
+  { name: '🌲 الغابة', emoji: '🌲', color: '#4ade80' },
+  { name: '🏰 القلعة', emoji: '🏰', color: '#fbbf24' },
+  { name: '🌊 المحيط', emoji: '🌊', color: '#60a5fa' },
+  { name: '🔥 النار', emoji: '🔥', color: '#f97316' },
+  { name: '❄️ الجليد', emoji: '❄️', color: '#22d3ee' },
+  { name: '🌈 قوس قزح', emoji: '🌈', color: '#f472b6' },
+  { name: '⭐ النجوم', emoji: '⭐', color: '#ffd700' },
+  { name: '🌙 القمر', emoji: '🌙', color: '#c084fc' },
+  { name: '☀️ الشمس', emoji: '☀️', color: '#facc15' },
+  { name: '🌺 الزهور', emoji: '🌺', color: '#fb7185' },
+  { name: '🍄 الفطر', emoji: '🍄', color: '#a3e635' },
+  { name: '🦋 الفراشات', emoji: '🦋', color: '#38bdf8' },
+  { name: '🐉 التنين', emoji: '🐉', color: '#ef4444' },
+  { name: '🧙 السحر', emoji: '🧙', color: '#a855f7' },
+  { name: '🏹 الصيد', emoji: '🏹', color: '#d97706' },
+  { name: '⚡ البرق', emoji: '⚡', color: '#fde047' },
+  { name: '💎 الماس', emoji: '💎', color: '#22d3ee' }
 ];
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 4. الإنجازات
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 let achievements = {
-  first_kill:   { name: 'أول قتل',      desc: 'اقتل أول عدو',         unlocked: false, emoji: '💀' },
-  killer_10:    { name: 'قاتل محترف',   desc: 'اقتل 10 أعداء',        unlocked: false, emoji: '⚔️' },
-  explorer:     { name: 'مستكشف',       desc: 'اكتشف 3 عوالم',        unlocked: false, emoji: '🌍' },
-  master:       { name: 'سيد العوالم',  desc: 'اكتشف 5 عوالم',        unlocked: false, emoji: '👑' },
-  collector:    { name: 'جامع المعالم', desc: 'أضف 5 معالم',          unlocked: false, emoji: '📍' },
-  survivor:     { name: 'الناجي',       desc: 'وصل للمستوى 5',        unlocked: false, emoji: '🛡️' },
-  rich:         { name: 'ثراء',         desc: 'اجمع 100 ذهب',         unlocked: false, emoji: '🪙' },
-  healer:       { name: 'معالج',        desc: 'استخدم الشفاء 5 مرات', unlocked: false, emoji: '💚' },
-  spinner:      { name: 'الدوّام',      desc: 'أكمل 10 دورات سريعة',  unlocked: false, emoji: '🌪️' },
-  spin_master:  { name: 'سيد الدوران',  desc: 'أكمل 50 دورة سريعة',   unlocked: false, emoji: '🌀' }
+  first_kill:   { name: 'أول قتل', desc: 'اقتل أول عدو', unlocked: false, emoji: '💀' },
+  killer_10:    { name: 'قاتل محترف', desc: 'اقتل 10 أعداء', unlocked: false, emoji: '⚔️' },
+  explorer:     { name: 'مستكشف', desc: 'اكتشف 3 عوالم', unlocked: false, emoji: '🌍' },
+  master:       { name: 'سيد العوالم', desc: 'اكتشف 5 عوالم', unlocked: false, emoji: '👑' },
+  collector:    { name: 'جامع المعالم', desc: 'أضف 5 معالم', unlocked: false, emoji: '📍' },
+  survivor:     { name: 'الناجي', desc: 'وصل للمستوى 5', unlocked: false, emoji: '🛡️' },
+  rich:         { name: 'ثراء', desc: 'اجمع 100 ذهب', unlocked: false, emoji: '🪙' },
+  healer:       { name: 'معالج', desc: 'استخدم الشفاء 5 مرات', unlocked: false, emoji: '💚' },
+  spinner:      { name: 'الدوّام', desc: 'أكمل 10 دورات سريعة', unlocked: false, emoji: '🌪️' },
+  spin_master:  { name: 'سيد الدوران', desc: 'أكمل 50 دورة سريعة', unlocked: false, emoji: '🌀' }
 };
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 5. المهام
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 let quests = [
-  { id: 'q1', name: 'قاتل مبتدئ', desc: 'اقتل 3 أعداء',              target: 3,  current: 0, type: 'kills',     reward: 20 },
-  { id: 'q2', name: 'مستكشف',     desc: 'اكتشف عالمين جديدين',       target: 2,  current: 0, type: 'worlds',    reward: 50 },
-  { id: 'q3', name: 'باني',       desc: 'أضف 3 معالم',               target: 3,  current: 0, type: 'landmarks', reward: 30 },
-  { id: 'q4', name: 'جامع',       desc: 'اجمع 50 نقطة',              target: 50, current: 0, type: 'score',     reward: 25 },
-  { id: 'q5', name: 'الدوّام',    desc: 'أكمل 5 دورات سريعة',        target: 5,  current: 0, type: 'spins',     reward: 40 }
+  { id: 'q1', name: 'قاتل مبتدئ', desc: 'اقتل 3 أعداء', target: 3, current: 0, type: 'kills', reward: 20 },
+  { id: 'q2', name: 'مستكشف', desc: 'اكتشف عالمين جديدين', target: 2, current: 0, type: 'worlds', reward: 50 },
+  { id: 'q3', name: 'باني', desc: 'أضف 3 معالم', target: 3, current: 0, type: 'landmarks', reward: 30 },
+  { id: 'q4', name: 'جامع', desc: 'اجمع 50 نقطة', target: 50, current: 0, type: 'score', reward: 25 },
+  { id: 'q5', name: 'الدوّام', desc: 'أكمل 5 دورات سريعة', target: 5, current: 0, type: 'spins', reward: 40 }
 ];
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 6. دوال مساعدة عامة
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-/** عرض إشعار Toast */
+/* ═══════════════════════════════════════════════════════════════
+   دوال مساعدة عامة
+   ═══════════════════════════════════════════════════════════════ */
 function showToast(msg, type) {
   const container = document.getElementById('toast-container');
   const toast = document.createElement('div');
@@ -1623,7 +639,6 @@ function showToast(msg, type) {
   }, 2500);
 }
 
-/** عرض رسالة مؤقتة */
 function showMessage(text, duration) {
   duration = duration || 1500;
   const el = document.getElementById('game-message');
@@ -1633,7 +648,6 @@ function showMessage(text, duration) {
   el._timeout = setTimeout(function() { el.classList.remove('show'); }, duration);
 }
 
-/** شاشة الانتقال */
 function showTransition(text) {
   document.getElementById('transition-text').textContent = text;
   document.getElementById('transition-screen').style.display = 'flex';
@@ -1642,12 +656,10 @@ function hideTransition() {
   document.getElementById('transition-screen').style.display = 'none';
 }
 
-/** إغلاق نافذة منبثقة */
 function closeModal(id) {
   document.getElementById(id).style.display = 'none';
 }
 
-/** الحصول على العالم */
 function getWorld(id) {
   return worlds.find(function(w) { return w.id === id; });
 }
@@ -1655,14 +667,12 @@ function getCurrentWorld() {
   return getWorld(currentWorldId);
 }
 
-/** تحديد مربع اللاعب */
 function getPlayerTile() {
   const px = playerGroup.position.x + HALF;
   const pz = playerGroup.position.z + HALF;
   return { col: Math.floor(px / TILE_SIZE), row: Math.floor(pz / TILE_SIZE) };
 }
 
-/** تنسيق الوقت */
 function formatTime(sec) {
   if (!sec || isNaN(sec)) return '00:00';
   const m = Math.floor(sec / 60);
@@ -1670,9 +680,9 @@ function formatTime(sec) {
   return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 7. تحديث الواجهة
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   تحديث الواجهة
+   ═══════════════════════════════════════════════════════════════ */
 function updateHUD() {
   document.getElementById('health-display').textContent = Math.round(playerHealth);
   document.getElementById('kills-display').textContent = kills;
@@ -1731,9 +741,9 @@ function showLevelUpEffect() {
   setTimeout(function() { el.style.display = 'none'; }, 1500);
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 8. الإنجازات والمهام - أزرار جديدة
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   الإنجازات والمهام
+   ═══════════════════════════════════════════════════════════════ */
 function toggleAchievementsPanel() {
   const panel = document.getElementById('achievements-panel');
   const wasOpen = panel.style.display === 'block';
@@ -1807,9 +817,9 @@ function renderQuests() {
   });
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 9. نظام اللاعب
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   نظام اللاعب
+   ═══════════════════════════════════════════════════════════════ */
 function addXP(amount) {
   xp += amount;
   while (xp >= CONFIG.XP_PER_LEVEL) {
@@ -1847,9 +857,9 @@ function healPlayer() {
   checkAchievement('healer', healCount >= 5);
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 10. الملف الشخصي
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   الملف الشخصي
+   ═══════════════════════════════════════════════════════════════ */
 function toggleProfile() {
   const panel = document.getElementById('profile-panel');
   const wasOpen = panel.style.display === 'block';
@@ -1903,9 +913,9 @@ function loadProfileData() {
   updateProfilePanel();
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 11. الإعدادات - موسعة
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   الإعدادات
+   ═══════════════════════════════════════════════════════════════ */
 function toggleSettings() {
   const panel = document.getElementById('settings-panel');
   const wasOpen = panel.style.display === 'block';
@@ -1942,9 +952,9 @@ function setVolume(val) {
   if (videoElement) videoElement.volume = val / 100;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 12. نظام التسريع
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   نظام التسريع
+   ═══════════════════════════════════════════════════════════════ */
 function toggleSpeed() {
   speedIndex = (speedIndex + 1) % CONFIG.SPEED_LEVELS.length;
   speedMultiplier = CONFIG.SPEED_LEVELS[speedIndex];
@@ -1963,9 +973,9 @@ function toggleSpeed() {
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 13. نظام الفيديو
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   نظام الفيديو
+   ═══════════════════════════════════════════════════════════════ */
 function togglePlay() {
   if (!videoElement) return;
   if (isVideoPlaying) {
@@ -2000,9 +1010,87 @@ function updateVideoTime() {
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 14. إنشاء العوالم الافتراضية
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   إنشاء/جلب العالم المرتبط بأي مربع (عند الطلب) - جديد v80
+   ═══════════════════════════════════════════════════════════════ */
+function getOrCreateTileWorld(row, col, sourceWorldId) {
+  const worldId = 'tile_' + sourceWorldId + '_' + row + '_' + col;
+  let world = getWorld(worldId);
+
+  if (!world) {
+    const themes = [
+      { name: 'الصحراء الذهبية', bg: '#1a1005', emoji: '🏜️', items: ['🌵','🦂','🐪','☀️'] },
+      { name: 'الغابة العميقة',  bg: '#0a1a0a', emoji: '🌲', items: ['🌳','🦊','🍄','🦉'] },
+      { name: 'المحيط الهادئ',    bg: '#0a1a2e', emoji: '🌊', items: ['🐠','🐚','🦈','🌊'] },
+      { name: 'الفضاء الخارجي',  bg: '#050510', emoji: '🌌', items: ['⭐','🪐','🚀','👽'] },
+      { name: 'القلعة القديمة',  bg: '#1a0a0a', emoji: '🏰', items: ['⚔️','🛡️','👑','🗝️'] },
+      { name: 'الجبال الثلجية',  bg: '#0f172a', emoji: '🏔️', items: ['❄️','⛷️','🐧','🧊'] },
+      { name: 'البركان النشط',   bg: '#1a0505', emoji: '🌋', items: ['🔥','🌋','🪨','♨️'] },
+      { name: 'الحديقة السحرية', bg: '#1a0a2e', emoji: '🌺', items: ['🌺','🦋','🍀','🌈'] }
+    ];
+
+    const theme = themes[Math.floor(Math.random() * themes.length)];
+    const numItems = 2 + Math.floor(Math.random() * 4);
+    const items = [];
+
+    for (let i = 0; i < numItems; i++) {
+      let r, c, attempts = 0;
+      do {
+        r = 1 + Math.floor(Math.random() * 10);
+        c = 1 + Math.floor(Math.random() * 10);
+        attempts++;
+      } while (items.some(function(it) { return it.row === r && it.col === c; }) && attempts < 30);
+
+      if (attempts < 30) {
+        items.push({
+          id: 'item_' + worldId + '_' + i,
+          type: 'image',
+          title: theme.items[i % theme.items.length],
+          emoji: theme.items[i % theme.items.length],
+          row: r, col: c
+        });
+      }
+    }
+
+    // بوابة عودة إلزامية إلى العالم الأم
+    let er, ec, attempts = 0;
+    do {
+      er = 1 + Math.floor(Math.random() * 10);
+      ec = 1 + Math.floor(Math.random() * 10);
+      attempts++;
+    } while (items.some(function(it) { return it.row === er && it.col === ec; }) && attempts < 30);
+
+    if (attempts < 30) {
+      items.push({
+        id: 'portal_exit_' + worldId,
+        type: 'portal',
+        title: '🚪 العودة',
+        emoji: '🚪',
+        row: er, col: ec,
+        targetWorld: sourceWorldId
+      });
+    }
+
+    world = {
+      id: worldId,
+      name: theme.emoji + ' ' + theme.name + ' [' + row + ',' + col + ']',
+      grid: 12, tileSize: 3,
+      startPosition: { x: 0, z: 0 },
+      background: theme.bg,
+      items: items,
+      parentWorld: sourceWorldId,
+      tileCoords: { row: row, col: col }
+    };
+
+    worlds.push(world);
+  }
+
+  return world;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   إنشاء العوالم الافتراضية
+   ═══════════════════════════════════════════════════════════════ */
 function createDefaultWorlds() {
   worlds = [
     {
@@ -2064,9 +1152,9 @@ function createDefaultWorlds() {
   ];
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 15. تنظيف وبناء العالم
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   تنظيف وبناء العالم - معدل لربط كل مربع بعالمه
+   ═══════════════════════════════════════════════════════════════ */
 function clearWorld() {
   tileMeshes.forEach(function(m) {
     if (m.parent) m.parent.remove(m);
@@ -2118,7 +1206,6 @@ function buildWorld(worldId) {
     if (gridHelper) gridHelper.visible = false;
     document.getElementById('spin-counter').style.display = 'flex';
     document.getElementById('score-display-main').style.display = 'flex';
-    // إخفاء أزرار القتال في الخريطة الرئيسية
     document.getElementById('combat-buttons').style.display = 'none';
   } else {
     hideSphere();
@@ -2126,8 +1213,7 @@ function buildWorld(worldId) {
     if (gridHelper) gridHelper.visible = gridVisible;
     document.getElementById('spin-counter').style.display = 'none';
     document.getElementById('score-display-main').style.display = 'none';
-    
-    // إظهار أزرار القتال فقط في ساحة القتال
+
     if (worldId === 'world_fight') {
       document.getElementById('combat-buttons').style.display = 'flex';
     } else {
@@ -2150,7 +1236,7 @@ function buildWorld(worldId) {
   scene.background = new THREE.Color(bg);
   scene.fog = new THREE.Fog(bg, 30, 80);
 
-  // إنشاء المربعات
+  // إنشاء المربعات - معدل: كل مربع له عالمه الخاص
   for (let row = 0; row < GRID; row++) {
     for (let col = 0; col < GRID; col++) {
       const canvas = document.createElement('canvas');
@@ -2227,7 +1313,37 @@ function buildWorld(worldId) {
       const posZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
       mesh.position.set(posX, 0, posZ);
       mesh.rotation.x = -Math.PI / 2;
-      mesh.userData = { row: row, col: col, item: item || null };
+
+      // ─── تحديد العالم المرتبط بهذا المربع ───
+      let tileWorldId = null;
+      let tileWorldName = '';
+
+      if (item && item.targetWorld) {
+        // مربع يحتوي على بوابة مخصصة مسبقاً
+        tileWorldId = item.targetWorld;
+        const tw = getWorld(tileWorldId);
+        tileWorldName = tw ? tw.name : 'عالم';
+      } else if (world.id !== 'main') {
+        // في العوالم الفرعية: كل مربع يؤدي إلى عالم أعمق
+        const tileWorld = getOrCreateTileWorld(row, col, world.id);
+        tileWorldId = tileWorld.id;
+        tileWorldName = tileWorld.name;
+      } else {
+        // في الخريطة الرئيسية: كل مربع له عالمه أيضاً
+        const tileWorld = getOrCreateTileWorld(row, col, world.id);
+        tileWorldId = tileWorld.id;
+        tileWorldName = tileWorld.name;
+      }
+
+      mesh.userData = { 
+        row: row, 
+        col: col, 
+        item: item || null,
+        worldId: tileWorldId,
+        worldName: tileWorldName
+      };
+      // ─── نهاية التعديل ───
+
       tileGroup.add(mesh);
       tileMeshes.push(mesh);
     }
@@ -2316,9 +1432,9 @@ function buildWorld(worldId) {
   renderLandmarks();
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 16. فيديو 360
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   فيديو 360
+   ═══════════════════════════════════════════════════════════════ */
 function createVideo360(url) {
   videoElement = document.createElement('video');
   videoElement.muted = isVideoMuted;
@@ -2363,33 +1479,58 @@ function update360Camera() {
   camera.lookAt(target);
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 17. الدخول والخروج من العوالم
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   الدخول والخروج من العوالم - معدل لكل مربع
+   ═══════════════════════════════════════════════════════════════ */
 function enterWorld() {
-  if (isTransitioning || currentWorldId !== 'main') return;
+  if (isTransitioning) return;
 
   const tile = getPlayerTile();
-  const world = getCurrentWorld();
-  const item = world.items ? world.items.find(function(i) {
-    return i.row === tile.row && i.col === tile.col && i.type === 'portal';
-  }) : null;
+  let targetWorldId = null;
+  let targetWorldName = '';
 
-  if (!item) { showToast('❌ لا توجد بوابة هنا', 'error'); return; }
-  if (!item.targetWorld) { showToast('❌ هذه البوابة لا تؤدي إلى أي عالم', 'error'); return; }
+  // البحث عن المربع الحالي وجلب عالمه
+  tileMeshes.forEach(function(mesh) {
+    const d = mesh.userData;
+    if (d.row === tile.row && d.col === tile.col) {
+      // إنشاء العالم فوراً إذا لم يُنشأ بعد
+      if (!d.worldId) {
+        const tw = getOrCreateTileWorld(d.row, d.col, currentWorldId);
+        d.worldId = tw.id;
+        d.worldName = tw.name;
+      }
+      targetWorldId = d.worldId;
+      targetWorldName = d.worldName;
+    }
+  });
 
-  const target = getWorld(item.targetWorld);
-  if (!target) { showToast('❌ العالم غير موجود', 'error'); return; }
+  if (!targetWorldId) {
+    showToast('❌ لا يوجد عالم هنا', 'error');
+    return;
+  }
+
+  const target = getWorld(targetWorldId);
+  if (!target) {
+    showToast('❌ العالم غير موجود', 'error');
+    return;
+  }
 
   isTransitioning = true;
-  savedPlayerPos = { x: playerGroup.position.x, z: playerGroup.position.z };
+
+  // حفظ موقع العودة للعالم الحالي
+  if (!window.returnPositions) window.returnPositions = {};
+  window.returnPositions[currentWorldId] = { 
+    x: playerGroup.position.x, 
+    z: playerGroup.position.z 
+  };
+
   showTransition('جاري الدخول إلى ' + target.name);
 
   setTimeout(function() {
-    buildWorld(item.targetWorld);
+    buildWorld(targetWorldId);
 
-    if (!visitedWorlds.has(item.targetWorld)) {
-      visitedWorlds.add(item.targetWorld);
+    if (!visitedWorlds.has(targetWorldId)) {
+      visitedWorlds.add(targetWorldId);
       score += 50;
       addXP(30);
       addCoins(10);
@@ -2399,16 +1540,9 @@ function enterWorld() {
       checkAchievement('master', visitedWorlds.size >= 5);
     }
 
-    if (target.id === 'world_360') {
-      camera.position.set(0, 0, 0);
-      lon = 0; lat = 0;
-      update360Camera();
-    } else {
-      camera.position.set(0, 6.5, 11);
-      camera.lookAt(0, 0.5, 0);
-    }
+    camera.position.set(0, 6.5, 11);
+    camera.lookAt(0, 0.5, 0);
 
-    showSphere();
     hideTransition();
     isTransitioning = false;
     showToast('✅ دخلت: ' + target.name, 'success');
@@ -2419,24 +1553,37 @@ function exitWorld() {
   const iframe = document.getElementById('cod-iframe');
   if (iframe.style.display === 'block') { closeCODGame(); return; }
 
-  if (isTransitioning || currentWorldId === 'main') return;
+  if (isTransitioning) return;
+
+  const current = getCurrentWorld();
+  const returnTo = (current && current.parentWorld) ? current.parentWorld : 'main';
 
   isTransitioning = true;
-  showTransition('جاري العودة للخريطة...');
+  showTransition('جاري العودة...');
 
   setTimeout(function() {
-    buildWorld('main');
-    playerGroup.visible = false;
-    if (savedPlayerPos) {
+    buildWorld(returnTo);
+
+    // استعادة موقع اللاعب في العالم الذي عدنا إليه
+    if (window.returnPositions && window.returnPositions[returnTo]) {
+      const pos = window.returnPositions[returnTo];
+      playerGroup.position.set(pos.x, 0, pos.z);
+      delete window.returnPositions[returnTo];
+    } else if (returnTo === 'main' && savedPlayerPos) {
       playerGroup.position.set(savedPlayerPos.x, 0, savedPlayerPos.z);
       savedPlayerPos = null;
     }
-    camera.position.set(0, 1.5, 10);
-    camera.lookAt(0, 0, 0);
-    showSphere();
+
+    if (returnTo === 'main') {
+      playerGroup.visible = false;
+      camera.position.set(0, 1.5, 10);
+      camera.lookAt(0, 0, 0);
+      showSphere();
+    }
+
     hideTransition();
     isTransitioning = false;
-    showToast('✅ عدت للخريطة الرئيسية', 'success');
+    showToast('✅ عدت إلى ' + (getWorld(returnTo)?.name || 'الخريطة'), 'success');
   }, 600);
 }
 
@@ -2466,9 +1613,9 @@ function enterWorldById(worldId) {
   }, 700);
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 18. نظام المعالم
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   نظام المعالم
+   ═══════════════════════════════════════════════════════════════ */
 function addLandmark() {
   const emojis = ['🏰','🌲','🌊','⛰️','🏜️','🌋','🏗️','🌺','🕌','🏯','🎪','🏟️'];
   const names = ['قلعة','غابة','بحيرة','جبل','صحراء','بركان','مبنى','حديقة','مسجد','معبد','سيرك','ملعب'];
@@ -2543,9 +1690,9 @@ function renderLandmarks() {
   });
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 19. رفع الملفات
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   رفع الملفات
+   ═══════════════════════════════════════════════════════════════ */
 function openUploadModal() {
   document.getElementById('upload-modal').style.display = 'flex';
   document.getElementById('lm-name').value = '';
@@ -2599,9 +1746,9 @@ function addLandmarkFromModal() {
   renderLandmarks();
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 20. عوالم عشوائية
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   عوالم عشوائية
+   ═══════════════════════════════════════════════════════════════ */
 function addRandomWorld() {
   const emojis = ['🎮','🎯','🎨','🌈','⭐','🌺','🌸','🌊','🔥','💫','🚀','🌙'];
   const titles = ['ملصقات','فن','طبيعة','خيال','مغامرات','ألعاب','رياضة','موسيقى'];
@@ -2658,9 +1805,9 @@ function addRandomWorld() {
   showToast('✅ تم إنشاء عالم جديد: ' + newWorld.name, 'success');
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 21. نظام القتال
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   نظام القتال
+   ═══════════════════════════════════════════════════════════════ */
 function spawnEnemy() {
   if (!gameRunning || currentWorldId !== 'world_fight') {
     showToast('⚠️ فقط في ساحة القتال', 'warn');
@@ -2909,9 +2056,9 @@ function updateParticles() {
   particles = particles.filter(function(p, i) { return toRemove.indexOf(i) === -1; });
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 22. نظام التدوير السريع (Spin)
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   نظام التدوير السريع (Spin)
+   ═══════════════════════════════════════════════════════════════ */
 function processSpin(rotationDelta) {
   const now = Date.now();
   if (now - lastSpinTime > CONFIG.SPIN_COMBO_TIMEOUT) spinCombo = 1;
@@ -2970,9 +2117,9 @@ function detectSwipeSpin(dx, dy, dt) {
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 23. COD Game
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   COD Game
+   ═══════════════════════════════════════════════════════════════ */
 function openCODModal() {
   document.getElementById('cod-modal').style.display = 'flex';
 }
@@ -3037,9 +2184,9 @@ function closeCODGame() {
   showToast('✅ تم إغلاق اللعبة', 'success');
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 24. خريطة مصغرة
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   خريطة مصغرة
+   ═══════════════════════════════════════════════════════════════ */
 function setupMinimap() {
   const frame = document.getElementById('minimap-frame');
   const c = document.createElement('canvas');
@@ -3047,7 +2194,6 @@ function setupMinimap() {
   frame.appendChild(c);
   minimapCtx = c.getContext('2d');
 
-  // Click on minimap to teleport to tile
   c.addEventListener('click', function(e) {
     if (currentWorldId === 'main' || isTransitioning || !gameRunning) return;
     const rect = c.getBoundingClientRect();
@@ -3103,9 +2249,9 @@ function updateMinimap() {
   ctx.stroke();
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 25. نظام الأيقونات الكروية
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   نظام الأيقونات الكروية
+   ═══════════════════════════════════════════════════════════════ */
 function createIconTexture(emoji, name, color, isHovered) {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
@@ -3262,7 +2408,6 @@ function updateSphereRotation() {
   sphereGroup.rotation.x += 0.001;
 }
 
-
 function showSphere() {
   if (sphereGroup) {
     sphereGroup.visible = true;
@@ -3280,10 +2425,9 @@ function hideSphere() {
   document.getElementById('facet-info').style.display = 'none';
 }
 
-
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 26. تفاعل الأيقونات
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   تفاعل الأيقونات
+   ═══════════════════════════════════════════════════════════════ */
 function setupFacetInteraction() {
   const raycaster = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
@@ -3431,9 +2575,9 @@ function setupFacetInteraction() {
   renderer.domElement.addEventListener('touchend', function() { isDraggingSphere = false; });
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 27. تحديثات اللاعب والكاميرا
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   تحديثات اللاعب والكاميرا - معدل: زر الدخول لكل مربع
+   ═══════════════════════════════════════════════════════════════ */
 function updatePlayer() {
   if (isTransitioning || !gameRunning) return;
   if (isInWorld && getCurrentWorld() && getCurrentWorld().id === 'world_360') return;
@@ -3455,17 +2599,26 @@ function updatePlayer() {
 function updateActiveTile() {
   if (isTransitioning) return;
   const tile = getPlayerTile();
-  let onPortal = false, portalTitle = '', isCOD = false, codFile = '';
+  let onPortal = false;
+  let portalTitle = '';
+  let isCOD = false;
+  let codFile = '';
 
   tileMeshes.forEach(function(mesh) {
     const d = mesh.userData;
     if (d.row === tile.row && d.col === tile.col) {
       mesh.material.emissive = new THREE.Color(0x00ff88);
       mesh.material.emissiveIntensity = 0.35;
-      if (d.item && (d.item.type === 'portal' || d.item.type === 'cod')) {
+
+      // التحقق من وجود عالم مرتبط - معدل: كل مربع له عالم
+      if (d.worldId) {
         onPortal = true;
-        portalTitle = d.item.title || 'عالم';
-        if (d.item.isCOD) { isCOD = true; codFile = d.item.codFile || 'cod.html'; }
+        portalTitle = d.worldName || 'عالم جديد';
+      }
+
+      if (d.item && d.item.isCOD) {
+        isCOD = true;
+        codFile = d.item.codFile || 'cod.html';
       }
     } else {
       mesh.material.emissive = new THREE.Color(0x000000);
@@ -3477,8 +2630,9 @@ function updateActiveTile() {
     openCODGame(codFile);
   }
 
+  // إظهار زر الدخول لأي مربع له عالم - معدل
   const btn = document.getElementById('enter-btn');
-  if (onPortal && currentWorldId === 'main' && !isCOD) {
+  if (onPortal && !isCOD && currentWorldId !== 'main') {
     btn.style.display = 'block';
     btn.textContent = '🌐 دخول ' + portalTitle;
   } else {
@@ -3507,9 +2661,9 @@ function updateCamera() {
   camera.lookAt(target.x, target.y + 0.8, target.z);
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 28. حفظ وتحميل
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   حفظ وتحميل
+   ═══════════════════════════════════════════════════════════════ */
 function saveGame() {
   const data = {
     playerHealth, maxHealth, kills, score, level, xp, coins,
@@ -3566,9 +2720,9 @@ function loadGame() {
   }
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 29. نهاية اللعبة وإعادة التشغيل
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   نهاية اللعبة وإعادة التشغيل
+   ═══════════════════════════════════════════════════════════════ */
 function gameOver() {
   gameRunning = false;
   document.getElementById('final-kills').textContent = kills;
@@ -3614,9 +2768,9 @@ function hideTutorial() {
   document.getElementById('tutorial-panel').style.display = 'none';
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 30. تهيئة اللعبة
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   تهيئة اللعبة
+   ═══════════════════════════════════════════════════════════════ */
 function initGame() {
   const canvas = document.getElementById('canvas');
 
@@ -3717,9 +2871,6 @@ function initGame() {
   loop();
 }
 
-
-
-
 function startGame() {
   document.getElementById('start-screen').style.display = 'none';
   document.getElementById('side-toolbar').style.display = 'flex';
@@ -3735,14 +2886,13 @@ function startGame() {
 
   initGame();
   playerGroup.visible = false;
-  
-  // إضافة هذا السطر لإظهار الكرة
+
   if (sphereGroup) sphereGroup.visible = true;
 }
 
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-// 31. التحكم
-// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+/* ═══════════════════════════════════════════════════════════════
+   التحكم
+   ═══════════════════════════════════════════════════════════════ */
 function setupControls() {
   document.querySelectorAll('.dpad-btn').forEach(function(btn) {
     const dir = btn.dataset.dir;
@@ -3827,20 +2977,16 @@ document.addEventListener('click', function(e) {
 
 setupControls();
 
-console.log('🌐 العوالم الكروية v79.0 - واجهة معاد تنظيمها');
+console.log('🌐 العوالم الكروية v80.0 - كل مربع = عالم');
 console.log('📌 التغييرات:');
-console.log('  ✅ شريط التحكم السفلي مخفي');
-console.log('  ✅ أزرار رفع ملف، معلم، عالم في الإعدادات');
-console.log('  ✅ أزرار عدو وشفاء تظهر فقط في ساحة القتال');
-console.log('  ✅ الإنجازات والمهام في أيقونات منفصلة');
+console.log('  ✅ كل مربع في الشبكة = بوابة لعالم فريد');
+console.log('  ✅ إنشاء عوالم عند الطلب (توفير للذاكرة)');
+console.log('  ✅ زر دخول يظهر عند الوقوف على أي مربع');
+console.log('  ✅ عودة ذكية للعالم الأم (طبقة طبقة)');
+console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة');
 </script>
 </body>
 </html>
-
-
-  
-
-  
 
 
    
