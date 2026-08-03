@@ -850,7 +850,7 @@ function formatTime(sec) {
 /* ================================================================ */
 /* نهاية الجزء الأول - يتبع الجزء الثاني                           */
 /* ================================================================ */
-
+</script>
 
 
 
@@ -2667,6 +2667,9 @@ function hideTutorial() {
 /* ================================================================ */
 /* 3.21: نظام الحسابات (AccountManager)                             */
 /* ================================================================ */
+/* ================================================================ */
+/* 3.21: نظام الحسابات (AccountManager)                             */
+/* ================================================================ */
 
 const AccountManager = {
   currentUser: null,
@@ -2688,14 +2691,21 @@ const AccountManager = {
         this.users = data.users || [];
         this.currentUser = data.currentUser || null;
       }
-    } catch(e) {}
+    } catch(e) {
+      this.users = [];
+      this.currentUser = null;
+    }
   },
 
   save() {
-    localStorage.setItem('spherical_accounts', JSON.stringify({
-      users: this.users,
-      currentUser: this.currentUser
-    }));
+    try {
+      localStorage.setItem('spherical_accounts', JSON.stringify({
+        users: this.users,
+        currentUser: this.currentUser
+      }));
+    } catch(e) {
+      console.error('❌ فشل الحفظ:', e);
+    }
   },
 
   showLogin() {
@@ -2717,14 +2727,32 @@ const AccountManager = {
     const password2 = document.getElementById('reg-password2').value;
     const err = document.getElementById('reg-error');
 
-    if (!username || username.length < 3) { err.textContent = '⚠️ اسم المستخدم قصير جداً'; err.style.display = 'block'; return; }
-    if (this.users.find(u => u.username === username)) { err.textContent = '⚠️ اسم المستخدم مستخدم'; err.style.display = 'block'; return; }
-    if (password.length < 6) { err.textContent = '⚠️ كلمة المرور قصيرة'; err.style.display = 'block'; return; }
-    if (password !== password2) { err.textContent = '⚠️ كلمتا المرور غير متطابقتين'; err.style.display = 'block'; return; }
+    if (!username || username.length < 3) {
+      err.textContent = '⚠️ اسم المستخدم قصير جداً (3 أحرف على الأقل)';
+      err.style.display = 'block';
+      return;
+    }
+    if (this.users.find(u => u.username === username)) {
+      err.textContent = '⚠️ اسم المستخدم مستخدم مسبقاً';
+      err.style.display = 'block';
+      return;
+    }
+    if (password.length < 6) {
+      err.textContent = '⚠️ كلمة المرور قصيرة (6 أحرف على الأقل)';
+      err.style.display = 'block';
+      return;
+    }
+    if (password !== password2) {
+      err.textContent = '⚠️ كلمتا المرور غير متطابقتين';
+      err.style.display = 'block';
+      return;
+    }
 
     const user = {
       id: 'user_' + Date.now(),
-      username, email, password,
+      username: username,
+      email: email || '',
+      password: password,
       createdAt: Date.now(),
       coins: 100,
       xp: 0,
@@ -2746,8 +2774,18 @@ const AccountManager = {
     const password = document.getElementById('login-password').value;
     const err = document.getElementById('login-error');
 
+    if (!username || !password) {
+      err.textContent = '⚠️ يرجى ملء جميع الحقول';
+      err.style.display = 'block';
+      return;
+    }
+
     const user = this.users.find(u => u.username === username && u.password === password);
-    if (!user) { err.textContent = '❌ اسم المستخدم أو كلمة المرور غير صحيحة'; err.style.display = 'block'; return; }
+    if (!user) {
+      err.textContent = '❌ اسم المستخدم أو كلمة المرور غير صحيحة';
+      err.style.display = 'block';
+      return;
+    }
 
     this.currentUser = user;
     this.save();
@@ -2756,17 +2794,9 @@ const AccountManager = {
   },
 
   adminLogin() {
-    const username = document.getElementById('login-username').value.trim();
-    const password = document.getElementById('login-password').value;
-    const err = document.getElementById('login-error');
-
-    if (username !== 'admin123' || password !== '123456') {
-      err.textContent = '❌ بيانات المدير غير صحيحة';
-      err.style.display = 'block';
-      return;
-    }
-
+    // ✅ طريقة مباشرة للدخول كمدير
     let admin = this.users.find(u => u.username === 'admin123');
+    
     if (!admin) {
       admin = {
         id: 'user_admin_' + Date.now(),
@@ -2786,6 +2816,7 @@ const AccountManager = {
     } else {
       admin.isAdmin = true;
       admin.coins = 99999;
+      admin.level = 99;
     }
 
     this.currentUser = admin;
@@ -2815,7 +2846,10 @@ const AccountManager = {
 
     if (this.currentUser.isAdmin) {
       showToast('👑 مرحباً أيها المدير!', 'success');
-      document.querySelectorAll('.platform-btn').forEach(btn => btn.style.borderColor = '#ffd700');
+      document.querySelectorAll('.platform-btn').forEach(btn => {
+        btn.style.borderColor = '#ffd700';
+        btn.style.background = 'rgba(255,215,0,0.05)';
+      });
     }
 
     EconomySystem.checkDaily();
@@ -2835,9 +2869,14 @@ const AccountManager = {
   },
 
   activateAdmin() {
-    if (!this.currentUser) { showToast('❌ سجل دخول أولاً', 'error'); return; }
+    if (!this.currentUser) {
+      showToast('❌ سجل دخول أولاً', 'error');
+      return;
+    }
     this.currentUser.isAdmin = true;
+    this.currentUser.coins = 99999;
     this.save();
+    updateHUD();
     showToast('👑 تم تفعيل وضع المدير!', 'success');
   }
 };
@@ -4497,3 +4536,7 @@ console.log('🚀 المنصة جاهزة للاستخدام!');
 
 
 
+
+
+
+  
