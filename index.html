@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -920,7 +919,9 @@ function initIconGridModalPath() {
 }
 
 /* ─── نافذة الإضافة المتدرجة ─── */
-
+/* ═══════════════════════════════════════════════════════════════
+   نظام إضافة الملفات إلى المربعات — مصحح
+   ═══════════════════════════════════════════════════════════════ */
 
 function showAddFileModal() {
   if (!AccountManager.isAdmin || !AccountManager.isAdmin()) {
@@ -978,6 +979,7 @@ function showAddFileModal() {
       '<select id="select-world-modal" style="width:100%;padding:8px 12px;border-radius:10px;' +
         'border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);' +
         'color:#fff;font-family:inherit;font-size:13px;cursor:pointer;">' + worldOptions + '</select>' +
+      '<div id="world-info-modal" style="color:#666;font-size:10px;margin-top:4px;"></div>' +
     '</div>' +
 
     '<div style="margin-bottom:12px;">' +
@@ -1062,10 +1064,46 @@ function showAddFileModal() {
 
   initIconGridModalPath();
   initFileUploadModal();
-  setupWorldInfoModal();
+  setupWorldInfoModalFixed();  // ← استخدام النسخة المصححة
   setupPathPreview();
   updateCaptionPreview();
 }
+
+/* ─── النسخة المصححة من setupWorldInfoModal ─── */
+function setupWorldInfoModalFixed() {
+  const select = document.getElementById('select-world-modal');
+  const info = document.getElementById('world-info-modal');
+  if (!select) return;
+
+  function updateInfo() {
+    const world = worlds.find(function(w) { return w.id === select.value; });
+    if (world && info) {
+      info.textContent = 'ℹ️ ' + world.name + ' | الحجم: ' + world.grid + '×' + world.grid;
+    }
+    updateCaptionPreview();
+  }
+
+  select.onchange = updateInfo;
+  select.dispatchEvent(new Event('change'));
+}
+
+/* ─── إغلاق النافذة (نسخة واحدة موحدة) ─── */
+function closeAddFileModal() {
+  const el = document.getElementById('add-file-modal');
+  if (el) el.remove();
+  selectedIconFile = null;
+  uploadedFileData = null;
+  uploadedFileURL = null;
+  pendingFile = null;
+}
+
+/* ─── initFileSystem نسخة واحدة ─── */
+function initFileSystem() {
+  console.log('📂 نظام إضافة الملفات جاهز (مسار + Caption + موقع دقيق)!');
+  console.log('🌍 ' + worlds.length + ' عالم متاح');
+}
+
+
 
 
 
@@ -5799,9 +5837,3 @@ console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة')
 </div>
 <div id="drag-indicator"><div class="drag-joystick"><div class="drag-knob"></div></div></div></body>
 </html>
-
-
-        
-
-
-    
