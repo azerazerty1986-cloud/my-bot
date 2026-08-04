@@ -421,7 +421,10 @@ body { font-family: 'Cairo', sans-serif; background: #050510; color: #fff; overf
   <div class="setting-row"><label>📍 الخريطة</label><button onclick="toggleMinimap()">تبديل</button></div>
   <div class="setting-row"><label>🌙 الوضع الليلي</label><button onclick="toggleNightMode()">تبديل</button></div>
   <div class="settings-section-title">🌍 العوالم والمعالم</div>
-  <div class="setting-row"><label>📂 إضافة ملف إلى مربع</label><button class="btn-gold" onclick="showAddFileModal()">📤 رفع</button></div>
+  <div class="setting-row"><label>📍 إضافة معلم</label><button class="btn-gold" onclick="addLandmark()">إضافة</button></div>
+  <div class="setting-row"><label>🌍 عالم عشوائي</label><button class="btn-green" onclick="addRandomWorld()">إضافة</button></div>
+  <div class="setting-row"><label>📁 رفع ملف</label><button class="btn-purple" onclick="openUploadModal()">رفع</button></div>
+  <div class="setting-row"><label>🎮 إضافة لعبة</label><button class="btn-green" onclick="openCODModal()">إضافة</button></div>
   <div class="settings-section-title">💾 حفظ اللعبة</div>
   <div class="setting-row"><label>💾 حفظ</label><button onclick="saveGame()">حفظ</button></div>
   <div class="setting-row"><label>📂 تحميل</label><button onclick="loadGame()">تحميل</button></div>
@@ -2440,7 +2443,28 @@ function enterWorldById(worldId) {
 /* ═══════════════════════════════════════════════════════════════
    نظام المعالم
    ═══════════════════════════════════════════════════════════════ */
+function addLandmark() {
+  const emojis = ['🏰','🌲','🌊','⛰️','🏜️','🌋','🏗️','🌺','🕌','🏯','🎪','🏟️'];
+  const names = ['قلعة','غابة','بحيرة','جبل','صحراء','بركان','مبنى','حديقة','مسجد','معبد','سيرك','ملعب'];
 
+  const idx = Math.floor(Math.random() * emojis.length);
+  const x = (Math.random() - 0.5) * (WORLD_SIZE - 2);
+  const z = (Math.random() - 0.5) * (WORLD_SIZE - 2);
+
+  landmarks.push({
+    id: nextLandmarkId++,
+    name: emojis[idx] + ' ' + names[idx],
+    emoji: emojis[idx],
+    x: x, z: z,
+    color: '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')
+  });
+
+  showToast('📍 تم إضافة معلم: ' + names[idx], 'success');
+  updateHUD();
+  updateQuests('landmarks', 1);
+  checkAchievement('collector', landmarks.length >= 5);
+  renderLandmarks();
+}
 
 function renderLandmarks() {
   if (window.landmarkMeshes) {
@@ -2496,7 +2520,14 @@ function renderLandmarks() {
 /* ═══════════════════════════════════════════════════════════════
    رفع الملفات
    ═══════════════════════════════════════════════════════════════ */
-
+function openUploadModal() {
+  document.getElementById('upload-modal').style.display = 'flex';
+  document.getElementById('lm-name').value = '';
+  document.getElementById('lm-row').value = '';
+  document.getElementById('lm-col').value = '';
+  document.getElementById('file-name-display').style.display = 'none';
+  pendingFile = null;
+}
 
 function closeUploadModal() {
   document.getElementById('upload-modal').style.display = 'none';
@@ -2593,7 +2624,61 @@ function addLandmarkFromModal() {
 /* ═══════════════════════════════════════════════════════════════
    عوالم عشوائية
    ═══════════════════════════════════════════════════════════════ */
+function addRandomWorld() {
+  const emojis = ['🎮','🎯','🎨','🌈','⭐','🌺','🌸','🌊','🔥','💫','🚀','🌙'];
+  const titles = ['ملصقات','فن','طبيعة','خيال','مغامرات','ألعاب','رياضة','موسيقى'];
 
+  const newId = 'world_' + Date.now();
+  const newWorld = {
+    id: newId,
+    name: '🌍 ' + titles[Math.floor(Math.random() * titles.length)],
+    grid: 12, tileSize: 3,
+    startPosition: { x: 0, z: 0 },
+    background: '#' + Math.floor(Math.random() * 0xffffff).toString(16).padStart(6, '0'),
+    items: []
+  };
+
+  const num = 3 + Math.floor(Math.random() * 3);
+  for (let i = 0; i < num; i++) {
+    let r, c;
+    do {
+      r = 1 + Math.floor(Math.random() * 10);
+      c = 1 + Math.floor(Math.random() * 10);
+    } while (newWorld.items.some(function(it) { return it.row === r && it.col === c; }));
+
+    newWorld.items.push({
+      id: Date.now() + i,
+      type: 'image',
+      title: titles[i % titles.length],
+      emoji: emojis[i % emojis.length],
+      row: r, col: c
+    });
+  }
+
+  worlds.push(newWorld);
+
+  const main = getWorld('main');
+  if (main) {
+    let pr, pc;
+    do {
+      pr = 1 + Math.floor(Math.random() * 10);
+      pc = 1 + Math.floor(Math.random() * 10);
+    } while (main.items.some(function(it) { return it.row === pr && it.col === pc; }));
+
+    main.items.push({
+      id: 'portal_' + Date.now(),
+      type: 'portal',
+      title: newWorld.name,
+      emoji: '🌐',
+      row: pr, col: pc,
+      targetWorld: newId
+    });
+
+    if (currentWorldId === 'main') buildWorld('main');
+  }
+
+  showToast('✅ تم إنشاء عالم جديد: ' + newWorld.name, 'success');
+}
 
 /* ═══════════════════════════════════════════════════════════════
    نظام القتال
@@ -2910,7 +2995,9 @@ function detectSwipeSpin(dx, dy, dt) {
 /* ═══════════════════════════════════════════════════════════════
    COD Game
    ═══════════════════════════════════════════════════════════════ */
-
+function openCODModal() {
+  document.getElementById('cod-modal').style.display = 'flex';
+}
 
 function addCOD() {
   const filename = document.getElementById('cod-filename').value.trim() || 'cod.html';
