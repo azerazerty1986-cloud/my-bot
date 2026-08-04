@@ -694,7 +694,136 @@ let isSwipeSpinning = false;
 let lastSwipeTime = 0;
 
 let healCount = 0;
+  
+/* ═══════════════════════════════════════════════════════════════
+   📡 مستمع تغييرات المدير عبر localStorage
+   ═══════════════════════════════════════════════════════════════ */
 
+// ====== 1. مستمع localStorage ======
+window.addEventListener('storage', function(e) {
+    if (e.key === 'battle_worlds_save' && e.newValue) {
+        try {
+            const data = JSON.parse(e.newValue);
+            let changed = false;
+
+            // تحديث المعالم
+            if (data.landmarks && Array.isArray(data.landmarks)) {
+                landmarks = data.landmarks;
+                nextLandmarkId = 1 + Math.max(0, ...landmarks.map(function(l) { return l.id || 0; }));
+                changed = true;
+                if (typeof renderLandmarks === 'function') renderLandmarks();
+            }
+
+            // تحديث العوالم
+            if (data.worlds && Array.isArray(data.worlds)) {
+                data.worlds.forEach(function(newWorld) {
+                    const idx = worlds.findIndex(function(w) { return w.id === newWorld.id; });
+                    if (idx >= 0) {
+                        worlds[idx] = newWorld;
+                    } else {
+                        worlds.push(newWorld);
+                    }
+                });
+                changed = true;
+            }
+
+            // تحديث الأيقونات المخصصة
+            if (data.customIcons && Array.isArray(data.customIcons)) {
+                data.customIcons.forEach(function(icon) {
+                    const exists = WORLD_ICONS.find(function(i) { return i.name === icon.name && i.emoji === icon.emoji; });
+                    if (!exists) {
+                        WORLD_ICONS.push(icon);
+                    }
+                });
+                changed = true;
+                if (typeof buildSphere === 'function') buildSphere();
+            }
+
+            // تحديث بيانات اللاعب
+            if (data.playerName !== undefined) playerName = data.playerName;
+            if (data.level !== undefined) level = data.level;
+            if (data.coins !== undefined) coins = data.coins;
+            if (data.score !== undefined) score = data.score;
+
+            // إعادة بناء العالم الحالي إذا تغيرت البيانات
+            if (changed && currentWorldId && typeof buildWorld === 'function') {
+                buildWorld(currentWorldId);
+                showToast('🔄 تم تحديث البيانات من المدير', 'success');
+            }
+
+            if (typeof updateHUD === 'function') updateHUD();
+        } catch(err) {
+            console.log('❌ فشل تحديث من المدير:', err);
+        }
+    }
+});
+
+// ====== 2. مستمع postMessage من iframe المدير ======
+window.addEventListener('message', function(event) {
+    if (event.data && event.data.type === 'manager_update') {
+        if (event.data.data && event.data.data.action === 'force_sync') {
+            try {
+                const saveData = JSON.parse(localStorage.getItem('battle_worlds_save') || '{}');
+                if (saveData.landmarks) {
+                    landmarks = saveData.landmarks;
+                    if (typeof renderLandmarks === 'function') renderLandmarks();
+                }
+                if (saveData.worlds) {
+                    worlds = saveData.worlds;
+                }
+                if (saveData.customIcons) {
+                    saveData.customIcons.forEach(function(icon) {
+                        const exists = WORLD_ICONS.find(function(i) { return i.name === icon.name && i.emoji === icon.emoji; });
+                        if (!exists) WORLD_ICONS.push(icon);
+                    });
+                    if (typeof buildSphere === 'function') buildSphere();
+                }
+                if (currentWorldId && typeof buildWorld === 'function') buildWorld(currentWorldId);
+                showToast('🔄 تم التزامن مع المدير', 'success');
+                if (typeof updateHUD === 'function') updateHUD();
+            } catch(e) { console.log('postMessage sync error:', e); }
+        }
+    }
+    if (event.data && event.data.type === 'close_manager') {
+        const iframe = document.getElementById('manager-iframe');
+        if (iframe) {
+            iframe.remove();
+            showToast('✅ تم إغلاق المدير', 'success');
+        }
+    }
+});
+
+// ====== 3. دالة فتح المدير في iframe ======
+function openManager() {
+    const old = document.getElementById('manager-iframe');
+    if (old) old.remove();
+    const iframe = document.createElement('iframe');
+    iframe.id = 'manager-iframe';
+    iframe.src = 'manager.html';
+    iframe.style.cssText = 'position:fixed;inset:0;z-index:5000;width:100%;height:100%;border:none;background:#0a0a1a;';
+    document.body.appendChild(iframe);
+    showToast('👑 تم فتح مدير النظام', 'success');
+}
+
+// ====== 4. إرسال تحديث إلى المدير ======
+function notifyManager() {
+    try {
+        const saveData = localStorage.getItem('battle_worlds_save');
+        localStorage.setItem('spherical_manager_sync', JSON.stringify({
+            time: Date.now(),
+            action: 'game_update',
+            data: JSON.parse(saveData || '{}')
+        }));
+        // إرسال عبر postMessage أيضاً
+        const iframe = document.getElementById('manager-iframe');
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({
+                type: 'game_update',
+                data: JSON.parse(saveData || '{}')
+            }, '*');
+        }
+    } catch(e) {}
+}
 /* ═══════════════════════════════════════════════════════════════
    نظام إضافة الملفات إلى المربعات
    ═══════════════════════════════════════════════════════════════ */
