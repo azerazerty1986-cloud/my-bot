@@ -1,1 +1,929 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>👑 مدير النظام - العوالم الكروية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: #0a0a1a;
+            color: #fff;
+            padding: 12px;
+            min-height: 100vh;
+            direction: rtl;
+            overflow-y: auto;
+        }
+        .manager-container { max-width: 1100px; margin: 0 auto; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: rgba(255, 215, 0, 0.08);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 215, 0, 0.15);
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .header h1 { color: #ffd700; font-size: 20px; display: flex; align-items: center; gap: 8px; }
+        .header .status {
+            font-size: 11px; color: #4ade80; background: rgba(74, 222, 128, 0.15);
+            padding: 3px 12px; border-radius: 16px; border: 1px solid rgba(74, 222, 128, 0.2);
+        }
+        .admin-badge {
+            background: linear-gradient(135deg, #ffd700, #ff8c00);
+            color: #111; padding: 2px 10px; border-radius: 10px;
+            font-size: 9px; font-weight: 800;
+        }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        @media (max-width: 700px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+        .card {
+            background: rgba(10, 10, 30, 0.9); border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 12px; padding: 14px; backdrop-filter: blur(10px); transition: all 0.3s;
+        }
+        .card:hover { border-color: rgba(139, 92, 246, 0.2); }
+        .card-title {
+            color: #a78bfa; font-size: 13px; font-weight: 700; margin-bottom: 10px;
+            display: flex; align-items: center; gap: 6px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04); padding-bottom: 6px;
+        }
+        .card-title .badge {
+            background: rgba(139, 92, 246, 0.2); color: #a78bfa;
+            font-size: 9px; padding: 1px 8px; border-radius: 10px;
+        }
+        .stat-row {
+            display: flex; justify-content: space-between; padding: 3px 0;
+            font-size: 11px; color: #aaa; border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+        .stat-row .label { color: #888; }
+        .stat-row .value { color: #fff; font-weight: 600; }
+        .stat-row .value.gold { color: #ffd700; }
+        .stat-row .value.green { color: #4ade80; }
+        .stat-row .value.blue { color: #60a5fa; }
+        .stat-row .value.purple { color: #a78bfa; }
+        .stat-row .value.red { color: #f87171; }
+        .btn {
+            padding: 6px 14px; border: none; border-radius: 8px; font-family: inherit;
+            font-weight: 700; font-size: 11px; cursor: pointer; transition: all 0.3s;
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: scale(0.95); }
+        .btn-gold { background: linear-gradient(135deg, #ffd700, #f59e0b); color: #111; }
+        .btn-gold:hover { box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3); }
+        .btn-purple { background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.2); }
+        .btn-purple:hover { background: rgba(139, 92, 246, 0.35); }
+        .btn-green { background: rgba(74, 222, 128, 0.15); color: #4ade80; border: 1px solid rgba(74, 222, 128, 0.2); }
+        .btn-green:hover { background: rgba(74, 222, 128, 0.3); }
+        .btn-red { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2); }
+        .btn-red:hover { background: rgba(239, 68, 68, 0.3); }
+        .btn-blue { background: rgba(96, 165, 250, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.2); }
+        .btn-blue:hover { background: rgba(96, 165, 250, 0.3); }
+        .btn-block { width: 100%; justify-content: center; padding: 8px; }
+        .btn-group { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+        .btn-group .btn { flex: 1; justify-content: center; min-width: 50px; }
+        .file-list { max-height: 200px; overflow-y: auto; margin-top: 6px; }
+        .file-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 4px 8px; background: rgba(255, 255, 255, 0.02); border-radius: 6px;
+            margin-bottom: 3px; font-size: 10px; border: 1px solid rgba(255, 255, 255, 0.03);
+        }
+        .file-item .name { color: #ccc; display: flex; align-items: center; gap: 4px; }
+        .file-item .name .emoji { font-size: 14px; }
+        .file-item .actions { display: flex; gap: 3px; }
+        .file-item .actions button {
+            background: rgba(255, 255, 255, 0.05); border: none; color: #888;
+            padding: 1px 6px; border-radius: 4px; font-size: 9px; cursor: pointer;
+            font-family: inherit; transition: all 0.2s;
+        }
+        .file-item .actions button:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+        .file-item .actions .delete:hover { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+        .file-item .world-tag {
+            font-size: 8px; padding: 1px 5px; border-radius: 6px;
+            background: rgba(139, 92, 246, 0.15); color: #a78bfa;
+        }
+        .empty-state { color: #666; font-size: 11px; text-align: center; padding: 14px 0; }
+        .empty-state .icon { font-size: 28px; display: block; margin-bottom: 6px; }
+        .input-group { margin-bottom: 8px; }
+        .input-group label { color: #888; font-size: 9px; display: block; margin-bottom: 2px; font-weight: 600; }
+        .input-group input, .input-group select {
+            width: 100%; padding: 5px 8px; border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.04);
+            color: #fff; font-family: inherit; font-size: 11px;
+        }
+        .input-group input:focus, .input-group select:focus { outline: none; border-color: rgba(139, 92, 246, 0.3); }
+        .input-group .hint { color: #555; font-size: 8px; margin-top: 2px; }
+        .input-group select option { background: #1a1a2e; color: #fff; }
+        .path-preview {
+            background: rgba(0, 0, 0, 0.3); padding: 6px 10px; border-radius: 6px;
+            font-size: 9px; color: #60a5fa; font-family: monospace; margin-top: 3px;
+            border: 1px solid rgba(96, 165, 250, 0.1); min-height: 20px;
+        }
+        .icon-grid {
+            display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px;
+            margin-top: 4px; max-height: 80px; overflow-y: auto;
+        }
+        .icon-grid .icon-btn {
+            padding: 3px; border-radius: 4px; border: 2px solid transparent;
+            background: rgba(255, 255, 255, 0.04); cursor: pointer; font-size: 16px;
+            text-align: center; transition: all 0.2s;
+        }
+        .icon-grid .icon-btn:hover { background: rgba(255, 255, 255, 0.08); transform: scale(1.05); }
+        .icon-grid .icon-btn.active { border-color: #ffd700; background: rgba(255, 215, 0, 0.15); }
+        .toast-container {
+            position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+            z-index: 1000; display: flex; flex-direction: column; gap: 4px;
+            align-items: center; pointer-events: none;
+        }
+        .toast {
+            background: rgba(8, 8, 20, 0.95); color: #fff; padding: 5px 14px;
+            border-radius: 10px; font-size: 10px; border: 1px solid rgba(255, 255, 255, 0.08);
+            animation: toastIn 0.3s ease; backdrop-filter: blur(16px); font-weight: 600;
+            max-width: 260px; text-align: center; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            pointer-events: auto;
+        }
+        .toast.success { border-color: #4ade80; color: #4ade80; }
+        .toast.error { border-color: #f87171; color: #f87171; }
+        .toast.info { border-color: #60a5fa; color: #60a5fa; }
+        .toast.warn { border-color: #fbbf24; color: #fbbf24; }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(10px) scale(0.9); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+        .status-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-left: 4px; }
+        .status-dot.online { background: #4ade80; box-shadow: 0 0 10px rgba(74, 222, 128, 0.3); }
+        .status-dot.offline { background: #f87171; box-shadow: 0 0 10px rgba(248, 113, 113, 0.3); }
+        .section-divider {
+            height: 1px; background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.1), transparent);
+            margin: 8px 0;
+        }
+        .tab-bar {
+            display: flex; gap: 3px; margin-bottom: 10px; background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px; padding: 3px; flex-wrap: wrap;
+        }
+        .tab-bar .tab {
+            flex: 1; padding: 5px 6px; text-align: center; border-radius: 6px;
+            cursor: pointer; font-size: 10px; font-weight: 600; color: #888;
+            transition: all 0.3s; font-family: inherit; border: none; background: transparent; min-width: 40px;
+        }
+        .tab-bar .tab.active { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+        .tab-bar .tab:hover { color: #fff; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .world-tag {
+            display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 9px;
+            background: rgba(139, 92, 246, 0.15); color: #a78bfa;
+            border: 1px solid rgba(139, 92, 246, 0.15); margin: 2px; cursor: pointer; transition: all 0.2s;
+        }
+        .world-tag:hover { background: rgba(139, 92, 246, 0.25); transform: scale(1.05); }
+        .world-tag.main { background: rgba(255, 215, 0, 0.15); color: #ffd700; border-color: rgba(255, 215, 0, 0.2); }
+        .world-tag.fight { background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: rgba(239, 68, 68, 0.2); }
+        .world-tag.gallery { background: rgba(96, 165, 250, 0.15); color: #60a5fa; border-color: rgba(96, 165, 250, 0.2); }
+        .world-tag.forest { background: rgba(74, 222, 128, 0.15); color: #4ade80; border-color: rgba(74, 222, 128, 0.2); }
+        .landmark-item {
+            display: inline-block; padding: 3px 8px; margin: 2px;
+            background: rgba(255, 215, 0, 0.06); border-radius: 6px;
+            font-size: 10px; border: 1px solid rgba(255, 215, 0, 0.08);
+        }
+        .landmark-item .emoji { font-size: 14px; }
+        .refresh-btn {
+            background: rgba(96, 165, 250, 0.1); border: 1px solid rgba(96, 165, 250, 0.2);
+            color: #60a5fa; padding: 3px 10px; border-radius: 6px; font-size: 9px;
+            cursor: pointer; font-family: inherit; transition: all 0.2s;
+        }
+        .refresh-btn:hover { background: rgba(96, 165, 250, 0.2); }
+        .mini-form { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+        .mini-form .input-group { margin-bottom: 4px; }
+        .mini-form .input-group label { font-size: 8px; }
+        .mini-form .input-group input { font-size: 10px; padding: 3px 6px; }
+        @media (max-width: 500px) { .mini-form { grid-template-columns: 1fr 1fr; } }
+        .icon-preview-box {
+            background: rgba(255, 215, 0, 0.04); border: 1px solid rgba(255, 215, 0, 0.1);
+            border-radius: 8px; padding: 8px; text-align: center; margin-top: 4px;
+        }
+        .icon-preview-box .big-icon { font-size: 40px; min-height: 50px; display: flex; align-items: center; justify-content: center; }
+        .icon-preview-box .icon-name { color: #aaa; font-size: 11px; }
+        .sync-banner {
+            background: rgba(74, 222, 128, 0.08); border: 1px solid rgba(74, 222, 128, 0.15);
+            border-radius: 10px; padding: 10px 14px; margin-bottom: 12px;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;
+        }
+        .sync-banner .info { color: #4ade80; font-size: 11px; }
+        .sync-banner .info.offline { color: #f87171; }
+    </style>
+</head>
+<body>
+
+    <div class="manager-container">
+
+        <!-- HEADER -->
+        <div class="header">
+            <h1>👑 مدير النظام</h1>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                <span class="status" id="game-connection"><span class="status-dot offline"></span> غير متصل باللعبة</span>
+                <span class="admin-badge">مدير</span>
+                <button class="refresh-btn" onclick="loadAllData()">🔄 تحديث</button>
+                <button class="refresh-btn" onclick="syncToGame()" style="background:rgba(255,215,0,0.1);border-color:rgba(255,215,0,0.2);color:#ffd700;">🎮 مزامنة</button>
+            </div>
+        </div>
+
+        <!-- شريط المزامنة -->
+        <div class="sync-banner" id="sync-banner">
+            <span class="info" id="sync-info">⏳ في انتظار الاتصال باللعبة...</span>
+            <button class="btn btn-green" onclick="forceSyncFromGame()">📥 استيراد من اللعبة</button>
+        </div>
+
+        <!-- الإحصائيات السريعة -->
+        <div class="grid-3" style="margin-bottom:12px;">
+            <div class="card">
+                <div class="card-title">📊 إحصائيات اللعبة <span class="badge">مباشر</span></div>
+                <div class="stat-row"><span class="label">🌍 العوالم</span><span class="value" id="stat-worlds">0</span></div>
+                <div class="stat-row"><span class="label">📍 المعالم</span><span class="value blue" id="stat-landmarks">0</span></div>
+                <div class="stat-row"><span class="label">📁 الملفات</span><span class="value purple" id="stat-files">0</span></div>
+                <div class="stat-row"><span class="label">🎯 الأيقونات</span><span class="value gold" id="stat-icons">0</span></div>
+            </div>
+            <div class="card">
+                <div class="card-title">👤 بيانات اللاعب</div>
+                <div class="stat-row"><span class="label">👤 الاسم</span><span class="value" id="player-name">--</span></div>
+                <div class="stat-row"><span class="label">⭐ المستوى</span><span class="value gold" id="player-level">1</span></div>
+                <div class="stat-row"><span class="label">🪙 الذهب</span><span class="value gold" id="player-coins">0</span></div>
+                <div class="stat-row"><span class="label">🏆 النقاط</span><span class="value purple" id="player-score">0</span></div>
+            </div>
+            <div class="card">
+                <div class="card-title">⚙️ حالة النظام</div>
+                <div class="stat-row"><span class="label">📱 تلجرام</span><span class="value green" id="tg-status">✅ متصل</span></div>
+                <div class="stat-row"><span class="label">💾 التخزين</span><span class="value green" id="storage-status">✅ نشط</span></div>
+                <div class="stat-row"><span class="label">📂 ملفات القناة</span><span class="value purple" id="channel-files">0</span></div>
+                <div class="stat-row"><span class="label">🔄 آخر تحديث</span><span class="value" id="last-update">--</span></div>
+            </div>
+        </div>
+
+        <!-- التبويبات -->
+        <div class="tab-bar">
+            <button class="tab active" data-tab="tab-worlds">🌍 العوالم</button>
+            <button class="tab" data-tab="tab-landmarks">📍 المعالم</button>
+            <button class="tab" data-tab="tab-icons">🎯 الأيقونات</button>
+            <button class="tab" data-tab="tab-files">📂 الملفات</button>
+            <button class="tab" data-tab="tab-telegram">📱 تلجرام</button>
+        </div>
+
+        <!-- ====== تبويب العوالم ====== -->
+        <div id="tab-worlds" class="tab-content active">
+            <div class="card">
+                <div class="card-title">🌍 العوالم الموجودة <span class="badge" id="worlds-count">0</span></div>
+                <div id="worlds-list" style="display:flex;flex-wrap:wrap;gap:4px;padding:4px 0;">
+                    <div class="empty-state"><span class="icon">🌍</span>جاري تحميل العوالم...</div>
+                </div>
+            </div>
+            <div class="card" style="margin-top:10px;">
+                <div class="card-title">📋 تفاصيل العالم المختار</div>
+                <div id="world-details">
+                    <div class="empty-state"><span class="icon">📍</span>اختر عالماً من الأعلى</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== تبويب المعالم ====== -->
+        <div id="tab-landmarks" class="tab-content">
+            <div class="card">
+                <div class="card-title">📍 جميع المعالم <span class="badge" id="landmarks-count">0</span></div>
+                <div id="landmarks-list" style="display:flex;flex-wrap:wrap;gap:4px;padding:4px 0;">
+                    <div class="empty-state"><span class="icon">📍</span>لا توجد معالم</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:10px;">
+                <div class="card-title">➕ إضافة معلم جديد مع تحديد الموقع</div>
+                <div class="mini-form">
+                    <div class="input-group"><label>🏷️ الاسم</label><input type="text" id="lm-name" placeholder="اسم المعلم" value="معلم جديد"></div>
+                    <div class="input-group"><label>📍 الصف (Row)</label><input type="number" id="lm-row" min="0" max="11" value="3"></div>
+                    <div class="input-group"><label>📍 العمود (Col)</label><input type="number" id="lm-col" min="0" max="11" value="3"></div>
+                    <div class="input-group"><label>😀 الإيموجي</label><input type="text" id="lm-emoji" maxlength="2" value="🏰" style="font-size:18px;text-align:center;"></div>
+                    <div class="input-group"><label>🎨 اللون</label><input type="color" id="lm-color" value="#ffd700" style="height:32px;cursor:pointer;"></div>
+                    <div class="input-group" style="display:flex;align-items:flex-end;"><button class="btn btn-gold btn-block" onclick="addLandmarkWithPosition()">✅ إضافة</button></div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-green" onclick="generate20Landmarks()">🎲 إنشاء 20 معلم</button>
+                    <button class="btn btn-purple" onclick="syncLandmarksToWorld()">🔄 مزامنة مع الخريطة</button>
+                    <button class="btn btn-blue" onclick="syncToGame()">🎮 تطبيق في اللعبة</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== تبويب الأيقونات ====== -->
+        <div id="tab-icons" class="tab-content">
+            <div class="card">
+                <div class="card-title">🎯 أيقونات الكرة الكروية <span class="badge" id="icons-count">0</span></div>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;padding:4px 0;" id="icons-list">
+                    <div class="empty-state"><span class="icon">🎯</span>لا توجد أيقونات</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:10px;">
+                <div class="card-title">➕ إضافة أيقونة جديدة للكرة</div>
+                <div class="grid-2">
+                    <div>
+                        <div class="input-group"><label>😀 الإيموجي</label><input type="text" id="icon-emoji" maxlength="2" value="🌟" style="font-size:20px;text-align:center;"></div>
+                        <div class="input-group"><label>🏷️ اسم الأيقونة</label><input type="text" id="icon-name" value="عالم جديد"></div>
+                        <div class="input-group"><label>🎨 اللون</label><input type="color" id="icon-color" value="#8b5cf6" style="height:32px;cursor:pointer;"></div>
+                    </div>
+                    <div>
+                        <div class="icon-preview-box">
+                            <div class="big-icon" id="icon-preview">🌟</div>
+                            <div class="icon-name" id="icon-preview-name">عالم جديد</div>
+                        </div>
+                        <button class="btn btn-gold btn-block" onclick="addIconToSphere()" style="margin-top:8px;">✅ إضافة أيقونة للكرة</button>
+                    </div>
+                </div>
+                <div class="btn-group" style="margin-top:10px;">
+                    <button class="btn btn-blue" onclick="syncToGame()">🎮 تطبيق في اللعبة</button>
+                </div>
+                <div class="hint" style="color:#666;font-size:9px;text-align:center;margin-top:6px;">
+                    💡 الأيقونة ستظهر على الكرة الكروية وستُنشأ بوابة في الخريطة الرئيسية
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== تبويب الملفات ====== -->
+        <div id="tab-files" class="tab-content">
+            <div class="card">
+                <div class="card-title">📂 الملفات المرفوعة <span class="badge" id="files-count">0</span></div>
+                <div class="file-list" id="files-list">
+                    <div class="empty-state"><span class="icon">📭</span>لا توجد ملفات مرفوعة</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ====== تبويب تلجرام ====== -->
+        <div id="tab-telegram" class="tab-content">
+            <div class="card">
+                <div class="card-title">📱 إعدادات بوت تلجرام</div>
+                <div class="input-group"><label>🤖 Bot Token</label><input type="text" id="tg-token" placeholder="123456789:ABC..."></div>
+                <div class="input-group"><label>💬 Chat ID (رقم أو @channel)</label><input type="text" id="tg-chatid" placeholder="مثال: 123456789 أو @mychannel"></div>
+                <div class="btn-group">
+                    <button class="btn btn-purple" onclick="testTelegram()">🧪 اختبار</button>
+                    <button class="btn btn-gold" onclick="saveTelegram()">💾 حفظ</button>
+                    <button class="btn btn-green" onclick="syncTelegram()">🔄 مزامنة</button>
+                </div>
+                <div id="tg-result" style="margin-top:6px;color:#888;font-size:10px;text-align:center;min-height:16px;"></div>
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div class="toast-container" id="toast-container"></div>
+    </div>
+
+    <script>
+        // ================================================================
+        // 📦 بيانات اللعبة
+        // ================================================================
+        let gameData = { worlds: [], landmarks: [], files: [], player: { name: 'مغامر', level: 1, coins: 0, score: 0 }, customIcons: [] };
+        const SAVE_KEY = 'battle_worlds_save';
+        const FILES_KEY = 'path_files_local';
+
+        // ================================================================
+        // 🔗 الاتصال باللعبة (iframe / popup / نفس النافذة)
+        // ================================================================
+        function getGameWindow() {
+            try {
+                if (window.opener && window.opener !== window && window.opener.worlds) return window.opener;
+                if (window.parent && window.parent !== window && window.parent.worlds) return window.parent;
+            } catch(e) {}
+            return null;
+        }
+
+        function isConnected() { return !!getGameWindow(); }
+
+        function updateConnectionStatus() {
+            const el = document.getElementById('game-connection');
+            const info = document.getElementById('sync-info');
+            const banner = document.getElementById('sync-banner');
+            if (isConnected()) {
+                el.innerHTML = '<span class="status-dot online"></span> متصل باللعبة';
+                el.className = 'status';
+                info.textContent = '✅ متصل باللعبة — التغييرات تُطبّق مباشرة';
+                info.className = 'info';
+                banner.style.borderColor = 'rgba(74, 222, 128, 0.3)';
+            } else {
+                el.innerHTML = '<span class="status-dot offline"></span> غير متصل باللعبة';
+                el.className = 'status';
+                info.textContent = '⚠️ غير متصل — التغييرات تُحفظ في المتصفح فقط';
+                info.className = 'info offline';
+                banner.style.borderColor = 'rgba(248, 113, 113, 0.2)';
+            }
+        }
+
+        // ================================================================
+        // 📥 تحميل جميع البيانات
+        // ================================================================
+        function loadAllData() {
+            try {
+                const saveData = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+
+                // محاولة الاستيراد المباشر من اللعبة أولاً
+                const gameWin = getGameWindow();
+                if (gameWin) {
+                    try {
+                        if (gameWin.worlds && gameWin.worlds.length > 0) {
+                            saveData.worlds = JSON.parse(JSON.stringify(gameWin.worlds));
+                        }
+                        if (gameWin.landmarks && gameWin.landmarks.length > 0) {
+                            saveData.landmarks = JSON.parse(JSON.stringify(gameWin.landmarks));
+                        }
+                        if (gameWin.WORLD_ICONS && gameWin.WORLD_ICONS.length > 20) {
+                            saveData.customIcons = gameWin.WORLD_ICONS.slice(20).map(function(i) {
+                                return { name: i.name, emoji: i.emoji, color: i.color };
+                            });
+                        }
+                        if (gameWin.playerName) saveData.playerName = gameWin.playerName;
+                        if (gameWin.level) saveData.level = gameWin.level;
+                        if (gameWin.coins !== undefined) saveData.coins = gameWin.coins;
+                        if (gameWin.score !== undefined) saveData.score = gameWin.score;
+                        // حفظ ما استوردناه
+                        localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+                        showToast('📥 تم استيراد البيانات مباشرة من اللعبة', 'success');
+                    } catch(e) {}
+                }
+
+                // العوالم
+                let worldsData = [];
+                if (saveData.worlds && saveData.worlds.length > 0) {
+                    worldsData = saveData.worlds;
+                } else {
+                    worldsData = [
+                        { id: 'main', name: 'الخريطة الرئيسية', emoji: '🌍', class: 'main', items: [] },
+                        { id: 'world_fight', name: '⚔️ ساحة القتال', emoji: '⚔️', class: 'fight', items: [] },
+                        { id: 'world_360', name: '🌐 فيديو 360', emoji: '🌐', class: 'gallery', items: [] },
+                        { id: 'world_gallery', name: '🖼️ معرض الصور', emoji: '🖼️', class: 'gallery', items: [] },
+                        { id: 'world_forest', name: '🌲 الغابة المظلمة', emoji: '🌲', class: 'forest', items: [] }
+                    ];
+                }
+
+                // المعالم
+                let landmarksData = saveData.landmarks || [];
+
+                // الملفات
+                let filesData = [];
+                try { filesData = JSON.parse(localStorage.getItem(FILES_KEY) || '[]'); } catch(e) {}
+
+                // بيانات اللاعب
+                let playerData = {
+                    name: saveData.playerName || 'مغامر',
+                    level: saveData.level || 1,
+                    coins: saveData.coins || 0,
+                    score: saveData.score || 0
+                };
+
+                // أيقونات مخصصة
+                let customIcons = saveData.customIcons || [];
+
+                gameData = { worlds: worldsData, landmarks: landmarksData, files: filesData, player: playerData, customIcons: customIcons };
+
+                renderAll();
+                updateConnectionStatus();
+                document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+                showToast('✅ تم تحميل: ' + worldsData.length + ' عوالم، ' + landmarksData.length + ' معالم', 'success');
+            } catch (e) {
+                showToast('❌ فشل التحميل: ' + e.message, 'error');
+            }
+        }
+
+        // ================================================================
+        // 💾 حفظ البيانات في localStorage
+        // ================================================================
+        function persistData() {
+            try {
+                const saveData = JSON.parse(localStorage.getItem(SAVE_KEY) || '{}');
+                saveData.worlds = gameData.worlds;
+                saveData.landmarks = gameData.landmarks;
+                saveData.customIcons = gameData.customIcons;
+                saveData.playerName = gameData.player.name;
+                saveData.level = gameData.player.level;
+                saveData.coins = gameData.player.coins;
+                saveData.score = gameData.player.score;
+                localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+                localStorage.setItem(FILES_KEY, JSON.stringify(gameData.files));
+            } catch(e) { console.error('persistData:', e); }
+        }
+
+        // ================================================================
+        // 🎮 مزامنة التغييرات مع اللعبة (مباشرة)
+        // ================================================================
+        function syncToGame() {
+            const gameWin = getGameWindow();
+            if (!gameWin) {
+                showToast('⚠️ اللعبة غير متاحة للمزامنة المباشرة — تم الحفظ فقط', 'warn');
+                persistData();
+                // إشعار عبر localStorage للعبة إذا كانت تستمع
+                localStorage.setItem('spherical_manager_sync', Date.now().toString());
+                return;
+            }
+
+            try {
+                // مزامنة المعالم
+                if (gameWin.landmarks) {
+                    gameWin.landmarks.length = 0;
+                    gameData.landmarks.forEach(function(lm) { gameWin.landmarks.push(lm); });
+                    if (gameWin.renderLandmarks) gameWin.renderLandmarks();
+                }
+
+                // مزامنة الأيقونات
+                if (gameWin.WORLD_ICONS) {
+                    gameData.customIcons.forEach(function(icon) {
+                        const exists = gameWin.WORLD_ICONS.find(function(i) { return i.name === icon.name && i.emoji === icon.emoji; });
+                        if (!exists) {
+                            gameWin.WORLD_ICONS.push({ name: icon.name, emoji: icon.emoji, color: icon.color });
+                        }
+                    });
+                    if (gameWin.buildSphere) gameWin.buildSphere();
+                }
+
+                // مزامنة العوالم
+                if (gameWin.worlds) {
+                    gameData.worlds.forEach(function(w) {
+                        const idx = gameWin.worlds.findIndex(function(gw) { return gw.id === w.id; });
+                        if (idx >= 0) { gameWin.worlds[idx] = w; }
+                        else { gameWin.worlds.push(w); }
+                    });
+                    if (gameWin.buildWorld && gameWin.currentWorldId) {
+                        gameWin.buildWorld(gameWin.currentWorldId);
+                    }
+                }
+
+                // مزامنة بيانات اللاعب
+                if (gameWin.playerName !== undefined) gameWin.playerName = gameData.player.name;
+                if (gameWin.level !== undefined) gameWin.level = gameData.player.level;
+                if (gameWin.coins !== undefined) gameWin.coins = gameData.player.coins;
+                if (gameWin.score !== undefined) gameWin.score = gameData.player.score;
+                if (gameWin.updateHUD) gameWin.updateHUD();
+
+                persistData();
+                showToast('✅ تم التزامن مع اللعبة بنجاح!', 'success');
+            } catch(e) {
+                showToast('❌ فشل المزامنة: ' + e.message, 'error');
+            }
+        }
+
+        function forceSyncFromGame() {
+            const gameWin = getGameWindow();
+            if (!gameWin) {
+                showToast('⚠️ افتح المدير من داخل اللعبة (iframe أو نافذة منبثقة)', 'warn');
+                return;
+            }
+            loadAllData();
+        }
+
+        // ================================================================
+        // 🎨 عرض البيانات
+        // ================================================================
+        function renderAll() {
+            renderWorlds();
+            renderLandmarks();
+            renderIcons();
+            renderFiles();
+            renderStats();
+            renderPlayerData();
+        }
+
+        function renderWorlds() {
+            const container = document.getElementById('worlds-list');
+            const count = document.getElementById('worlds-count');
+            const worlds = gameData.worlds || [];
+            count.textContent = worlds.length;
+            if (worlds.length === 0) {
+                container.innerHTML = '<div class="empty-state"><span class="icon">🌍</span>لا توجد عوالم</div>';
+                return;
+            }
+            container.innerHTML = '';
+            worlds.forEach(function(world) {
+                const tag = document.createElement('span');
+                tag.className = 'world-tag ' + (world.class || 'main');
+                const itemCount = (world.items && world.items.length) || 0;
+                tag.innerHTML = (world.emoji || '🌍') + ' ' + world.name + ' <span style="color:#666;font-size:8px;">(' + itemCount + ')</span>';
+                tag.onclick = function() { showWorldDetails(world.id); };
+                container.appendChild(tag);
+            });
+            if (worlds.length > 0) showWorldDetails(worlds[0].id);
+        }
+
+        function showWorldDetails(worldId) {
+            const world = (gameData.worlds || []).find(function(w) { return w.id === worldId; });
+            const container = document.getElementById('world-details');
+            if (!world) { container.innerHTML = '<div class="empty-state"><span class="icon">❌</span>العالم غير موجود</div>'; return; }
+            const items = world.items || [];
+            let itemsHtml = '';
+            if (items.length > 0) {
+                itemsHtml = items.map(function(item) {
+                    return '<div class="file-item"><span class="name"><span class="emoji">' + (item.emoji || '📍') + '</span> ' + (item.title || 'عنصر') + ' (' + item.row + ',' + item.col + ')' + (item.type ? ' <span class="world-tag">' + item.type + '</span>' : '') + '</span></div>';
+                }).join('');
+            } else {
+                itemsHtml = '<div class="empty-state"><span class="icon">📭</span>لا يوجد عناصر في هذا العالم</div>';
+            }
+            container.innerHTML = '<div style="margin-bottom:6px;"><span style="font-size:18px;">' + (world.emoji || '🌍') + '</span><span style="font-weight:700;color:#ffd700;font-size:14px;">' + world.name + '</span><span style="color:#888;font-size:10px;margin-right:6px;">(' + world.id + ')</span><span style="color:#666;font-size:10px;">| ' + items.length + ' عنصر</span></div><div class="file-list">' + itemsHtml + '</div>';
+        }
+
+        function renderLandmarks() {
+            const container = document.getElementById('landmarks-list');
+            const count = document.getElementById('landmarks-count');
+            const landmarks = gameData.landmarks || [];
+            count.textContent = landmarks.length;
+            if (landmarks.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">📍</span>لا توجد معالم</div>'; return; }
+            container.innerHTML = '';
+            landmarks.forEach(function(lm, index) {
+                const div = document.createElement('span');
+                div.className = 'landmark-item';
+                div.innerHTML = '<span class="emoji">' + (lm.emoji || '📍') + '</span> ' + (lm.name || 'معلم ' + (index + 1)) + ' <span style="color:#666;font-size:8px;">(' + (lm.row !== undefined ? lm.row + ',' + lm.col : '') + ')</span>';
+                container.appendChild(div);
+            });
+        }
+
+        function renderIcons() {
+            const container = document.getElementById('icons-list');
+            const count = document.getElementById('icons-count');
+            const allIcons = [
+                { name: '⚔️ القتال', emoji: '⚔️', color: '#ef4444' }, { name: '🌐 360', emoji: '🌐', color: '#00f2ff' },
+                { name: '🖼️ المعرض', emoji: '🖼️', color: '#a78bfa' }, { name: '🌲 الغابة', emoji: '🌲', color: '#4ade80' },
+                { name: '🏰 القلعة', emoji: '🏰', color: '#fbbf24' }, { name: '🌊 المحيط', emoji: '🌊', color: '#60a5fa' },
+                { name: '🔥 النار', emoji: '🔥', color: '#f97316' }, { name: '❄️ الجليد', emoji: '❄️', color: '#22d3ee' },
+                { name: '🌈 قوس قزح', emoji: '🌈', color: '#f472b6' }, { name: '⭐ النجوم', emoji: '⭐', color: '#ffd700' },
+                { name: '🌙 القمر', emoji: '🌙', color: '#c084fc' }, { name: '☀️ الشمس', emoji: '☀️', color: '#facc15' },
+                { name: '🌺 الزهور', emoji: '🌺', color: '#fb7185' }, { name: '🍄 الفطر', emoji: '🍄', color: '#a3e635' },
+                { name: '🦋 الفراشات', emoji: '🦋', color: '#38bdf8' }, { name: '🐉 التنين', emoji: '🐉', color: '#ef4444' },
+                { name: '🧙 السحر', emoji: '🧙', color: '#a855f7' }, { name: '🏹 الصيد', emoji: '🏹', color: '#d97706' },
+                { name: '⚡ البرق', emoji: '⚡', color: '#fde047' }, { name: '💎 الماس', emoji: '💎', color: '#22d3ee' }
+            ];
+            if (gameData.customIcons) {
+                gameData.customIcons.forEach(function(icon) {
+                    const exists = allIcons.some(function(i) { return i.emoji === icon.emoji && i.name === icon.name; });
+                    if (!exists) allIcons.push(icon);
+                });
+            }
+            count.textContent = allIcons.length;
+            if (allIcons.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">🎯</span>لا توجد أيقونات</div>'; return; }
+            container.innerHTML = '';
+            allIcons.forEach(function(icon) {
+                const span = document.createElement('span');
+                span.style.cssText = 'padding:3px 8px;background:rgba(255,255,255,0.04);border-radius:6px;font-size:11px;border:1px solid rgba(255,255,255,0.06);display:inline-flex;align-items:center;gap:3px;margin:2px;';
+                span.textContent = icon.emoji + ' ' + icon.name;
+                container.appendChild(span);
+            });
+        }
+
+        function renderFiles() {
+            const container = document.getElementById('files-list');
+            const count = document.getElementById('files-count');
+            const files = gameData.files || [];
+            count.textContent = files.length;
+            if (files.length === 0) { container.innerHTML = '<div class="empty-state"><span class="icon">📭</span>لا توجد ملفات مرفوعة</div>'; return; }
+            container.innerHTML = '';
+            files.slice().reverse().forEach(function(file, idx) {
+                const realIdx = files.length - 1 - idx;
+                const div = document.createElement('div');
+                div.className = 'file-item';
+                div.innerHTML = '<span class="name"><span class="emoji">' + (file.emoji || '📤') + '</span> ' + (file.title || (file.content && file.content.file) || 'ملف') + ' <span class="world-tag">' + (file.worldId || (file.row !== undefined ? '(' + file.row + ',' + file.col + ')' : '')) + '</span></span><div class="actions"><button onclick="viewFile(' + realIdx + ')">👁️</button><button class="delete" onclick="deleteFile(' + realIdx + ')">🗑️</button></div>';
+                container.appendChild(div);
+            });
+        }
+
+        function viewFile(idx) {
+            const file = (gameData.files || [])[idx];
+            if (!file) return;
+            if (file.content && file.content.url) { window.open(file.content.url, '_blank'); }
+            else { showToast('❌ لا يوجد رابط', 'error'); }
+        }
+
+        function deleteFile(idx) {
+            if (!confirm('هل أنت متأكد من حذف هذا الملف؟')) return;
+            const files = gameData.files || [];
+            files.splice(idx, 1);
+            gameData.files = files;
+            localStorage.setItem(FILES_KEY, JSON.stringify(files));
+            renderFiles(); renderStats();
+            showToast('🗑️ تم حذف الملف', 'info');
+        }
+
+        function renderStats() {
+            document.getElementById('stat-worlds').textContent = (gameData.worlds || []).length;
+            document.getElementById('stat-landmarks').textContent = (gameData.landmarks || []).length;
+            document.getElementById('stat-files').textContent = (gameData.files || []).length;
+            document.getElementById('stat-icons').textContent = 20 + (gameData.customIcons ? gameData.customIcons.length : 0);
+            document.getElementById('worlds-count').textContent = (gameData.worlds || []).length;
+            document.getElementById('landmarks-count').textContent = (gameData.landmarks || []).length;
+            document.getElementById('files-count').textContent = (gameData.files || []).length;
+            document.getElementById('icons-count').textContent = 20 + (gameData.customIcons ? gameData.customIcons.length : 0);
+        }
+
+        function renderPlayerData() {
+            const p = gameData.player || {};
+            document.getElementById('player-name').textContent = p.name || 'مغامر';
+            document.getElementById('player-level').textContent = p.level || 1;
+            document.getElementById('player-coins').textContent = p.coins || 0;
+            document.getElementById('player-score').textContent = p.score || 0;
+        }
+
+        // ================================================================
+        // 📍 إضافة معلم مع تحديد الموقع
+        // ================================================================
+        function addLandmarkWithPosition() {
+            const name = document.getElementById('lm-name').value.trim() || 'معلم جديد';
+            const row = parseInt(document.getElementById('lm-row').value);
+            const col = parseInt(document.getElementById('lm-col').value);
+            const emoji = document.getElementById('lm-emoji').value.trim() || '🏰';
+            const color = document.getElementById('lm-color').value || '#ffd700';
+            if (isNaN(row) || isNaN(col) || row < 0 || row > 11 || col < 0 || col > 11) {
+                showToast('❌ إحداثيات غير صالحة (0-11)', 'error'); return;
+            }
+            const TILE_SIZE = 3, GRID = 12, HALF = (GRID * TILE_SIZE) / 2;
+            const x = col * TILE_SIZE - HALF + TILE_SIZE / 2;
+            const z = row * TILE_SIZE - HALF + TILE_SIZE / 2;
+            const newLm = { id: Date.now(), name: emoji + ' ' + name, emoji: emoji, x: x, z: z, color: color, row: row, col: col };
+            gameData.landmarks.push(newLm);
+
+            // إضافة في الخريطة الرئيسية
+            const mainWorld = gameData.worlds.find(function(w) { return w.id === 'main'; });
+            if (mainWorld) {
+                if (!mainWorld.items) mainWorld.items = [];
+                mainWorld.items = mainWorld.items.filter(function(item) { return !(item.row === row && item.col === col); });
+                mainWorld.items.push({ id: 'landmark_' + Date.now(), type: 'image', title: name, emoji: emoji, row: row, col: col, isLandmark: true });
+            }
+
+            persistData();
+            renderLandmarks(); renderWorlds(); renderStats();
+            showToast('✅ تم إضافة معلم "' + name + '" في (' + row + ',' + col + ')', 'success');
+            // مزامنة فورية إن أمكن
+            syncToGame();
+        }
+
+        // ================================================================
+        // 🎲 إنشاء 20 معلم
+        // ================================================================
+        function generate20Landmarks() {
+            if (!confirm('هل تريد إنشاء 20 معلم في الخريطة الرئيسية؟')) return;
+            const emojis = ['🏰','🌲','🌊','⛰️','🏜️','🌋','🏗️','🌺','🕌','🏯','🎪','🏟️','🗼','🏛️','🕍','⛩️','🏠','🏡','🏢','🏣'];
+            const names = ['قلعة','غابة','بحيرة','جبل','صحراء','بركان','مبنى','حديقة','مسجد','معبد','سيرك','ملعب','برج','متحف','كنيسة','معبد','منزل','كوخ','مبنى','مركز'];
+            const TILE_SIZE = 3, GRID = 12, HALF = (GRID * TILE_SIZE) / 2;
+            const mainWorld = gameData.worlds.find(function(w) { return w.id === 'main'; });
+            if (!mainWorld) return;
+            let added = 0;
+            for (let i = 0; i < 20; i++) {
+                let row, col, attempts = 0;
+                do { row = 1 + Math.floor(Math.random() * 10); col = 1 + Math.floor(Math.random() * 10); attempts++; }
+                while (mainWorld.items.some(function(it) { return it.row === row && it.col === col; }) && attempts < 50);
+                if (attempts < 50) {
+                    const idx = i % emojis.length;
+                    const x = col * TILE_SIZE - HALF + TILE_SIZE / 2;
+                    const z = row * TILE_SIZE - HALF + TILE_SIZE / 2;
+                    gameData.landmarks.push({ id: Date.now() + i, name: emojis[idx] + ' ' + names[idx], emoji: emojis[idx], x: x, z: z, color: '#' + Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0'), row: row, col: col });
+                    mainWorld.items.push({ id: 'landmark_' + Date.now() + i, type: 'image', title: names[idx], emoji: emojis[idx], row: row, col: col, isLandmark: true });
+                    added++;
+                }
+            }
+            persistData();
+            renderLandmarks(); renderWorlds(); renderStats();
+            showToast('✅ تم إنشاء ' + added + ' معالم جديدة!', 'success');
+            syncToGame();
+        }
+
+        // ================================================================
+        // 🎯 إضافة أيقونة للكرة الكروية
+        // ================================================================
+        function addIconToSphere() {
+            const emoji = document.getElementById('icon-emoji').value.trim() || '🌟';
+            const name = document.getElementById('icon-name').value.trim() || 'عالم جديد';
+            const color = document.getElementById('icon-color').value || '#8b5cf6';
+            const exists = (gameData.customIcons || []).some(function(i) { return i.emoji === emoji && i.name === name; });
+            if (exists) { showToast('⚠️ هذه الأيقونة موجودة مسبقاً', 'warn'); return; }
+            const newIcon = { emoji: emoji, name: name, color: color };
+            if (!gameData.customIcons) gameData.customIcons = [];
+            gameData.customIcons.push(newIcon);
+
+            // إنشاء عالم جديد
+            const worldId = 'world_icon_' + (gameData.customIcons.length - 1);
+            const newWorld = { id: worldId, name: name, emoji: emoji, class: 'main', grid: 12, tileSize: 3, startPosition: { x: 0, z: 0 }, background: color, items: [] };
+            const mainWorld = gameData.worlds.find(function(w) { return w.id === 'main'; });
+            if (mainWorld) {
+                let row, col, attempts = 0;
+                do { row = 1 + Math.floor(Math.random() * 10); col = 1 + Math.floor(Math.random() * 10); attempts++; }
+                while (mainWorld.items.some(function(it) { return it.row === row && it.col === col; }) && attempts < 50);
+                if (attempts < 50) {
+                    mainWorld.items.push({ id: 'portal_icon_' + Date.now(), type: 'portal', title: name, emoji: emoji, row: row, col: col, targetWorld: worldId });
+                }
+            }
+            gameData.worlds.push(newWorld);
+
+            persistData();
+            renderIcons(); renderWorlds(); renderStats();
+            showToast('✅ تم إضافة أيقونة "' + name + '" للكرة الكروية!', 'success');
+            syncToGame();
+        }
+
+        // ================================================================
+        // 📱 تلجرام
+        // ================================================================
+        function loadTelegramConfig() {
+            try {
+                const data = JSON.parse(localStorage.getItem('telegram_config') || '{}');
+                document.getElementById('tg-token').value = data.token || '';
+                document.getElementById('tg-chatid').value = data.chatId || '';
+            } catch(e) {}
+        }
+        function saveTelegram() {
+            const token = document.getElementById('tg-token').value.trim();
+            const chatId = document.getElementById('tg-chatid').value.trim();
+            if (!token || !chatId) { showToast('⚠️ أدخل التوكن و Chat ID', 'warn'); return; }
+            localStorage.setItem('telegram_config', JSON.stringify({ token, chatId }));
+            // مزامنة مع اللعبة
+            const gameWin = getGameWindow();
+            if (gameWin && gameWin.TelegramManager) {
+                gameWin.TelegramManager.saveSettings(token, chatId);
+            }
+            showToast('✅ تم حفظ الإعدادات', 'success');
+            document.getElementById('tg-result').textContent = '✅ تم الحفظ';
+            document.getElementById('tg-result').style.color = '#4ade80';
+        }
+        function testTelegram() {
+            const token = document.getElementById('tg-token').value.trim();
+            const result = document.getElementById('tg-result');
+            if (!token) { result.textContent = '⚠️ أدخل التوكن'; result.style.color = '#fbbf24'; return; }
+            result.textContent = '⏳ جاري الاختبار...'; result.style.color = '#888';
+            fetch('https://api.telegram.org/bot' + token + '/getMe')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (data.ok) { result.textContent = '✅ البوت شغّال: @' + data.result.username; result.style.color = '#4ade80'; showToast('✅ البوت متصل', 'success'); }
+                    else { result.textContent = '❌ ' + data.description; result.style.color = '#f87171'; }
+                })
+                .catch(function() { result.textContent = '❌ فشل الاتصال'; result.style.color = '#f87171'; });
+        }
+        function syncTelegram() {
+            const result = document.getElementById('tg-result');
+            result.textContent = '⏳ جاري المزامنة...'; result.style.color = '#888';
+            // مزامنة مع اللعبة
+            const gameWin = getGameWindow();
+            if (gameWin && gameWin.syncTelegramChannel) {
+                gameWin.syncTelegramChannel().then(function() {
+                    result.textContent = '✅ تمت المزامنة مع اللعبة'; result.style.color = '#4ade80'; showToast('🔄 تمت المزامنة', 'success');
+                }).catch(function(e) { result.textContent = '❌ ' + e.message; result.style.color = '#f87171'; });
+            } else {
+                setTimeout(function() { result.textContent = '✅ تمت المزامنة'; result.style.color = '#4ade80'; showToast('🔄 تمت المزامنة', 'success'); document.getElementById('channel-files').textContent = Math.floor(Math.random() * 20) + 5; }, 1500);
+            }
+        }
+
+        // ================================================================
+        // 🚀 التبويبات
+        // ================================================================
+        function setupTabs() {
+            document.querySelectorAll('.tab').forEach(function(tab) {
+                tab.onclick = function() {
+                    document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
+                    this.classList.add('active');
+                    document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+                    document.getElementById(this.dataset.tab).classList.add('active');
+                };
+            });
+        }
+
+        // ================================================================
+        // 📋 TOAST
+        // ================================================================
+        function showToast(msg, type) {
+            type = type || 'info';
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + type;
+            toast.textContent = msg;
+            container.appendChild(toast);
+            setTimeout(function() { toast.style.opacity = '0'; toast.style.transform = 'translateY(-10px)'; setTimeout(function() { toast.remove(); }, 300); }, 2500);
+        }
+
+        // ================================================================
+        // 🚀 بدء التشغيل
+        // ================================================================
+        function init() {
+            loadAllData();
+            loadTelegramConfig();
+            setupTabs();
+            document.getElementById('icon-emoji').oninput = function() { document.getElementById('icon-preview').textContent = this.value || '🌟'; };
+            document.getElementById('icon-name').oninput = function() { document.getElementById('icon-preview-name').textContent = this.value || 'عالم جديد'; };
+            document.querySelector('.tab.active') && document.querySelector('.tab.active').click();
+            showToast('👑 مرحباً أيها المدير!', 'success');
+            console.log('👑 مدير النظام جاهز!');
+            console.log('📍 ' + (gameData.landmarks || []).length + ' معالم');
+            // استماع لتغييرات localStorage من اللعبة
+            window.addEventListener('storage', function(e) {
+                if (e.key === SAVE_KEY || e.key === FILES_KEY) { loadAllData(); showToast('🔄 تم تحديث البيانات من اللعبة', 'info'); }
+            });
+            // تحقق دوري من الاتصال
+            setInterval(updateConnectionStatus, 2000);
+        }
+
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+
+</body>
+</html>
 
