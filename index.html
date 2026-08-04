@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -696,52 +695,8 @@ let lastSwipeTime = 0;
 
 let healCount = 0;
 
-const achievements = {
-  first_kill: { name: 'أول قتل', emoji: '💀', unlocked: false },
-  killer_10:  { name: 'قاتل محترف', emoji: '⚔️', unlocked: false },
-  survivor:   { name: 'الناجي', emoji: '🛡️', unlocked: false },
-  explorer:   { name: 'المستكشف', emoji: '🌍', unlocked: false },
-  master:     { name: 'سيد العوالم', emoji: '👑', unlocked: false },
-  spinner:    { name: 'الدوّام', emoji: '🌪️', unlocked: false },
-  spin_master:{ name: 'سيد الدوران', emoji: '⚡', unlocked: false },
-  rich:       { name: 'الثراء', emoji: '💎', unlocked: false },
-  healer:     { name: 'المعالج', emoji: '💚', unlocked: false },
-  collector:  { name: 'جامع المعالم', emoji: '📍', unlocked: false }
-};
-
-const quests = [
-  { name: 'قاتل 5 أعداء', desc: 'اقتل 5 أعداء في ساحة القتال', type: 'kills', target: 5, current: 0, complete: false, reward: 25 },
-  { name: 'استكشف 3 عوالم', desc: 'ادخل إلى 3 عوالم مختلفة', type: 'worlds', target: 3, current: 0, complete: false, reward: 50 },
-  { name: 'أضف 3 معالم', desc: 'أضف 3 معالم على الخريطة', type: 'landmarks', target: 3, current: 0, complete: false, reward: 30 },
-  { name: 'دوّر 10 مرات', desc: 'دوّر الكرة 10 مرات', type: 'spins', target: 10, current: 0, complete: false, reward: 20 },
-  { name: 'اجمع 100 نقطة', desc: 'احصل على 100 نقطة إجمالية', type: 'score', target: 100, current: 0, complete: false, reward: 15 }
-];
-
-
-const WORLD_ICONS = [
-  { emoji: '🌍', name: 'الأرض', color: '#22c55e' },
-  { emoji: '🔥', name: 'النار', color: '#ef4444' },
-  { emoji: '💧', name: 'الماء', color: '#3b82f6' },
-  { emoji: '⛰️', name: 'الجبل', color: '#78716c' },
-  { emoji: '🌙', name: 'القمر', color: '#a855f7' },
-  { emoji: '☀️', name: 'الشمس', color: '#f59e0b' },
-  { emoji: '🌪️', name: 'الإعصار', color: '#64748b' },
-  { emoji: '💎', name: 'الماس', color: '#06b6d4' },
-  { emoji: '🌋', name: 'البركان', color: '#dc2626' },
-  { emoji: '❄️', name: 'الثلج', color: '#e2e8f0' },
-  { emoji: '🌸', name: 'الزهور', color: '#ec4899' },
-  { emoji: '⚡', name: 'البرق', color: '#eab308' }
-];
-
-
 /* ═══════════════════════════════════════════════════════════════
    نظام إضافة الملفات إلى المربعات
-   ═══════════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════
-   نظام إضافة الملفات إلى المربعات — معدّل حسب المخطط
-   المدير → مسار متعدد → Caption → رفع للقناة
-   → حفظ IndexedDB + localStorage → إعادة بناء الموقع المحدد فقط
    ═══════════════════════════════════════════════════════════════ */
 const FILE_ICONS = [
   { emoji: '🎬', name: 'فيديو', type: 'video' },
@@ -766,803 +721,50 @@ let selectedIconFile = null;
 let uploadedFileData = null;
 let uploadedFileURL = null;
 
-/* ─── توليد الـ Caption ─── */
-function buildTelegramCaption(fileName, iconIndex, pathPoints, worldId, finalRow, finalCol) {
-  const pathStr = pathPoints.map(function(p) {
-    return '(' + p.row + ',' + p.col + ')';
-  }).join(' → ');
+const WORLD_ICONS = [
+  { name: '⚔️ القتال', emoji: '⚔️', color: '#ef4444' },
+  { name: '🌐 360', emoji: '🌐', color: '#00f2ff' },
+  { name: '🖼️ المعرض', emoji: '🖼️', color: '#a78bfa' },
+  { name: '🌲 الغابة', emoji: '🌲', color: '#4ade80' },
+  { name: '🏰 القلعة', emoji: '🏰', color: '#fbbf24' },
+  { name: '🌊 المحيط', emoji: '🌊', color: '#60a5fa' },
+  { name: '🔥 النار', emoji: '🔥', color: '#f97316' },
+  { name: '❄️ الجليد', emoji: '❄️', color: '#22d3ee' },
+  { name: '🌈 قوس قزح', emoji: '🌈', color: '#f472b6' },
+  { name: '⭐ النجوم', emoji: '⭐', color: '#ffd700' },
+  { name: '🌙 القمر', emoji: '🌙', color: '#c084fc' },
+  { name: '☀️ الشمس', emoji: '☀️', color: '#facc15' },
+  { name: '🌺 الزهور', emoji: '🌺', color: '#fb7185' },
+  { name: '🍄 الفطر', emoji: '🍄', color: '#a3e635' },
+  { name: '🦋 الفراشات', emoji: '🦋', color: '#38bdf8' },
+  { name: '🐉 التنين', emoji: '🐉', color: '#ef4444' },
+  { name: '🧙 السحر', emoji: '🧙', color: '#a855f7' },
+  { name: '🏹 الصيد', emoji: '🏹', color: '#d97706' },
+  { name: '⚡ البرق', emoji: '⚡', color: '#fde047' },
+  { name: '💎 الماس', emoji: '💎', color: '#22d3ee' }
+];
+
+let achievements = {
+  first_kill:   { name: 'أول قتل', desc: 'اقتل أول عدو', unlocked: false, emoji: '💀' },
+  killer_10:    { name: 'قاتل محترف', desc: 'اقتل 10 أعداء', unlocked: false, emoji: '⚔️' },
+  explorer:     { name: 'مستكشف', desc: 'اكتشف 3 عوالم', unlocked: false, emoji: '🌍' },
+  master:       { name: 'سيد العوالم', desc: 'اكتشف 5 عوالم', unlocked: false, emoji: '👑' },
+  collector:    { name: 'جامع المعالم', desc: 'أضف 5 معالم', unlocked: false, emoji: '📍' },
+  survivor:     { name: 'الناجي', desc: 'وصل للمستوى 5', unlocked: false, emoji: '🛡️' },
+  rich:         { name: 'ثراء', desc: 'اجمع 100 ذهب', unlocked: false, emoji: '🪙' },
+  healer:       { name: 'معالج', desc: 'استخدم الشفاء 5 مرات', unlocked: false, emoji: '💚' },
+  spinner:      { name: 'الدوّام', desc: 'أكمل 10 دورات سريعة', unlocked: false, emoji: '🌪️' },
+  spin_master:  { name: 'سيد الدوران', desc: 'أكمل 50 دورة سريعة', unlocked: false, emoji: '🌀' }
+};
+
+let quests = [
+  { id: 'q1', name: 'قاتل مبتدئ', desc: 'اقتل 3 أعداء', target: 3, current: 0, type: 'kills', reward: 20 },
+  { id: 'q2', name: 'مستكشف', desc: 'اكتشف عالمين جديدين', target: 2, current: 0, type: 'worlds', reward: 50 },
+  { id: 'q3', name: 'باني', desc: 'أضف 3 معالم', target: 3, current: 0, type: 'landmarks', reward: 30 },
+  { id: 'q4', name: 'جامع', desc: 'اجمع 50 نقطة', target: 50, current: 0, type: 'score', reward: 25 },
+  { id: 'q5', name: 'الدوّام', desc: 'أكمل 5 دورات سريعة', target: 5, current: 0, type: 'spins', reward: 40 }
+];
 
-  return [
-    '#file: ' + fileName,
-    '#icon: ' + iconIndex,
-    '#path: ' + pathStr,
-    '#world: ' + worldId,
-    '#row: ' + finalRow,
-    '#col: ' + finalCol
-  ].join('\n');
-}
-
-/* ─── تحليل Caption من رسالة تلجرام ─── */
-function parseTelegramCaption(caption) {
-  if (!caption || typeof caption !== 'string') return null;
-  const result = {
-    file: null,
-    icon: null,
-    path: [],
-    world: null,
-    row: null,
-    col: null
-  };
-
-  caption.split('\n').forEach(function(line) {
-    line = line.trim();
-    if (line.indexOf('#file:') === 0) {
-      result.file = line.replace('#file:', '').trim();
-    } else if (line.indexOf('#icon:') === 0) {
-      result.icon = parseInt(line.replace('#icon:', '').trim(), 10);
-    } else if (line.indexOf('#path:') === 0) {
-      const pathRaw = line.replace('#path:', '').trim();
-      const matches = pathRaw.match(/\((\d+)\s*,\s*(\d+)\)/g) || [];
-      result.path = matches.map(function(m) {
-        const nums = m.match(/(\d+)/g);
-        return { row: parseInt(nums[0], 10), col: parseInt(nums[1], 10) };
-      });
-    } else if (line.indexOf('#world:') === 0) {
-      result.world = line.replace('#world:', '').trim();
-    } else if (line.indexOf('#row:') === 0) {
-      result.row = parseInt(line.replace('#row:', '').trim(), 10);
-    } else if (line.indexOf('#col:') === 0) {
-      result.col = parseInt(line.replace('#col:', '').trim(), 10);
-    }
-  });
-
-  if (result.row === null && result.path.length) {
-    result.row = result.path[result.path.length - 1].row;
-    result.col = result.path[result.path.length - 1].col;
-  }
-  return result;
-}
-
-/* ─── بناء معرف العالم من الأيقونة + المسار ─── */
-function buildPathWorldId(iconIndex, pathPoints) {
-  let parts = ['tile', 'world', 'icon', String(iconIndex)];
-  pathPoints.forEach(function(p) {
-    parts.push(String(p.row), String(p.col));
-  });
-  return parts.join('_');
-}
-
-/* ─── جمع نقاط المسار ─── */
-function collectPathPoints() {
-  const points = [];
-  const r1 = parseInt(document.getElementById('path1-row').value, 10);
-  const c1 = parseInt(document.getElementById('path1-col').value, 10);
-  if (!isNaN(r1) && !isNaN(c1)) points.push({ row: r1, col: c1 });
-
-  const r2 = parseInt(document.getElementById('path2-row').value, 10);
-  const c2 = parseInt(document.getElementById('path2-col').value, 10);
-  if (!isNaN(r2) && !isNaN(c2)) points.push({ row: r2, col: c2 });
-
-  const r3 = parseInt(document.getElementById('path3-row').value, 10);
-  const c3 = parseInt(document.getElementById('path3-col').value, 10);
-  if (!isNaN(r3) && !isNaN(c3)) points.push({ row: r3, col: c3 });
-
-  return points;
-}
-
-/* ─── معاينة المسار ─── */
-function updatePathPreview() {
-  const points = collectPathPoints();
-  const el = document.getElementById('path-preview-modal');
-  if (!el) return;
-  if (points.length === 0) {
-    el.textContent = '⚠️ أدخل المربع الأول على الأقل';
-    el.style.color = '#f87171';
-  } else {
-    el.textContent = '📍 المسار: ' + points.map(function(p) {
-      return '(' + p.row + ',' + p.col + ')';
-    }).join(' → ');
-    el.style.color = '#60a5fa';
-  }
-}
-
-/* ─── معاينة الـ Caption ─── */
-function updateCaptionPreview() {
-  const pre = document.getElementById('caption-preview-modal');
-  if (!pre) return;
-
-  const points = collectPathPoints();
-  if (points.length === 0) {
-    pre.textContent = '⚠️ أكمل المسار أولاً';
-    return;
-  }
-
-  const iconIdx = (selectedIconFile && selectedIconFile._index !== undefined)
-    ? selectedIconFile._index
-    : (parseInt(document.getElementById('icon-number-modal').value, 10) || 0);
-
-  const fileName = (uploadedFileData && uploadedFileData.name)
-    ? uploadedFileData.name
-    : 'video.mp4';
-
-  const worldId = buildPathWorldId(iconIdx, points);
-  const final = points[points.length - 1];
-
-  pre.textContent = buildTelegramCaption(
-    fileName, iconIdx, points, worldId, final.row, final.col
-  );
-}
-
-/* ─── ربط أحداث المسار ─── */
-function setupPathPreview() {
-  ['path1-row', 'path1-col', 'path2-row', 'path2-col', 'path3-row', 'path3-col'].forEach(function(id) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('input', function() {
-        updatePathPreview();
-        updateCaptionPreview();
-      });
-    }
-  });
-  updatePathPreview();
-}
-
-/* ─── شبكة الأيقونات برقم ─── */
-function initIconGridModalPath() {
-  const grid = document.getElementById('icon-grid-modal');
-  const numInput = document.getElementById('icon-number-modal');
-
-  function selectIconByIndex(idx) {
-    idx = Math.max(0, Math.min(FILE_ICONS.length - 1, parseInt(idx, 10) || 0));
-    selectedIconFile = FILE_ICONS[idx];
-    selectedIconFile._index = idx;
-    numInput.value = idx;
-    document.getElementById('icon-preview-modal').textContent = selectedIconFile.emoji;
-    document.getElementById('icon-name-modal').textContent = selectedIconFile.name;
-
-    grid.querySelectorAll('.icon-btn-modal').forEach(function(b) {
-      const bi = parseInt(b.dataset.index, 10);
-      if (bi === idx) {
-        b.style.borderColor = '#ffd700';
-        b.style.background = 'rgba(255,215,0,0.15)';
-      } else {
-        b.style.borderColor = 'transparent';
-        b.style.background = 'rgba(255,255,255,0.04)';
-      }
-    });
-    updateCaptionPreview();
-  }
-
-  grid.querySelectorAll('.icon-btn-modal').forEach(function(btn) {
-    btn.onclick = function() { selectIconByIndex(this.dataset.index); };
-  });
-
-  numInput.onchange = function() { selectIconByIndex(this.value); };
-  numInput.oninput = function() { selectIconByIndex(this.value); };
-}
-
-/* ─── نافذة الإضافة المتدرجة ─── */
-/* ═══════════════════════════════════════════════════════════════
-   نظام إضافة الملفات إلى المربعات — مصحح
-   ═══════════════════════════════════════════════════════════════ */
-
-function showAddFileModal() {
-  if (!AccountManager.isAdmin || !AccountManager.isAdmin()) {
-    showToast('🔒 المدير فقط يمكنه إضافة الملفات', 'warn');
-    return;
-  }
-
-  const old = document.getElementById('add-file-modal');
-  if (old) old.remove();
-
-  const overlay = document.createElement('div');
-  overlay.id = 'add-file-modal';
-  overlay.className = 'modal-overlay';
-  overlay.style.display = 'flex';
-  overlay.style.zIndex = '2000';
-
-  let allWorlds = worlds.slice();
-  WORLD_ICONS.forEach(function(icon, idx) {
-    const worldId = 'world_icon_' + idx;
-    if (!allWorlds.some(function(w) { return w.id === worldId; })) {
-      allWorlds.push({
-        id: worldId, name: icon.name, grid: 12, tileSize: 3,
-        startPosition: { x: 0, z: 0 }, background: icon.color, items: []
-      });
-    }
-  });
-
-  const worldOptions = allWorlds.map(function(w, index) {
-    return '<option value="' + w.id + '"' + (index === 0 ? ' selected' : '') + '>' +
-      (index + 1) + '. ' + w.name + ' (' + w.grid + '×' + w.grid + ')</option>';
-  }).join('');
-
-  const iconButtons = FILE_ICONS.map(function(icon, idx) {
-    return '<button class="icon-btn-modal" data-index="' + idx +
-      '" data-emoji="' + icon.emoji + '" data-type="' + icon.type +
-      '" data-name="' + icon.name + '" style="' +
-      'font-size:22px;padding:4px;border-radius:8px;border:2px solid transparent;' +
-      'background:rgba(255,255,255,0.04);cursor:pointer;font-family:inherit;"' +
-      ' title="' + idx + ' - ' + icon.name + '">' + icon.emoji + '</button>';
-  }).join('');
-
-  overlay.innerHTML =
-    '<div style="background:rgba(10,10,30,0.95);border-radius:20px;padding:25px;max-width:560px;' +
-    'width:95%;max-height:92vh;overflow-y:auto;border:1px solid rgba(255,215,0,0.15);' +
-    'box-shadow:0 20px 60px rgba(0,0,0,0.5);">' +
-
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">' +
-      '<h2 style="color:#ffd700;font-size:18px;margin:0;">📂 إضافة ملف (مدير) — مسار متدرج</h2>' +
-      '<button onclick="closeAddFileModal()" style="background:rgba(239,68,68,0.15);color:#f87171;' +
-        'border:none;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;font-family:inherit;">✖</button>' +
-    '</div>' +
-
-    '<div style="margin-bottom:12px;">' +
-      '<label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🌍 العالم الأساسي</label>' +
-      '<select id="select-world-modal" style="width:100%;padding:8px 12px;border-radius:10px;' +
-        'border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);' +
-        'color:#fff;font-family:inherit;font-size:13px;cursor:pointer;">' + worldOptions + '</select>' +
-      '<div id="world-info-modal" style="color:#666;font-size:10px;margin-top:4px;"></div>' +
-    '</div>' +
-
-    '<div style="margin-bottom:12px;">' +
-      '<label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🎯 رقم الأيقونة (0–' + (FILE_ICONS.length - 1) + ')</label>' +
-      '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px;">' +
-        '<input type="number" id="icon-number-modal" min="0" max="' + (FILE_ICONS.length - 1) +
-          '" value="0" style="width:70px;padding:6px 10px;border-radius:8px;' +
-          'border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);' +
-          'color:#ffd700;font-family:inherit;font-size:16px;font-weight:700;text-align:center;">' +
-        '<span id="icon-preview-modal" style="font-size:28px;">' + FILE_ICONS[0].emoji + '</span>' +
-        '<span id="icon-name-modal" style="color:#aaa;font-size:12px;">' + FILE_ICONS[0].name + '</span>' +
-      '</div>' +
-      '<div id="icon-grid-modal" style="display:grid;grid-template-columns:repeat(8,1fr);gap:4px;' +
-        'background:rgba(255,255,255,0.02);padding:6px;border-radius:10px;max-height:80px;overflow-y:auto;">' +
-        iconButtons + '</div>' +
-    '</div>' +
-
-    '<div style="margin-bottom:12px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.12);' +
-      'border-radius:12px;padding:12px;">' +
-      '<div style="color:#ffd700;font-size:12px;font-weight:700;margin-bottom:8px;">📍 مسار المربعات (من البداية → النهاية)</div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;">' +
-        '<div style="flex:1;min-width:100px;">' +
-          '<label style="color:#888;font-size:10px;display:block;margin-bottom:2px;">المربع الأول *</label>' +
-          '<div style="display:flex;gap:4px;">' +
-            '<input type="number" id="path1-row" min="0" max="11" value="3" placeholder="صف" style="width:100%;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-size:13px;text-align:center;">' +
-            '<input type="number" id="path1-col" min="0" max="11" value="2" placeholder="عمود" style="width:100%;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-size:13px;text-align:center;">' +
-          '</div>' +
-        '</div>' +
-        '<div style="flex:1;min-width:100px;">' +
-          '<label style="color:#888;font-size:10px;display:block;margin-bottom:2px;">المربع الثاني (اختياري)</label>' +
-          '<div style="display:flex;gap:4px;">' +
-            '<input type="number" id="path2-row" min="0" max="11" placeholder="صف" style="width:100%;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-size:13px;text-align:center;">' +
-            '<input type="number" id="path2-col" min="0" max="11" placeholder="عمود" style="width:100%;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-size:13px;text-align:center;">' +
-          '</div>' +
-        '</div>' +
-        '<div style="flex:1;min-width:100px;">' +
-          '<label style="color:#888;font-size:10px;display:block;margin-bottom:2px;">المربع الثالث (اختياري)</label>' +
-          '<div style="display:flex;gap:4px;">' +
-            '<input type="number" id="path3-row" min="0" max="11" placeholder="صف" style="width:100%;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-size:13px;text-align:center;">' +
-            '<input type="number" id="path3-col" min="0" max="11" placeholder="عمود" style="width:100%;padding:6px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-size:13px;text-align:center;">' +
-          '</div>' +
-        '</div>' +
-      '</div>' +
-      '<div id="path-preview-modal" style="color:#60a5fa;font-size:11px;text-align:center;">📍 المسار: (3,2)</div>' +
-    '</div>' +
-
-    '<div style="margin-bottom:12px;">' +
-      '<label style="color:#888;font-size:11px;display:block;margin-bottom:3px;">🏷️ عنوان المربع</label>' +
-      '<input type="text" id="tile-title-modal" placeholder="أدخل عنواناً..." style="width:100%;padding:6px 10px;border-radius:8px;' +
-        'border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;font-size:14px;">' +
-    '</div>' +
-
-    '<div style="margin-bottom:12px;">' +
-      '<label style="color:#888;font-size:11px;display:block;margin-bottom:3px;">📁 الملف (مثال: video.mp4)</label>' +
-      '<div id="file-drop-zone-modal" style="border:2px dashed rgba(139,92,246,0.2);border-radius:12px;padding:14px;text-align:center;cursor:pointer;">' +
-        '<div style="font-size:26px;margin-bottom:4px;">📤</div>' +
-        '<div style="color:#888;font-size:12px;">اسحب الملف أو اضغط للاختيار</div>' +
-        '<div id="file-name-display-modal" style="color:#4ade80;font-size:11px;margin-top:4px;display:none;"></div>' +
-        '<input type="file" id="file-input-modal" style="display:none;">' +
-      '</div>' +
-    '</div>' +
-
-    '<div style="margin-bottom:14px;">' +
-      '<label style="color:#888;font-size:11px;display:block;margin-bottom:3px;">📋 معاينة الـ Caption (يُرفع مع الملف)</label>' +
-      '<pre id="caption-preview-modal" style="background:rgba(0,0,0,0.4);padding:10px 12px;border-radius:10px;' +
-        'color:#a78bfa;font-size:11px;line-height:1.7;white-space:pre-wrap;border:1px solid rgba(139,92,246,0.15);' +
-        'min-height:70px;font-family:monospace;">#file: ...\n#icon: 0\n#path: (3,2)\n#world: ...\n#row: 3\n#col: 2</pre>' +
-    '</div>' +
-
-    '<div style="display:flex;gap:10px;">' +
-      '<button onclick="addFileToTileWithPath()" style="flex:2;padding:12px;background:linear-gradient(135deg,#ffd700,#f59e0b);' +
-        'color:#111;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;">✅ إضافة ورفع</button>' +
-      '<button onclick="closeAddFileModal()" style="flex:1;padding:12px;background:rgba(255,255,255,0.06);color:#888;' +
-        'border:none;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;font-family:inherit;">✖ إلغاء</button>' +
-    '</div>' +
-  '</div>';
-
-  document.body.appendChild(overlay);
-
-  selectedIconFile = FILE_ICONS[0];
-  selectedIconFile._index = 0;
-
-  initIconGridModalPath();
-  initFileUploadModal();
-  setupWorldInfoModalFixed();  // ← استخدام النسخة المصححة
-  setupPathPreview();
-  updateCaptionPreview();
-}
-
-/* ─── النسخة المصححة من setupWorldInfoModal ─── */
-function setupWorldInfoModalFixed() {
-  const select = document.getElementById('select-world-modal');
-  const info = document.getElementById('world-info-modal');
-  if (!select) return;
-
-  function updateInfo() {
-    const world = worlds.find(function(w) { return w.id === select.value; });
-    if (world && info) {
-      info.textContent = 'ℹ️ ' + world.name + ' | الحجم: ' + world.grid + '×' + world.grid;
-    }
-    updateCaptionPreview();
-  }
-
-  select.onchange = updateInfo;
-  select.dispatchEvent(new Event('change'));
-}
-
-/* ─── إغلاق النافذة (نسخة واحدة موحدة) ─── */
-function closeAddFileModal() {
-  const el = document.getElementById('add-file-modal');
-  if (el) el.remove();
-  selectedIconFile = null;
-  uploadedFileData = null;
-  uploadedFileURL = null;
-  pendingFile = null;
-}
-
-/* ─── initFileSystem نسخة واحدة ─── */
-function initFileSystem() {
-  console.log('📂 نظام إضافة الملفات جاهز (مسار + Caption + موقع دقيق)!');
-  console.log('🌍 ' + worlds.length + ' عالم متاح');
-}
-
-
-
-
-
-
-function closeAddFileModal() {
-  const el = document.getElementById('add-file-modal');
-  if (el) el.remove();
-  selectedIconFile = null;
-  uploadedFileData = null;
-  uploadedFileURL = null;
-  pendingFile = null;
-}
-
-function initFileUploadModal() {
-  const dropZone = document.getElementById('file-drop-zone-modal');
-  const fileInput = document.getElementById('file-input-modal');
-
-  dropZone.onclick = function() { fileInput.click(); };
-
-  fileInput.onchange = function(e) {
-    handleFileUploadModal(this.files[0]);
-  };
-
-  dropZone.ondragover = function(e) {
-    e.preventDefault();
-    dropZone.style.borderColor = 'rgba(139,92,246,0.6)';
-    dropZone.style.background = 'rgba(139,92,246,0.05)';
-  };
-
-  dropZone.ondragleave = function() {
-    dropZone.style.borderColor = 'rgba(139,92,246,0.2)';
-    dropZone.style.background = 'transparent';
-  };
-
-  dropZone.ondrop = function(e) {
-    e.preventDefault();
-    dropZone.style.borderColor = 'rgba(139,92,246,0.2)';
-    dropZone.style.background = 'transparent';
-    handleFileUploadModal(e.dataTransfer.files[0]);
-  };
-}
-
-function handleFileUploadModal(file) {
-  if (!file) return;
-
-  TelegramManager.init();
-  const display = document.getElementById('file-name-display-modal');
-  display.textContent = '⏳ جاري قراءة الملف...';
-  display.style.display = 'block';
-
-  const ext = file.name.split('.').pop().toLowerCase();
-  const typeMap = {
-    'mp4': 'video', 'webm': 'video', 'mov': 'video', 'avi': 'video',
-    'jpg': 'image', 'jpeg': 'image', 'png': 'image', 'gif': 'image', 'svg': 'image', 'webp': 'image',
-    'pdf': 'pdf', 'html': 'html', 'htm': 'html',
-    'txt': 'text', 'md': 'text',
-    'mp3': 'audio', 'wav': 'audio', 'ogg': 'audio'
-  };
-  const fileType = typeMap[ext] || 'file';
-
-  if (TelegramManager.hasConfig()) {
-    display.textContent = '⏳ جاري الرفع إلى تلجرام...';
-    TelegramManager.uploadFile(file, file.name).then(function(result) {
-      uploadedFileData = file;
-      uploadedFileURL = null;
-      uploadedFileData.telegram = result;
-
-      display.textContent = '✅ ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB) 📤 تلجرام';
-
-      const matchingIcon = FILE_ICONS.find(function(icon) { return icon.type === fileType; });
-      if (matchingIcon) {
-        const idx = FILE_ICONS.indexOf(matchingIcon);
-        selectedIconFile = matchingIcon;
-        selectedIconFile._index = idx;
-        document.querySelectorAll('#icon-grid-modal .icon-btn-modal').forEach(function(btn) {
-          btn.style.borderColor = 'transparent';
-          btn.style.background = 'rgba(255,255,255,0.04)';
-          if (btn.dataset.emoji === matchingIcon.emoji) {
-            btn.style.borderColor = '#ffd700';
-            btn.style.background = 'rgba(255,215,0,0.15)';
-          }
-        });
-        const numInput = document.getElementById('icon-number-modal');
-        if (numInput) numInput.value = idx;
-        const preview = document.getElementById('icon-preview-modal');
-        if (preview) preview.textContent = matchingIcon.emoji;
-        const nameEl = document.getElementById('icon-name-modal');
-        if (nameEl) nameEl.textContent = matchingIcon.name;
-      }
-      updateCaptionPreview();
-      showToast('📤 تم الرفع إلى تلجرام: ' + result.file_id.substring(0, 20) + '...', 'success');
-    }).catch(function(err) {
-      display.textContent = '❌ فشل الرفع: ' + err.message;
-      uploadedFileData = null;
-      uploadedFileURL = null;
-    });
-  } else {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      uploadedFileData = file;
-      uploadedFileURL = e.target.result;
-
-      display.textContent = '✅ ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB) [محلي]';
-
-      const matchingIcon = FILE_ICONS.find(function(icon) { return icon.type === fileType; });
-      if (matchingIcon) {
-        const idx = FILE_ICONS.indexOf(matchingIcon);
-        selectedIconFile = matchingIcon;
-        selectedIconFile._index = idx;
-        document.querySelectorAll('#icon-grid-modal .icon-btn-modal').forEach(function(btn) {
-          btn.style.borderColor = 'transparent';
-          btn.style.background = 'rgba(255,255,255,0.04)';
-          if (btn.dataset.emoji === matchingIcon.emoji) {
-            btn.style.borderColor = '#ffd700';
-            btn.style.background = 'rgba(255,215,0,0.15)';
-          }
-        });
-        const numInput = document.getElementById('icon-number-modal');
-        if (numInput) numInput.value = idx;
-        const preview = document.getElementById('icon-preview-modal');
-        if (preview) preview.textContent = matchingIcon.emoji;
-        const nameEl = document.getElementById('icon-name-modal');
-        if (nameEl) nameEl.textContent = matchingIcon.name;
-      }
-
-      updateCaptionPreview();
-      showToast('📂 تم رفع (محلي): ' + file.name, 'success');
-    };
-    reader.onerror = function() {
-      display.textContent = '❌ فشل قراءة الملف';
-      uploadedFileData = null;
-      uploadedFileURL = null;
-    };
-    reader.readAsDataURL(file);
-  }
-}
-
-function setupWorldInfoModal() {
-  const select = document.getElementById('select-world-modal');
-  if (!select) return;
-  select.onchange = function() {
-    const world = worlds.find(function(w) { return w.id === select.value; });
-    if (world) {
-      const rowEl = document.getElementById('path1-row');
-      const colEl = document.getElementById('path1-col');
-      if (rowEl) rowEl.max = world.grid - 1;
-      if (colEl) colEl.max = world.grid - 1;
-    }
-    updateCaptionPreview();
-  };
-  select.dispatchEvent(new Event('change'));
-}
-
-/* ─── الإضافة والرفع والحفظ والبناء في الموقع المحدد ─── */
-async function addFileToTileWithPath() {
-  if (!AccountManager.isAdmin || !AccountManager.isAdmin()) {
-    showToast('🔒 المدير فقط', 'warn');
-    return;
-  }
-
-  const baseWorldId = document.getElementById('select-world-modal').value;
-  const title = (document.getElementById('tile-title-modal').value || '').trim() || 'ملف مرفوع';
-  const pathPoints = collectPathPoints();
-
-  if (pathPoints.length === 0) {
-    showToast('❌ أدخل المربع الأول على الأقل (صف، عمود)', 'error');
-    return;
-  }
-  if (!selectedIconFile) {
-    showToast('❌ اختر أيقونة', 'error');
-    return;
-  }
-  if (!uploadedFileData) {
-    showToast('❌ اختر ملفاً أولاً', 'error');
-    return;
-  }
-
-  const iconIdx = selectedIconFile._index !== undefined
-    ? selectedIconFile._index
-    : (parseInt(document.getElementById('icon-number-modal').value, 10) || 0);
-
-  const finalPoint = pathPoints[pathPoints.length - 1];
-  const pathWorldId = buildPathWorldId(iconIdx, pathPoints);
-  const fileName = uploadedFileData.name || 'file';
-
-  const caption = buildTelegramCaption(
-    fileName, iconIdx, pathPoints, pathWorldId, finalPoint.row, finalPoint.col
-  );
-
-  showTransition('جاري الإضافة والرفع...');
-
-  try {
-    let telegramResult = null;
-
-    TelegramManager.init();
-    if (TelegramManager.hasConfig()) {
-      const formData = new FormData();
-      formData.append('chat_id', TelegramManager.chatId);
-      formData.append('document', uploadedFileData, fileName);
-      formData.append('caption', caption);
-
-      const resp = await fetch(
-        'https://api.telegram.org/bot' + TelegramManager.botToken + '/sendDocument',
-        { method: 'POST', body: formData }
-      );
-      const data = await resp.json();
-      if (!data.ok) throw new Error(data.description || 'فشل الرفع إلى تلجرام');
-
-      telegramResult = {
-        file_id: data.result.document.file_id,
-        file_unique_id: data.result.document.file_unique_id,
-        filename: data.result.document.file_name || fileName,
-        mime_type: data.result.document.mime_type || uploadedFileData.type,
-        file_size: data.result.document.file_size || uploadedFileData.size,
-        caption: caption,
-        message_id: data.result.message_id
-      };
-    }
-
-    const tileItem = {
-      id: 'path_file_' + Date.now(),
-      type: 'telegram_file',
-      title: title,
-      emoji: selectedIconFile.emoji || '📤',
-      row: finalPoint.row,
-      col: finalPoint.col,
-      path: pathPoints.slice(),
-      iconIndex: iconIdx,
-      pathWorldId: pathWorldId,
-      content: {
-        file: fileName,
-        type: uploadedFileData.type,
-        size: uploadedFileData.size
-      }
-    };
-
-    if (telegramResult) {
-      tileItem.file_id = telegramResult.file_id;
-      tileItem.file_unique_id = telegramResult.file_unique_id;
-      tileItem.filename = telegramResult.filename;
-      tileItem.mime_type = telegramResult.mime_type;
-      tileItem.file_size = telegramResult.file_size;
-      tileItem.caption = caption;
-    } else if (uploadedFileURL) {
-      tileItem.type = selectedIconFile.type || 'file';
-      tileItem.content.url = uploadedFileURL;
-      tileItem.emoji = selectedIconFile.emoji || '📤';
-    }
-
-    const storageKey = 'path_files_' + (TelegramManager.chatId || 'local').replace(/[^a-zA-Z0-9]/g, '_');
-    let stored = [];
-    try { stored = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch (e) {}
-    stored.push({
-      tileItem: tileItem,
-      caption: caption,
-      baseWorldId: baseWorldId,
-      pathWorldId: pathWorldId,
-      addedAt: Date.now()
-    });
-    localStorage.setItem(storageKey, JSON.stringify(stored));
-
-    try {
-      await FileStorage.init();
-      await FileStorage.saveFile(tileItem.id, uploadedFileURL || '', {
-        tileItem: tileItem,
-        caption: caption,
-        path: pathPoints
-      });
-    } catch (e) {
-      console.warn('IndexedDB save:', e);
-    }
-
-    let world = getWorld(baseWorldId);
-    if (!world && baseWorldId.indexOf('world_icon_') === 0) {
-      const idx = parseInt(baseWorldId.replace('world_icon_', ''), 10);
-      if (!isNaN(idx) && WORLD_ICONS[idx]) {
-        world = {
-          id: baseWorldId,
-          name: WORLD_ICONS[idx].name,
-          grid: 12, tileSize: 3,
-          startPosition: { x: 0, z: 0 },
-          background: WORLD_ICONS[idx].color,
-          items: generateWorldItems(idx)
-        };
-        worlds.push(world);
-      }
-    }
-    if (!world) world = getWorld('main');
-
-    if (world) {
-      world.items = (world.items || []).filter(function(item) {
-        return !(item.row === finalPoint.row && item.col === finalPoint.col);
-      });
-      world.items.push(tileItem);
-
-      if (currentWorldId === world.id) {
-        buildWorld(world.id);
-      }
-    }
-
-    hideTransition();
-    closeAddFileModal();
-
-    const pathStr = pathPoints.map(function(p) {
-      return '(' + p.row + ',' + p.col + ')';
-    }).join(' → ');
-
-    showToast('✅ تم: أيقونة ' + iconIdx + ' | ' + pathStr + ' | ' + fileName, 'success');
-    if (telegramResult) {
-      showToast('📤 رُفع إلى القناة مع Caption', 'success');
-    }
-
-  } catch (err) {
-    hideTransition();
-    showToast('❌ فشل: ' + (err.message || err), 'error');
-    console.error(err);
-  }
-}
-
-/* ─── تطبيق Caption على العالم (موقع دقيق) ─── */
-function applyCaptionToWorld(fileMeta, parsed) {
-  if (!parsed || parsed.row === null || parsed.col === null) return false;
-
-  let targetWorldId = 'main';
-  if (parsed.world && getWorld(parsed.world)) {
-    targetWorldId = parsed.world;
-  }
-
-  let world = getWorld(targetWorldId);
-  if (!world) {
-    world = {
-      id: parsed.world || ('tile_path_' + parsed.row + '_' + parsed.col),
-      name: '📤 مسار ' + (parsed.file || ''),
-      grid: 12, tileSize: 3,
-      startPosition: { x: 0, z: 0 },
-      background: '#1a1005',
-      items: []
-    };
-    worlds.push(world);
-  }
-
-  const iconIdx = (parsed.icon !== null && !isNaN(parsed.icon)) ? parsed.icon : 0;
-  const iconData = FILE_ICONS[iconIdx] || FILE_ICONS[0];
-
-  const tileItem = {
-    id: 'tg_path_' + (fileMeta.file_unique_id || Date.now()),
-    type: 'telegram_file',
-    title: parsed.file || fileMeta.filename || 'ملف',
-    emoji: iconData.emoji || '📤',
-    row: parsed.row,
-    col: parsed.col,
-    path: parsed.path || [{ row: parsed.row, col: parsed.col }],
-    iconIndex: iconIdx,
-    pathWorldId: parsed.world,
-    file_id: fileMeta.file_id,
-    file_unique_id: fileMeta.file_unique_id,
-    filename: fileMeta.filename,
-    mime_type: fileMeta.mime_type,
-    file_size: fileMeta.file_size,
-    caption: fileMeta.caption || '',
-    content: {
-      file: fileMeta.filename,
-      type: fileMeta.mime_type,
-      size: fileMeta.file_size
-    }
-  };
-
-  world.items = (world.items || []).filter(function(i) {
-    return !(i.row === parsed.row && i.col === parsed.col);
-  });
-  world.items.push(tileItem);
-  return true;
-}
-
-/* ─── مزامنة القناة — بدون عشوائية ─── */
-function addTelegramFilesToWorld(files) {
-  const main = getWorld('main');
-  if (!main) return;
-  let changed = false;
-
-  files.forEach(function(f) {
-    const existing = main.items.find(function(i) {
-      return i.file_unique_id === f.file_unique_id;
-    });
-    if (existing) return;
-
-    const parsed = parseTelegramCaption(f.caption || '');
-
-    if (parsed && parsed.row !== null && parsed.col !== null) {
-      if (applyCaptionToWorld(f, parsed)) {
-        changed = true;
-        if (!parsed.world || parsed.world === 'main' || !getWorld(parsed.world)) {
-          const iconIdx = (parsed.icon !== null && !isNaN(parsed.icon)) ? parsed.icon : 0;
-          const iconData = FILE_ICONS[iconIdx] || FILE_ICONS[0];
-          main.items = main.items.filter(function(i) {
-            return !(i.row === parsed.row && i.col === parsed.col);
-          });
-          main.items.push({
-            id: 'tg_' + f.file_unique_id,
-            type: 'telegram_file',
-            title: parsed.file || f.filename,
-            emoji: iconData.emoji || '📤',
-            row: parsed.row,
-            col: parsed.col,
-            path: parsed.path,
-            iconIndex: iconIdx,
-            file_id: f.file_id,
-            file_unique_id: f.file_unique_id,
-            filename: f.filename,
-            mime_type: f.mime_type,
-            file_size: f.file_size,
-            caption: f.caption
-          });
-        }
-      }
-    } else {
-      console.log('ملف بدون Caption مسار صالح، تم التجاهل:', f.filename);
-    }
-  });
-
-  if (changed && currentWorldId === 'main') {
-    buildWorld('main');
-    showToast('📤 تم إضافة ملفات بالمواقع المحددة من القناة', 'success');
-  }
-}
-
-function initFileSystem() {
-  console.log('📂 نظام إضافة الملفات جاهز (مسار + Caption + موقع دقيق)!');
-  console.log('🌍 ' + worlds.length + ' عالم متاح');
-}
-
-/* ═══════════════════════════════════════════════════════════════
-   نهاية نظام إضافة الملفات
-   ═══════════════════════════════════════════════════════════════ */
-
- 
 /* ═══════════════════════════════════════════════════════════════
    دوال مساعدة عامة
    ═══════════════════════════════════════════════════════════════ */
@@ -3906,6 +3108,154 @@ function hideTutorial() {
 }
 
 
+/* ═══════════════════════════════════════════════════════════════
+   نظام إضافة الملفات - دوال النافذة المنبثقة
+   ═══════════════════════════════════════════════════════════════ */
+function showAddFileModal() {
+  const old = document.getElementById('add-file-modal');
+  if (old) old.remove();
+
+  const overlay = document.createElement('div');
+  overlay.id = 'add-file-modal';
+  overlay.className = 'modal-overlay';
+  overlay.style.display = 'flex';
+  overlay.style.zIndex = '2000';
+
+  // دمج العوالم الموجودة مع عوالم الأيقونات الـ 20
+  let allWorlds = worlds.slice();
+  WORLD_ICONS.forEach(function(icon, idx) {
+    const worldId = 'world_icon_' + idx;
+    const exists = allWorlds.some(function(w) { return w.id === worldId; });
+    if (!exists) {
+      allWorlds.push({
+        id: worldId,
+        name: icon.name,
+        grid: 12,
+        tileSize: 3,
+        startPosition: { x: 0, z: 0 },
+        background: icon.color,
+        items: []
+      });
+    }
+  });
+
+  const worldOptions = allWorlds.map(function(w, index) {
+    return '<option value="' + w.id + '"' + (index === 0 ? ' selected' : '') + '>' +
+      (index + 1) + '. ' + w.name + ' (' + w.grid + '×' + w.grid + ')' +
+      '</option>';
+  }).join('');
+
+  const iconButtons = FILE_ICONS.map(function(icon) {
+    return '<button class="icon-btn-modal" data-emoji="' + icon.emoji + '" data-type="' + icon.type + '" data-name="' + icon.name + '" style="' +
+      'font-size:22px;padding:4px;border-radius:8px;border:2px solid transparent;' +
+      'background:rgba(255,255,255,0.04);cursor:pointer;transition:all 0.2s;font-family:inherit;' +
+      '">' + icon.emoji + '</button>';
+  }).join('');
+
+  overlay.innerHTML = '<div style="' +
+    'background:rgba(10,10,30,0.95);border-radius:20px;padding:25px;max-width:540px;' +
+    'width:95%;max-height:90vh;overflow-y:auto;border:1px solid rgba(255,215,0,0.15);' +
+    'box-shadow:0 20px 60px rgba(0,0,0,0.5);' +
+    '">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
+      '<h2 style="color:#ffd700;font-size:18px;margin:0;">📂 إضافة محتوى إلى مربع</h2>' +
+      '<button onclick="closeAddFileModal()" style="' +
+        'background:rgba(239,68,68,0.15);color:#f87171;border:none;' +
+        'width:30px;height:30px;border-radius:50%;font-size:16px;' +
+        'cursor:pointer;font-family:inherit;' +
+      '">✖</button>' +
+    '</div>' +
+    '<div style="margin-bottom:14px;">' +
+      '<label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">' +
+        '🌍 اختيار العالم (' + worlds.length + ' عالم متاح)' +
+      '</label>' +
+      '<select id="select-world-modal" style="' +
+        'width:100%;padding:8px 12px;border-radius:10px;' +
+        'border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);' +
+        'color:#fff;font-family:inherit;font-size:13px;appearance:none;cursor:pointer;' +
+      '">' + worldOptions + '</select>' +
+      '<div id="world-info-modal" style="color:#666;font-size:10px;margin-top:3px;">' +
+        'ℹ️ اختر العالم ثم حدد المربع' +
+      '</div>' +
+    '</div>' +
+    '<div style="margin-bottom:14px;">' +
+      '<label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🎯 اختيار الأيقونة</label>' +
+      '<div id="icon-grid-modal" style="' +
+        'display:grid;grid-template-columns:repeat(8,1fr);gap:4px;' +
+        'background:rgba(255,255,255,0.02);padding:6px;border-radius:10px;' +
+        'max-height:90px;overflow-y:auto;' +
+      '">' + iconButtons + '</div>' +
+      '<input type="text" id="icon-search-modal" placeholder="🔍 بحث عن أيقونة..." style="' +
+        'width:100%;padding:4px 10px;margin-top:4px;border-radius:8px;' +
+        'border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.03);' +
+        'color:#fff;font-family:inherit;font-size:12px;' +
+      '">' +
+    '</div>' +
+    '<div style="display:flex;gap:10px;margin-bottom:14px;">' +
+      '<div style="flex:1;">' +
+        '<label style="color:#888;font-size:11px;display:block;margin-bottom:3px;">📍 الصف (Row)</label>' +
+        '<input type="number" id="tile-row-modal" min="0" max="11" value="0" style="' +
+          'width:100%;padding:6px 10px;border-radius:8px;' +
+          'border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);' +
+          'color:#fff;font-family:inherit;font-size:14px;' +
+        '">' +
+      '</div>' +
+      '<div style="flex:1;">' +
+        '<label style="color:#888;font-size:11px;display:block;margin-bottom:3px;">📍 العمود (Col)</label>' +
+        '<input type="number" id="tile-col-modal" min="0" max="11" value="0" style="' +
+          'width:100%;padding:6px 10px;border-radius:8px;' +
+          'border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);' +
+          'color:#fff;font-family:inherit;font-size:14px;' +
+        '">' +
+      '</div>' +
+    '</div>' +
+    '<div style="margin-bottom:14px;">' +
+      '<label style="color:#888;font-size:11px;display:block;margin-bottom:3px;">🏷️ عنوان المربع</label>' +
+      '<input type="text" id="tile-title-modal" placeholder="أدخل عنواناً..." style="' +
+        'width:100%;padding:6px 10px;border-radius:8px;' +
+        'border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);' +
+        'color:#fff;font-family:inherit;font-size:14px;' +
+      '">' +
+    '</div>' +
+    '<div style="margin-bottom:14px;">' +
+      '<label style="color:#888;font-size:11px;display:block;margin-bottom:3px;">📁 رفع ملف</label>' +
+      '<div id="file-drop-zone-modal" style="' +
+        'border:2px dashed rgba(139,92,246,0.2);border-radius:12px;padding:16px;' +
+        'text-align:center;cursor:pointer;transition:all 0.3s;' +
+      '">' +
+        '<div style="font-size:28px;margin-bottom:4px;">📤</div>' +
+        '<div style="color:#888;font-size:12px;">اسحب الملف هنا أو اضغط للاختيار</div>' +
+        '<div id="file-name-display-modal" style="color:#4ade80;font-size:11px;margin-top:4px;display:none;"></div>' +
+        '<input type="file" id="file-input-modal" style="display:none;">' +
+      '</div>' +
+    '</div>' +
+    '<div style="margin-bottom:16px;">' +
+      '<label style="color:#888;font-size:11px;display:block;margin-bottom:3px;">📋 نوع المحتوى</label>' +
+      '<div id="content-type-display-modal" style="' +
+        'background:rgba(139,92,246,0.08);padding:6px 12px;border-radius:8px;' +
+        'color:#a78bfa;font-size:12px;border:1px solid rgba(139,92,246,0.15);min-height:32px;' +
+      '">⏳ اختر أيقونة أو ارفع ملفاً</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:10px;">' +
+      '<button onclick="addFileToTile()" style="' +
+        'flex:2;padding:10px;background:linear-gradient(135deg,#ffd700,#f59e0b);' +
+        'color:#111;border:none;border-radius:10px;font-weight:700;font-size:14px;' +
+        'cursor:pointer;font-family:inherit;' +
+      '">✅ إضافة المربع</button>' +
+      '<button onclick="closeAddFileModal()" style="' +
+        'flex:1;padding:10px;background:rgba(255,255,255,0.06);color:#888;' +
+        'border:none;border-radius:10px;font-weight:600;font-size:13px;' +
+        'cursor:pointer;font-family:inherit;' +
+      '">✖ إلغاء</button>' +
+    '</div>' +
+  '</div>';
+
+  document.body.appendChild(overlay);
+
+  initIconGridModal();
+  initFileUploadModal();
+  setupWorldInfoModal();
+}
 
 function closeAddFileModal() {
   const el = document.getElementById('add-file-modal');
@@ -5290,61 +4640,44 @@ async function showTelegramChannelId() {
   }
 }
 
-
 function addTelegramFilesToWorld(files) {
   const main = getWorld('main');
   if (!main) return;
   let changed = false;
-
-  files.forEach(function(f) {
-    const existing = main.items.find(function(i) {
-      return i.file_unique_id === f.file_unique_id;
-    });
+  files.forEach(function(f, idx) {
+    const existing = main.items.find(function(i) { return i.file_unique_id === f.file_unique_id; });
     if (existing) return;
-
-    const parsed = parseTelegramCaption(f.caption || '');
-
-    if (parsed && parsed.row !== null && parsed.col !== null) {
-      if (applyCaptionToWorld(f, parsed)) {
-        changed = true;
-        if (!parsed.world || parsed.world === 'main' || !getWorld(parsed.world)) {
-          const iconIdx = (parsed.icon !== null && !isNaN(parsed.icon)) ? parsed.icon : 0;
-          const iconData = FILE_ICONS[iconIdx] || FILE_ICONS[0];
-          main.items = main.items.filter(function(i) {
-            return !(i.row === parsed.row && i.col === parsed.col);
-          });
-          main.items.push({
-            id: 'tg_' + f.file_unique_id,
-            type: 'telegram_file',
-            title: parsed.file || f.filename,
-            emoji: iconData.emoji || '📤',
-            row: parsed.row,
-            col: parsed.col,
-            path: parsed.path,
-            iconIndex: iconIdx,
-            file_id: f.file_id,
-            file_unique_id: f.file_unique_id,
-            filename: f.filename,
-            mime_type: f.mime_type,
-            file_size: f.file_size,
-            caption: f.caption
-          });
-        }
-      }
-    } else {
-      console.log('ملف بدون Caption مسار صالح، تم التجاهل:', f.filename);
-    }
+    let r, c, attempts = 0;
+    do {
+      r = 1 + Math.floor(Math.random() * 10);
+      c = 1 + Math.floor(Math.random() * 10);
+      attempts++;
+    } while (main.items.some(function(it) { return it.row === r && it.col === c; }) && attempts < 50);
+    if (attempts >= 50) return;
+    const emoji = f.mime_type.indexOf('html') !== -1 || f.filename.toLowerCase().endsWith('.html') ? '🎮' :
+                  f.mime_type.indexOf('video') !== -1 ? '🎬' :
+                  f.mime_type.indexOf('image') !== -1 ? '🖼️' :
+                  f.mime_type.indexOf('audio') !== -1 ? '🎵' : '📄';
+    main.items.push({
+      id: 'tg_' + f.file_unique_id,
+      type: 'telegram_file',
+      title: f.filename,
+      emoji: emoji,
+      row: r, col: c,
+      file_id: f.file_id,
+      file_unique_id: f.file_unique_id,
+      filename: f.filename,
+      mime_type: f.mime_type,
+      file_size: f.file_size,
+      caption: f.caption
+    });
+    changed = true;
   });
-
   if (changed && currentWorldId === 'main') {
     buildWorld('main');
-    showToast('📤 تم إضافة ملفات بالمواقع المحددة من القناة', 'success');
+    showToast('📤 تم إضافة ملفات جديدة من القناة إلى الخريطة', 'success');
   }
 }
-
-
-
- 
 
 function loadTelegramFiles() {
   TelegramManager.init();
@@ -5352,8 +4685,7 @@ function loadTelegramFiles() {
   const key = 'telegram_files_' + TelegramManager.chatId.replace(/[^a-zA-Z0-9]/g, '_');
   try {
     const files = JSON.parse(localStorage.getItem(key) || '[]');
-    if (files.length > 0)
- addTelegramFilesToWorld(files);
+    if (files.length > 0) addTelegramFilesToWorld(files);
   } catch(e) {}
 }
 
@@ -5862,5 +5194,6 @@ console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة')
 </html>
 
 
+        
 
   
