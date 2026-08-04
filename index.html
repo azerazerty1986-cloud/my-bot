@@ -87,12 +87,7 @@ h1 {
 .telegram-panel h3 { 
   color: #a78bfa; 
   font-size: 16px; 
-  margin-bottom: 4px; 
-}
-.telegram-panel .subtitle {
-  color: #666;
-  font-size: 11px;
-  margin-bottom: 12px;
+  margin-bottom: 12px; 
 }
 .telegram-panel label { 
   color: #888; 
@@ -155,24 +150,17 @@ h1 {
   display: flex;
   align-items: center;
   gap: 8px;
-  flex-wrap: wrap;
 }
 .status .dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
   display: inline-block;
-  flex-shrink: 0;
 }
 .status.online .dot { background: #4ade80; }
 .status.offline .dot { background: #f87171; }
-.status.checking .dot { background: #fbbf24; animation: blink 0.8s infinite; }
 .status.online { color: #4ade80; }
 .status.offline { color: #f87171; }
-.status.checking { color: #fbbf24; }
-@keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-
-.status .detail { color: #888; font-size: 10px; }
 
 .settings-badge {
   background: rgba(255,215,0,0.1);
@@ -286,25 +274,6 @@ h1 {
 .emoji-btn:hover { background: rgba(255,215,0,0.1); }
 .emoji-btn.active { border-color: #ffd700; background: rgba(255,215,0,0.15); }
 
-/* ====== إشعارات المزامنة ====== */
-#sync-log { 
-  font-size: 11px; 
-  color: #888; 
-  max-height: 80px; 
-  overflow-y: auto; 
-  background: rgba(0,0,0,0.3); 
-  border-radius: 8px; 
-  padding: 8px 12px; 
-  margin-top: 8px; 
-  border: 1px solid rgba(255,255,255,0.04); 
-  font-family: monospace; 
-  display: none;
-}
-#sync-log .success { color: #4ade80; }
-#sync-log .error { color: #f87171; }
-#sync-log .info { color: #60a5fa; }
-#sync-log .warn { color: #fbbf24; }
-
 .actions-row {
   display: flex;
   gap: 10px;
@@ -315,27 +284,18 @@ h1 {
   max-width: 500px;
 }
 
-/* ====== دليل المساعدة ====== */
-.help-box {
-  background: rgba(255,215,0,0.04);
-  border: 1px solid rgba(255,215,0,0.1);
-  border-radius: 12px;
-  padding: 12px 16px;
-  max-width: 500px;
-  width: 100%;
+#sync-log {
   font-size: 11px;
   color: #888;
-  line-height: 1.8;
-  margin-bottom: 12px;
-}
-.help-box strong { color: #ffd700; }
-.help-box .code { 
-  background: rgba(0,0,0,0.3); 
-  padding: 2px 8px; 
-  border-radius: 4px; 
+  max-height: 80px;
+  overflow-y: auto;
+  background: rgba(0,0,0,0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-top: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
   font-family: monospace;
-  font-size: 10px;
-  color: #a78bfa;
+  display: none;
 }
 </style>
 </head>
@@ -349,39 +309,29 @@ h1 {
 <!-- ====== لوحة تيليجرام ====== -->
 <div class="telegram-panel">
   <h3>📱 إعدادات قناة تيليجرام</h3>
-  <div class="subtitle">
-    <span class="settings-badge">✅ الإعدادات المدمجة</span>
+  <div style="margin-bottom: 12px;">
+    <span class="settings-badge">✅ الإعدادات المدمجة محدثة</span>
   </div>
   
   <label>🤖 توكن البوت (من @BotFather)</label>
-  <input type="text" id="tg-token" placeholder="8309126051:AAH3EvvDAo6KkYJNNBaI28pgPexVdjqW2uM">
+  <input type="text" id="tg-token" placeholder="8309126051:AAH_F2NFQxxsG7x9mg-qrvnpjnAMXlRRhsE">
   
-  <label>💬 Chat ID (رقم أو @channel)</label>
+  <label>💬 Chat ID (رقم القناة)</label>
   <input type="text" id="tg-chatid" placeholder="-1003822964890">
   
   <div class="btn-row">
-    <button class="btn btn-primary" onclick="testTelegram()">🧪 اختبار</button>
+    <button class="btn btn-green" onclick="testTelegram()">🧪 اختبار</button>
     <button class="btn btn-gold" onclick="saveTelegram()">💾 حفظ</button>
-    <button class="btn btn-green" onclick="syncChannel()">🔄 مزامنة</button>
+    <button class="btn btn-primary" onclick="syncChannel()">🔄 مزامنة</button>
     <button class="btn btn-red" onclick="resetTelegram()">↩️ إعادة</button>
   </div>
   
   <div class="status offline" id="tg-status">
     <span class="dot"></span>
     <span id="status-text">❌ غير متصل</span>
-    <span class="detail" id="status-detail"></span>
   </div>
   
   <div id="sync-log"></div>
-</div>
-
-<!-- ====== دليل المساعدة ====== -->
-<div class="help-box">
-  <strong>📌 ملاحظات مهمة:</strong><br>
-  • تأكد من أن البوت <strong>مسؤول (Admin)</strong> في القناة<br>
-  • للقنوات الخاصة: أضف البوت كـ <strong>مسؤول</strong> مع صلاحية إرسال الرسائل<br>
-  • Chat ID الصحيح يبدأ بـ <span class="code">-100</span> للقنوات<br>
-  • بعد إضافة البوت كمسؤول، أرسل <strong>أي ملف</strong> في القناة ثم اضغط "اختبار"
 </div>
 
 <!-- ====== أزرار الإجراءات ====== -->
@@ -440,10 +390,10 @@ h1 {
 
 <script>
 // ============================================================
-//  📡 إعدادات التليجرام - مدمجة مباشرة
+//  📡 إعدادات التليجرام - التوكن الجديد
 // ============================================================
 const TELEGRAM_CONFIG = {
-    botToken: '8309126051:AAH3EvvDAo6KkYJNNBaI28pgPexVdjqW2uM',
+    botToken: '8309126051:AAH_F2NFQxxsG7x9mg-qrvnpjnAMXlRRhsE',
     channelId: '-1003822964890',
     apiUrl: 'https://api.telegram.org/bot'
 };
@@ -462,7 +412,6 @@ const Telegram = {
   token: '',
   chatId: '',
   apiUrl: 'https://api.telegram.org/bot',
-  status: 'offline', // offline | checking | online
 
   init() {
     const savedToken = localStorage.getItem('tg_token');
@@ -474,7 +423,6 @@ const Telegram = {
     } else {
       this.token = TELEGRAM_CONFIG.botToken;
       this.chatId = TELEGRAM_CONFIG.channelId;
-      this.apiUrl = TELEGRAM_CONFIG.apiUrl;
       localStorage.setItem('tg_token', this.token);
       localStorage.setItem('tg_chatid', this.chatId);
     }
@@ -483,18 +431,9 @@ const Telegram = {
     document.getElementById('tg-chatid').value = this.chatId;
     this.updateStatus();
     
-    // التحقق التلقائي بعد ثانية
-    setTimeout(() => {
-      this.autoCheck();
-    }, 1500);
-    
+    // التحقق التلقائي
+    setTimeout(() => this.testConnection(false), 1000);
     return this;
-  },
-
-  async autoCheck() {
-    if (this.hasConfig()) {
-      await this.testConnection(false);
-    }
   },
 
   save(token, chatId) {
@@ -508,15 +447,13 @@ const Telegram = {
   resetToDefault() {
     this.token = TELEGRAM_CONFIG.botToken;
     this.chatId = TELEGRAM_CONFIG.channelId;
-    this.apiUrl = TELEGRAM_CONFIG.apiUrl;
     localStorage.setItem('tg_token', this.token);
     localStorage.setItem('tg_chatid', this.chatId);
     document.getElementById('tg-token').value = this.token;
     document.getElementById('tg-chatid').value = this.chatId;
     this.updateStatus();
     showToast('↩️ تمت استعادة الإعدادات المدمجة', 'success');
-    // إعادة التحقق
-    setTimeout(() => { this.autoCheck(); }, 500);
+    setTimeout(() => this.testConnection(false), 500);
   },
 
   hasConfig() {
@@ -526,116 +463,55 @@ const Telegram = {
   updateStatus() {
     const el = document.getElementById('tg-status');
     const textEl = document.getElementById('status-text');
-    const detailEl = document.getElementById('status-detail');
     
-    if (this.status === 'checking') {
-      el.className = 'status checking';
-      textEl.textContent = '⏳ جاري التحقق...';
-      detailEl.textContent = '';
-      return;
-    }
-    
-    if (this.status === 'online') {
+    if (this.hasConfig()) {
       el.className = 'status online';
-      const tokenPreview = this.token.substring(0, 10) + '...';
-      textEl.textContent = '✅ متصل';
-      detailEl.textContent = tokenPreview + ' | ' + this.chatId;
+      textEl.textContent = '✅ متصل | ' + this.token.substring(0, 10) + '...';
     } else {
       el.className = 'status offline';
       textEl.textContent = '❌ غير متصل';
-      if (this.token && this.chatId) {
-        detailEl.textContent = '⚠️ تحقق من التوكن وصلاحية البوت في القناة';
-      } else {
-        detailEl.textContent = '⚠️ أدخل التوكن و Chat ID';
-      }
     }
   },
 
   async testConnection(showToastMsg = true) {
-    if (!this.token) {
-      this.status = 'offline';
-      this.updateStatus();
-      if (showToastMsg) showToast('⚠️ أدخل توكن البوت أولاً', 'error');
+    if (!this.hasConfig()) {
+      if (showToastMsg) showToast('⚠️ أدخل التوكن و Chat ID', 'error');
       return false;
     }
     
-    this.status = 'checking';
-    this.updateStatus();
-    
     try {
-      // 1. اختبار البوت
+      // اختبار البوت
       const res = await fetch(this.apiUrl + this.token + '/getMe');
       const data = await res.json();
       
       if (!data.ok) {
-        this.status = 'offline';
-        this.updateStatus();
-        if (showToastMsg) showToast('❌ توكن غير صحيح: ' + data.description, 'error');
+        if (showToastMsg) showToast('❌ توكن غير صحيح', 'error');
         return false;
       }
       
-      // 2. اختبار القناة
-      if (this.chatId) {
-        try {
-          const chatRes = await fetch(this.apiUrl + this.token + '/getChat?chat_id=' + encodeURIComponent(this.chatId));
-          const chatData = await chatRes.json();
-          
-          if (!chatData.ok) {
-            this.status = 'offline';
-            this.updateStatus();
-            if (showToastMsg) showToast('⚠️ البوت شغّال لكن Chat ID غير صحيح: ' + chatData.description, 'warn');
-            return false;
-          }
-          
-          // 3. محاولة إرسال رسالة اختبار
-          try {
-            const testRes = await fetch(this.apiUrl + this.token + '/sendMessage', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                chat_id: this.chatId,
-                text: '🔍 اختبار اتصال من تطبيق أيقونات المربعات',
-                disable_notification: true
-              })
-            });
-            const testData = await testRes.json();
-            
-            if (!testData.ok) {
-              this.status = 'offline';
-              this.updateStatus();
-              if (showToastMsg) showToast('⚠️ البوت ليس لديه صلاحية الإرسال في القناة: تأكد من جعله مسؤولاً', 'warn');
-              return false;
-            }
-            
-            this.status = 'online';
-            this.updateStatus();
-            if (showToastMsg) showToast('✅ الاتصال ناجح! البوت: @' + data.result.username + ' | القناة: ' + (chatData.result.title || chatData.result.first_name), 'success');
-            return true;
-            
-          } catch(e) {
-            this.status = 'offline';
-            this.updateStatus();
-            if (showToastMsg) showToast('⚠️ البوت ليس لديه صلاحية الإرسال في القناة', 'warn');
-            return false;
-          }
-          
-        } catch(e) {
-          this.status = 'offline';
-          this.updateStatus();
-          if (showToastMsg) showToast('⚠️ فشل التحقق من Chat ID: ' + e.message, 'warn');
+      // اختبار القناة
+      try {
+        const chatRes = await fetch(this.apiUrl + this.token + '/getChat?chat_id=' + encodeURIComponent(this.chatId));
+        const chatData = await chatRes.json();
+        
+        if (!chatData.ok) {
+          if (showToastMsg) showToast('⚠️ Chat ID غير صحيح', 'warn');
           return false;
         }
+        
+        if (showToastMsg) {
+          showToast('✅ الاتصال ناجح! البوت: @' + data.result.username + ' | القناة: ' + (chatData.result.title || chatData.result.first_name), 'success');
+        }
+        this.updateStatus();
+        return true;
+        
+      } catch(e) {
+        if (showToastMsg) showToast('⚠️ فشل التحقق من Chat ID', 'warn');
+        return false;
       }
       
-      this.status = 'online';
-      this.updateStatus();
-      if (showToastMsg) showToast('✅ البوت شغّال: @' + data.result.username + ' (أدخل Chat ID للقناة)', 'success');
-      return true;
-      
     } catch(e) {
-      this.status = 'offline';
-      this.updateStatus();
-      if (showToastMsg) showToast('❌ خطأ في الاتصال: ' + e.message, 'error');
+      if (showToastMsg) showToast('❌ خطأ: ' + e.message, 'error');
       return false;
     }
   },
@@ -866,17 +742,15 @@ async function syncChannel() {
   log.innerHTML = '<span class="info">⏳ جاري المزامنة...</span>';
 
   try {
-    // التأكد من الاتصال أولاً
     if (!Telegram.hasConfig()) {
       log.innerHTML = '<span class="error">❌ إعدادات تيليجرام غير مكتملة</span>';
       showToast('❌ أدخل إعدادات تيليجرام أولاً', 'error');
       return;
     }
     
-    // اختبار الاتصال قبل المزامنة
     const connected = await Telegram.testConnection(false);
     if (!connected) {
-      log.innerHTML = '<span class="error">❌ لا يمكن الاتصال بتليجرام. تحقق من التوكن وصلاحية البوت.</span>';
+      log.innerHTML = '<span class="error">❌ لا يمكن الاتصال بتليجرام</span>';
       showToast('❌ لا يمكن الاتصال بتليجرام', 'error');
       return;
     }
@@ -973,7 +847,7 @@ async function testTelegram() {
   Telegram.token = token;
   Telegram.chatId = chatId || Telegram.chatId;
   await Telegram.testConnection(true);
-  if (Telegram.status === 'online') {
+  if (Telegram.hasConfig()) {
     Telegram.save(token, chatId);
   }
 }
@@ -984,7 +858,7 @@ function saveTelegram() {
   if (!token || !chatId) { showToast('⚠️ أدخل التوكن و Chat ID', 'error'); return; }
   Telegram.save(token, chatId);
   showToast('✅ تم حفظ إعدادات تيليجرام', 'success');
-  setTimeout(() => { Telegram.autoCheck(); }, 500);
+  setTimeout(() => Telegram.testConnection(false), 500);
 }
 
 function resetTelegram() {
@@ -1006,7 +880,7 @@ function showToast(msg, type) {
     toast.style.opacity = '0';
     toast.style.transform = 'translateY(-10px)';
     setTimeout(() => toast.remove(), 300);
-  }, 4000);
+  }, 3500);
 }
 
 // ============================================================
@@ -1016,14 +890,13 @@ document.addEventListener('DOMContentLoaded', function() {
   Telegram.init();
   loadTileData();
   renderGrid();
-  showToast('📦 النظام جاهز! جاري التحقق من الاتصال...', 'info');
+  showToast('📦 النظام جاهز! التوكن محدث ✅', 'success');
 });
 
 console.log('✅ أيقونات المربعات + قناة تيليجرام جاهز!');
-console.log('📡 الإعدادات المدمجة:');
-console.log('  🤖 Token:', TELEGRAM_CONFIG.botToken.substring(0, 15) + '...');
-console.log('  💬 Chat ID:', TELEGRAM_CONFIG.channelId);
-console.log('🔧 تأكد من أن البوت مسؤول في القناة');
+console.log('📡 التوكن الجديد:', TELEGRAM_CONFIG.botToken.substring(0, 15) + '...');
+console.log('💬 Chat ID:', TELEGRAM_CONFIG.channelId);
 </script>
 </body>
 </html>
+
