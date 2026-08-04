@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -336,8 +335,6 @@ body { font-family: 'Cairo', sans-serif; background: #050510; color: #fff; overf
 #coords-display-box { position: fixed; bottom: 90px; right: 12px; z-index: 100; background: rgba(0,0,0,0.75); border: 1px solid rgba(0,242,255,0.2); border-radius: 12px; padding: 6px 14px; font-size: 13px; font-weight: 700; color: #00f2ff; backdrop-filter: blur(12px); display: none; box-shadow: 0 4px 16px rgba(0,0,0,0.3); letter-spacing: 0.5px; }
 #coords-display-box .coord-label { font-size: 9px; color: #888; display: block; text-align: center; margin-bottom: 2px; }
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
 </head>
 <body>
 
@@ -3128,7 +3125,7 @@ function updateMinimap() {
 /* ═══════════════════════════════════════════════════════════════
    نظام الأيقونات الكروية
    ═══════════════════════════════════════════════════════════════ */
-function createIconTexture(emoji, name, color, isHovered, imageUrl) {
+function createIconTexture(emoji, name, color, isHovered) {
   const canvas = document.createElement('canvas');
   canvas.width = 256; canvas.height = 256;
   const ctx = canvas.getContext('2d');
@@ -3150,35 +3147,19 @@ function createIconTexture(emoji, name, color, isHovered, imageUrl) {
   ctx.lineWidth = 2;
   ctx.stroke();
 
-  if (imageUrl) {
-    // For stickers/images: draw the image clipped to circle
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(128, 128, 105, 0, Math.PI * 2);
-    ctx.clip();
-    ctx.fillStyle = isHovered ? color : 'rgba(10,10,20,0.9)';
-    ctx.fillRect(0, 0, 256, 256);
-    ctx.restore();
-    // Image will be drawn asynchronously by the caller
-    ctx.font = 'bold 16px Cairo, Arial';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.fillText(name, 128, 235);
-  } else {
-    ctx.font = 'bold 100px Arial';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.shadowColor = color;
-    ctx.shadowBlur = isHovered ? 40 : 20;
-    ctx.fillText(emoji, 128, 110);
-    ctx.shadowBlur = 0;
+  ctx.font = 'bold 100px Arial';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.shadowColor = color;
+  ctx.shadowBlur = isHovered ? 40 : 20;
+  ctx.fillText(emoji, 128, 110);
+  ctx.shadowBlur = 0;
 
-    ctx.font = 'bold 20px Cairo, Arial';
-    ctx.fillStyle = '#ffffff';
-    ctx.shadowColor = 'rgba(0,0,0,0.8)';
-    ctx.shadowBlur = 8;
-    ctx.fillText(name, 128, 185);
-    ctx.shadowBlur = 0;
-  }
+  ctx.font = 'bold 20px Cairo, Arial';
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0,0,0,0.8)';
+  ctx.shadowBlur = 8;
+  ctx.fillText(name, 128, 185);
+  ctx.shadowBlur = 0;
 
   return new THREE.CanvasTexture(canvas);
 }
@@ -3188,13 +3169,6 @@ function buildSphere() {
     iconSprites.forEach(function(s) {
       if (s.material && s.material.map) s.material.map.dispose();
       if (s.material) s.material.dispose();
-      if (s.userData.lottieAnim) {
-        s.userData.lottieAnim.destroy();
-      }
-      if (s.userData.videoEl) {
-        s.userData.videoEl.pause();
-        s.userData.videoEl.src = '';
-      }
     });
     scene.remove(sphereGroup);
   }
@@ -3215,104 +3189,20 @@ function buildSphere() {
     const z = Math.sin(theta) * radiusAtY;
     const position = new THREE.Vector3(x * radius, y * radius, z * radius);
 
-    if (world.videoUrl) {
-      // WebM video icon
-      const video = document.createElement('video');
-      video.src = world.videoUrl;
-      video.loop = true;
-      video.muted = true;
-      video.playsInline = true;
-      video.crossOrigin = 'anonymous';
-      video.play().catch(function(){});
-
-      const tex = new THREE.VideoTexture(video);
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-
-      const mat = new THREE.SpriteMaterial({
-        map: tex, transparent: true, depthTest: true, opacity: 0.95
-      });
-      const sprite = new THREE.Sprite(mat);
-      sprite.position.copy(position);
-      sprite.scale.set(2.2, 2.2, 1);
-      sprite.userData = {
-        index: i, world: world,
-        position: position.clone(),
-        hovered: false, baseScale: 2.2,
-        videoEl: video, isVideo: true
-      };
-      sphereGroup.add(sprite);
-      iconSprites.push(sprite);
-
-    } else if (world.tgsData) {
-      // TGS animated sticker
-      const canvas = document.createElement('canvas');
-      canvas.width = 256;
-      canvas.height = 256;
-
-      const anim = lottie.loadAnimation({
-        container: canvas,
-        renderer: 'canvas',
-        loop: true,
-        autoplay: true,
-        animationData: world.tgsData
-      });
-
-      const tex = new THREE.CanvasTexture(canvas);
-      tex.minFilter = THREE.LinearFilter;
-
-      const mat = new THREE.SpriteMaterial({
-        map: tex, transparent: true, depthTest: true, opacity: 0.95
-      });
-      const sprite = new THREE.Sprite(mat);
-      sprite.position.copy(position);
-      sprite.scale.set(2.2, 2.2, 1);
-      sprite.userData = {
-        index: i, world: world,
-        position: position.clone(),
-        hovered: false, baseScale: 2.2,
-        lottieAnim: anim, isTGS: true, tgsCanvas: canvas, tgsTexture: tex
-      };
-      sphereGroup.add(sprite);
-      iconSprites.push(sprite);
-
-    } else if (world.imageUrl) {
-      // Static image icon
-      const loader = new THREE.ImageLoader();
-      loader.load(world.imageUrl, function(image) {
-        const tex = new THREE.Texture(image);
-        tex.needsUpdate = true;
-        const mat = new THREE.SpriteMaterial({
-          map: tex, transparent: true, depthTest: true, opacity: 0.95
-        });
-        const sprite = new THREE.Sprite(mat);
-        sprite.position.copy(position);
-        sprite.scale.set(2.2, 2.2, 1);
-        sprite.userData = {
-          index: i, world: world,
-          position: position.clone(),
-          hovered: false, baseScale: 2.2
-        };
-        if (sphereGroup) sphereGroup.add(sprite);
-        iconSprites.push(sprite);
-      });
-    } else {
-      // Emoji icon
-      const tex = createIconTexture(world.emoji, world.name, world.color, false);
-      const mat = new THREE.SpriteMaterial({
-        map: tex, transparent: true, depthTest: true, opacity: 0.9
-      });
-      const sprite = new THREE.Sprite(mat);
-      sprite.position.copy(position);
-      sprite.scale.set(2.2, 2.2, 1);
-      sprite.userData = {
-        index: i, world: world,
-        position: position.clone(),
-        hovered: false, baseScale: 2.2
-      };
-      sphereGroup.add(sprite);
-      iconSprites.push(sprite);
-    }
+    const tex = createIconTexture(world.emoji, world.name, world.color, false);
+    const mat = new THREE.SpriteMaterial({
+      map: tex, transparent: true, depthTest: true, opacity: 0.9
+    });
+    const sprite = new THREE.Sprite(mat);
+    sprite.position.copy(position);
+    sprite.scale.set(2.2, 2.2, 1);
+    sprite.userData = {
+      index: i, world: world,
+      position: position.clone(),
+      hovered: false, baseScale: 2.2
+    };
+    sphereGroup.add(sprite);
+    iconSprites.push(sprite);
   });
 
   const glow = new THREE.PointLight(0x8b5cf6, 1.5, 30);
@@ -3431,18 +3321,14 @@ function setupFacetInteraction() {
         if (selectedIcon !== null && iconSprites[selectedIcon]) {
           const prev = iconSprites[selectedIcon];
           const world = prev.userData.world;
-          if (!world.imageUrl) {
-            prev.material.map = createIconTexture(world.emoji, world.name, world.color, false);
-          }
+          prev.material.map = createIconTexture(world.emoji, world.name, world.color, false);
           prev.scale.set(prev.userData.baseScale, prev.userData.baseScale, 1);
           prev.userData.hovered = false;
         }
         selectedIcon = index;
         const cur = iconSprites[index];
         const world = cur.userData.world;
-        if (!world.imageUrl) {
-          cur.material.map = createIconTexture(world.emoji, world.name, world.color, true);
-        }
+        cur.material.map = createIconTexture(world.emoji, world.name, world.color, true);
         cur.scale.set(cur.userData.baseScale * 1.3, cur.userData.baseScale * 1.3, 1);
         cur.userData.hovered = true;
         renderer.domElement.style.cursor = 'pointer';
@@ -3454,9 +3340,7 @@ function setupFacetInteraction() {
     if (selectedIcon !== null && iconSprites[selectedIcon]) {
       const prev = iconSprites[selectedIcon];
       const world = prev.userData.world;
-      if (!world.imageUrl) {
-        prev.material.map = createIconTexture(world.emoji, world.name, world.color, false);
-      }
+      prev.material.map = createIconTexture(world.emoji, world.name, world.color, false);
       prev.scale.set(prev.userData.baseScale, prev.userData.baseScale, 1);
       prev.userData.hovered = false;
     }
@@ -5364,137 +5248,30 @@ function openTelegramInIframe() {
 /* ═══════════════════════════════════════════════════════════════
    🎯 إضافة أيقونة للكرة الكروية (مدير فقط)
    ═══════════════════════════════════════════════════════════════ */
-let currentIconTab = 'emoji';
-let pendingStickerImage = null;
-
-function switchIconTab(tab) {
-  currentIconTab = tab;
-  document.getElementById('section-emoji').style.display = tab === 'emoji' ? 'block' : 'none';
-  document.getElementById('section-sticker').style.display = tab === 'sticker' ? 'block' : 'none';
-
-  const btnEmoji = document.getElementById('tab-emoji');
-  const btnSticker = document.getElementById('tab-sticker');
-
-  if (tab === 'emoji') {
-    btnEmoji.style.cssText = 'flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.15);color:#ffd700;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;';
-    btnSticker.style.cssText = 'flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#aaa;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;';
-  } else {
-    btnSticker.style.cssText = 'flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.15);color:#ffd700;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;';
-    btnEmoji.style.cssText = 'flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#aaa;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;';
-  }
-  updateIconPreview();
-}
-
-function updateIconPreview() {
-  const previewBox = document.getElementById('icon-preview-box');
-  const previewName = document.getElementById('icon-preview-name');
-
-  if (currentIconTab === 'emoji') {
-    const emoji = document.getElementById('icon-emoji-input').value.trim() || '🌍';
-    const name = document.getElementById('icon-name-input').value.trim() || 'عالم جديد';
-    const color = document.getElementById('icon-color-input').value || '#22c55e';
-    previewBox.innerHTML = emoji;
-    previewBox.style.color = color;
-    previewBox.style.fontSize = '40px';
-    previewName.textContent = name;
-  } else {
-    const name = document.getElementById('sticker-name-input').value.trim() || 'ملصق جديد';
-    const color = document.getElementById('sticker-color-input').value || '#8b5cf6';
-    if (pendingStickerImage) {
-      if (pendingStickerImage.type === 'video') {
-        previewBox.innerHTML = '<div style="font-size:32px;">🎬</div><div style="font-size:10px;color:#aaa;">WebM</div>';
-      } else if (pendingStickerImage.type === 'tgs') {
-        previewBox.innerHTML = '<div style="font-size:32px;">✨</div><div style="font-size:10px;color:#aaa;">TGS</div>';
-      } else {
-        previewBox.innerHTML = '<img src="' + pendingStickerImage.url + '" style="max-width:64px;max-height:64px;border-radius:8px;">';
-      }
-    } else {
-      previewBox.innerHTML = '🖼️';
-      previewBox.style.fontSize = '40px';
-    }
-    previewBox.style.color = color;
-    previewName.textContent = name;
-  }
-}
-
-function handleStickerFile(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-
-  const ext = file.name.split('.').pop().toLowerCase();
-
-  if (ext === 'webm') {
-    const url = URL.createObjectURL(file);
-    pendingStickerImage = { type: 'video', url: url, name: file.name };
-    document.getElementById('sticker-file-name').textContent = '🎬 ' + file.name;
-    document.getElementById('sticker-file-name').style.display = 'block';
-    updateIconPreview();
-  } else if (ext === 'tgs') {
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      const data = new Uint8Array(e.target.result);
-      try {
-        const inflated = pako.inflate(data, { to: 'string' });
-        const animationData = JSON.parse(inflated);
-        pendingStickerImage = { type: 'tgs', data: animationData, name: file.name };
-        document.getElementById('sticker-file-name').textContent = '✨ ' + file.name + ' (TGS)';
-        document.getElementById('sticker-file-name').style.display = 'block';
-        updateIconPreview();
-      } catch(err) {
-        showToast('❌ ملف TGS تالف: ' + err.message, 'error');
-      }
-    };
-    reader.readAsArrayBuffer(file);
-  } else {
-    // Image (png, jpg, gif, webp)
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      pendingStickerImage = { type: 'image', url: e.target.result, name: file.name };
-      document.getElementById('sticker-file-name').textContent = '🖼️ ' + file.name;
-      document.getElementById('sticker-file-name').style.display = 'block';
-      updateIconPreview();
-    };
-    reader.readAsDataURL(file);
-  }
-}
-
 function showAddIconModal() {
   if (!AccountManager.isAdmin || !AccountManager.isAdmin()) {
     showToast('🔒 هذه الميزة للمدير فقط', 'warn');
     return;
   }
-  pendingStickerImage = null;
-  document.getElementById('sticker-file-name').style.display = 'none';
-  document.getElementById('sticker-file-input').value = '';
-
-  switchIconTab('emoji');
-
+  const modal = document.getElementById('add-icon-modal');
   const emojiInput = document.getElementById('icon-emoji-input');
   const nameInput = document.getElementById('icon-name-input');
   const colorInput = document.getElementById('icon-color-input');
-  const stickerName = document.getElementById('sticker-name-input');
-  const stickerColor = document.getElementById('sticker-color-input');
+  const previewBox = document.getElementById('icon-preview-box');
+  const previewName = document.getElementById('icon-preview-name');
 
-  emojiInput.oninput = updateIconPreview;
-  nameInput.oninput = updateIconPreview;
-  colorInput.oninput = updateIconPreview;
-  stickerName.oninput = updateIconPreview;
-  stickerColor.oninput = updateIconPreview;
+  function updatePreview() {
+    previewBox.textContent = emojiInput.value || '🌍';
+    previewName.textContent = nameInput.value || 'عالم جديد';
+    previewBox.style.color = colorInput.value;
+  }
 
-  document.getElementById('sticker-file-input').onchange = handleStickerFile;
+  emojiInput.oninput = updatePreview;
+  nameInput.oninput = updatePreview;
+  colorInput.oninput = updatePreview;
 
-  // Drop zone events
-  const dropZone = document.getElementById('sticker-drop-zone');
-  dropZone.ondragover = function(e) { e.preventDefault(); dropZone.style.borderColor = 'rgba(139,92,246,0.6)'; dropZone.style.background = 'rgba(139,92,246,0.05)'; };
-  dropZone.ondragleave = function() { dropZone.style.borderColor = 'rgba(139,92,246,0.2)'; dropZone.style.background = 'transparent'; };
-  dropZone.ondrop = function(e) {
-    e.preventDefault();
-    dropZone.style.borderColor = 'rgba(139,92,246,0.2)'; dropZone.style.background = 'transparent';
-    if (e.dataTransfer.files[0]) handleStickerFile({ target: { files: [e.dataTransfer.files[0]] } });
-  };
-
-  updateIconPreview();
-  document.getElementById('add-icon-modal').style.display = 'flex';
+  updatePreview();
+  modal.style.display = 'flex';
 }
 
 function addIconToSphere() {
@@ -5503,29 +5280,12 @@ function addIconToSphere() {
     return;
   }
 
-  let iconData;
-  if (currentIconTab === 'emoji') {
-    const emoji = document.getElementById('icon-emoji-input').value.trim() || '🌍';
-    const name = document.getElementById('icon-name-input').value.trim() || 'عالم جديد';
-    const color = document.getElementById('icon-color-input').value || '#22c55e';
-    iconData = { emoji: emoji, name: name, color: color };
-  } else {
-    const name = document.getElementById('sticker-name-input').value.trim() || 'ملصق جديد';
-    const color = document.getElementById('sticker-color-input').value || '#8b5cf6';
-    if (!pendingStickerImage) {
-      showToast('⚠️ اختر ملفاً أولاً', 'warn');
-      return;
-    }
-    if (pendingStickerImage.type === 'image') {
-      iconData = { emoji: '🖼️', name: name, color: color, imageUrl: pendingStickerImage.url };
-    } else if (pendingStickerImage.type === 'video') {
-      iconData = { emoji: '🎬', name: name, color: color, videoUrl: pendingStickerImage.url };
-    } else if (pendingStickerImage.type === 'tgs') {
-      iconData = { emoji: '✨', name: name, color: color, tgsData: pendingStickerImage.data };
-    }
-  }
+  const emoji = document.getElementById('icon-emoji-input').value.trim() || '🌍';
+  const name = document.getElementById('icon-name-input').value.trim() || 'عالم جديد';
+  const color = document.getElementById('icon-color-input').value || '#22c55e';
 
-  WORLD_ICONS.push(iconData);
+  WORLD_ICONS.push({ emoji: emoji, name: name, color: color });
+
   buildSphere();
 
   const mainWorld = getWorld('main');
@@ -5542,8 +5302,8 @@ function addIconToSphere() {
       mainWorld.items.push({
         id: 'portal_icon_' + newIndex + '_' + Date.now(),
         type: 'portal',
-        title: iconData.name,
-        emoji: iconData.emoji,
+        title: name,
+        emoji: emoji,
         row: pr, col: pc,
         targetWorld: 'world_icon_' + newIndex
       });
@@ -5552,7 +5312,7 @@ function addIconToSphere() {
   }
 
   closeModal('add-icon-modal');
-  showToast('✅ تم إضافة ' + iconData.name + ' إلى الكرة! (' + WORLD_ICONS.length + ' إجمالي)', 'success');
+  showToast('✅ تم إضافة أيقونة ' + name + ' إلى الكرة! (' + WORLD_ICONS.length + ' إجمالي)', 'success');
 }
 
 function initGame() {
@@ -5661,15 +5421,6 @@ function initGame() {
       window.floatingSprites.forEach(function(s) {
         if (s.userData) {
           s.position.y = 1.4 + Math.sin(time * s.userData.floatSpeed + s.userData.floatOffset) * 0.15;
-        }
-      });
-    }
-
-    // Update TGS animated stickers on sphere
-    if (iconSprites) {
-      iconSprites.forEach(function(s) {
-        if (s.userData && s.userData.isTGS && s.userData.tgsTexture) {
-          s.userData.tgsTexture.needsUpdate = true;
         }
       });
     }
@@ -5971,59 +5722,25 @@ console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة')
 </div>
 <div id="drag-indicator"><div class="drag-joystick"><div class="drag-knob"></div></div></div><!-- ====== نافذة إضافة أيقونة للكرة (مدير فقط) ====== -->
 <div id="add-icon-modal" class="modal-overlay">
-  <div class="modal-box" style="border:1px solid rgba(255,215,0,0.2);max-width:400px;">
+  <div class="modal-box" style="border:1px solid rgba(255,215,0,0.2);max-width:380px;">
     <h3 style="color:#ffd700;">🎯 إضافة أيقونة للكرة الكروية</h3>
-
-    <!-- Tabs -->
-    <div style="display:flex;gap:4px;margin-bottom:14px;">
-      <button id="tab-emoji" onclick="switchIconTab('emoji')" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,215,0,0.3);background:rgba(255,215,0,0.15);color:#ffd700;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">😀 إيموجي</button>
-      <button id="tab-sticker" onclick="switchIconTab('sticker')" style="flex:1;padding:8px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#aaa;font-weight:700;font-size:12px;cursor:pointer;font-family:inherit;">🖼️ ملصق / صورة</button>
+    <div style="margin-bottom:12px;">
+      <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">😀 الإيموجي</label>
+      <input type="text" id="icon-emoji-input" maxlength="2" placeholder="🌍" value="🌍" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;font-size:24px;text-align:center;">
     </div>
-
-    <!-- Emoji Section -->
-    <div id="section-emoji">
-      <div style="margin-bottom:12px;">
-        <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">😀 الإيموجي</label>
-        <input type="text" id="icon-emoji-input" maxlength="2" placeholder="🌍" value="🌍" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;font-size:24px;text-align:center;">
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🏷️ اسم الأيقونة</label>
-        <input type="text" id="icon-name-input" placeholder="اسم العالم" value="عالم جديد" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;font-size:14px;">
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🎨 لون الإطار</label>
-        <input type="color" id="icon-color-input" value="#22c55e" style="width:100%;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;cursor:pointer;">
-      </div>
+    <div style="margin-bottom:12px;">
+      <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🏷️ اسم الأيقونة</label>
+      <input type="text" id="icon-name-input" placeholder="اسم العالم" value="عالم جديد" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;font-size:14px;">
     </div>
-
-    <!-- Sticker Section -->
-    <div id="section-sticker" style="display:none;">
-      <div style="margin-bottom:12px;">
-        <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🏷️ اسم الملصق</label>
-        <input type="text" id="sticker-name-input" placeholder="اسم الملصق" value="ملصق جديد" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;font-size:14px;">
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🖼️ الصورة / الملصق / GIF</label>
-        <div id="sticker-drop-zone" style="border:2px dashed rgba(139,92,246,0.2);border-radius:12px;padding:16px;text-align:center;cursor:pointer;transition:all 0.3s;" onclick="document.getElementById('sticker-file-input').click()">
-          <div style="font-size:28px;margin-bottom:4px;">📤</div>
-          <div style="color:#888;font-size:12px;">اضغط أو اسحب صورة / GIF / WebM / TGS</div>
-          <div id="sticker-file-name" style="color:#4ade80;font-size:11px;margin-top:4px;display:none;"></div>
-        </div>
-        <input type="file" id="sticker-file-input" accept="image/*,.gif,.png,.jpg,.jpeg,.webp,.webm,.tgs" style="display:none;">
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🎨 لون الإطار (خلفية)</label>
-        <input type="color" id="sticker-color-input" value="#8b5cf6" style="width:100%;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;cursor:pointer;">
-      </div>
+    <div style="margin-bottom:12px;">
+      <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🎨 اللون</label>
+      <input type="color" id="icon-color-input" value="#22c55e" style="width:100%;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;cursor:pointer;">
     </div>
-
-    <!-- Preview -->
     <div style="margin-bottom:14px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.1);border-radius:10px;padding:10px;">
       <div style="color:#ffd700;font-size:12px;font-weight:700;margin-bottom:4px;">🌍 معاينة</div>
-      <div id="icon-preview-box" style="font-size:40px;text-align:center;padding:8px;min-height:60px;display:flex;align-items:center;justify-content:center;">🌍</div>
+      <div id="icon-preview-box" style="font-size:40px;text-align:center;padding:8px;">🌍</div>
       <div id="icon-preview-name" style="color:#aaa;font-size:12px;text-align:center;">عالم جديد</div>
     </div>
-
     <div class="modal-actions">
       <button class="btn-save" onclick="addIconToSphere()">✅ إضافة</button>
       <button class="btn-cancel" onclick="closeModal('add-icon-modal')">✖ إلغاء</button>
