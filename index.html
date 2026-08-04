@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -434,7 +432,6 @@ body { font-family: 'Cairo', sans-serif; background: #050510; color: #fff; overf
   <div class="settings-section-title">👑 إدارة</div>
   <div class="setting-row"><label>👑 تفعيل وضع المدير</label><button class="btn-gold" onclick="AccountManager.activateAdmin()">تفعيل</button></div>
   <div class="setting-row"><label>📊 حالة المدير</label><span id="admin-status" style="color:#888;font-size:11px;">غير مفعل</span></div>
-  <div class="setting-row" id="admin-add-icon-row" style="display:none;"><label>🎯 إضافة أيقونة للكرة</label><button class="btn-gold" onclick="showAddIconModal()">➕ إضافة</button></div>
 
   <div class="settings-section-title">📱 تلجرام</div>
   <div class="setting-row"><label>📱 إعدادات بوت تلجرام</label><button class="btn-gold" onclick="showTelegramSettings()">⚙️ إعدادات</button></div>
@@ -1113,14 +1110,174 @@ function setupWorldInfoModalFixed() {
 }
 
 /* ─── إغلاق النافذة (نسخة واحدة موحدة) ─── */
-
+function closeAddFileModal() {
+  const el = document.getElementById('add-file-modal');
+  if (el) el.remove();
+  selectedIconFile = null;
+  uploadedFileData = null;
+  uploadedFileURL = null;
+  pendingFile = null;
+}
 
 /* ─── initFileSystem نسخة واحدة ─── */
+function initFileSystem() {
+  console.log('📂 نظام إضافة الملفات جاهز (مسار + Caption + موقع دقيق)!');
+  console.log('🌍 ' + worlds.length + ' عالم متاح');
+}
 
 
 
 
 
+
+function closeAddFileModal() {
+  const el = document.getElementById('add-file-modal');
+  if (el) el.remove();
+  selectedIconFile = null;
+  uploadedFileData = null;
+  uploadedFileURL = null;
+  pendingFile = null;
+}
+
+function initFileUploadModal() {
+  const dropZone = document.getElementById('file-drop-zone-modal');
+  const fileInput = document.getElementById('file-input-modal');
+
+  dropZone.onclick = function() { fileInput.click(); };
+
+  fileInput.onchange = function(e) {
+    handleFileUploadModal(this.files[0]);
+  };
+
+  dropZone.ondragover = function(e) {
+    e.preventDefault();
+    dropZone.style.borderColor = 'rgba(139,92,246,0.6)';
+    dropZone.style.background = 'rgba(139,92,246,0.05)';
+  };
+
+  dropZone.ondragleave = function() {
+    dropZone.style.borderColor = 'rgba(139,92,246,0.2)';
+    dropZone.style.background = 'transparent';
+  };
+
+  dropZone.ondrop = function(e) {
+    e.preventDefault();
+    dropZone.style.borderColor = 'rgba(139,92,246,0.2)';
+    dropZone.style.background = 'transparent';
+    handleFileUploadModal(e.dataTransfer.files[0]);
+  };
+}
+
+function handleFileUploadModal(file) {
+  if (!file) return;
+
+  TelegramManager.init();
+  const display = document.getElementById('file-name-display-modal');
+  display.textContent = '⏳ جاري قراءة الملف...';
+  display.style.display = 'block';
+
+  const ext = file.name.split('.').pop().toLowerCase();
+  const typeMap = {
+    'mp4': 'video', 'webm': 'video', 'mov': 'video', 'avi': 'video',
+    'jpg': 'image', 'jpeg': 'image', 'png': 'image', 'gif': 'image', 'svg': 'image', 'webp': 'image',
+    'pdf': 'pdf', 'html': 'html', 'htm': 'html',
+    'txt': 'text', 'md': 'text',
+    'mp3': 'audio', 'wav': 'audio', 'ogg': 'audio'
+  };
+  const fileType = typeMap[ext] || 'file';
+
+  if (TelegramManager.hasConfig()) {
+    display.textContent = '⏳ جاري الرفع إلى تلجرام...';
+    TelegramManager.uploadFile(file, file.name).then(function(result) {
+      uploadedFileData = file;
+      uploadedFileURL = null;
+      uploadedFileData.telegram = result;
+
+      display.textContent = '✅ ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB) 📤 تلجرام';
+
+      const matchingIcon = FILE_ICONS.find(function(icon) { return icon.type === fileType; });
+      if (matchingIcon) {
+        const idx = FILE_ICONS.indexOf(matchingIcon);
+        selectedIconFile = matchingIcon;
+        selectedIconFile._index = idx;
+        document.querySelectorAll('#icon-grid-modal .icon-btn-modal').forEach(function(btn) {
+          btn.style.borderColor = 'transparent';
+          btn.style.background = 'rgba(255,255,255,0.04)';
+          if (btn.dataset.emoji === matchingIcon.emoji) {
+            btn.style.borderColor = '#ffd700';
+            btn.style.background = 'rgba(255,215,0,0.15)';
+          }
+        });
+        const numInput = document.getElementById('icon-number-modal');
+        if (numInput) numInput.value = idx;
+        const preview = document.getElementById('icon-preview-modal');
+        if (preview) preview.textContent = matchingIcon.emoji;
+        const nameEl = document.getElementById('icon-name-modal');
+        if (nameEl) nameEl.textContent = matchingIcon.name;
+      }
+      updateCaptionPreview();
+      showToast('📤 تم الرفع إلى تلجرام: ' + result.file_id.substring(0, 20) + '...', 'success');
+    }).catch(function(err) {
+      display.textContent = '❌ فشل الرفع: ' + err.message;
+      uploadedFileData = null;
+      uploadedFileURL = null;
+    });
+  } else {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      uploadedFileData = file;
+      uploadedFileURL = e.target.result;
+
+      display.textContent = '✅ ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB) [محلي]';
+
+      const matchingIcon = FILE_ICONS.find(function(icon) { return icon.type === fileType; });
+      if (matchingIcon) {
+        const idx = FILE_ICONS.indexOf(matchingIcon);
+        selectedIconFile = matchingIcon;
+        selectedIconFile._index = idx;
+        document.querySelectorAll('#icon-grid-modal .icon-btn-modal').forEach(function(btn) {
+          btn.style.borderColor = 'transparent';
+          btn.style.background = 'rgba(255,255,255,0.04)';
+          if (btn.dataset.emoji === matchingIcon.emoji) {
+            btn.style.borderColor = '#ffd700';
+            btn.style.background = 'rgba(255,215,0,0.15)';
+          }
+        });
+        const numInput = document.getElementById('icon-number-modal');
+        if (numInput) numInput.value = idx;
+        const preview = document.getElementById('icon-preview-modal');
+        if (preview) preview.textContent = matchingIcon.emoji;
+        const nameEl = document.getElementById('icon-name-modal');
+        if (nameEl) nameEl.textContent = matchingIcon.name;
+      }
+
+      updateCaptionPreview();
+      showToast('📂 تم رفع (محلي): ' + file.name, 'success');
+    };
+    reader.onerror = function() {
+      display.textContent = '❌ فشل قراءة الملف';
+      uploadedFileData = null;
+      uploadedFileURL = null;
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function setupWorldInfoModal() {
+  const select = document.getElementById('select-world-modal');
+  if (!select) return;
+  select.onchange = function() {
+    const world = worlds.find(function(w) { return w.id === select.value; });
+    if (world) {
+      const rowEl = document.getElementById('path1-row');
+      const colEl = document.getElementById('path1-col');
+      if (rowEl) rowEl.max = world.grid - 1;
+      if (colEl) colEl.max = world.grid - 1;
+    }
+    updateCaptionPreview();
+  };
+  select.dispatchEvent(new Event('change'));
+}
 
 /* ─── الإضافة والرفع والحفظ والبناء في الموقع المحدد ─── */
 async function addFileToTileWithPath() {
@@ -1344,8 +1501,61 @@ function applyCaptionToWorld(fileMeta, parsed) {
 }
 
 /* ─── مزامنة القناة — بدون عشوائية ─── */
+function addTelegramFilesToWorld(files) {
+  const main = getWorld('main');
+  if (!main) return;
+  let changed = false;
 
+  files.forEach(function(f) {
+    const existing = main.items.find(function(i) {
+      return i.file_unique_id === f.file_unique_id;
+    });
+    if (existing) return;
 
+    const parsed = parseTelegramCaption(f.caption || '');
+
+    if (parsed && parsed.row !== null && parsed.col !== null) {
+      if (applyCaptionToWorld(f, parsed)) {
+        changed = true;
+        if (!parsed.world || parsed.world === 'main' || !getWorld(parsed.world)) {
+          const iconIdx = (parsed.icon !== null && !isNaN(parsed.icon)) ? parsed.icon : 0;
+          const iconData = FILE_ICONS[iconIdx] || FILE_ICONS[0];
+          main.items = main.items.filter(function(i) {
+            return !(i.row === parsed.row && i.col === parsed.col);
+          });
+          main.items.push({
+            id: 'tg_' + f.file_unique_id,
+            type: 'telegram_file',
+            title: parsed.file || f.filename,
+            emoji: iconData.emoji || '📤',
+            row: parsed.row,
+            col: parsed.col,
+            path: parsed.path,
+            iconIndex: iconIdx,
+            file_id: f.file_id,
+            file_unique_id: f.file_unique_id,
+            filename: f.filename,
+            mime_type: f.mime_type,
+            file_size: f.file_size,
+            caption: f.caption
+          });
+        }
+      }
+    } else {
+      console.log('ملف بدون Caption مسار صالح، تم التجاهل:', f.filename);
+    }
+  });
+
+  if (changed && currentWorldId === 'main') {
+    buildWorld('main');
+    showToast('📤 تم إضافة ملفات بالمواقع المحددة من القناة', 'success');
+  }
+}
+
+function initFileSystem() {
+  console.log('📂 نظام إضافة الملفات جاهز (مسار + Caption + موقع دقيق)!');
+  console.log('🌍 ' + worlds.length + ' عالم متاح');
+}
 
 /* ═══════════════════════════════════════════════════════════════
    نهاية نظام إضافة الملفات
@@ -1685,14 +1895,10 @@ function toggleSettings() {
 
   // ✅ تحديث حالة المدير
   const statusEl = document.getElementById('admin-status');
-  const iconRow = document.getElementById('admin-add-icon-row');
-  const isAdmin = AccountManager.isAdmin ? AccountManager.isAdmin() : false;
   if (statusEl) {
+    const isAdmin = AccountManager.isAdmin ? AccountManager.isAdmin() : false;
     statusEl.textContent = isAdmin ? '👑 مفعل' : 'غير مفعل';
     statusEl.style.color = isAdmin ? '#ffd700' : '#888';
-  }
-  if (iconRow) {
-    iconRow.style.display = isAdmin ? 'flex' : 'none';
   }
 }
 
@@ -5246,77 +5452,6 @@ function openTelegramInIframe() {
   body.appendChild(iframe);
 }
 
-
-/* ═══════════════════════════════════════════════════════════════
-   🎯 إضافة أيقونة للكرة الكروية (مدير فقط)
-   ═══════════════════════════════════════════════════════════════ */
-function showAddIconModal() {
-  if (!AccountManager.isAdmin || !AccountManager.isAdmin()) {
-    showToast('🔒 هذه الميزة للمدير فقط', 'warn');
-    return;
-  }
-  const modal = document.getElementById('add-icon-modal');
-  const emojiInput = document.getElementById('icon-emoji-input');
-  const nameInput = document.getElementById('icon-name-input');
-  const colorInput = document.getElementById('icon-color-input');
-  const previewBox = document.getElementById('icon-preview-box');
-  const previewName = document.getElementById('icon-preview-name');
-
-  function updatePreview() {
-    previewBox.textContent = emojiInput.value || '🌍';
-    previewName.textContent = nameInput.value || 'عالم جديد';
-    previewBox.style.color = colorInput.value;
-  }
-
-  emojiInput.oninput = updatePreview;
-  nameInput.oninput = updatePreview;
-  colorInput.oninput = updatePreview;
-
-  updatePreview();
-  modal.style.display = 'flex';
-}
-
-function addIconToSphere() {
-  if (!AccountManager.isAdmin || !AccountManager.isAdmin()) {
-    showToast('🔒 المدير فقط', 'warn');
-    return;
-  }
-
-  const emoji = document.getElementById('icon-emoji-input').value.trim() || '🌍';
-  const name = document.getElementById('icon-name-input').value.trim() || 'عالم جديد';
-  const color = document.getElementById('icon-color-input').value || '#22c55e';
-
-  WORLD_ICONS.push({ emoji: emoji, name: name, color: color });
-
-  buildSphere();
-
-  const mainWorld = getWorld('main');
-  if (mainWorld) {
-    const newIndex = WORLD_ICONS.length - 1;
-    let pr, pc, attempts = 0;
-    do {
-      pr = 1 + Math.floor(Math.random() * 10);
-      pc = 1 + Math.floor(Math.random() * 10);
-      attempts++;
-    } while (mainWorld.items.some(function(it) { return it.row === pr && it.col === pc; }) && attempts < 50);
-
-    if (attempts < 50) {
-      mainWorld.items.push({
-        id: 'portal_icon_' + newIndex + '_' + Date.now(),
-        type: 'portal',
-        title: name,
-        emoji: emoji,
-        row: pr, col: pc,
-        targetWorld: 'world_icon_' + newIndex
-      });
-      if (currentWorldId === 'main') buildWorld('main');
-    }
-  }
-
-  closeModal('add-icon-modal');
-  showToast('✅ تم إضافة أيقونة ' + name + ' إلى الكرة! (' + WORLD_ICONS.length + ' إجمالي)', 'success');
-}
-
 function initGame() {
   const canvas = document.getElementById('canvas');
 
@@ -5722,36 +5857,9 @@ console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة')
   <button class="platform-btn" onclick="EconomySystem.showDaily()">🎁 يومي</button>
   <button class="platform-btn" onclick="AccountManager.logout()">🚪 خروج</button>
 </div>
-<div id="drag-indicator"><div class="drag-joystick"><div class="drag-knob"></div></div></div><!-- ====== نافذة إضافة أيقونة للكرة (مدير فقط) ====== -->
-<div id="add-icon-modal" class="modal-overlay">
-  <div class="modal-box" style="border:1px solid rgba(255,215,0,0.2);max-width:380px;">
-    <h3 style="color:#ffd700;">🎯 إضافة أيقونة للكرة الكروية</h3>
-    <div style="margin-bottom:12px;">
-      <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">😀 الإيموجي</label>
-      <input type="text" id="icon-emoji-input" maxlength="2" placeholder="🌍" value="🌍" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;font-size:24px;text-align:center;">
-    </div>
-    <div style="margin-bottom:12px;">
-      <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🏷️ اسم الأيقونة</label>
-      <input type="text" id="icon-name-input" placeholder="اسم العالم" value="عالم جديد" style="width:100%;padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;font-size:14px;">
-    </div>
-    <div style="margin-bottom:12px;">
-      <label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🎨 اللون</label>
-      <input type="color" id="icon-color-input" value="#22c55e" style="width:100%;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:transparent;cursor:pointer;">
-    </div>
-    <div style="margin-bottom:14px;background:rgba(255,215,0,0.04);border:1px solid rgba(255,215,0,0.1);border-radius:10px;padding:10px;">
-      <div style="color:#ffd700;font-size:12px;font-weight:700;margin-bottom:4px;">🌍 معاينة</div>
-      <div id="icon-preview-box" style="font-size:40px;text-align:center;padding:8px;">🌍</div>
-      <div id="icon-preview-name" style="color:#aaa;font-size:12px;text-align:center;">عالم جديد</div>
-    </div>
-    <div class="modal-actions">
-      <button class="btn-save" onclick="addIconToSphere()">✅ إضافة</button>
-      <button class="btn-cancel" onclick="closeModal('add-icon-modal')">✖ إلغاء</button>
-    </div>
-  </div>
-</div>
-
-</body>
+<div id="drag-indicator"><div class="drag-joystick"><div class="drag-knob"></div></div></div></body>
 </html>
+
 
 
   
