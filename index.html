@@ -101,6 +101,18 @@ h1 { color: #ffd700; font-size: 24px; margin-bottom: 16px; text-align: center; }
 #sync-log .success { color: #4ade80; }
 #sync-log .error { color: #f87171; }
 #sync-log .info { color: #60a5fa; }
+
+/* ====== إعدادات مدمجة ====== */
+.settings-badge {
+  background: rgba(255,215,0,0.1);
+  border: 1px solid rgba(255,215,0,0.15);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 10px;
+  color: #ffd700;
+  display: inline-block;
+  margin-top: 4px;
+}
 </style>
 </head>
 <body>
@@ -113,6 +125,10 @@ h1 { color: #ffd700; font-size: 24px; margin-bottom: 16px; text-align: center; }
 <!-- ====== لوحة تيليجرام ====== -->
 <div class="telegram-panel">
   <h3>📱 إعدادات قناة تيليجرام</h3>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <span style="color:#888;font-size:11px;">🤖 الإعدادات المدمجة:</span>
+    <span class="settings-badge">✅ تم التهيئة</span>
+  </div>
   <label>🤖 توكن البوت (من @BotFather)</label>
   <input type="text" id="tg-token" placeholder="123456789:ABCdef..." value="">
   <label>💬 Chat ID (رقم أو @channel)</label>
@@ -121,6 +137,7 @@ h1 { color: #ffd700; font-size: 24px; margin-bottom: 16px; text-align: center; }
     <button class="btn btn-primary" onclick="testTelegram()">🧪 اختبار</button>
     <button class="btn btn-gold" onclick="saveTelegram()">💾 حفظ</button>
     <button class="btn btn-green" onclick="syncChannel()">🔄 مزامنة القناة</button>
+    <button class="btn btn-red" onclick="resetTelegram()">↩️ إعادة الإعدادات المدمجة</button>
   </div>
   <div class="status offline" id="tg-status">❌ غير متصل</div>
   <div id="sync-log"></div>
@@ -176,6 +193,15 @@ h1 { color: #ffd700; font-size: 24px; margin-bottom: 16px; text-align: center; }
 
 <script>
 // ============================================================
+//  📡 إعدادات التليجرام - مدمجة مباشرة
+// ============================================================
+const TELEGRAM_CONFIG = {
+    botToken: '8309126051:AAH3EvvDAo6KkYJNNBaI28pgPexVdjqW2uM',
+    channelId: '-1003822964890',
+    apiUrl: 'https://api.telegram.org/bot'
+};
+
+// ============================================================
 //  📦 بيانات المربعات
 // ============================================================
 const GRID_ROWS = 8;
@@ -190,10 +216,26 @@ let tileData = [];
 const Telegram = {
   token: '',
   chatId: '',
+  apiUrl: 'https://api.telegram.org/bot',
 
   init() {
-    this.token = localStorage.getItem('tg_token') || '';
-    this.chatId = localStorage.getItem('tg_chatid') || '';
+    // تحميل من localStorage أو استخدام الإعدادات المدمجة
+    const savedToken = localStorage.getItem('tg_token');
+    const savedChatId = localStorage.getItem('tg_chatid');
+    
+    if (savedToken && savedChatId) {
+      this.token = savedToken;
+      this.chatId = savedChatId;
+    } else {
+      // استخدام الإعدادات المدمجة
+      this.token = TELEGRAM_CONFIG.botToken;
+      this.chatId = TELEGRAM_CONFIG.channelId;
+      this.apiUrl = TELEGRAM_CONFIG.apiUrl;
+      // حفظ الإعدادات المدمجة في localStorage لأول مرة
+      localStorage.setItem('tg_token', this.token);
+      localStorage.setItem('tg_chatid', this.chatId);
+    }
+    
     document.getElementById('tg-token').value = this.token;
     document.getElementById('tg-chatid').value = this.chatId;
     this.updateStatus();
@@ -208,6 +250,18 @@ const Telegram = {
     this.updateStatus();
   },
 
+  resetToDefault() {
+    this.token = TELEGRAM_CONFIG.botToken;
+    this.chatId = TELEGRAM_CONFIG.channelId;
+    this.apiUrl = TELEGRAM_CONFIG.apiUrl;
+    localStorage.setItem('tg_token', this.token);
+    localStorage.setItem('tg_chatid', this.chatId);
+    document.getElementById('tg-token').value = this.token;
+    document.getElementById('tg-chatid').value = this.chatId;
+    this.updateStatus();
+    showToast('↩️ تمت استعادة الإعدادات المدمجة', 'success');
+  },
+
   hasConfig() {
     return this.token.length > 10 && this.chatId.length > 0;
   },
@@ -215,7 +269,9 @@ const Telegram = {
   updateStatus() {
     const el = document.getElementById('tg-status');
     if (this.hasConfig()) {
-      el.textContent = '✅ متصل بالقناة: ' + this.chatId;
+      // إخفاء جزء من التوكن للأمان
+      const tokenPreview = this.token.substring(0, 10) + '...';
+      el.textContent = '✅ متصل | البوت: ' + tokenPreview + ' | القناة: ' + this.chatId;
       el.className = 'status online';
     } else {
       el.textContent = '❌ غير متصل (أدخل التوكن و Chat ID)';
@@ -227,7 +283,7 @@ const Telegram = {
   async test() {
     if (!this.token) { showToast('⚠️ أدخل توكن البوت أولاً', 'error'); return false; }
     try {
-      const res = await fetch('https://api.telegram.org/bot' + this.token + '/getMe');
+      const res = await fetch(this.apiUrl + this.token + '/getMe');
       const data = await res.json();
       if (!data.ok) { showToast('❌ ' + data.description, 'error'); return false; }
       showToast('✅ البوت شغّال: @' + data.result.username, 'success');
@@ -245,7 +301,7 @@ const Telegram = {
     form.append('chat_id', this.chatId);
     form.append('document', file);
     if (caption) form.append('caption', caption);
-    const res = await fetch('https://api.telegram.org/bot' + this.token + '/sendDocument', {
+    const res = await fetch(this.apiUrl + this.token + '/sendDocument', {
       method: 'POST',
       body: form
     });
@@ -263,7 +319,7 @@ const Telegram = {
   // جلب التحديثات من القناة
   async getUpdates(offset) {
     if (!this.hasConfig()) return [];
-    const url = 'https://api.telegram.org/bot' + this.token + '/getUpdates?offset=' + (offset || 0) + '&limit=50';
+    const url = this.apiUrl + this.token + '/getUpdates?offset=' + (offset || 0) + '&limit=50';
     const res = await fetch(url);
     const data = await res.json();
     if (!data.ok) throw new Error(data.description || 'فشل جلب التحديثات');
@@ -272,10 +328,10 @@ const Telegram = {
 
   // الحصول على رابط الملف
   async getFileUrl(fileId) {
-    const res = await fetch('https://api.telegram.org/bot' + this.token + '/getFile?file_id=' + encodeURIComponent(fileId));
+    const res = await fetch(this.apiUrl + this.token + '/getFile?file_id=' + encodeURIComponent(fileId));
     const data = await res.json();
     if (!data.ok) throw new Error(data.description || 'فشل جلب الملف');
-    return 'https://api.telegram.org/file/bot' + this.token + '/' + data.result.file_path;
+    return this.apiUrl + this.token + '/' + data.result.file_path;
   }
 };
 
@@ -354,14 +410,12 @@ async function openTile(row, col) {
         showToast('🌐 تم فتح HTML في تبويب جديد', 'success');
       } else if (isImage) {
         showToast('🖼️ فتح الصورة', 'info');
-        // عرض الصورة في نافذة جديدة
         const win = window.open('', '_blank');
         win.document.write('<img src="' + url + '" style="max-width:100%;max-height:100vh;display:block;margin:auto;">');
       } else if (isVideo) {
         const win = window.open('', '_blank');
         win.document.write('<video src="' + url + '" controls autoplay style="max-width:100%;max-height:100vh;display:block;margin:auto;background:#000;"></video>');
       } else {
-        // عرض كملف: تحميل
         const a = document.createElement('a');
         a.href = url;
         a.download = data.filename || 'file';
@@ -486,7 +540,6 @@ async function syncChannel() {
       const title = parsed.title || msg.document.file_name || 'ملف';
 
       if (!tileData[row]) tileData[row] = [];
-      // تجنب التكرار
       const exists = tileData[row][col] && tileData[row][col].fileUniqueId === msg.document.file_unique_id;
       if (!exists) {
         tileData[row][col] = {
@@ -575,6 +628,12 @@ function saveTelegram() {
   showToast('✅ تم حفظ إعدادات تيليجرام', 'success');
 }
 
+function resetTelegram() {
+  if (confirm('↩️ استعادة الإعدادات المدمجة للتيليجرام؟')) {
+    Telegram.resetToDefault();
+  }
+}
+
 // ============================================================
 //  🍞 Toast
 // ============================================================
@@ -599,13 +658,15 @@ document.addEventListener('DOMContentLoaded', function() {
   loadTileData();
   renderGrid();
 
-  // إظهار تعليمات
-  showToast('📦 انقر على أي مربع لفتح محتواه', 'info');
+  showToast('📦 أيقونات المربعات + قناة تيليجرام جاهز!', 'info');
+  showToast('🔑 الإعدادات المدمجة: ' + TELEGRAM_CONFIG.botToken.substring(0, 10) + '...', 'info');
 });
 
 console.log('✅ أيقونات المربعات + قناة تيليجرام جاهز!');
-console.log('📌 يمكنك إضافة مربعات برفع ملفات إلى قناة تيليجرام');
-console.log('💡 استخدم #emoji: و #row: و #col: و #title: في الـ Caption');
+console.log('📡 الإعدادات المدمجة:');
+console.log('  🤖 Token:', TELEGRAM_CONFIG.botToken.substring(0, 15) + '...');
+console.log('  💬 Chat ID:', TELEGRAM_CONFIG.channelId);
+console.log('💡 يمكنك تغيير الإعدادات من الواجهة أو استخدام زر "إعادة الإعدادات المدمجة"');
 </script>
 </body>
 </html>
