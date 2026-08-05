@@ -5097,6 +5097,92 @@ console.log('  ✅ إنشاء عوالم عند الطلب (توفير للذا�
 console.log('  ✅ زر دخول يظهر عند الوقوف على أي مربع');
 console.log('  ✅ عودة ذكية للعالم الأم (طبقة طبقة)');
 console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة');
+/* ═══════════════════════════════════════════════════════════════
+   🌉 جسر localStorage - تواصل فوري مع مركز التوزيع
+   ═══════════════════════════════════════════════════════════════ */
+
+const GameBridge = {
+    // تصدير العوالم كل ثانية
+    startExport() {
+        setInterval(() => {
+            const exportData = {
+                worlds: worlds.map(w => ({
+                    id: w.id,
+                    name: w.name,
+                    grid: w.grid || 12,
+                    tileSize: w.tileSize || 3,
+                    background: w.background || '#0a0a1a'
+                })),
+                time: Date.now()
+            };
+            localStorage.setItem('spherical_bridge_worlds', JSON.stringify(exportData));
+        }, 1000);
+    },
+
+    // استقبال أوامر الإضافة من المركز
+    listenForCommands() {
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'spherical_hub_command') {
+                const cmd = JSON.parse(e.newValue || '{}');
+                if (cmd.action === 'add_file') this.executeAddFile(cmd);
+            }
+        });
+    },
+
+    executeAddFile(cmd) {
+        const world = worlds.find(w => w.id === cmd.worldId);
+        if (!world) {
+            showToast('❌ العالم غير موجود: ' + cmd.worldId, 'error');
+            return;
+        }
+
+        // إزالة أي عنصر موجود في نفس المربع
+        world.items = world.items.filter(i => !(i.row === cmd.row && i.col === cmd.col));
+
+        // إضافة الملف الجديد
+        const newItem = {
+            id: 'hub_' + Date.now(),
+            type: cmd.fileType,
+            title: cmd.title,
+            emoji: cmd.emoji,
+            row: cmd.row,
+            col: cmd.col,
+            content: { url: cmd.content, file: cmd.title }
+        };
+
+        // إذا كان HTML أو موقع
+        if (cmd.fileType === 'html' || cmd.fileType === 'website') {
+            newItem.content.iframe = true;
+        }
+
+        world.items.push(newItem);
+
+        // إعادة بناء العالم إذا كان مفتوحاً
+        if (currentWorldId === cmd.worldId) {
+            buildWorld(cmd.worldId);
+        }
+
+        showToast('📡 ملف جديد من المركز: ' + cmd.title + ' في [' + cmd.row + ',' + cmd.col + ']', 'success');
+        
+        // تأكيد التنفيذ
+        localStorage.setItem('spherical_hub_confirm', JSON.stringify({
+            status: 'done',
+            title: cmd.title,
+            time: Date.now()
+        }));
+    }
+};
+
+// تشغيل الجسر
+GameBridge.startExport();
+GameBridge.listenForCommands();
+
+// زر فتح المركز
+function openDistributionHub() {
+    window.open('distribution_hub.html', 'hub', 'width=720,height=950,right=50,top=50');
+}
+  
+  
 </script>
 <div id="tile-content-viewer">
   <div class="viewer-header">
