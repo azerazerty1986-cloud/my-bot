@@ -152,19 +152,27 @@ input[type="file"] { padding: 2px; }
         <span id="file-count">0 ملف</span>
         <span style="color:#666;margin:0 6px;">|</span>
         <span id="dist-count">0 منشور</span>
+        <span style="color:#666;margin:0 6px;">|</span>
+        <span id="worlds-count">0 عالم</span>
     </div>
 
+    <!-- 🌍 اختيار العالم -->
     <div class="section">
         <div class="section-title">🌍 اختيار العالم</div>
         <div class="world-select">
-            <select id="target-world"><option value="main">🏠 العالم الرئيسي</option></select>
+            <select id="target-world" onchange="onWorldChange()">
+                <option value="main">🏠 العالم الرئيسي</option>
+            </select>
+            <div style="font-size:8px;color:#888;margin-top:2px;">ℹ️ اختر العالم الذي ستوزع فيه الملفات</div>
         </div>
         <div class="actions">
             <button class="btn btn-secondary btn-sm" onclick="refreshWorlds()">🔄 تحديث</button>
             <button class="btn btn-primary btn-sm" onclick="goToWorld()">🚀 دخول</button>
         </div>
+        <div id="worlds-status" style="color:#888;font-size:8px;margin-top:2px;"></div>
     </div>
 
+    <!-- 📥 استقبال -->
     <div class="section">
         <div class="section-title">📥 استقبال</div>
         <div class="grid-4">
@@ -177,13 +185,15 @@ input[type="file"] { padding: 2px; }
             <button class="btn btn-primary" onclick="receiveAll()">📥 استقبال</button>
             <button class="btn btn-warning" onclick="syncTelegram()">🔄 مزامنة</button>
         </div>
+        <div id="tg-status" style="color:#888;font-size:8px;margin-top:2px;">⏳ غير متصل</div>
     </div>
 
+    <!-- 📤 رفع ملف -->
     <div class="section">
         <div class="section-title">📤 رفع ملف</div>
         <div class="grid-2">
             <div><label>📁 ملف</label><input type="file" id="file-upload" onchange="handleFile(event)"></div>
-            <div><label>🏷️ الاسم</label><input type="text" id="file-name"></div>
+            <div><label>🏷️ الاسم</label><input type="text" id="file-name" placeholder="اسم الملف"></div>
         </div>
         <div class="grid-3">
             <div><label>📍 صف</label><input type="number" id="target-row" value="3" min="0" max="11"></div>
@@ -207,6 +217,7 @@ input[type="file"] { padding: 2px; }
         <div id="file-preview" style="display:none;margin-top:3px;background:rgba(0,0,0,0.3);border-radius:4px;padding:4px;font-size:9px;color:#aaa;"></div>
     </div>
 
+    <!-- 📍 المعالم -->
     <div class="section">
         <div class="section-title">📍 المعالم</div>
         <div id="receivers-list"></div>
@@ -216,6 +227,7 @@ input[type="file"] { padding: 2px; }
         </div>
     </div>
 
+    <!-- 📤 التوزيع -->
     <div class="section">
         <div class="section-title">📤 التوزيع</div>
         <div class="actions">
@@ -230,16 +242,19 @@ input[type="file"] { padding: 2px; }
         </div>
     </div>
 
+    <!-- 📂 الملفات -->
     <div class="section">
         <div class="section-title">📂 الملفات (<span id="file-count2">0</span>)</div>
         <div class="file-list" id="file-list"><div style="color:#666;text-align:center;padding:6px;font-size:9px;">لا توجد ملفات</div></div>
     </div>
 
+    <!-- 📍 المنشورات -->
     <div class="section">
         <div class="section-title">📍 المنشورات (<span id="pub-count2">0</span>)</div>
         <div class="file-list" id="published-list"><div style="color:#666;text-align:center;padding:6px;font-size:9px;">لا توجد منشورات</div></div>
     </div>
 
+    <!-- 📊 الحالة -->
     <div class="section">
         <div class="section-title">📊 الحالة</div>
         <div class="status-box" id="status-box">⏳ جاري التحميل...</div>
@@ -248,7 +263,7 @@ input[type="file"] { padding: 2px; }
 
 <script>
 // ============================================================
-//  مركز التوزيع - يعمل في أي مربع، بدون تغيير في الملف الرئيسي
+//  مركز التوزيع - الاتصال باللعبة الأم وجلب العوالم
 // ============================================================
 
 let parentGame = null;
@@ -280,18 +295,45 @@ let hubData = {
 
 function connectToGame() {
     try {
+        // محاولة جلب اللعبة الأم (iframe أو نافذة)
         const parent = window.parent || window.opener;
-        if (!parent) { setStatus('offline', '⚠️ لا يوجد اتصال'); return; }
+        if (!parent) {
+            setStatus('offline', '⚠️ لا يوجد اتصال');
+            document.getElementById('worlds-status').textContent = '❌ لا يوجد اتصال باللعبة';
+            return;
+        }
+        
+        // التحقق من وجود دوال اللعبة
         if (parent.getWorld && parent.buildWorld) {
             parentGame = parent;
             isConnected = true;
             setStatus('online', '✅ متصل');
-            loadFromGame();
+            document.getElementById('worlds-status').textContent = '✅ متصل باللعبة';
+            
+            // جلب العوالم فوراً
             refreshWorlds();
+            loadFromGame();
             return;
         }
+        
+        // محاولة بديلة: البحث عن متغير worlds في اللعبة الأم
+        if (parent.worlds) {
+            parentGame = parent;
+            isConnected = true;
+            setStatus('online', '✅ متصل (بديل)');
+            document.getElementById('worlds-status').textContent = '✅ متصل باللعبة (بديل)';
+            refreshWorlds();
+            loadFromGame();
+            return;
+        }
+        
         setStatus('offline', '⚠️ غير مدعوم');
-    } catch(e) { setStatus('offline', '❌ فشل'); }
+        document.getElementById('worlds-status').textContent = '❌ اللعبة غير مدعومة';
+    } catch(e) {
+        setStatus('offline', '❌ فشل');
+        document.getElementById('worlds-status').textContent = '❌ فشل الاتصال: ' + e.message;
+        console.error('❌ فشل الاتصال باللعبة:', e);
+    }
 }
 
 function setStatus(state, text) {
@@ -300,46 +342,107 @@ function setStatus(state, text) {
 }
 
 // ============================================================
-//  العوالم
+//  جلب العوالم من اللعبة الأم (المشكلة المحلولة)
 // ============================================================
 
 function refreshWorlds() {
-    if (!parentGame) return;
+    if (!parentGame) {
+        document.getElementById('worlds-status').textContent = '⚠️ لا يوجد اتصال';
+        return;
+    }
+    
     try {
         const select = document.getElementById('target-world');
-        const current = select.value;
+        const currentValue = select.value;
         select.innerHTML = '';
-        if (parentGame.worlds) {
+        worldsList = [];
+        
+        // محاولة 1: جلب من parentGame.worlds
+        if (parentGame.worlds && Array.isArray(parentGame.worlds)) {
             worldsList = parentGame.worlds;
-        } else {
+            document.getElementById('worlds-status').textContent = '✅ تم جلب ' + worldsList.length + ' عالم من parentGame.worlds';
+        }
+        // محاولة 2: جلب من parentGame.getWorlds()
+        else if (typeof parentGame.getWorlds === 'function') {
+            worldsList = parentGame.getWorlds();
+            document.getElementById('worlds-status').textContent = '✅ تم جلب ' + worldsList.length + ' عالم من getWorlds()';
+        }
+        // محاولة 3: جلب من parentGame.getWorld('main') واستكشاف البوابات
+        else if (typeof parentGame.getWorld === 'function') {
             const main = parentGame.getWorld('main');
             if (main) {
                 worldsList = [main];
+                // البحث عن بوابات في العالم الرئيسي
                 if (main.items) {
                     for (const item of main.items) {
                         if (item.targetWorld) {
                             const w = parentGame.getWorld(item.targetWorld);
-                            if (w && !worldsList.find(x => x.id === w.id)) worldsList.push(w);
+                            if (w && !worldsList.find(x => x.id === w.id)) {
+                                worldsList.push(w);
+                            }
                         }
                     }
                 }
+                document.getElementById('worlds-status').textContent = '✅ تم جلب ' + worldsList.length + ' عالم من getWorld()';
             }
         }
-        for (const w of worldsList) {
-            const opt = document.createElement('option');
-            opt.value = w.id;
-            opt.textContent = w.name || w.id;
-            if (w.id === current) opt.selected = true;
-            select.appendChild(opt);
+        // محاولة 4: البحث في نطاق اللعبة الأم
+        else {
+            // محاولة الوصول إلى متغير worlds مباشرة
+            try {
+                if (parentGame.worlds) {
+                    worldsList = parentGame.worlds;
+                    document.getElementById('worlds-status').textContent = '✅ تم جلب ' + worldsList.length + ' عالم (مباشر)';
+                }
+            } catch(e) {}
         }
-        if (!select.value && select.options.length > 0) select.selectedIndex = 0;
-    } catch(e) {}
+        
+        // إذا لم نجد عوالم، نضيف العالم الرئيسي فقط
+        if (worldsList.length === 0) {
+            worldsList = [{ id: 'main', name: '🏠 العالم الرئيسي' }];
+            document.getElementById('worlds-status').textContent = '⚠️ تم إضافة العالم الرئيسي فقط';
+        }
+        
+        // إضافة العوالم إلى القائمة
+        for (const w of worldsList) {
+            const option = document.createElement('option');
+            option.value = w.id;
+            option.textContent = w.name || w.id;
+            if (w.id === currentValue) option.selected = true;
+            select.appendChild(option);
+        }
+        
+        if (!select.value && select.options.length > 0) {
+            select.selectedIndex = 0;
+        }
+        
+        // تحديث عداد العوالم
+        document.getElementById('worlds-count').textContent = worldsList.length + ' عالم';
+        
+    } catch(e) {
+        document.getElementById('worlds-status').textContent = '❌ فشل جلب العوالم: ' + e.message;
+        console.error('❌ فشل جلب العوالم:', e);
+    }
+}
+
+function onWorldChange() {
+    const select = document.getElementById('target-world');
+    const worldId = select.value;
+    const world = worldsList.find(w => w.id === worldId);
+    if (world) {
+        addStatus('🌍 تم اختيار: ' + (world.name || world.id), 'info');
+    }
 }
 
 function goToWorld() {
     const id = document.getElementById('target-world').value;
-    if (!parentGame) return;
-    if (parentGame.enterWorldById) { parentGame.enterWorldById(id); addStatus('🚀 دخول: ' + id, 'success'); }
+    if (!parentGame) { addStatus('⚠️ لا يوجد اتصال', 'warn'); return; }
+    if (typeof parentGame.enterWorldById === 'function') {
+        parentGame.enterWorldById(id);
+        addStatus('🚀 دخول: ' + id, 'success');
+    } else {
+        addStatus('⚠️ لا يمكن الدخول', 'warn');
+    }
 }
 
 // ============================================================
@@ -360,7 +463,7 @@ function loadFromGame() {
             updateUI();
             addStatus('📡 تم التحميل', 'success');
         }
-    } catch(e) {}
+    } catch(e) { addStatus('⚠️ فشل التحميل', 'warn'); }
 }
 
 function saveToGame() {
@@ -370,7 +473,16 @@ function saveToGame() {
         if (!world) return;
         let hub = world.items.find(item => item.isHub === true || item.type === 'channel');
         if (!hub) {
-            hub = { id: 'hub_' + Date.now(), type: 'channel', isHub: true, title: '📡 مركز التوزيع', emoji: '📡', row: 0, col: 0, files: [], published: [], receivers: [], worldReceivers: [] };
+            hub = {
+                id: 'hub_' + Date.now(),
+                type: 'channel',
+                isHub: true,
+                title: '📡 مركز التوزيع',
+                emoji: '📡',
+                row: 0, col: 0,
+                files: [], published: [],
+                receivers: [], worldReceivers: []
+            };
             world.items.push(hub);
         }
         hub.files = hubData.files;
@@ -379,63 +491,107 @@ function saveToGame() {
         hub.worldReceivers = hubData.worldReceivers;
         hub.lastUpdate = Date.now();
         hub.title = '📡 مركز التوزيع (' + hubData.files.length + ' ملف)';
-        if (parentGame.buildWorld) parentGame.buildWorld('main');
+        if (typeof parentGame.buildWorld === 'function') {
+            parentGame.buildWorld('main');
+        }
         saveLocal();
         addStatus('🔄 تم الحفظ', 'success');
     } catch(e) { addStatus('❌ فشل الحفظ', 'error'); }
 }
 
-function saveLocal() { try { localStorage.setItem('hub_data', JSON.stringify(hubData)); } catch(e) {} }
-function loadLocal() { try { const d = JSON.parse(localStorage.getItem('hub_data')); if (d) { hubData = d; updateUI(); } } catch(e) {} }
+function saveLocal() {
+    try { localStorage.setItem('hub_data', JSON.stringify(hubData)); } catch(e) {}
+}
+
+function loadLocal() {
+    try {
+        const d = JSON.parse(localStorage.getItem('hub_data'));
+        if (d) { hubData = d; updateUI(); }
+    } catch(e) {}
+}
 
 // ============================================================
-//  استقبال
+//  استقبال الملفات (نفس الكود السابق)
 // ============================================================
 
 async function receiveAll() {
     addStatus('📥 استقبال...', 'info');
     let allFiles = [];
+    
     if (document.getElementById('src-local').checked) {
-        try { const local = JSON.parse(localStorage.getItem('local_files') || '[]');
-        local.forEach(f => { if (!f.type) f.type = detectType(f.name); });
-        allFiles = allFiles.concat(local);
-        if (local.length > 0) addStatus('💻 محلي: ' + local.length, 'success');
+        try {
+            const local = JSON.parse(localStorage.getItem('local_files') || '[]');
+            local.forEach(f => { if (!f.type) f.type = detectType(f.name); });
+            allFiles = allFiles.concat(local);
+            if (local.length > 0) addStatus('💻 محلي: ' + local.length, 'success');
         } catch(e) {}
     }
+    
     if (document.getElementById('src-telegram').checked && parentGame && parentGame.TelegramManager) {
-        try { const tg = await parentGame.TelegramManager.syncChannelFiles();
-        tg.forEach(f => { if (!f.type) f.type = detectType(f.filename || f.name); });
-        allFiles = allFiles.concat(tg);
-        if (tg.length > 0) addStatus('📡 تلجرام: ' + tg.length, 'success');
+        try {
+            const tg = await parentGame.TelegramManager.syncChannelFiles();
+            tg.forEach(f => { if (!f.type) f.type = detectType(f.filename || f.name); });
+            allFiles = allFiles.concat(tg);
+            if (tg.length > 0) addStatus('📡 تلجرام: ' + tg.length, 'success');
         } catch(e) { addStatus('⚠️ تلجرام: ' + e.message, 'warn'); }
     }
+    
     if (document.getElementById('src-clipboard').checked) {
-        try { const clip = JSON.parse(localStorage.getItem('clipboard_files') || '[]');
-        clip.forEach(f => { if (!f.type) f.type = detectType(f.name); });
-        allFiles = allFiles.concat(clip);
-        if (clip.length > 0) addStatus('📋 حافظة: ' + clip.length, 'success');
+        try {
+            const clip = JSON.parse(localStorage.getItem('clipboard_files') || '[]');
+            clip.forEach(f => { if (!f.type) f.type = detectType(f.name); });
+            allFiles = allFiles.concat(clip);
+            if (clip.length > 0) addStatus('📋 حافظة: ' + clip.length, 'success');
         } catch(e) {}
     }
+    
     if (document.getElementById('src-upload').checked && pendingFile) {
-        allFiles.push({ id: 'upload_' + Date.now(), name: pendingFile.name, type: detectType(pendingFile.name), size: pendingFile.size, file: pendingFile });
+        allFiles.push({
+            id: 'upload_' + Date.now(),
+            name: pendingFile.name,
+            type: detectType(pendingFile.name),
+            size: pendingFile.size,
+            file: pendingFile
+        });
         addStatus('📤 رفع: ' + pendingFile.name, 'success');
     }
-    const unique = []; const seen = new Set();
-    for (const f of allFiles) { const id = f.file_id || f.id || f.name; if (!seen.has(id)) { seen.add(id); unique.push(f); } }
-    if (unique.length > 0) { hubData.files = unique; saveLocal(); saveToGame(); updateUI(); addStatus('✅ ' + unique.length + ' ملف', 'success'); }
-    else { addStatus('ℹ️ لا توجد ملفات جديدة', 'info'); }
+    
+    const unique = [];
+    const seen = new Set();
+    for (const f of allFiles) {
+        const id = f.file_id || f.id || f.name;
+        if (!seen.has(id)) { seen.add(id); unique.push(f); }
+    }
+    
+    if (unique.length > 0) {
+        hubData.files = unique;
+        saveLocal();
+        saveToGame();
+        updateUI();
+        addStatus('✅ ' + unique.length + ' ملف', 'success');
+    } else {
+        addStatus('ℹ️ لا توجد ملفات جديدة', 'info');
+    }
 }
 
 function detectType(name) {
     const ext = (name || '').split('.').pop().toLowerCase();
-    const map = { 'jpg':'image','jpeg':'image','png':'image','gif':'image','webp':'image','svg':'image',
+    const map = {
+        'jpg':'image','jpeg':'image','png':'image','gif':'image','webp':'image','svg':'image',
         'mp4':'video','webm':'video','mov':'video','avi':'video',
-        'mp3':'audio','wav':'audio','ogg':'audio','pdf':'pdf','txt':'text','md':'text','html':'html','htm':'html','json':'json' };
+        'mp3':'audio','wav':'audio','ogg':'audio',
+        'pdf':'pdf',
+        'txt':'text','md':'text','html':'html','htm':'html',
+        'json':'json'
+    };
     return map[ext] || 'other';
 }
 
 async function syncTelegram() {
-    if (!parentGame || !parentGame.TelegramManager) { addStatus('⚠️ لا يوجد تلجرام', 'warn'); return; }
+    if (!parentGame || !parentGame.TelegramManager) {
+        addStatus('⚠️ لا يوجد تلجرام', 'warn');
+        return;
+    }
     addStatus('🔄 مزامنة...', 'info');
     try {
         const files = await parentGame.TelegramManager.syncChannelFiles();
@@ -479,9 +635,20 @@ function publishFile() {
     const type = document.getElementById('file-type').value;
     const reader = new FileReader();
     reader.onload = function(e) {
-        const entry = { id: 'file_' + Date.now() + '_' + fileCounter++, name, type, size: pendingFile.size, content: e.target.result, originalName: pendingFile.name, uploadedAt: Date.now() };
+        const entry = {
+            id: 'file_' + Date.now() + '_' + fileCounter++,
+            name, type, size: pendingFile.size,
+            content: e.target.result,
+            originalName: pendingFile.name,
+            uploadedAt: Date.now()
+        };
         hubData.files.push(entry);
-        hubData.published.push({ id: 'pub_' + Date.now(), fileId: entry.id, name, type, row, col, content: e.target.result, publishedAt: Date.now() });
+        hubData.published.push({
+            id: 'pub_' + Date.now(),
+            fileId: entry.id, name, type, row, col,
+            content: e.target.result,
+            publishedAt: Date.now()
+        });
         saveLocal(); saveToGame(); updateUI(); clearFile();
         addStatus('✅ نشر "' + name + '" في (' + row + ',' + col + ')', 'success');
     };
@@ -489,7 +656,7 @@ function publishFile() {
 }
 
 // ============================================================
-//  المعالم
+//  المعالم والتوزيع (نفس الكود السابق)
 // ============================================================
 
 function renderReceivers() {
@@ -508,15 +675,18 @@ function addReceiver() {
     const emojis = ['📸','🎬','📄','🎵','📝','🌐'];
     const names = ['صور','فيديو','PDF','صوت','نص','HTML'];
     const idx = hubData.receivers.length % types.length;
-    hubData.receivers.push({ id: 'rec_' + Date.now(), name: emojis[idx] + ' ' + names[idx], type: types[idx], row: 1 + Math.floor(Math.random()*9), col: 1 + Math.floor(Math.random()*9) });
+    hubData.receivers.push({
+        id: 'rec_' + Date.now(),
+        name: emojis[idx] + ' ' + names[idx],
+        type: types[idx],
+        row: 1 + Math.floor(Math.random()*9),
+        col: 1 + Math.floor(Math.random()*9)
+    });
     renderReceivers(); saveLocal(); saveToGame();
 }
+
 function removeReceiver(i) { hubData.receivers.splice(i,1); renderReceivers(); saveLocal(); saveToGame(); }
 function clearReceivers() { if (!confirm('مسح الكل؟')) return; hubData.receivers = []; renderReceivers(); saveLocal(); saveToGame(); }
-
-// ============================================================
-//  التوزيع
-// ============================================================
 
 function distributeToReceivers() {
     if (hubData.files.length === 0) { addStatus('⚠️ لا توجد ملفات', 'warn'); return; }
@@ -541,7 +711,7 @@ function distributeToReceivers() {
         total += filtered.length;
         addStatus('📦 ' + filtered.length + ' → ' + receiver.name, 'success');
     }
-    if (parentGame.buildWorld) parentGame.buildWorld(worldId);
+    if (typeof parentGame.buildWorld === 'function') parentGame.buildWorld(worldId);
     addStatus('✅ تم توزيع ' + total + ' ملف', 'success');
 }
 
@@ -594,9 +764,11 @@ function updateUI() {
     document.getElementById('dist-count').textContent = hubData.published.length + ' منشور';
     document.getElementById('file-count2').textContent = hubData.files.length;
     document.getElementById('pub-count2').textContent = hubData.published.length;
+    
     const fl = document.getElementById('file-list');
-    if (hubData.files.length === 0) { fl.innerHTML = '<div style="color:#666;text-align:center;padding:6px;font-size:9px;">لا توجد ملفات</div>'; }
-    else {
+    if (hubData.files.length === 0) {
+        fl.innerHTML = '<div style="color:#666;text-align:center;padding:6px;font-size:9px;">لا توجد ملفات</div>';
+    } else {
         fl.innerHTML = '';
         hubData.files.forEach((f, i) => {
             const div = document.createElement('div');
@@ -605,9 +777,11 @@ function updateUI() {
             fl.appendChild(div);
         });
     }
+    
     const pl = document.getElementById('published-list');
-    if (hubData.published.length === 0) { pl.innerHTML = '<div style="color:#666;text-align:center;padding:6px;font-size:9px;">لا توجد منشورات</div>'; }
-    else {
+    if (hubData.published.length === 0) {
+        pl.innerHTML = '<div style="color:#666;text-align:center;padding:6px;font-size:9px;">لا توجد منشورات</div>';
+    } else {
         pl.innerHTML = '';
         hubData.published.forEach((p, i) => {
             const div = document.createElement('div');
@@ -645,11 +819,16 @@ document.addEventListener('DOMContentLoaded', function() {
     renderReceivers();
     updateUI();
     setTimeout(connectToGame, 500);
-    setInterval(() => { if (!isConnected) connectToGame(); }, 10000);
+    // محاولة إعادة الاتصال كل 5 ثواني
+    setInterval(() => {
+        if (!isConnected) connectToGame();
+    }, 5000);
     addStatus('📡 مركز التوزيع جاهز', 'success');
 });
 
-console.log('📡 مركز التوزيع يعمل في المربع الذي وضعته فيه!');
+console.log('📡 مركز التوزيع - جلب العوالم من اللعبة الأم');
+console.log('🔍 محاولة الاتصال باللعبة...');
 </script>
 </body>
 </html>
+
