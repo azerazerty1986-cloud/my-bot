@@ -696,6 +696,80 @@ let isSwipeSpinning = false;
 let lastSwipeTime = 0;
 
 let healCount = 0;
+
+
+
+const FILE_ICONS = [
+  { emoji: '🎬', name: 'فيديو', type: 'video' },
+  { emoji: '🖼️', name: 'صورة', type: 'image' },
+  { emoji: '🎵', name: 'موسيقى', type: 'audio' },
+  { emoji: '📹', name: 'فيديو 360', type: 'video360' },
+  { emoji: '📄', name: 'HTML', type: 'html' },
+  { emoji: '📁', name: 'PDF', type: 'pdf' },
+  { emoji: '📝', name: 'نص', type: 'text' },
+  { emoji: '🔗', name: 'رابط', type: 'link' },
+  { emoji: '🌐', name: 'موقع', type: 'website' },
+  { emoji: '🎮', name: 'لعبة', type: 'game' },
+  { emoji: '📊', name: 'جدول', type: 'spreadsheet' },
+  { emoji: '⭐', name: 'مميز', type: 'featured' },
+  { emoji: '🏷️', name: 'ملصق', type: 'sticker' },
+  { emoji: '🎯', name: 'هدف', type: 'target' },
+  { emoji: '📱', name: 'تطبيق', type: 'app' },
+  { emoji: '📂', name: 'مجلد', type: 'folder' }
+];
+
+let selectedIconFile = null;
+let uploadedFileData = null;
+let uploadedFileURL = null;
+
+const WORLD_ICONS = [
+  { name: '⚔️ القتال', emoji: '⚔️', color: '#ef4444' },
+  { name: '🌐 360', emoji: '🌐', color: '#00f2ff' },
+  { name: '🖼️ المعرض', emoji: '🖼️', color: '#a78bfa' },
+  { name: '🌲 الغابة', emoji: '🌲', color: '#4ade80' },
+  { name: '🏰 القلعة', emoji: '🏰', color: '#fbbf24' },
+  { name: '🌊 المحيط', emoji: '🌊', color: '#60a5fa' },
+  { name: '🔥 النار', emoji: '🔥', color: '#f97316' },
+  { name: '❄️ الجليد', emoji: '❄️', color: '#22d3ee' },
+  { name: '🌈 قوس قزح', emoji: '🌈', color: '#f472b6' },
+  { name: '⭐ النجوم', emoji: '⭐', color: '#ffd700' },
+  { name: '🌙 القمر', emoji: '🌙', color: '#c084fc' },
+  { name: '☀️ الشمس', emoji: '☀️', color: '#facc15' },
+  { name: '🌺 الزهور', emoji: '🌺', color: '#fb7185' },
+  { name: '🍄 الفطر', emoji: '🍄', color: '#a3e635' },
+  { name: '🦋 الفراشات', emoji: '🦋', color: '#38bdf8' },
+  { name: '🐉 التنين', emoji: '🐉', color: '#ef4444' },
+  { name: '🧙 السحر', emoji: '🧙', color: '#a855f7' },
+  { name: '🏹 الصيد', emoji: '🏹', color: '#d97706' },
+  { name: '⚡ البرق', emoji: '⚡', color: '#fde047' },
+  { name: '💎 الماس', emoji: '💎', color: '#22d3ee' }
+];
+
+let achievements = {
+  first_kill:   { name: 'أول قتل', desc: 'اقتل أول عدو', unlocked: false, emoji: '💀' },
+  killer_10:    { name: 'قاتل محترف', desc: 'اقتل 10 أعداء', unlocked: false, emoji: '⚔️' },
+  explorer:     { name: 'مستكشف', desc: 'اكتشف 3 عوالم', unlocked: false, emoji: '🌍' },
+  master:       { name: 'سيد العوالم', desc: 'اكتشف 5 عوالم', unlocked: false, emoji: '👑' },
+  collector:    { name: 'جامع المعالم', desc: 'أضف 5 معالم', unlocked: false, emoji: '📍' },
+  survivor:     { name: 'الناجي', desc: 'وصل للمستوى 5', unlocked: false, emoji: '🛡️' },
+  rich:         { name: 'ثراء', desc: 'اجمع 100 ذهب', unlocked: false, emoji: '🪙' },
+  healer:       { name: 'معالج', desc: 'استخدم الشفاء 5 مرات', unlocked: false, emoji: '💚' },
+  spinner:      { name: 'الدوّام', desc: 'أكمل 10 دورات سريعة', unlocked: false, emoji: '🌪️' },
+  spin_master:  { name: 'سيد الدوران', desc: 'أكمل 50 دورة سريعة', unlocked: false, emoji: '🌀' }
+};
+
+let quests = [
+  { id: 'q1', name: 'قاتل مبتدئ', desc: 'اقتل 3 أعداء', target: 3, current: 0, type: 'kills', reward: 20 },
+  { id: 'q2', name: 'مستكشف', desc: 'اكتشف عالمين جديدين', target: 2, current: 0, type: 'worlds', reward: 50 },
+  { id: 'q3', name: 'باني', desc: 'أضف 3 معالم', target: 3, current: 0, type: 'landmarks', reward: 30 },
+  { id: 'q4', name: 'جامع', desc: 'اجمع 50 نقطة', target: 50, current: 0, type: 'score', reward: 25 },
+  { id: 'q5', name: 'الدوّام', desc: 'أكمل 5 دورات سريعة', target: 5, current: 0, type: 'spins', reward: 40 }
+];
+
+
+
+
+
   
 /* ═══════════════════════════════════════════════════════════════
    📡 مستمع تغييرات المدير عبر localStorage
@@ -829,72 +903,6 @@ function notifyManager() {
 /* ═══════════════════════════════════════════════════════════════
    نظام إضافة الملفات إلى المربعات
    ═══════════════════════════════════════════════════════════════ */
-const FILE_ICONS = [
-  { emoji: '🎬', name: 'فيديو', type: 'video' },
-  { emoji: '🖼️', name: 'صورة', type: 'image' },
-  { emoji: '🎵', name: 'موسيقى', type: 'audio' },
-  { emoji: '📹', name: 'فيديو 360', type: 'video360' },
-  { emoji: '📄', name: 'HTML', type: 'html' },
-  { emoji: '📁', name: 'PDF', type: 'pdf' },
-  { emoji: '📝', name: 'نص', type: 'text' },
-  { emoji: '🔗', name: 'رابط', type: 'link' },
-  { emoji: '🌐', name: 'موقع', type: 'website' },
-  { emoji: '🎮', name: 'لعبة', type: 'game' },
-  { emoji: '📊', name: 'جدول', type: 'spreadsheet' },
-  { emoji: '⭐', name: 'مميز', type: 'featured' },
-  { emoji: '🏷️', name: 'ملصق', type: 'sticker' },
-  { emoji: '🎯', name: 'هدف', type: 'target' },
-  { emoji: '📱', name: 'تطبيق', type: 'app' },
-  { emoji: '📂', name: 'مجلد', type: 'folder' }
-];
-
-let selectedIconFile = null;
-let uploadedFileData = null;
-let uploadedFileURL = null;
-
-const WORLD_ICONS = [
-  { name: '⚔️ القتال', emoji: '⚔️', color: '#ef4444' },
-  { name: '🌐 360', emoji: '🌐', color: '#00f2ff' },
-  { name: '🖼️ المعرض', emoji: '🖼️', color: '#a78bfa' },
-  { name: '🌲 الغابة', emoji: '🌲', color: '#4ade80' },
-  { name: '🏰 القلعة', emoji: '🏰', color: '#fbbf24' },
-  { name: '🌊 المحيط', emoji: '🌊', color: '#60a5fa' },
-  { name: '🔥 النار', emoji: '🔥', color: '#f97316' },
-  { name: '❄️ الجليد', emoji: '❄️', color: '#22d3ee' },
-  { name: '🌈 قوس قزح', emoji: '🌈', color: '#f472b6' },
-  { name: '⭐ النجوم', emoji: '⭐', color: '#ffd700' },
-  { name: '🌙 القمر', emoji: '🌙', color: '#c084fc' },
-  { name: '☀️ الشمس', emoji: '☀️', color: '#facc15' },
-  { name: '🌺 الزهور', emoji: '🌺', color: '#fb7185' },
-  { name: '🍄 الفطر', emoji: '🍄', color: '#a3e635' },
-  { name: '🦋 الفراشات', emoji: '🦋', color: '#38bdf8' },
-  { name: '🐉 التنين', emoji: '🐉', color: '#ef4444' },
-  { name: '🧙 السحر', emoji: '🧙', color: '#a855f7' },
-  { name: '🏹 الصيد', emoji: '🏹', color: '#d97706' },
-  { name: '⚡ البرق', emoji: '⚡', color: '#fde047' },
-  { name: '💎 الماس', emoji: '💎', color: '#22d3ee' }
-];
-
-let achievements = {
-  first_kill:   { name: 'أول قتل', desc: 'اقتل أول عدو', unlocked: false, emoji: '💀' },
-  killer_10:    { name: 'قاتل محترف', desc: 'اقتل 10 أعداء', unlocked: false, emoji: '⚔️' },
-  explorer:     { name: 'مستكشف', desc: 'اكتشف 3 عوالم', unlocked: false, emoji: '🌍' },
-  master:       { name: 'سيد العوالم', desc: 'اكتشف 5 عوالم', unlocked: false, emoji: '👑' },
-  collector:    { name: 'جامع المعالم', desc: 'أضف 5 معالم', unlocked: false, emoji: '📍' },
-  survivor:     { name: 'الناجي', desc: 'وصل للمستوى 5', unlocked: false, emoji: '🛡️' },
-  rich:         { name: 'ثراء', desc: 'اجمع 100 ذهب', unlocked: false, emoji: '🪙' },
-  healer:       { name: 'معالج', desc: 'استخدم الشفاء 5 مرات', unlocked: false, emoji: '💚' },
-  spinner:      { name: 'الدوّام', desc: 'أكمل 10 دورات سريعة', unlocked: false, emoji: '🌪️' },
-  spin_master:  { name: 'سيد الدوران', desc: 'أكمل 50 دورة سريعة', unlocked: false, emoji: '🌀' }
-};
-
-let quests = [
-  { id: 'q1', name: 'قاتل مبتدئ', desc: 'اقتل 3 أعداء', target: 3, current: 0, type: 'kills', reward: 20 },
-  { id: 'q2', name: 'مستكشف', desc: 'اكتشف عالمين جديدين', target: 2, current: 0, type: 'worlds', reward: 50 },
-  { id: 'q3', name: 'باني', desc: 'أضف 3 معالم', target: 3, current: 0, type: 'landmarks', reward: 30 },
-  { id: 'q4', name: 'جامع', desc: 'اجمع 50 نقطة', target: 50, current: 0, type: 'score', reward: 25 },
-  { id: 'q5', name: 'الدوّام', desc: 'أكمل 5 دورات سريعة', target: 5, current: 0, type: 'spins', reward: 40 }
-];
 
 /* ═══════════════════════════════════════════════════════════════
    دوال مساعدة عامة
