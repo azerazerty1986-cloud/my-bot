@@ -813,6 +813,37 @@ function getCurrentWorld() {
   return getWorld(currentWorldId);
 }
 
+
+
+/* ═══════════════════════════════════════════════════════════════
+   نشر العالم فور إنشائه
+   ═══════════════════════════════════════════════════════════════ */
+function notifyWorldCreated(worldId, worldName, iconIndex) {
+  if (!TelegramManager.hasConfig()) return;
+  
+  const payload = {
+    action: 'world_created',
+    worldId: worldId,
+    name: worldName,
+    iconIndex: iconIndex,
+    grid: 12,
+    tileSize: 3,
+    background: WORLD_ICONS[iconIndex] ? WORLD_ICONS[iconIndex].color : '#0a0a1a',
+    time: Date.now()
+  };
+
+  fetch('https://api.telegram.org/bot' + TelegramManager.botToken + '/sendMessage', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: TelegramManager.chatId,
+      text: '📡 SPHERICAL|WORLDS|' + JSON.stringify({ worlds: [payload] }),
+      disable_notification: true
+    })
+  }).catch(function(){});
+}
+
+
 function getPlayerTile() {
   const px = playerGroup.position.x + HALF;
   const pz = playerGroup.position.z + HALF;
@@ -1194,8 +1225,9 @@ function updateVideoTime() {
   }
 }
 
+
 /* ═══════════════════════════════════════════════════════════════
-   إنشاء/جلب العالم المرتبط بأي مربع (عند الطلب) - جديد v80
+   إنشاء/جلب العالم المرتبط بأي مربع (عند الطلب) - جديد v81
    ═══════════════════════════════════════════════════════════════ */
 function getOrCreateTileWorld(row, col, sourceWorldId) {
   const worldId = 'tile_' + sourceWorldId + '_' + row + '_' + col;
@@ -1236,7 +1268,7 @@ function getOrCreateTileWorld(row, col, sourceWorldId) {
       }
     }
 
-    // بوابة عودة إلزامية إلى العالم الأم
+    // بوابة عودة إلزامية
     let er, ec, attempts = 0;
     do {
       er = 1 + Math.floor(Math.random() * 10);
@@ -1271,6 +1303,7 @@ function getOrCreateTileWorld(row, col, sourceWorldId) {
 
   return world;
 }
+
 
 /* ═══════════════════════════════════════════════════════════════
    إنشاء العوالم الافتراضية
@@ -1381,6 +1414,10 @@ function clearWorld() {
   });
 }
 
+
+
+
+
 function buildWorld(worldId) {
   if (isCODGameOpen) closeCODGame();
 
@@ -1438,7 +1475,7 @@ function buildWorld(worldId) {
   scene.background = new THREE.Color(bg);
   scene.fog = new THREE.Fog(bg, 30, 80);
 
-  // إنشاء المربعات - معدل: كل مربع له عالمه الخاص
+  // إنشاء المربعات
   for (let row = 0; row < GRID; row++) {
     for (let col = 0; col < GRID; col++) {
       const canvas = document.createElement('canvas');
@@ -1537,14 +1574,12 @@ function buildWorld(worldId) {
       mesh.position.set(posX, 0, posZ);
       mesh.rotation.x = -Math.PI / 2;
 
-      // ─── تحديد العالم المرتبط بهذا المربع (إنشاء كسول) ───
       mesh.userData = { 
         row: row, 
         col: col, 
         item: item || null,
         sourceWorld: world.id
       };
-      // ─── نهاية التعديل ───
 
       tileGroup.add(mesh);
       tileMeshes.push(mesh);
@@ -1637,6 +1672,7 @@ function buildWorld(worldId) {
   updateActiveTile();
   renderLandmarks();
 }
+
 
 /* ═══════════════════════════════════════════════════════════════
    فيديو 360
@@ -1757,7 +1793,7 @@ function enterWorld() {
 
   isTransitioning = true;
 
-  // حفظ موقع العودة للعالم الحالي
+  // حفظ موقع العودة
   if (!window.returnPositions) window.returnPositions = {};
   window.returnPositions[currentWorldId] = { 
     x: playerGroup.position.x, 
@@ -1788,6 +1824,9 @@ function enterWorld() {
     showToast('✅ دخلت: ' + targetWorldName, 'success');
   }, 700);
 }
+
+
+
 
 function exitWorld() {
   const iframe = document.getElementById('cod-iframe');
@@ -2641,6 +2680,9 @@ function updateFacetInfo() {
   }
 }
 
+
+
+
 function generateWorldItems(iconIndex) {
   const items = [];
   const emojis = ['🏰', '🌲', '🌊', '⛰️', '🏜️', '🌋', '🏗️', '🌺', '🕌', '🏯', '🎪', '🏟️'];
@@ -2685,6 +2727,12 @@ function generateWorldItems(iconIndex) {
   return items;
 }
 
+
+
+
+
+
+
 function rebuildSphere() {
   buildSphere();
   showToast('🔄 تم إعادة بناء شبكة الأيقونات', 'info');
@@ -2714,7 +2762,8 @@ function hideSphere() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   تفاعل الأيقونات
+/* ═══════════════════════════════════════════════════════════════
+   تفاعل الأيقونات - معدل v81 (نشر العوالم + parentWorld)
    ═══════════════════════════════════════════════════════════════ */
 function setupFacetInteraction() {
   const raycaster = new THREE.Raycaster();
@@ -2778,9 +2827,15 @@ function setupFacetInteraction() {
           grid: 12, tileSize: 3,
           startPosition: { x: 0, z: 0 },
           background: world.color,
-          items: generateWorldItems(selectedIcon)
+          items: generateWorldItems(selectedIcon),
+          parentWorld: 'main'
         };
         worlds.push(newWorld);
+
+        // ✅ نشر العالم الجديد إلى القناة
+        if (typeof notifyWorldCreated === 'function') {
+          notifyWorldCreated(worldId, world.name, selectedIcon);
+        }
 
         const main = getWorld('main');
         if (main) {
@@ -2862,8 +2917,9 @@ function setupFacetInteraction() {
 
   renderer.domElement.addEventListener('touchend', function() { isDraggingSphere = false; });
 }
-
-/* ═══════════════════════════════════════════════════════════════
+   
+   ═══════════════════════════════════════════════════════════════ */
+  ═══════════════════════════════════════════════════════════════
    تحديثات اللاعب والكاميرا - معدل: زر الدخول لكل مربع
    ═══════════════════════════════════════════════════════════════ */
 function updatePlayer() {
@@ -2898,6 +2954,9 @@ function updatePlayer() {
   updateActiveTile();
 }
 
+
+
+
 function updateActiveTile() {
   if (isTransitioning) return;
   const tile = getPlayerTile();
@@ -2907,7 +2966,7 @@ function updateActiveTile() {
   let codFile = '';
   let hasContent = false;
   let contentItem = null;
-  let isEmptyTile = false; // ✅ مربع فارغ بدون أي عنصر
+  let isEmptyTile = false;
 
   tileMeshes.forEach(function(mesh) {
     const d = mesh.userData;
@@ -2920,7 +2979,6 @@ function updateActiveTile() {
         const tw = getWorld(d.item.targetWorld);
         portalTitle = tw ? tw.name : 'عالم';
       } else if (d.sourceWorld && !d.item) {
-        // ✅ مربع فارغ - يحتاج صلاحية مدير
         isEmptyTile = true;
         portalTitle = '🌍 عالم جديد';
       }
@@ -2930,7 +2988,6 @@ function updateActiveTile() {
         codFile = d.item.codFile || 'cod.html';
       }
 
-      // ✅ كشف المحتوى المرفوع
       if (d.item && d.item.content && d.item.content.url) {
         hasContent = true;
         contentItem = d.item;
@@ -2945,9 +3002,8 @@ function updateActiveTile() {
     openCODGame(codFile);
   }
 
-  // تخزين العنصر الحالي للاستخدام في enterWorld
   window.currentTileItem = contentItem;
-  window.currentTileIsEmpty = isEmptyTile; // ✅ تخزين حالة المربع الفارغ
+  window.currentTileIsEmpty = isEmptyTile;
 
   const btn = document.getElementById('enter-btn');
   const isAdmin = AccountManager.isAdmin ? AccountManager.isAdmin() : false;
@@ -2982,6 +3038,10 @@ function updateActiveTile() {
     btn.style.display = 'none';
   }
 }
+
+
+
+
 
 function updateCamera() {
   if (isTransitioning) return;
@@ -3667,6 +3727,7 @@ function openTileContent(item) {
   viewer.style.display = 'flex';
 }
 
+
 function closeTileContent() {
   const viewer = document.getElementById('tile-content-viewer');
   const body = document.getElementById('viewer-body');
@@ -3677,6 +3738,107 @@ function closeTileContent() {
   });
   body.innerHTML = '';
 }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   تشغيل ملفات Telegram
+   ═══════════════════════════════════════════════════════════════ */
+async function playTelegramFile(item) {
+  if (!item || !item.file_id) { showToast('❌ لا يوجد ملف', 'error'); return; }
+  showTransition('جاري تحميل الملف من تلجرام...');
+  try {
+    const url = await TelegramManager.getFileUrl(item.file_id);
+    hideTransition();
+
+    const isHTML = (item.mime_type && item.mime_type.indexOf('html') !== -1) ||
+                   (item.filename && item.filename.toLowerCase().endsWith('.html'));
+
+    if (isHTML) {
+      const iframe = document.getElementById('cod-iframe');
+      iframe.src = url;
+      iframe.style.display = 'block';
+      document.getElementById('close-cod-btn').style.display = 'block';
+      ['hud','health-bar-container','dpad','fire-btn','game-message','minimap-frame',
+       'side-toolbar','score-display-main','spin-counter','combat-buttons'].forEach(function(id) {
+        const el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+      });
+      isCODGameOpen = true;
+      showToast('🎮 تم فتح اللعبة: ' + (item.filename || ''), 'success');
+    } else if (item.mime_type && item.mime_type.indexOf('video') !== -1) {
+      const viewer = document.getElementById('tile-content-viewer');
+      const body = document.getElementById('viewer-body');
+      document.getElementById('viewer-title').textContent = (item.emoji || '📂') + ' ' + (item.title || item.filename || 'فيديو');
+      body.innerHTML = '';
+      const video = document.createElement('video');
+      video.src = url;
+      video.controls = true;
+      video.autoplay = true;
+      video.style.maxWidth = '90%';
+      video.style.maxHeight = '80vh';
+      video.style.borderRadius = '12px';
+      body.appendChild(video);
+      viewer.style.display = 'flex';
+      showToast('🎬 تم فتح الفيديو', 'success');
+    } else if (item.mime_type && item.mime_type.indexOf('image') !== -1) {
+      const viewer = document.getElementById('tile-content-viewer');
+      const body = document.getElementById('viewer-body');
+      document.getElementById('viewer-title').textContent = (item.emoji || '📂') + ' ' + (item.title || item.filename || 'صورة');
+      body.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = url;
+      img.style.maxWidth = '90%';
+      img.style.maxHeight = '80vh';
+      img.style.borderRadius = '12px';
+      body.appendChild(img);
+      viewer.style.display = 'flex';
+      showToast('🖼️ تم فتح الصورة', 'success');
+    } else {
+      const viewer = document.getElementById('tile-content-viewer');
+      const body = document.getElementById('viewer-body');
+      document.getElementById('viewer-title').textContent = (item.emoji || '📂') + ' ' + (item.title || item.filename || 'ملف');
+      body.innerHTML = '<div style="text-align:center;padding:40px;">' +
+        '<div style="font-size:48px;margin-bottom:16px;">📄</div>' +
+        '<div style="color:#ffd700;font-size:18px;margin-bottom:12px;">' + (item.filename || 'ملف') + '</div>' +
+        '<div style="color:#888;font-size:12px;margin-bottom:16px;">' + (item.mime_type || '') + ' | ' + (item.file_size ? (item.file_size/1024).toFixed(1) + ' KB' : '') + '</div>' +
+        '<a href="' + url + '" target="_blank" download style="color:#00f2ff;font-size:14px;text-decoration:none;display:inline-block;padding:10px 24px;border:1px solid rgba(0,242,255,0.3);border-radius:10px;background:rgba(0,242,255,0.08);margin:4px;">⬇️ تحميل</a>' +
+        '<button onclick="openTelegramInIframe()" style="color:#ffd700;font-size:14px;text-decoration:none;display:inline-block;padding:10px 24px;border:1px solid rgba(255,215,0,0.3);border-radius:10px;background:rgba(255,215,0,0.08);margin:4px;cursor:pointer;font-family:inherit;">🌐 عرض في iframe</button>' +
+      '</div>';
+      viewer.style.display = 'flex';
+    }
+  } catch(e) {
+    hideTransition();
+    showToast('❌ فشل التحميل: ' + e.message, 'error');
+  }
+}
+
+function openTelegramInIframe() {
+  const viewer = document.getElementById('tile-content-viewer');
+  const body = document.getElementById('viewer-body');
+  const iframe = document.createElement('iframe');
+  iframe.src = body.querySelector('a') ? body.querySelector('a').href : '';
+  iframe.style.width = '90%';
+  iframe.style.height = '80vh';
+  iframe.style.border = 'none';
+  iframe.style.borderRadius = '12px';
+  body.innerHTML = '';
+  body.appendChild(iframe);
+}
+
+window.openTelegramFileFromTile = function(item) {
+  if (item && item.file_id) {
+    playTelegramFile(item);
+  } else if (item && item.content && item.content.url) {
+    openTileContent(item);
+  } else {
+    showToast('❌ لا يوجد محتوى لعرضه', 'error');
+  }
+};
+
+
+
+
+
 
 function setupTileInteraction() {
   const raycaster = new THREE.Raycaster();
@@ -4644,6 +4806,10 @@ async function showTelegramChannelId() {
   }
 }
 
+
+
+
+
 function addTelegramFilesToWorld(files) {
   const main = getWorld('main');
   if (!main) return;
@@ -4682,6 +4848,40 @@ function addTelegramFilesToWorld(files) {
     showToast('📤 تم إضافة ملفات جديدة من القناة إلى الخريطة', 'success');
   }
 }
+
+async function syncTelegramChannel() {
+  const result = document.getElementById('tg-test-result');
+  result.textContent = '⏳ جاري المزامنة من القناة...';
+  result.style.color = '#888';
+  try {
+    TelegramManager.init();
+    const files = await TelegramManager.syncChannelFiles();
+    if (files.length === 0) {
+      result.textContent = 'ℹ️ لا توجد ملفات جديدة';
+      result.style.color = '#60a5fa';
+      return;
+    }
+    const key = 'telegram_files_' + TelegramManager.chatId.replace(/[^a-zA-Z0-9]/g, '_');
+    let existing = [];
+    try { existing = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e) {}
+    files.forEach(function(f) {
+      const exists = existing.some(function(e) { return e.file_unique_id === f.file_unique_id; });
+      if (!exists) existing.push(f);
+    });
+    localStorage.setItem(key, JSON.stringify(existing));
+    result.textContent = '✅ تم مزامنة ' + files.length + ' ملف جديد! الإجمالي: ' + existing.length;
+    result.style.color = '#4ade80';
+    showToast('🔄 تم مزامنة ' + files.length + ' ملف من القناة', 'success');
+    addTelegramFilesToWorld(existing);
+  } catch(e) {
+    result.textContent = '❌ فشل المزامنة: ' + e.message;
+    result.style.color = '#f87171';
+  }
+}
+
+
+
+
 
 function loadTelegramFiles() {
   TelegramManager.init();
@@ -4775,6 +4975,12 @@ async function playTelegramFile(item) {
     showToast('❌ فشل التحميل: ' + e.message, 'error');
   }
 }
+
+
+
+
+
+
 
 function openTelegramInIframe() {
   const viewer = document.getElementById('tile-content-viewer');
@@ -5101,20 +5307,18 @@ console.log('  ✅ زر دخول يظهر عند الوقوف على أي مرب
 console.log('  ✅ عودة ذكية للعالم الأم (طبقة طبقة)');
 console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة');
 
-
 // ============================================================
-// 📡 جسر Telegram - الإصدار المُحسَّن لاستقبال الملفات
+// 📡 جسر Telegram - الإصدار النهائي v81
 // ============================================================
 
 (function() {
     if (window.__bridgeFixed) return;
     window.__bridgeFixed = true;
 
-    console.log('📡 جسر Telegram مُحسَّن يعمل...');
+    console.log('📡 جسر Telegram v81 يعمل...');
 
-    // دالة للبحث عن العالم أو إنشائه
     function findOrCreateWorld(worldId) {
-        let world = worlds.find(w => w.id === worldId);
+        let world = worlds.find(function(w) { return w.id === worldId; });
         if (world) return world;
 
         const match = worldId.match(/world_icon_(\d+)/);
@@ -5129,34 +5333,10 @@ console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة')
                     tileSize: 3,
                     startPosition: { x: 0, z: 0 },
                     background: icon.color,
-                    items: []
+                    items: generateWorldItems(index),
+                    parentWorld: 'main'
                 };
                 worlds.push(world);
-
-                // إضافة بوابة في الخريطة الرئيسية
-                const mainWorld = getWorld('main');
-                if (mainWorld) {
-                    const exists = mainWorld.items.some(i => i.targetWorld === worldId);
-                    if (!exists) {
-                        let pr, pc, attempts = 0;
-                        do {
-                            pr = 1 + Math.floor(Math.random() * 10);
-                            pc = 1 + Math.floor(Math.random() * 10);
-                            attempts++;
-                        } while (mainWorld.items.some(i => i.row === pr && i.col === pc) && attempts < 50);
-                        if (attempts < 50) {
-                            mainWorld.items.push({
-                                id: 'portal_icon_' + index,
-                                type: 'portal',
-                                title: icon.name,
-                                emoji: icon.emoji,
-                                row: pr, col: pc,
-                                targetWorld: worldId
-                            });
-                            if (currentWorldId === 'main') buildWorld('main');
-                        }
-                    }
-                }
                 console.log('✅ تم إنشاء العالم:', world.name, '[' + worldId + ']');
                 return world;
             }
@@ -5164,63 +5344,53 @@ console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة')
         return null;
     }
 
-    // دالة تنفيذ الأوامر - تدعم file_id
     function executeCommand(cmd) {
         console.log('📥 أمر ورد:', cmd);
-
         if (cmd.action !== 'add_file') return;
 
-        // البحث عن العالم أو إنشاؤه
         const world = findOrCreateWorld(cmd.worldId);
         if (!world) {
             console.warn('⚠️ العالم غير موجود:', cmd.worldId);
             return;
         }
 
-        // حذف القديم في نفس المربع
         const row = parseInt(cmd.row) || 0;
         const col = parseInt(cmd.col) || 0;
-        world.items = world.items.filter(i => !(i.row === row && i.col === col));
+        world.items = world.items.filter(function(i) { return !(i.row === row && i.col === col); });
 
-        // إنشاء العنصر الجديد
+        let emoji = cmd.emoji || '📦';
+        if (cmd.mime_type) {
+            if (cmd.mime_type.indexOf('html') !== -1) emoji = '🎮';
+            else if (cmd.mime_type.indexOf('video') !== -1) emoji = '🎬';
+            else if (cmd.mime_type.indexOf('image') !== -1) emoji = '🖼️';
+            else if (cmd.mime_type.indexOf('audio') !== -1) emoji = '🎵';
+            else if (cmd.mime_type.indexOf('pdf') !== -1) emoji = '📄';
+        }
+
         const item = {
             id: 'hub_' + Date.now(),
-            type: cmd.fileType || 'telegram_file',
-            title: cmd.title || 'ملف من المركز',
-            emoji: cmd.emoji || '📦',
+            type: 'telegram_file',
+            title: cmd.title || cmd.filename || 'ملف من المركز',
+            emoji: emoji,
             row: row,
             col: col
         };
 
-        // ✅ إذا كان هناك file_id (من sendDocument)
         if (cmd.file_id) {
-            item.type = 'telegram_file';
             item.file_id = cmd.file_id;
             item.file_unique_id = cmd.file_unique_id || '';
             item.filename = cmd.filename || 'ملف';
             item.mime_type = cmd.mime_type || 'application/octet-stream';
             item.file_size = cmd.file_size || 0;
-            
-            // ✅ تحميل الملف وعرضه عند النقر
-            item.onClick = function() {
-                playTelegramFile(item);
-            };
-            
             console.log('📥 استقبال ملف:', item.filename, '| ID:', item.file_id.substring(0, 20) + '...');
-        }
-        // ✅ إذا كان هناك content (Base64 من sendMessage)
-        else if (cmd.content) {
-            item.content = {
-                url: cmd.content,
-                file: cmd.title || 'ملف'
-            };
+        } else if (cmd.content) {
+            item.content = { url: cmd.content, file: cmd.title || 'ملف' };
             if (cmd.fileType === 'html') item.content.iframe = true;
             if (cmd.fileType === 'video360') item.content.is360 = true;
         }
 
         world.items.push(item);
 
-        // إعادة بناء العالم إذا كنا في نفس العالم
         if (currentWorldId === cmd.worldId) {
             const px = playerGroup.position.x;
             const pz = playerGroup.position.z;
@@ -5229,39 +5399,34 @@ console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة')
             updateActiveTile();
         }
 
-        showToast('📡 وصل من المركز: ' + (item.title || 'ملف') + ' [' + row + ',' + col + ']', 'success');
+        showToast('📡 وصل من المركز: ' + item.title + ' [' + row + ',' + col + ']', 'success');
         console.log('✅ تم إضافة الملف إلى العالم:', world.name, 'في المربع', row, col);
     }
 
-    // جلب الرسائل بشكل مستمر
     let lastId = parseInt(localStorage.getItem('bridge_last_id') || '0');
 
     async function pollUpdates() {
         try {
             if (!TelegramManager.hasConfig()) return;
-
             const url = 'https://api.telegram.org/bot' + TelegramManager.botToken +
                 '/getUpdates?offset=' + (lastId + 1) + '&limit=50&timeout=10';
-            
             const res = await fetch(url);
             const data = await res.json();
-
             if (!data.ok) {
                 console.warn('❌ فشل جلب التحديثات:', data.description);
                 return;
             }
-
             for (const upd of data.result) {
                 if (upd.update_id > lastId) {
                     lastId = upd.update_id;
                     localStorage.setItem('bridge_last_id', lastId);
                 }
-
-                // ✅ استقبال الرسائل النصية (الأوامر)
                 const msg = upd.channel_post || upd.message;
-                if (!msg || !msg.text) continue;
+                if (!msg) continue;
+                const text = msg.text || msg.caption || '';
+                if (!text) continue;
 
-                const match = msg.text.match(/SPHERICAL\|CMD\|(\{.*\})/);
+                const match = text.match(/SPHERICAL\|CMD\|(\{.*\})/);
                 if (match) {
                     try {
                         const cmd = JSON.parse(match[1]);
@@ -5277,25 +5442,11 @@ console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة')
         }
     }
 
-    // تشغيل الجسر كل 3 ثوانٍ
     setInterval(pollUpdates, 3000);
     setTimeout(pollUpdates, 1000);
 
-    // ✅ دالة مساعدة لفتح ملفات Telegram من المربعات
-    window.openTelegramFileFromTile = function(item) {
-        if (item && item.file_id) {
-            playTelegramFile(item);
-        } else if (item && item.content && item.content.url) {
-            openTileContent(item);
-        } else {
-            showToast('❌ لا يوجد محتوى لعرضه', 'error');
-        }
-    };
-
-    console.log('✅ جسر Telegram المُحسَّن يعمل الآن!');
+    console.log('✅ جسر Telegram v81 يعمل الآن!');
 })();
-
-
 
 
 // ============================================================
@@ -5487,3 +5638,6 @@ window.openDistributionHub = function() {
 
 
   
+
+
+      
