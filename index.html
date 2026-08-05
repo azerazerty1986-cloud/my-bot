@@ -631,7 +631,7 @@ let isTransitioning = false;
 let isInWorld = false;
 let currentWorldId = 'main';
 let savedPlayerPos = null;
-window.returnPositions = {};  // ← جديد: حفظ مواقع العودة لكل عالم
+window.returnPositions = {};
 
 let touchDirs = { up: false, down: false, left: false, right: false };
 let mouseDrag = { active: false, startX: 0, startY: 0, currentX: 0, currentY: 0, dx: 0, dy: 0 };
@@ -697,7 +697,7 @@ let lastSwipeTime = 0;
 let healCount = 0;
 
 /* ═══════════════════════════════════════════════════════════════
-   نظام إضافة الملفات إلى المربعات
+   الأيقونات
    ═══════════════════════════════════════════════════════════════ */
 const FILE_ICONS = [
   { emoji: '🎬', name: 'فيديو', type: 'video' },
@@ -836,7 +836,6 @@ function updateHUD() {
   document.getElementById('coins-display').textContent = coins;
   document.getElementById('main-score').textContent = score;
 
-  // ✅ تحديث الإحداثيات في العنصر المنفصل
   const coordsBox = document.getElementById('coords-display-box');
   const coordsText = document.getElementById('coords-text');
   if (coordsBox && coordsText) {
@@ -1086,11 +1085,6 @@ function loadProfileData() {
   updateProfilePanel();
 }
 
-
-
-/* ═══════════════════════════════════════════════════════════════
-   تحميل الأيقونات المخصصة من المدير
-   ═══════════════════════════════════════════════════════════════ */
 function loadCustomIcons() {
   try {
     const saveData = JSON.parse(localStorage.getItem('battle_worlds_save') || '{}');
@@ -1126,7 +1120,6 @@ function toggleSettings() {
   document.getElementById('quest-panel').style.display = 'none';
   panel.style.display = wasOpen ? 'none' : 'block';
 
-  // ✅ تحديث حالة المدير
   const statusEl = document.getElementById('admin-status');
   if (statusEl) {
     const isAdmin = AccountManager.isAdmin ? AccountManager.isAdmin() : false;
@@ -1221,7 +1214,7 @@ function updateVideoTime() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   إنشاء/جلب العالم المرتبط بأي مربع (عند الطلب) - جديد v80
+   إنشاء/جلب العالم المرتبط بأي مربع (عند الطلب)
    ═══════════════════════════════════════════════════════════════ */
 function getOrCreateTileWorld(row, col, sourceWorldId) {
   const worldId = 'tile_' + sourceWorldId + '_' + row + '_' + col;
@@ -1262,7 +1255,6 @@ function getOrCreateTileWorld(row, col, sourceWorldId) {
       }
     }
 
-    // بوابة عودة إلزامية إلى العالم الأم
     let er, ec, attempts = 0;
     do {
       er = 1 + Math.floor(Math.random() * 10);
@@ -1363,7 +1355,7 @@ function createDefaultWorlds() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   تنظيف وبناء العالم - معدل لربط كل مربع بعالمه
+   تنظيف وبناء العالم
    ═══════════════════════════════════════════════════════════════ */
 function clearWorld() {
   tileMeshes.forEach(function(m) {
@@ -1434,7 +1426,6 @@ function buildWorld(worldId) {
 
   const world = getWorld(worldId);
 
-  // ✅ بوابة خروج دائمة في (0,0) لكل عالم غير main
   if (world && worldId !== 'main') {
     if (!world.items) world.items = [];
     const hasExit = world.items.some(function(i) { return i && i.row === 0 && i.col === 0; });
@@ -1464,7 +1455,6 @@ function buildWorld(worldId) {
   scene.background = new THREE.Color(bg);
   scene.fog = new THREE.Fog(bg, 30, 80);
 
-  // إنشاء المربعات - معدل: كل مربع له عالمه الخاص
   for (let row = 0; row < GRID; row++) {
     for (let col = 0; col < GRID; col++) {
       const canvas = document.createElement('canvas');
@@ -1563,21 +1553,18 @@ function buildWorld(worldId) {
       mesh.position.set(posX, 0, posZ);
       mesh.rotation.x = -Math.PI / 2;
 
-      // ─── تحديد العالم المرتبط بهذا المربع (إنشاء كسول) ───
       mesh.userData = { 
         row: row, 
         col: col, 
         item: item || null,
         sourceWorld: world.id
       };
-      // ─── نهاية التعديل ───
 
       tileGroup.add(mesh);
       tileMeshes.push(mesh);
     }
   }
 
-  // العناصر الخاصة
   if (world.items) {
     window.floatingSprites = [];
     world.items.forEach(function(item, idx) {
@@ -1712,20 +1699,18 @@ function update360Camera() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   الدخول والخروج من العوالم - معدل لكل مربع
+   الدخول والخروج من العوالم
    ═══════════════════════════════════════════════════════════════ */
 function enterWorld() {
   if (isTransitioning) return;
 
   const tile = getPlayerTile();
 
-  // ✅ مربع (0,0) دائماً خروج في أي عالم غير main
   if (tile.row === 0 && tile.col === 0 && currentWorldId !== 'main') {
     exitWorld();
     return;
   }
 
-  // ✅ فتح ملف تلجرام إن وجد
   let telegramItem = null;
   tileMeshes.forEach(function(mesh) {
     const d = mesh.userData;
@@ -1738,13 +1723,11 @@ function enterWorld() {
     return;
   }
 
-  // ✅ فتح المحتوى المرفوع إن وجد
   if (window.currentTileItem && window.currentTileItem.content && window.currentTileItem.content.url) {
     openTileContent(window.currentTileItem);
     return;
   }
 
-  // ✅ التحقق من صلاحية المدير للمربعات الفارغة
   const isAdmin = AccountManager.isAdmin ? AccountManager.isAdmin() : false;
   if (window.currentTileIsEmpty && !isAdmin) {
     showToast('🔒 هذا المربع فارغ. يمكن للمدير فقط الدخول إليه.', 'warn');
@@ -1754,7 +1737,6 @@ function enterWorld() {
   let targetWorldId = null;
   let targetWorldName = '';
 
-  // البحث عن المربع الحالي وإنشاء عالمه كسولاً
   tileMeshes.forEach(function(mesh) {
     const d = mesh.userData;
     if (d.row === tile.row && d.col === tile.col) {
@@ -1783,7 +1765,6 @@ function enterWorld() {
 
   isTransitioning = true;
 
-  // حفظ موقع العودة للعالم الحالي
   if (!window.returnPositions) window.returnPositions = {};
   window.returnPositions[currentWorldId] = { 
     x: playerGroup.position.x, 
@@ -1830,7 +1811,6 @@ function exitWorld() {
   setTimeout(function() {
     buildWorld(returnTo);
 
-    // استعادة موقع اللاعب في العالم الذي عدنا إليه
     if (window.returnPositions && window.returnPositions[returnTo]) {
       const pos = window.returnPositions[returnTo];
       playerGroup.position.set(pos.x, 0, pos.z);
@@ -2890,7 +2870,7 @@ function setupFacetInteraction() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   تحديثات اللاعب والكاميرا - معدل: زر الدخول لكل مربع
+   تحديثات اللاعب والكاميرا
    ═══════════════════════════════════════════════════════════════ */
 function updatePlayer() {
   if (isTransitioning || !gameRunning) return;
@@ -2901,13 +2881,11 @@ function updatePlayer() {
   let dx = 0, dz = 0;
 
   if (isCombat) {
-    // ✅ أزرار + مفاتيح فقط في عوالم القتال
     if (touchDirs.up) dz = -s;
     if (touchDirs.down) dz = s;
     if (touchDirs.left) dx = -s;
     if (touchDirs.right) dx = s;
   } else if (mouseDrag.active) {
-    // ✅ سحب بالماوس/لمس في العوالم العادية
     const maxDelta = 80;
     const rawDx = mouseDrag.currentX - mouseDrag.startX;
     const rawDy = mouseDrag.currentY - mouseDrag.startY;
@@ -2933,7 +2911,7 @@ function updateActiveTile() {
   let codFile = '';
   let hasContent = false;
   let contentItem = null;
-  let isEmptyTile = false; // ✅ مربع فارغ بدون أي عنصر
+  let isEmptyTile = false;
 
   tileMeshes.forEach(function(mesh) {
     const d = mesh.userData;
@@ -2946,7 +2924,6 @@ function updateActiveTile() {
         const tw = getWorld(d.item.targetWorld);
         portalTitle = tw ? tw.name : 'عالم';
       } else if (d.sourceWorld && !d.item) {
-        // ✅ مربع فارغ - يحتاج صلاحية مدير
         isEmptyTile = true;
         portalTitle = '🌍 عالم جديد';
       }
@@ -2956,7 +2933,6 @@ function updateActiveTile() {
         codFile = d.item.codFile || 'cod.html';
       }
 
-      // ✅ كشف المحتوى المرفوع
       if (d.item && d.item.content && d.item.content.url) {
         hasContent = true;
         contentItem = d.item;
@@ -2971,9 +2947,8 @@ function updateActiveTile() {
     openCODGame(codFile);
   }
 
-  // تخزين العنصر الحالي للاستخدام في enterWorld
   window.currentTileItem = contentItem;
-  window.currentTileIsEmpty = isEmptyTile; // ✅ تخزين حالة المربع الفارغ
+  window.currentTileIsEmpty = isEmptyTile;
 
   const btn = document.getElementById('enter-btn');
   const isAdmin = AccountManager.isAdmin ? AccountManager.isAdmin() : false;
@@ -3137,7 +3112,6 @@ function hideTutorial() {
   document.getElementById('tutorial-panel').style.display = 'none';
 }
 
-
 /* ═══════════════════════════════════════════════════════════════
    نظام إضافة الملفات - دوال النافذة المنبثقة
    ═══════════════════════════════════════════════════════════════ */
@@ -3151,7 +3125,6 @@ function showAddFileModal() {
   overlay.style.display = 'flex';
   overlay.style.zIndex = '2000';
 
-  // دمج العوالم الموجودة مع عوالم الأيقونات الـ 20
   let allWorlds = worlds.slice();
   WORLD_ICONS.forEach(function(icon, idx) {
     const worldId = 'world_icon_' + idx;
@@ -3486,7 +3459,6 @@ function addFileToTile() {
 
   let world = worlds.find(function(w) { return w.id === worldId; });
 
-  // إنشاء العالم تلقائياً إن كان من الأيقونات ولم يُنشأ بعد
   if (!world && worldId.indexOf('world_icon_') === 0) {
     const iconIndex = parseInt(worldId.replace('world_icon_', ''));
     if (!isNaN(iconIndex) && WORLD_ICONS[iconIndex]) {
@@ -3501,7 +3473,6 @@ function addFileToTile() {
         items: generateWorldItems(iconIndex)
       };
       worlds.push(world);
-      // إضافة بوابة في الخريطة الرئيسية تلقائياً
       const mainWorld = getWorld('main');
       if (mainWorld) {
         let pr, pc, attempts = 0;
@@ -3593,17 +3564,11 @@ function initFileSystem() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   نهاية نظام إضافة الملفات
-   ═══════════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════
    عرض محتوى المربعات (ملفات مرفوعة)
    ═══════════════════════════════════════════════════════════════ */
-
 function openTileContent(item) {
   if (!item || !item.content || !item.content.url) return;
 
-  // إذا كان فيديو 360، استخدم النظام المدمج
   if (item.type === 'video360') {
     createVideo360(item.content.url);
     showToast('🌐 جاري تحميل فيديو 360...', 'info');
@@ -3672,7 +3637,6 @@ function openTileContent(item) {
     wrapper.innerHTML = '<div style="text-align:center;"><div style="font-size:48px;margin-bottom:16px;">🔗</div><div style="font-size:18px;color:#ffd700;margin-bottom:12px;">' + (item.title || 'رابط') + '</div><a href="' + url + '" target="_blank" style="color:#00f2ff;font-size:16px;text-decoration:none;display:inline-block;padding:10px 24px;border:1px solid rgba(0,242,255,0.3);border-radius:10px;background:rgba(0,242,255,0.08);">فتح الرابط في تبويب جديد</a></div>';
     body.appendChild(wrapper);
   } else if (type === 'spreadsheet' || type === 'folder' || type === 'sticker' || type === 'target' || type === 'featured') {
-    // افتراضي: عرض كصورة إن كان URL صورة، وإلا iframe
     const ext = (item.content.file || '').split('.').pop().toLowerCase();
     if (['jpg','jpeg','png','gif','webp','svg'].indexOf(ext) !== -1) {
       const img = document.createElement('img');
@@ -3723,20 +3687,17 @@ function setupTileInteraction() {
       const mesh = intersects[0].object;
       const d = mesh.userData;
 
-      // ✅ وضع البناء: طلاء/حذف/إضافة
       if (WorldEditor.isActive) {
         WorldEditor.paintTile(d.row, d.col);
         return;
       }
 
-      // ✅ النقر على أي مربع ينقل اللاعب إليه مباشرة (teleport)
       const posX = d.col * TILE_SIZE - HALF + TILE_SIZE / 2;
       const posZ = d.row * TILE_SIZE - HALF + TILE_SIZE / 2;
       playerGroup.position.set(posX, 0, posZ);
       updateActiveTile();
       showToast('📍 انتقلت إلى [' + d.row + ',' + d.col + ']', 'info');
 
-      // ✅ إذا كان المربع يحتوي عنصراً، افتحه بعد نصف ثانية
       const item = d.item;
       if (item && item.content && item.content.url) {
         setTimeout(function() { openTileContent(item); }, 300);
@@ -3748,14 +3709,8 @@ function setupTileInteraction() {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   تهيئة اللعبة
+   المنصة - نظام الحسابات
    ═══════════════════════════════════════════════════════════════ */
-
-/* ═══════════════════════════════════════════════════════════════
-   🌐 المنصة - المرحلة 1 & 2
-   ═══════════════════════════════════════════════════════════════ */
-
-/* ====== 1. نظام الحسابات ====== */
 const AccountManager = {
   currentUser: null,
   users: [],
@@ -3766,7 +3721,6 @@ const AccountManager = {
       this.onLogin();
     } else {
       document.getElementById('auth-screen').style.display = 'flex';
-      // ✅ اللعبة تعمل خلف شاشة الدخول
       document.getElementById('auth-screen').style.pointerEvents = 'auto';
     }
   },
@@ -3850,14 +3804,12 @@ const AccountManager = {
     const password = document.getElementById('login-password').value;
     const err = document.getElementById('login-error');
 
-    // ✅ التحقق من بيانات المدير
     if (username !== 'admin123' || password !== '123456') {
       err.textContent = '❌ بيانات المدير غير صحيحة';
       err.style.display = 'block';
       return;
     }
 
-    // ✅ البحث عن حساب المدير أو إنشاؤه
     let admin = this.users.find(u => u.username === 'admin123');
     if (!admin) {
       admin = {
@@ -3902,14 +3854,12 @@ const AccountManager = {
     updateProfilePanel();
     document.getElementById('platform-bar').style.display = 'flex';
 
-    // ✅ إظهار شارة المدير إن كان كذلك
     if (this.currentUser.isAdmin) {
       showToast('👑 مرحباً أيها المدير!', 'success');
       document.querySelectorAll('.platform-btn').forEach(btn => btn.classList.add('admin'));
     }
 
     EconomySystem.checkDaily();
-    // ✅ GhostManager فقط بعد اكتمال initGame
     if (scene && renderer) {
       GhostManager.init();
     } else {
@@ -3927,7 +3877,6 @@ const AccountManager = {
     return this.currentUser && this.currentUser.isAdmin === true;
   },
 
-  // تفعيل وضع المدير (للاختبار: اكتب activateAdmin() في console)
   activateAdmin() {
     if (!this.currentUser) { console.log('❌ سجل دخول أولاً'); return; }
     this.currentUser.isAdmin = true;
@@ -3937,7 +3886,9 @@ const AccountManager = {
   }
 };
 
-/* ====== 2. IndexedDB لتخزين الملفات ====== */
+/* ═══════════════════════════════════════════════════════════════
+   IndexedDB لتخزين الملفات
+   ═══════════════════════════════════════════════════════════════ */
 const FileStorage = {
   db: null,
 
@@ -4003,7 +3954,9 @@ const FileStorage = {
   }
 };
 
-/* ====== 3. نظام الدردشة ====== */
+/* ═══════════════════════════════════════════════════════════════
+   نظام الدردشة
+   ═══════════════════════════════════════════════════════════════ */
 const ChatManager = {
   messages: [],
   isOpen: false,
@@ -4030,14 +3983,7 @@ const ChatManager = {
     input.value = '';
 
     setTimeout(() => {
-      const replies = [
-        'مرحباً! 👋',
-        'عالم جميل هنا! 🌍',
-        'هل اكتشفت عوالم جديدة؟',
-        'أنا أبني عالماً جديداً 🛠️',
-        'انضم إلينا! 🎉',
-        'هل جربت المكافأة اليومية؟ 🎁'
-      ];
+      const replies = ['مرحباً! 👋', 'عالم جميل هنا! 🌍', 'هل اكتشفت عوالم جديدة؟', 'أنا أبني عالماً جديداً 🛠️', 'انضم إلينا! 🎉', 'هل جربت المكافأة اليومية؟ 🎁'];
       const botNames = ['نور', 'سامي', 'ليلى', 'عمر', 'سارة', 'خالد'];
       const bot = botNames[Math.floor(Math.random() * botNames.length)];
       const reply = replies[Math.floor(Math.random() * replies.length)];
@@ -4062,7 +4008,9 @@ const ChatManager = {
   }
 };
 
-/* ====== 4. أشباح اللاعبين (Multiplayer محاكى) ====== */
+/* ═══════════════════════════════════════════════════════════════
+   أشباح اللاعبين
+   ═══════════════════════════════════════════════════════════════ */
 const GhostManager = {
   ghosts: [],
   names: ['نور', 'سامي', 'ليلى', 'عمر', 'سارة', 'خالد', 'فاطمة', 'يوسف', 'ريم', 'أحمد'],
@@ -4139,7 +4087,9 @@ const GhostManager = {
   }
 };
 
-/* ====== 5. محرر العوالم ====== */
+/* ═══════════════════════════════════════════════════════════════
+   محرر العوالم
+   ═══════════════════════════════════════════════════════════════ */
 const WorldEditor = {
   isActive: false,
   selectedTool: 'brush',
@@ -4273,7 +4223,9 @@ const WorldEditor = {
   }
 };
 
-/* ====== 6. سوق الأصول ====== */
+/* ═══════════════════════════════════════════════════════════════
+   سوق الأصول
+   ═══════════════════════════════════════════════════════════════ */
 const AssetMarket = {
   assets: [
     { id: 'a1', emoji: '🌈', name: 'قوس قزح', price: 50, type: 'theme' },
@@ -4328,7 +4280,9 @@ const AssetMarket = {
   }
 };
 
-/* ====== 7. نظام الاقتصاد ====== */
+/* ═══════════════════════════════════════════════════════════════
+   نظام الاقتصاد
+   ═══════════════════════════════════════════════════════════════ */
 const EconomySystem = {
   checkDaily() {
     const user = AccountManager.currentUser;
@@ -4376,9 +4330,8 @@ const EconomySystem = {
   }
 };
 
-
 /* ═══════════════════════════════════════════════════════════════
-   📤 نظام تلجرام - رفع وتحميل الملفات
+   نظام تلجرام - رفع وتحميل الملفات
    ═══════════════════════════════════════════════════════════════ */
 const TelegramManager = {
   botToken: '',
@@ -4408,7 +4361,6 @@ const TelegramManager = {
       if (upd.update_id > maxId) maxId = upd.update_id;
       const msg = upd.channel_post || upd.message;
       if (!msg || !msg.document) return;
-      // ✅ فقط ملفات القناة المستهدفة
       const chat = msg.chat;
       const chatId = TelegramManager.chatId;
       const match = (
@@ -4487,6 +4439,9 @@ const TelegramManager = {
   }
 };
 
+/* ═══════════════════════════════════════════════════════════════
+   دوال تلجرام (واجهة)
+   ═══════════════════════════════════════════════════════════════ */
 function showTelegramSettings() {
   const old = document.getElementById('telegram-settings-modal');
   if (old) old.remove();
@@ -4496,62 +4451,17 @@ function showTelegramSettings() {
   overlay.className = 'modal-overlay';
   overlay.style.display = 'flex';
   overlay.style.zIndex = '5000';
-  overlay.innerHTML = '<div style="' +
-    'background:rgba(10,10,30,0.97);border:1px solid rgba(139,92,246,0.3);border-radius:20px;padding:28px;' +
-    'max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.6);' +
-    '">' +
+  overlay.innerHTML = '<div style="background:rgba(10,10,30,0.97);border:1px solid rgba(139,92,246,0.3);border-radius:20px;padding:28px;max-width:420px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.6);">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;">' +
       '<h2 style="color:#ffd700;font-size:20px;margin:0;">📱 إعدادات بوت تلجرام</h2>' +
-      '<button onclick="closeTelegramSettings()" style="' +
-        'background:rgba(239,68,68,0.15);color:#f87171;border:none;' +
-        'width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;font-family:inherit;' +
-      '">✖</button>' +
+      '<button onclick="closeTelegramSettings()" style="background:rgba(239,68,68,0.15);color:#f87171;border:none;width:30px;height:30px;border-radius:50%;font-size:16px;cursor:pointer;font-family:inherit;">✖</button>' +
     '</div>' +
-    '<div style="margin-bottom:14px;">' +
-      '<label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🤖 Bot Token (من @BotFather)</label>' +
-      '<input type="text" id="tg-bot-token" placeholder="123456789:ABC..." value="' + (TelegramManager.botToken || '') + '" style="' +
-        'width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);' +
-        'background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;font-size:13px;' +
-      '">' +
-    '</div>' +
-    '<div style="margin-bottom:14px;">' +
-      '<label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">💬 Chat ID (رقم أو @channel)</label>' +
-      '<input type="text" id="tg-chat-id" placeholder="مثال: 123456789 أو @mychannel" value="' + (TelegramManager.chatId || '') + '" style="' +
-        'width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);' +
-        'background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;font-size:13px;' +
-      '">' +
-    '</div>' +
-    '<div style="background:rgba(139,92,246,0.06);padding:10px 14px;border-radius:10px;margin-bottom:16px;border:1px solid rgba(139,92,246,0.1);">' +
-      '<div style="color:#a78bfa;font-size:11px;line-height:1.8;">' +
-        '💡 <b>كيف تحصل على البيانات:</b><br>' +
-        '1. افتح @BotFather وأنشئ بوت جديد<br>' +
-        '2. انسخ الـ Token وضعه هنا<br>' +
-        '3. <b>للقناة الخاصة:</b> أضف البوت كـ <b>مسؤول</b> في قناتك<br>' +
-        '4. ارسل أي ملف في القناة ثم اضغط "اختبار"<br>' +
-        '5. للقناة العامة: استخدم @channelname أو الرقم' +
-      '</div>' +
-    '</div>' +
+    '<div style="margin-bottom:14px;"><label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">🤖 Bot Token (من @BotFather)</label><input type="text" id="tg-bot-token" placeholder="123456789:ABC..." value="' + (TelegramManager.botToken || '') + '" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;font-size:13px;"></div>' +
+    '<div style="margin-bottom:14px;"><label style="color:#888;font-size:11px;display:block;margin-bottom:4px;">💬 Chat ID (رقم أو @channel)</label><input type="text" id="tg-chat-id" placeholder="مثال: 123456789 أو @mychannel" value="' + (TelegramManager.chatId || '') + '" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.04);color:#fff;font-family:inherit;font-size:13px;"></div>' +
+    '<div style="background:rgba(139,92,246,0.06);padding:10px 14px;border-radius:10px;margin-bottom:16px;border:1px solid rgba(139,92,246,0.1);"><div style="color:#a78bfa;font-size:11px;line-height:1.8;">💡 <b>كيف تحصل على البيانات:</b><br>1. افتح @BotFather وأنشئ بوت جديد<br>2. انسخ الـ Token وضعه هنا<br>3. <b>للقناة الخاصة:</b> أضف البوت كـ <b>مسؤول</b> في قناتك<br>4. ارسل أي ملف في القناة ثم اضغط "اختبار"<br>5. للقناة العامة: استخدم @channelname أو الرقم</div></div>' +
     '<div id="tg-test-result" style="color:#888;font-size:11px;text-align:center;margin-bottom:12px;min-height:18px;"></div>' +
-    '<div style="display:flex;gap:10px;margin-bottom:10px;">' +
-      '<button onclick="testTelegramSettings()" style="' +
-        'flex:1;padding:10px;background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);' +
-        'border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;' +
-      '">🧪 اختبار الاتصال</button>' +
-      '<button onclick="saveTelegramSettings()" style="' +
-        'flex:2;padding:10px;background:linear-gradient(135deg,#ffd700,#f59e0b);color:#111;border:none;' +
-        'border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;' +
-      '">💾 حفظ الإعدادات</button>' +
-    '</div>' +
-    '<div style="display:flex;gap:10px;">' +
-      '<button onclick="syncTelegramChannel()" style="' +
-        'flex:1;padding:10px;background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3);' +
-        'border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;' +
-      '">🔄 مزامنة القناة</button>' +
-      '<button onclick="showTelegramChannelId()" style="' +
-        'flex:1;padding:10px;background:rgba(255,255,255,0.06);color:#aaa;border:1px solid rgba(255,255,255,0.1);' +
-        'border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;' +
-      '">🔍 اكتشف Chat ID</button>' +
-    '</div>' +
+    '<div style="display:flex;gap:10px;margin-bottom:10px;"><button onclick="testTelegramSettings()" style="flex:1;padding:10px;background:rgba(139,92,246,0.15);color:#a78bfa;border:1px solid rgba(139,92,246,0.3);border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">🧪 اختبار الاتصال</button><button onclick="saveTelegramSettings()" style="flex:2;padding:10px;background:linear-gradient(135deg,#ffd700,#f59e0b);color:#111;border:none;border-radius:10px;font-weight:700;font-size:14px;cursor:pointer;font-family:inherit;">💾 حفظ الإعدادات</button></div>' +
+    '<div style="display:flex;gap:10px;"><button onclick="syncTelegramChannel()" style="flex:1;padding:10px;background:rgba(74,222,128,0.15);color:#4ade80;border:1px solid rgba(74,222,128,0.3);border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">🔄 مزامنة القناة</button><button onclick="showTelegramChannelId()" style="flex:1;padding:10px;background:rgba(255,255,255,0.06);color:#aaa;border:1px solid rgba(255,255,255,0.1);border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;">🔍 اكتشف Chat ID</button></div>' +
   '</div>';
   document.body.appendChild(overlay);
 }
@@ -4594,7 +4504,6 @@ function saveTelegramSettings() {
   updateTelegramStatus();
 }
 
-
 async function syncTelegramChannel() {
   const result = document.getElementById('tg-test-result');
   result.textContent = '⏳ جاري المزامنة من القناة...';
@@ -4607,7 +4516,6 @@ async function syncTelegramChannel() {
       result.style.color = '#60a5fa';
       return;
     }
-    // ✅ حفظ الملفات في localStorage مشترك
     const key = 'telegram_files_' + TelegramManager.chatId.replace(/[^a-zA-Z0-9]/g, '_');
     let existing = [];
     try { existing = JSON.parse(localStorage.getItem(key) || '[]'); } catch(e) {}
@@ -4619,7 +4527,6 @@ async function syncTelegramChannel() {
     result.textContent = '✅ تم مزامنة ' + files.length + ' ملف جديد! الإجمالي: ' + existing.length;
     result.style.color = '#4ade80';
     showToast('🔄 تم مزامنة ' + files.length + ' ملف من القناة', 'success');
-    // ✅ إضافة تلقائية للعالم الرئيسي
     addTelegramFilesToWorld(existing);
   } catch(e) {
     result.textContent = '❌ فشل المزامنة: ' + e.message;
@@ -4815,6 +4722,9 @@ function openTelegramInIframe() {
   body.appendChild(iframe);
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   تهيئة اللعبة
+   ═══════════════════════════════════════════════════════════════ */
 function initGame() {
   const canvas = document.getElementById('canvas');
 
@@ -4866,7 +4776,6 @@ function initGame() {
   setupFacetInteraction();
   setupTileInteraction();
 
-  // ✅ التأكد من بناء الكرة وإظهارها
   if (!sphereGroup) {
     buildSphere();
   }
@@ -4883,7 +4792,6 @@ function initGame() {
   function loop() {
     requestAnimationFrame(loop);
 
-    // ✅ تحديث مؤشر السحب
     const dragInd = document.getElementById('drag-indicator');
     if (dragInd && mouseDrag.active && currentWorldId !== 'main' && currentWorldId !== 'world_fight') {
       dragInd.style.display = 'block';
@@ -4939,13 +4847,15 @@ function initGame() {
   loop();
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   بدء اللعبة
+   ═══════════════════════════════════════════════════════════════ */
 function startGame() {
   document.getElementById('start-screen').style.display = 'none';
   FileStorage.init().then(() => {
     console.log('📂 IndexedDB جاهز');
   }).catch(e => console.log('⚠️ IndexedDB:', e));
   AccountManager.init();
-  // ✅ تحميل ملفات تلجرام المخزنة + مزامنة تلقائية
   TelegramManager.init();
   loadTelegramFiles();
   setTimeout(function() {
@@ -5026,7 +4936,6 @@ function setupControls() {
     fireWeapon();
   });
 
-  // ✅ سحب بالماوس/لمس للتنقل في العوالم العادية
   const canvas = renderer ? renderer.domElement : document.getElementById('canvas');
   if (canvas) {
     canvas.addEventListener('mousedown', function(e) {
@@ -5107,7 +5016,6 @@ document.addEventListener('click', function(e) {
     questPanel.style.display = 'none';
   }
 
-  // ✅ إغلاق الدردشة عند النقر خارجها
   const chatPanel = document.getElementById('chat-panel');
   const chatBtn = document.querySelector('.platform-btn[onclick*="ChatManager"]');
   if (chatPanel && chatPanel.style.display === 'flex') {
@@ -5117,18 +5025,16 @@ document.addEventListener('click', function(e) {
     }
   }
 });
-  
-// ================================================================
-// 📡 مستمع تغييرات المدير عبر localStorage
-// ================================================================
 
+/* ═══════════════════════════════════════════════════════════════
+   📡 مستمع تغييرات المدير عبر localStorage
+   ═══════════════════════════════════════════════════════════════ */
 window.addEventListener('storage', function(e) {
     if (e.key === 'battle_worlds_save' && e.newValue) {
         try {
             const data = JSON.parse(e.newValue);
             let changed = false;
 
-            // تحديث المعالم
             if (data.landmarks && Array.isArray(data.landmarks)) {
                 landmarks = data.landmarks;
                 nextLandmarkId = 1 + Math.max(0, ...landmarks.map(function(l) { return l.id || 0; }));
@@ -5136,7 +5042,6 @@ window.addEventListener('storage', function(e) {
                 if (typeof renderLandmarks === 'function') renderLandmarks();
             }
 
-            // تحديث العوالم
             if (data.worlds && Array.isArray(data.worlds)) {
                 data.worlds.forEach(function(newWorld) {
                     const idx = worlds.findIndex(function(w) { return w.id === newWorld.id; });
@@ -5149,7 +5054,6 @@ window.addEventListener('storage', function(e) {
                 changed = true;
             }
 
-            // تحديث الأيقونات المخصصة
             if (data.customIcons && Array.isArray(data.customIcons)) {
                 data.customIcons.forEach(function(icon) {
                     const exists = WORLD_ICONS.find(function(i) { return i.name === icon.name && i.emoji === icon.emoji; });
@@ -5161,7 +5065,6 @@ window.addEventListener('storage', function(e) {
                 if (typeof buildSphere === 'function') buildSphere();
             }
 
-            // تحديث بيانات اللاعب
             if (data.playerName !== undefined) playerName = data.playerName;
             if (data.level !== undefined) level = data.level;
             if (data.coins !== undefined) coins = data.coins;
@@ -5179,7 +5082,6 @@ window.addEventListener('storage', function(e) {
     }
 });
 
-// مستمع postMessage من iframe المدير
 window.addEventListener('message', function(event) {
     if (event.data && event.data.type === 'manager_update') {
         if (event.data.data && event.data.data.action === 'force_sync') {
@@ -5214,7 +5116,6 @@ window.addEventListener('message', function(event) {
     }
 });
 
-// دالة فتح المدير في iframe
 function openManager() {
     const old = document.getElementById('manager-iframe');
     if (old) old.remove();
@@ -5226,7 +5127,6 @@ function openManager() {
     showToast('👑 تم فتح مدير النظام', 'success');
 }
 
-// دالة إرسال تحديث إلى المدير
 function notifyManager() {
     try {
         const saveData = localStorage.getItem('battle_worlds_save');
@@ -5246,9 +5146,8 @@ function notifyManager() {
 }
 
 // ================================================================
-// نهاية كود المدير
+// تشغيل اللعبة
 // ================================================================
-
 setupControls();
 
 console.log('🌐 العوالم الكروية v80.0 - كل مربع = عالم');
@@ -5257,7 +5156,7 @@ console.log('  ✅ كل مربع في الشبكة = بوابة لعالم فر�
 console.log('  ✅ إنشاء عوالم عند الطلب (توفير للذاكرة)');
 console.log('  ✅ زر دخول يظهر عند الوقوف على أي مربع');
 console.log('  ✅ عودة ذكية للعالم الأم (طبقة طبقة)');
-console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة');
+console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة'); 
 </script>   <!-- ← هنا تنتهي علامة <script> -->
 </body>
 </html>
