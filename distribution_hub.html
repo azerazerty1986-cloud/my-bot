@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📡 مركز التوزيع - النهائي</title>
+<title>📡 مركز التوزيع</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#0a0a1a;color:#fff;padding:16px;direction:rtl}
+body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#0a0a1a;color:#fff;padding:16px;direction:rtl;min-height:100vh}
 .container{max-width:520px;margin:0 auto;background:rgba(255,255,255,0.05);border-radius:16px;padding:20px;border:1px solid rgba(255,215,0,0.15)}
 h1{color:#ffd700;text-align:center;font-size:20px;margin-bottom:16px}
 .section{background:rgba(0,0,0,0.3);border-radius:12px;padding:14px;margin-bottom:14px;border:1px solid rgba(255,255,255,0.06)}
@@ -40,12 +40,13 @@ input:focus,select:focus{outline:none;border-color:#8b5cf6}
 .toast.error{border-color:#f87171;color:#f87171}
 @keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .auto-sync-badge{display:inline-block;background:rgba(74,222,128,0.15);color:#4ade80;padding:2px 8px;border-radius:10px;font-size:10px;margin-right:6px}
+.parent-badge{display:inline-block;background:rgba(0,242,255,0.15);color:#00f2ff;padding:2px 8px;border-radius:10px;font-size:10px;margin-right:6px}
 </style>
 </head>
 <body>
 
 <div class="container">
-  <h1>📡 مركز التوزيع <span class="auto-sync-badge">🔄 تلقائي</span></h1>
+  <h1>📡 مركز التوزيع <span class="auto-sync-badge">🔄 تلقائي</span><span class="parent-badge" id="parent-badge" style="display:none">🌐 متصل</span></h1>
 
   <div class="section">
     <div class="section-title">⚙️ إعدادات البوت</div>
@@ -109,7 +110,8 @@ input:focus,select:focus{outline:none;border-color:#8b5cf6}
 
 <script>
 // ============================================================
-//  📡 مركز التوزيع - النسخة النهائية v81
+//  📡 مركز التوزيع — نسخة متوافقة مع العوالم الكروية
+//  يرسل postMessage إلى window.parent عند النجاح
 // ============================================================
 
 const EMOJIS = { image:'🖼️', video:'🎬', pdf:'📄', audio:'🎵', text:'📝', html:'🌐' };
@@ -142,6 +144,12 @@ let pendingFile = null;
 let pendingFileName = null;
 let knownWorlds = [];
 let lastUpdateId = parseInt(localStorage.getItem('hub_last_id') || '0');
+
+// Detect if running inside parent iframe
+const isEmbedded = (window.self !== window.top);
+if (isEmbedded) {
+  document.getElementById('parent-badge').style.display = 'inline-block';
+}
 
 // ─── تحميل الإعدادات ───
 function loadSettings() {
@@ -383,6 +391,9 @@ async function publishFile() {
       if (msgData.ok) {
         addStatus('📤 تم إرسال file_id للمزامنة', 'success');
         addStatus('📍 الموقع: ' + worldId + ' [' + row + ',' + col + ']', 'gold');
+
+        // ✅ إشعار الملف الرئيسي عبر postMessage
+        notifyParent(fileCmd);
       } else {
         addStatus('⚠️ فشل إرسال البيانات: ' + msgData.description, 'warn');
       }
@@ -391,6 +402,37 @@ async function publishFile() {
   } catch (e) {
     showToast('❌ خطأ في الاتصال', 'error');
     addStatus('❌ خطأ: ' + e.message, 'error');
+  }
+}
+
+// ─── إشعار الملف الرئيسي (عبر postMessage) ───
+function notifyParent(cmd) {
+  if (!isEmbedded) {
+    addStatus('ℹ️ يعمل بشكل مستقل (لا يوجد ملف رئيسي)', 'info');
+    return;
+  }
+  try {
+    // Send structured object
+    window.parent.postMessage({
+      type: 'SPHERICAL_ADD_FILE',
+      worldId: cmd.worldId,
+      row: cmd.row,
+      col: cmd.col,
+      title: cmd.title,
+      fileType: cmd.fileType,
+      emoji: cmd.emoji,
+      fileId: cmd.file_id,
+      fileName: cmd.filename,
+      mime_type: cmd.mime_type,
+      file_size: cmd.file_size
+    }, '*');
+
+    // Also send string format for backward compatibility
+    window.parent.postMessage('📡 SPHERICAL|CMD|' + JSON.stringify(cmd), '*');
+
+    addStatus('🌐 تم إشعار الملف الرئيسي بالملف الجديد', 'success');
+  } catch (e) {
+    addStatus('⚠️ فشل إشعار الملف الرئيسي', 'warn');
   }
 }
 
@@ -418,7 +460,7 @@ async function fetchWorldsFromChannel() {
   document.getElementById('sync-status').textContent = '⏳ جاري المزامنة...';
 
   try {
-    const res = await fetch('https://api.telegram.org/bot' + config.botToken + 
+    const res = await fetch('https://api.telegram.org/bot' + config.botToken +
       '/getUpdates?offset=' + (lastUpdateId + 1) + '&limit=100');
     const data = await res.json();
     if (!data.ok) {
@@ -464,6 +506,8 @@ async function fetchWorldsFromChannel() {
           if (cmd.action === 'add_file' && cmd.worldId) {
             addWorldOption(cmd.worldId, cmd.worldId);
             newFiles++;
+            // Notify parent about synced files too
+            if (isEmbedded) notifyParent(cmd);
           }
         } catch(e) {}
       }
@@ -472,8 +516,8 @@ async function fetchWorldsFromChannel() {
     const status = [];
     if (newWorlds > 0) status.push('+' + newWorlds + ' عالم');
     if (newFiles > 0) status.push('+' + newFiles + ' ملف');
-    document.getElementById('sync-status').textContent = status.length > 0 
-      ? '✅ ' + status.join(' | ') + ' • ' + new Date().toLocaleTimeString('ar') 
+    document.getElementById('sync-status').textContent = status.length > 0
+      ? '✅ ' + status.join(' | ') + ' • ' + new Date().toLocaleTimeString('ar')
       : '🔄 محدّث • ' + new Date().toLocaleTimeString('ar');
 
   } catch (e) {
@@ -491,10 +535,10 @@ setInterval(function() {
 // ─── التهيئة ───
 loadSettings();
 
-console.log('📡 مركز التوزيع v81 النهائي جاهز!');
+console.log('📡 مركز التوزيع جاهز!');
+console.log('🌐 متصل بالملف الرئيسي:', isEmbedded);
 console.log('🔄 المزامنة التلقائية: كل 15 ثانية');
 </script>
 
 </body>
 </html>
-
