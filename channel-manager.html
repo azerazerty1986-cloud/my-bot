@@ -3,357 +3,458 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📡 مركز التوزيع</title>
+<title>📡 مركز التوزيع - Telegram</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #0a0a2a, #000);
+    font-family: 'Cairo', sans-serif;
+    background: linear-gradient(135deg, #0a0a2a 0%, #000 50%, #0a0a1a 100%);
     color: #fff;
     min-height: 100vh;
-    padding: 10px;
+    padding: 12px;
     display: flex;
     justify-content: center;
     align-items: flex-start;
 }
 .container {
-    max-width: 650px;
+    max-width: 520px;
     width: 100%;
-    background: rgba(10,10,30,0.95);
-    border-radius: 16px;
-    padding: 14px;
+    background: rgba(10,10,30,0.97);
+    border-radius: 20px;
+    padding: 20px;
     border: 1px solid rgba(139,92,246,0.2);
-    max-height: 98vh;
-    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
 }
-h1 { color: #ffd700; font-size: 17px; text-align: center; }
-.subtitle { text-align: center; color: #888; font-size: 10px; margin-bottom: 8px; }
-.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-left: 4px; }
-.online { background: #4ade80; }
+h1 {
+    font-size: 22px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-align: center;
+    margin-bottom: 4px;
+}
+.subtitle {
+    text-align: center;
+    color: #888;
+    font-size: 12px;
+    margin-bottom: 16px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+.online { background: #4ade80; box-shadow: 0 0 8px #4ade80; }
 .offline { background: #f87171; }
 .waiting { background: #fbbf24; }
+
 .section {
     background: rgba(255,255,255,0.03);
-    border-radius: 8px;
-    padding: 8px;
-    margin-bottom: 6px;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
     border: 1px solid rgba(255,255,255,0.06);
+    transition: all 0.3s;
 }
-.section-title { color: #a78bfa; font-size: 11px; font-weight: 700; margin-bottom: 4px; }
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
-label { color: #888; font-size: 9px; display: block; margin-bottom: 1px; font-weight: 600; }
-input, select {
+.section:hover {
+    border-color: rgba(139,92,246,0.15);
+}
+.section-title {
+    color: #a78bfa;
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+label {
+    color: #888;
+    font-size: 11px;
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+input, select, textarea {
     width: 100%;
-    padding: 3px 6px;
-    border-radius: 4px;
+    padding: 8px 12px;
+    border-radius: 8px;
     border: 1px solid rgba(255,255,255,0.08);
     background: rgba(255,255,255,0.04);
     color: #fff;
-    font-size: 10px;
-    font-family: inherit;
+    font-size: 13px;
+    font-family: 'Cairo', sans-serif;
+    transition: all 0.2s;
 }
-input:focus, select:focus { outline: none; border-color: rgba(139,92,246,0.3); }
-input[type="file"] { padding: 2px; }
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: rgba(139,92,246,0.4);
+    background: rgba(255,255,255,0.06);
+}
+input[type="file"] {
+    padding: 6px;
+    font-size: 11px;
+}
+input::placeholder { color: #555; }
+
 .btn {
-    padding: 3px 8px;
-    border-radius: 4px;
+    padding: 10px 18px;
+    border-radius: 10px;
     border: none;
     font-weight: 700;
-    font-size: 9px;
+    font-size: 13px;
     cursor: pointer;
-    font-family: inherit;
+    font-family: 'Cairo', sans-serif;
     transition: all 0.3s;
     text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
 }
-.btn-primary { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; }
-.btn-primary:hover { transform: translateY(-1px); }
-.btn-success { background: linear-gradient(135deg, #4ade80, #22c55e); color: #111; }
-.btn-success:hover { transform: translateY(-1px); }
-.btn-warning { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #111; }
-.btn-warning:hover { transform: translateY(-1px); }
-.btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
-.btn-danger:hover { transform: translateY(-1px); }
-.btn-secondary { background: rgba(255,255,255,0.06); color: #aaa; }
-.btn-secondary:hover { background: rgba(255,255,255,0.12); color: #fff; }
-.actions { display: flex; gap: 3px; flex-wrap: wrap; margin-top: 3px; }
-.actions .btn { flex: 1; min-width: 40px; text-align: center; }
-.status-box {
-    background: rgba(0,0,0,0.3);
-    border-radius: 4px;
-    padding: 4px;
-    font-size: 9px;
+.btn-primary {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: #fff;
+}
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(139,92,246,0.3);
+}
+.btn-success {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: #111;
+}
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(74,222,128,0.3);
+}
+.btn-warning {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #111;
+}
+.btn-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: #fff;
+}
+.btn-secondary {
+    background: rgba(255,255,255,0.06);
     color: #aaa;
-    max-height: 120px;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+.btn-secondary:hover {
+    background: rgba(255,255,255,0.12);
+    color: #fff;
+}
+
+.actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+.actions .btn { flex: 1; min-width: 80px; }
+
+.status-box {
+    background: rgba(0,0,0,0.4);
+    border-radius: 8px;
+    padding: 8px;
+    font-size: 11px;
+    color: #aaa;
+    max-height: 180px;
     overflow-y: auto;
     font-family: monospace;
-    line-height: 1.6;
+    line-height: 1.7;
+    border: 1px solid rgba(255,255,255,0.04);
 }
 .status-box .success { color: #4ade80; }
 .status-box .error { color: #f87171; }
 .status-box .info { color: #60a5fa; }
 .status-box .gold { color: #ffd700; }
 .status-box .warn { color: #fbbf24; }
-.file-list {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    max-height: 100px;
-    overflow-y: auto;
+
+.file-preview-box {
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    padding: 10px;
+    font-size: 12px;
+    color: #aaa;
+    margin-top: 8px;
+    border: 1px dashed rgba(139,92,246,0.25);
+    text-align: center;
 }
-.file-item {
-    background: rgba(255,255,255,0.03);
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-size: 9px;
+
+.world-card {
+    background: rgba(139,92,246,0.06);
+    border: 1px solid rgba(139,92,246,0.12);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    margin-bottom: 6px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-right: 2px solid #8b5cf6;
+    transition: all 0.2s;
 }
-.file-item .name { color: #fff; }
-.file-item .type { color: #888; font-size: 8px; }
-.file-item .coords { color: #fbbf24; font-size: 8px; }
-#file-preview {
-    display: none;
-    margin-top: 3px;
+.world-card:hover {
+    background: rgba(139,92,246,0.1);
+    border-color: rgba(139,92,246,0.25);
+}
+.world-card .name { color: #fff; font-weight: 700; }
+.world-card .size { color: #888; font-size: 10px; }
+.world-card .id { color: #666; font-size: 9px; }
+
+.coord-display {
+    background: rgba(0,242,255,0.06);
+    border: 1px solid rgba(0,242,255,0.15);
+    border-radius: 8px;
+    padding: 8px 12px;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 800;
+    color: #00f2ff;
+    margin-top: 6px;
+}
+
+.hidden { display: none !important; }
+
+/* Grid visualizer */
+.grid-visual {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 2px;
+    margin-top: 8px;
+    padding: 6px;
     background: rgba(0,0,0,0.3);
-    border-radius: 4px;
-    padding: 4px;
-    font-size: 9px;
-    color: #aaa;
+    border-radius: 8px;
+}
+.grid-cell {
+    aspect-ratio: 1;
+    background: rgba(255,255,255,0.04);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 7px;
+    color: rgba(255,255,255,0.2);
+}
+.grid-cell:hover {
+    background: rgba(139,92,246,0.3);
+}
+.grid-cell.selected {
+    background: linear-gradient(135deg, #ffd700, #ff8c00);
+    color: #000;
+    font-weight: 900;
+    box-shadow: 0 0 8px rgba(255,215,0,0.3);
+}
+.grid-cell.occupied {
+    background: rgba(239,68,68,0.2);
+    border: 1px solid rgba(239,68,68,0.3);
+}
+
+/* Toast */
+.toast-container {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    pointer-events: none;
+}
+.toast {
+    background: rgba(8,8,20,0.95);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 16px;
+    font-size: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    animation: toastIn 0.3s ease;
+    backdrop-filter: blur(16px);
+    font-weight: 600;
+    max-width: 320px;
+    text-align: center;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.toast.success { border-color: #4ade80; color: #4ade80; }
+.toast.error { border-color: #f87171; color: #f87171; }
+.toast.warn { border-color: #fbbf24; color: #fbbf24; }
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
 }
 </style>
 </head>
 <body>
+
+<div class="toast-container" id="toast-container"></div>
+
 <div class="container">
     <h1>📡 مركز التوزيع</h1>
     <div class="subtitle">
         <span class="status-dot offline" id="status-dot"></span>
-        <span id="status-text">في انتظار اللعبة...</span>
-        <span style="color:#666;margin:0 6px;">|</span>
+        <span id="status-text">في انتظار الإعدادات...</span>
+        <span style="color:#444;">|</span>
         <span id="worlds-count">0 عالم</span>
     </div>
 
-    <!-- 🌍 اختيار العالم -->
-    <div class="section">
-        <div class="section-title">🌍 اختيار العالم</div>
-        <select id="target-world" style="font-size:11px;padding:4px;">
-            <option value="">⏳ جاري جلب العوالم...</option>
-        </select>
-        <div style="font-size:8px;color:#888;margin-top:2px;">ℹ️ اختر العالم الهدف ثم حدد المربع</div>
-        <div class="actions">
-            <button class="btn btn-secondary" onclick="refreshWorlds()">🔄 تحديث</button>
-            <button class="btn btn-primary" onclick="openGame()">🚀 فتح اللعبة</button>
+    <!-- ⚙️ إعدادات البوت -->
+    <div class="section" id="settings-section">
+        <div class="section-title">⚙️ إعدادات بوت Telegram</div>
+        <div style="margin-bottom:10px;">
+            <label>🤖 Bot Token (من @BotFather)</label>
+            <input type="text" id="bot-token" placeholder="مثال: 123456789:ABCdefGHIjklMNOpqrSTUvwxyz">
         </div>
-        <div id="worlds-status" style="color:#888;font-size:8px;margin-top:2px;">⚠️ افتح اللعبة أولاً</div>
+        <div style="margin-bottom:10px;">
+            <label>💬 Chat ID القناة</label>
+            <input type="text" id="chat-id" placeholder="مثال: -1001234567890 أو @channelname">
+        </div>
+        <div style="background:rgba(139,92,246,0.06);padding:8px 12px;border-radius:8px;margin-bottom:10px;border:1px solid rgba(139,92,246,0.1);">
+            <div style="color:#a78bfa;font-size:10px;line-height:1.8;">
+                💡 <b>خطوات الإعداد:</b><br>
+                1. أنشئ بوت من @BotFather وانسخ التوكن<br>
+                2. أنشئ قناة Telegram وأضف البوت <b>مسؤولاً</b><br>
+                3. أرسل أي رسالة في القناة<br>
+                4. اضغط "🧪 اكتشاف" لمعرفة Chat ID تلقائياً
+            </div>
+        </div>
+        <div class="actions">
+            <button class="btn btn-primary" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+            <button class="btn btn-warning" onclick="discoverChatId()">🔍 اكتشاف Chat ID</button>
+            <button class="btn btn-secondary" onclick="testConnection()">🧪 اختبار</button>
+        </div>
+        <div id="settings-status" style="color:#888;font-size:11px;margin-top:8px;text-align:center;"></div>
+    </div>
+
+    <!-- 🌍 العوالم -->
+    <div class="section hidden" id="worlds-section">
+        <div class="section-title">🌍 العوالم المتاحة</div>
+        <div id="worlds-list">
+            <div style="color:#666;text-align:center;padding:12px;font-size:12px;">اضغط "🔄 جلب" لتحميل العوالم من القناة</div>
+        </div>
+        <div class="actions">
+            <button class="btn btn-primary" onclick="fetchWorlds()">🔄 جلب العوالم</button>
+            <button class="btn btn-secondary" onclick="toggleSettings()">⚙️ تعديل الإعدادات</button>
+        </div>
     </div>
 
     <!-- 📤 إضافة ملف -->
-    <div class="section">
-        <div class="section-title">📤 إضافة ملف إلى مربع</div>
-        <div class="grid-2">
-            <div><label>📁 اختر ملف (اختياري)</label><input type="file" id="file-upload" onchange="handleFile(event)"></div>
-            <div><label>🏷️ عنوان المربع</label><input type="text" id="file-name" placeholder="مثال: فيديو تعليمي"></div>
+    <div class="section hidden" id="add-section">
+        <div class="section-title">📤 إضافة ملف إلى مربع محدد</div>
+
+        <div style="margin-bottom:12px;">
+            <label>🎯 اختر العالم الهدف</label>
+            <select id="target-world">
+                <option value="">⏳ اختر عالماً أولاً...</option>
+            </select>
         </div>
-        <div class="grid-3">
-            <div><label>📍 الصف (0-11)</label><input type="number" id="target-row" value="3" min="0" max="11"></div>
-            <div><label>📍 العمود (0-11)</label><input type="number" id="target-col" value="5" min="0" max="11"></div>
-            <div><label>📂 نوع المحتوى</label>
+
+        <div class="grid-2">
+            <div>
+                <label>📍 الصف (Row) 0-11</label>
+                <input type="number" id="target-row" value="3" min="0" max="11" onchange="updateGridVisual()">
+            </div>
+            <div>
+                <label>📍 العمود (Col) 0-11</label>
+                <input type="number" id="target-col" value="5" min="0" max="11" onchange="updateGridVisual()">
+            </div>
+        </div>
+
+        <!-- Grid Visualizer -->
+        <div class="grid-visual" id="grid-visual"></div>
+        <div class="coord-display" id="coord-display">📍 المربع المختار: [3, 5]</div>
+
+        <div style="margin-top:12px;">
+            <label>🏷️ عنوان المربع (يظهر في اللعبة)</label>
+            <input type="text" id="file-title" placeholder="مثال: فيديو تعليمي">
+        </div>
+
+        <div class="grid-2" style="margin-top:10px;">
+            <div>
+                <label>📂 نوع المحتوى</label>
                 <select id="file-type">
                     <option value="image">🖼️ صورة</option>
                     <option value="video">🎬 فيديو</option>
                     <option value="pdf">📄 PDF</option>
                     <option value="audio">🎵 صوت</option>
                     <option value="text">📝 نص</option>
-                    <option value="html">🌐 HTML/موقع</option>
+                    <option value="html">🌐 HTML / موقع</option>
                     <option value="other">📦 أخرى</option>
                 </select>
             </div>
+            <div>
+                <label>📁 اختر ملف (اختياري)</label>
+                <input type="file" id="file-upload" onchange="handleFile(event)">
+            </div>
         </div>
-        <div id="file-preview"></div>
-        <div class="actions">
-            <button class="btn btn-success" onclick="publishFile()">📤 نشر في المربع</button>
-            <button class="btn btn-secondary" onclick="clearForm()">🗑️ مسح</button>
+
+        <div class="file-preview-box hidden" id="file-preview">
+            ⏳ لم يُختار ملف
+        </div>
+
+        <div class="actions" style="margin-top:14px;">
+            <button class="btn btn-success" onclick="publishFile()">📤 إرسال إلى القناة</button>
+            <button class="btn btn-secondary" onclick="clearForm()">🗑️ مسح النموذج</button>
         </div>
     </div>
 
-    <!-- 📊 الحالة -->
+    <!-- 📊 سجل العمليات -->
     <div class="section">
-        <div class="section-title">📊 الحالة</div>
-        <div class="status-box" id="status-box">⏳ جاري التحميل...</div>
+        <div class="section-title">📊 سجل العمليات</div>
+        <div class="status-box" id="status-box">
+            <div class="info">• مركز التوزيع جاهز. أدخل إعدادات البوت للبدء.</div>
+        </div>
     </div>
 </div>
 
 <script>
 // ============================================================
-//  مركز التوزيع - جسر localStorage مع اللعبة
+//  مركز التوزيع الكامل - Telegram Bridge
 // ============================================================
-
-let worldsList = [];
-let pendingFileData = null;
 
 const EMOJIS = {
     image: '🖼️', video: '🎬', pdf: '📄', audio: '🎵',
     text: '📝', html: '🌐', other: '📦'
 };
 
-// ─── جلب العوالم من اللعبة ───
-function refreshWorlds() {
-    try {
-        const data = JSON.parse(localStorage.getItem('spherical_bridge_worlds') || '{}');
-        if (data.worlds && data.worlds.length > 0) {
-            worldsList = data.worlds;
-            updateWorldSelect();
-            const timeStr = data.time ? new Date(data.time).toLocaleTimeString() : 'الآن';
-            document.getElementById('worlds-status').textContent = 
-                '✅ متصل | ' + worldsList.length + ' عالم | آخر تحديث: ' + timeStr;
-            document.getElementById('status-dot').className = 'status-dot online';
-            document.getElementById('status-text').textContent = '✅ متصل باللعبة';
-            addStatus('✅ تم جلب ' + worldsList.length + ' عالم', 'success');
-        } else {
-            document.getElementById('worlds-status').textContent = 
-                '⚠️ لا توجد بيانات. تأكد من فتح اللعبة (index.html) في نافذة أخرى';
-            document.getElementById('status-dot').className = 'status-dot offline';
-            document.getElementById('status-text').textContent = '❌ غير متصل';
-        }
-    } catch(e) {
-        document.getElementById('worlds-status').textContent = '❌ خطأ: ' + e.message;
-        addStatus('❌ خطأ في القراءة: ' + e.message, 'error');
-    }
+let config = { botToken: '', chatId: '', lastUpdateId: 0 };
+let worldsList = [];
+let pendingFileBase64 = null;
+let pendingFileName = null;
+let selectedWorldId = '';
+
+// ─── Toast ───
+function showToast(msg, type) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + (type || '');
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }
 
-function updateWorldSelect() {
-    const select = document.getElementById('target-world');
-    select.innerHTML = '';
-    worldsList.forEach(function(w) {
-        const opt = document.createElement('option');
-        opt.value = w.id;
-        opt.textContent = (w.name || w.id) + ' (' + (w.grid || 12) + '×' + (w.grid || 12) + ')';
-        select.appendChild(opt);
-    });
-    if (select.options.length === 0) {
-        select.innerHTML = '<option value="">⏳ لا توجد عوالم</option>';
-    }
-    document.getElementById('worlds-count').textContent = worldsList.length + ' عالم';
-}
-
-// ─── إرسال ملف إلى اللعبة ───
-function publishFile() {
-    const worldId = document.getElementById('target-world').value;
-    const row = parseInt(document.getElementById('target-row').value);
-    const col = parseInt(document.getElementById('target-col').value);
-    const title = document.getElementById('file-name').value.trim();
-    const type = document.getElementById('file-type').value;
-
-    if (!worldId) {
-        addStatus('❌ اختر عالماً أولاً (اضغط تحديث)', 'error');
-        return;
-    }
-    if (isNaN(row) || isNaN(col) || row < 0 || col < 0) {
-        addStatus('❌ إحداثيات غير صالحة', 'error');
-        return;
-    }
-    if (!title) {
-        addStatus('❌ أدخل عنواناً للمربع', 'error');
-        return;
-    }
-
-    // إذا كان هناك ملف مرفوع
-    const fileInput = document.getElementById('file-upload');
-    if (fileInput.files && fileInput.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            sendCommand({
-                action: 'add_file',
-                worldId: worldId,
-                row: row,
-                col: col,
-                title: title,
-                fileType: type,
-                emoji: EMOJIS[type] || '📦',
-                content: e.target.result
-            });
-        };
-        reader.onerror = function() {
-            addStatus('❌ فشل قراءة الملف', 'error');
-        };
-        reader.readAsDataURL(fileInput.files[0]);
-    } else {
-        // بدون ملف (أيقونة فقط)
-        sendCommand({
-            action: 'add_file',
-            worldId: worldId,
-            row: row,
-            col: col,
-            title: title,
-            fileType: type,
-            emoji: EMOJIS[type] || '📦',
-            content: null
-        });
-    }
-}
-
-function sendCommand(cmd) {
-    localStorage.setItem('spherical_hub_command', JSON.stringify(cmd));
-    addStatus('📤 أُرسل: ' + cmd.title + ' ➜ ' + cmd.worldId + ' [' + cmd.row + ',' + cmd.col + ']', 'info');
-
-    // انتظر التأكيد من اللعبة
-    setTimeout(function() {
-        try {
-            const conf = JSON.parse(localStorage.getItem('spherical_hub_confirm') || '{}');
-            if (conf.status === 'done' && conf.title === cmd.title) {
-                addStatus('✅ اللعبة استلمت: ' + conf.title, 'success');
-            } else {
-                addStatus('⏳ في انتظار اللعبة... (تأكد من فتحها)', 'warn');
-            }
-        } catch(e) {}
-    }, 800);
-}
-
-// ─── استقبال أوامر من اللعبة (تأكيدات) ───
-window.addEventListener('storage', function(e) {
-    if (e.key === 'spherical_hub_confirm') {
-        try {
-            const conf = JSON.parse(e.newValue || '{}');
-            if (conf.status === 'done') {
-                addStatus('✅ تأكيد اللعبة: ' + conf.title, 'success');
-            }
-        } catch(err) {}
-    }
-});
-
-// ─── دوال مساعدة ───
-function handleFile(e) {
-    const f = e.target.files[0];
-    if (!f) return;
-    pendingFileData = f;
-    document.getElementById('file-name').value = f.name;
-    const preview = document.getElementById('file-preview');
-    preview.style.display = 'block';
-    preview.textContent = '📁 ' + f.name + ' (' + (f.size / 1024).toFixed(1) + ' KB)';
-
-    // تخمين النوع تلقائياً
-    const ext = f.name.split('.').pop().toLowerCase();
-    const map = {jpg:'image',jpeg:'image',png:'image',gif:'image',webp:'image',mp4:'video',webm:'video',mov:'video',mp3:'audio',wav:'audio',ogg:'audio',pdf:'pdf',txt:'text',html:'html',htm:'html'};
-    if (map[ext]) document.getElementById('file-type').value = map[ext];
-}
-
-function clearForm() {
-    document.getElementById('file-upload').value = '';
-    document.getElementById('file-name').value = '';
-    document.getElementById('target-row').value = '3';
-    document.getElementById('target-col').value = '5';
-    document.getElementById('file-type').value = 'image';
-    document.getElementById('file-preview').style.display = 'none';
-    pendingFileData = null;
-}
-
-function openGame() {
-    window.open('index.html', 'game', 'width=1200,height=900');
-    addStatus('🚀 تم فتح اللعبة في نافذة جديدة', 'info');
-}
-
+// ─── سجل ───
 function addStatus(msg, type) {
     const box = document.getElementById('status-box');
     const d = document.createElement('div');
@@ -361,17 +462,371 @@ function addStatus(msg, type) {
     d.textContent = '• ' + msg;
     box.appendChild(d);
     box.scrollTop = box.scrollHeight;
-    while (box.children.length > 50) box.removeChild(box.firstChild);
+    while (box.children.length > 80) box.removeChild(box.firstChild);
 }
 
 // ─── التهيئة ───
 document.addEventListener('DOMContentLoaded', function() {
-    addStatus('📡 مركز التوزيع جاهز', 'info');
-    addStatus('⏳ اضغط "🔄 تحديث" بعد فتح اللعبة', 'info');
-    refreshWorlds();
-    // تحديث تلقائي كل 3 ثواني
-    setInterval(refreshWorlds, 3000);
+    // محاولة استيراد الإعدادات من اللعبة (نفس المفاتيح)
+    const savedToken = localStorage.getItem('telegram_bot_token') || '';
+    const savedChat = localStorage.getItem('telegram_chat_id') || '';
+
+    if (savedToken) document.getElementById('bot-token').value = savedToken;
+    if (savedChat) document.getElementById('chat-id').value = savedChat;
+
+    if (savedToken && savedChat) {
+        config.botToken = savedToken;
+        config.chatId = savedChat;
+        addStatus('✅ تم استيراد إعدادات Telegram من اللعبة', 'success');
+        showSection('worlds');
+        showSection('add');
+        buildGridVisual();
+        fetchWorlds();
+    } else {
+        addStatus('⚙️ أدخل إعدادات البوت للبدء', 'warn');
+    }
 });
+
+function showSection(id) {
+    document.getElementById(id + '-section').classList.remove('hidden');
+}
+function hideSection(id) {
+    document.getElementById(id + '-section').classList.add('hidden');
+}
+function toggleSettings() {
+    const el = document.getElementById('settings-section');
+    el.classList.toggle('hidden');
+}
+
+// ─── إعدادات ───
+function saveSettings() {
+    const token = document.getElementById('bot-token').value.trim();
+    const chat = document.getElementById('chat-id').value.trim();
+
+    if (!token) { showToast('❌ أدخل Bot Token', 'error'); return; }
+    if (!chat) { showToast('❌ أدخل Chat ID', 'error'); return; }
+
+    config.botToken = token;
+    config.chatId = chat;
+    localStorage.setItem('telegram_bot_token', token);
+    localStorage.setItem('telegram_chat_id', chat);
+
+    document.getElementById('settings-status').textContent = '✅ تم الحفظ';
+    document.getElementById('settings-status').style.color = '#4ade80';
+    showToast('💾 تم حفظ الإعدادات', 'success');
+    addStatus('💾 إعدادات محفوظة', 'success');
+
+    showSection('worlds');
+    showSection('add');
+    buildGridVisual();
+    fetchWorlds();
+}
+
+// ─── اكتشاف Chat ID تلقائياً ───
+async function discoverChatId() {
+    const token = document.getElementById('bot-token').value.trim();
+    if (!token) { showToast('❌ أدخل Bot Token أولاً', 'error'); return; }
+
+    addStatus('⏳ جاري البحث عن القنوات...', 'info');
+    try {
+        const res = await fetch('https://api.telegram.org/bot' + token + '/getUpdates?limit=100');
+        const data = await res.json();
+        if (!data.ok) { addStatus('❌ ' + data.description, 'error'); return; }
+
+        const channels = {};
+        data.result.forEach(function(upd) {
+            const msg = upd.channel_post || upd.message;
+            if (!msg || !msg.chat) return;
+            const chat = msg.chat;
+            if (chat.type === 'channel' || chat.type === 'group' || chat.type === 'supergroup') {
+                channels[chat.id] = {
+                    id: chat.id,
+                    title: chat.title || 'بدون اسم',
+                    username: chat.username || null,
+                    type: chat.type
+                };
+            }
+        });
+
+        const keys = Object.keys(channels);
+        if (keys.length === 0) {
+            addStatus('⚠️ لم يُعثر على قنوات. تأكد من إرسال رسالة في القناة وأن البوت مسؤول.', 'warn');
+            return;
+        }
+
+        // اختر أول قناة
+        const first = channels[keys[0]];
+        document.getElementById('chat-id').value = first.id;
+        addStatus('✅ تم اكتشاف: ' + first.title + ' (' + first.id + ')', 'success');
+        showToast('🔍 تم اكتشاف Chat ID: ' + first.id, 'success');
+
+        if (keys.length > 1) {
+            addStatus('ℹ️ قنوات أخرى متاحة: ' + (keys.length - 1), 'info');
+        }
+    } catch(e) {
+        addStatus('❌ خطأ: ' + e.message, 'error');
+    }
+}
+
+// ─── اختبار الاتصال ───
+async function testConnection() {
+    const token = document.getElementById('bot-token').value.trim();
+    if (!token) { showToast('❌ أدخل التوكن', 'error'); return; }
+
+    addStatus('⏳ جاري الاختبار...', 'info');
+    try {
+        const res = await fetch('https://api.telegram.org/bot' + token + '/getMe');
+        const data = await res.json();
+        if (data.ok) {
+            addStatus('✅ البوت شغّال: @' + data.result.username, 'success');
+            showToast('✅ البوت @' + data.result.username + ' يعمل!', 'success');
+        } else {
+            addStatus('❌ ' + data.description, 'error');
+        }
+    } catch(e) {
+        addStatus('❌ فشل الاتصال: ' + e.message, 'error');
+    }
+}
+
+// ─── جلب العوالم من القناة ───
+async function fetchWorlds() {
+    if (!config.botToken || !config.chatId) {
+        showToast('❌ أكمل الإعدادات أولاً', 'error');
+        return;
+    }
+
+    addStatus('⏳ جاري جلب الرسائل من القناة...', 'info');
+    document.getElementById('status-dot').className = 'status-dot waiting';
+    document.getElementById('status-text').textContent = '⏳ جاري الجلب...';
+
+    try {
+        const url = 'https://api.telegram.org/bot' + config.botToken +
+            '/getUpdates?offset=' + (config.lastUpdateId + 1) + '&limit=100';
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data.ok) {
+            addStatus('❌ Telegram: ' + data.description, 'error');
+            document.getElementById('status-dot').className = 'status-dot offline';
+            document.getElementById('status-text').textContent = '❌ خطأ';
+            return;
+        }
+
+        let found = false;
+        let maxId = config.lastUpdateId;
+
+        for (const upd of data.result) {
+            if (upd.update_id > maxId) maxId = upd.update_id;
+            const msg = upd.channel_post || upd.message;
+            if (!msg || !msg.text) continue;
+
+            if (msg.text.includes('SPHERICAL|WORLDS|')) {
+                try {
+                    const json = msg.text.split('SPHERICAL|WORLDS|')[1];
+                    const payload = JSON.parse(json);
+                    if (payload.worlds && payload.worlds.length > 0) {
+                        worldsList = payload.worlds;
+                        renderWorldsList();
+                        updateWorldSelect();
+                        found = true;
+                        addStatus('✅ عوالم من القناة: ' + worldsList.length, 'success');
+                    }
+                } catch(e) {}
+            }
+        }
+
+        config.lastUpdateId = maxId;
+
+        if (found) {
+            document.getElementById('status-dot').className = 'status-dot online';
+            document.getElementById('status-text').textContent = '✅ متصل | ' + worldsList.length + ' عالم';
+            document.getElementById('worlds-count').textContent = worldsList.length + ' عالم';
+            showToast('✅ تم جلب ' + worldsList.length + ' عالم', 'success');
+        } else {
+            document.getElementById('status-dot').className = 'status-dot waiting';
+            document.getElementById('status-text').textContent = '⏳ في الانتظار...';
+            addStatus('⚠️ لا توجد بيانات عوالم. افتح اللعبة وانتظر 30 ثانية ثم حاول.', 'warn');
+        }
+    } catch(e) {
+        addStatus('❌ خطأ: ' + e.message, 'error');
+        document.getElementById('status-dot').className = 'status-dot offline';
+        document.getElementById('status-text').textContent = '❌ غير متصل';
+    }
+}
+
+function renderWorldsList() {
+    const container = document.getElementById('worlds-list');
+    container.innerHTML = '';
+    if (worldsList.length === 0) {
+        container.innerHTML = '<div style="color:#666;text-align:center;padding:12px;font-size:12px;">لا توجد عوالم</div>';
+        return;
+    }
+    worldsList.forEach(function(w) {
+        const div = document.createElement('div');
+        div.className = 'world-card';
+        div.innerHTML = '<div><div class="name">' + (w.name || w.id) + '</div><div class="id">ID: ' + w.id + '</div></div><div class="size">' + (w.grid || 12) + '×' + (w.grid || 12) + '</div>';
+        container.appendChild(div);
+    });
+}
+
+function updateWorldSelect() {
+    const select = document.getElementById('target-world');
+    const current = select.value;
+    select.innerHTML = '<option value="">🎯 اختر عالماً...</option>';
+    worldsList.forEach(function(w) {
+        const opt = document.createElement('option');
+        opt.value = w.id;
+        opt.textContent = (w.name || w.id);
+        if (w.id === current) opt.selected = true;
+        select.appendChild(opt);
+    });
+    select.addEventListener('change', function() {
+        selectedWorldId = this.value;
+        updateGridVisual();
+    });
+}
+
+// ─── Grid Visualizer ───
+function buildGridVisual() {
+    const grid = document.getElementById('grid-visual');
+    grid.innerHTML = '';
+    for (let r = 0; r < 12; r++) {
+        for (let c = 0; c < 12; c++) {
+            const cell = document.createElement('div');
+            cell.className = 'grid-cell';
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            cell.textContent = r + ',' + c;
+            cell.onclick = function() {
+                document.getElementById('target-row').value = r;
+                document.getElementById('target-col').value = c;
+                updateGridVisual();
+            };
+            grid.appendChild(cell);
+        }
+    }
+    updateGridVisual();
+}
+
+function updateGridVisual() {
+    const row = parseInt(document.getElementById('target-row').value) || 0;
+    const col = parseInt(document.getElementById('target-col').value) || 0;
+
+    document.getElementById('coord-display').textContent = '📍 المربع المختار: [' + row + ', ' + col + ']';
+
+    document.querySelectorAll('.grid-cell').forEach(function(cell) {
+        cell.classList.remove('selected');
+        const cr = parseInt(cell.dataset.row);
+        const cc = parseInt(cell.dataset.col);
+        if (cr === row && cc === col) {
+            cell.classList.add('selected');
+        }
+    });
+}
+
+// ─── رفع ملف ───
+function handleFile(e) {
+    const f = e.target.files[0];
+    if (!f) return;
+
+    pendingFileName = f.name;
+    const preview = document.getElementById('file-preview');
+    preview.classList.remove('hidden');
+    preview.textContent = '⏳ جاري قراءة ' + f.name + '...';
+
+    // تخمين النوع
+    const ext = f.name.split('.').pop().toLowerCase();
+    const map = {
+        jpg:'image', jpeg:'image', png:'image', gif:'image', webp:'image', svg:'image',
+        mp4:'video', webm:'video', mov:'video', avi:'video',
+        mp3:'audio', wav:'audio', ogg:'audio', m4a:'audio',
+        pdf:'pdf', txt:'text', md:'text', html:'html', htm:'html'
+    };
+    if (map[ext]) document.getElementById('file-type').value = map[ext];
+
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        pendingFileBase64 = ev.target.result;
+        const sizeKB = (pendingFileBase64.length / 1024).toFixed(1);
+        preview.innerHTML = '✅ <b>' + f.name + '</b><br>الحجم: ' + sizeKB + ' KB (base64)<br>جاهز للإرسال';
+        preview.style.color = '#4ade80';
+        addStatus('📁 ملف جاهز: ' + f.name + ' (' + sizeKB + ' KB)', 'info');
+    };
+    reader.onerror = function() {
+        preview.textContent = '❌ فشل قراءة الملف';
+        preview.style.color = '#f87171';
+        pendingFileBase64 = null;
+    };
+    reader.readAsDataURL(f);
+}
+
+// ─── إرسال إلى القناة ───
+async function publishFile() {
+    const worldId = document.getElementById('target-world').value;
+    const row = parseInt(document.getElementById('target-row').value);
+    const col = parseInt(document.getElementById('target-col').value);
+    const title = document.getElementById('file-title').value.trim();
+    const type = document.getElementById('file-type').value;
+
+    if (!worldId) { showToast('❌ اختر عالماً من القائمة', 'error'); return; }
+    if (isNaN(row) || isNaN(col) || row < 0 || row > 11 || col < 0 || col > 11) {
+        showToast('❌ الإحداثيات يجب أن تكون بين 0 و 11', 'error'); return;
+    }
+    if (!title) { showToast('❌ أدخل عنواناً للمربع', 'error'); return; }
+    if (!config.botToken || !config.chatId) { showToast('❌ أكمل إعدادات البوت', 'error'); return; }
+
+    const cmd = {
+        action: 'add_file',
+        worldId: worldId,
+        row: row,
+        col: col,
+        title: title,
+        fileType: type,
+        emoji: EMOJIS[type] || '📦',
+        content: pendingFileBase64
+    };
+
+    addStatus('⏳ جاري الإرسال إلى Telegram...', 'info');
+
+    try {
+        const res = await fetch('https://api.telegram.org/bot' + config.botToken + '/sendMessage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: config.chatId,
+                text: '📡 SPHERICAL|CMD|' + JSON.stringify(cmd),
+                disable_notification: true
+            })
+        });
+        const data = await res.json();
+
+        if (data.ok) {
+            showToast('✅ تم الإرسال! اللعبة ستستقبله خلال 5 ثوانٍ', 'success');
+            addStatus('✅ تم الإرسال: ' + title, 'success');
+            addStatus('📍 الموقع: ' + worldId + ' [' + row + ',' + col + ']', 'gold');
+        } else {
+            showToast('❌ فشل: ' + data.description, 'error');
+            addStatus('❌ فشل الإرسال: ' + data.description, 'error');
+        }
+    } catch(e) {
+        showToast('❌ خطأ في الاتصال', 'error');
+        addStatus('❌ خطأ: ' + e.message, 'error');
+    }
+}
+
+function clearForm() {
+    document.getElementById('file-upload').value = '';
+    document.getElementById('file-title').value = '';
+    document.getElementById('target-row').value = '3';
+    document.getElementById('target-col').value = '5';
+    document.getElementById('file-type').value = 'image';
+    document.getElementById('file-preview').classList.add('hidden');
+    pendingFileBase64 = null;
+    pendingFileName = null;
+    updateGridVisual();
+    showToast('🗑️ تم مسح النموذج', 'info');
+}
 </script>
 </body>
 </html>
+
