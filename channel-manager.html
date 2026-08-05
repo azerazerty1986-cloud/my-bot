@@ -1,0 +1,814 @@
+
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📡 المربع المركزي</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+    font-family: 'Cairo', sans-serif;
+    background: linear-gradient(135deg, #0a0a2a, #000);
+    color: #fff;
+    min-height: 100vh;
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+.container {
+    max-width: 700px;
+    width: 100%;
+    background: rgba(10,10,30,0.95);
+    border-radius: 16px;
+    padding: 16px;
+    border: 1px solid rgba(139,92,246,0.2);
+    max-height: 98vh;
+    overflow-y: auto;
+}
+h1 { color: #ffd700; font-size: 18px; text-align: center; margin-bottom: 4px; }
+.subtitle { text-align: center; color: #888; font-size: 10px; margin-bottom: 10px; }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+.online { background: #4ade80; }
+.offline { background: #f87171; }
+.waiting { background: #fbbf24; }
+
+.section {
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    padding: 10px;
+    margin-bottom: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+.section-title { color: #a78bfa; font-size: 12px; font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 4px; }
+
+label { color: #888; font-size: 10px; display: block; margin-bottom: 2px; font-weight: 600; }
+input, select {
+    width: 100%;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: #fff;
+    font-size: 11px;
+    font-family: inherit;
+}
+input:focus, select:focus { outline: none; border-color: rgba(139,92,246,0.3); }
+input[type="file"] { padding: 3px; }
+
+.btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    border: none;
+    font-weight: 700;
+    font-size: 10px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s;
+    text-align: center;
+}
+.btn-primary { background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #fff; }
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(139,92,246,0.3); }
+.btn-success { background: linear-gradient(135deg, #4ade80, #22c55e); color: #111; }
+.btn-success:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(74,222,128,0.3); }
+.btn-warning { background: linear-gradient(135deg, #fbbf24, #f59e0b); color: #111; }
+.btn-warning:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(251,191,36,0.3); }
+.btn-danger { background: linear-gradient(135deg, #ef4444, #dc2626); color: #fff; }
+.btn-danger:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(239,68,68,0.3); }
+.btn-secondary { background: rgba(255,255,255,0.06); color: #aaa; }
+.btn-secondary:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.btn-sm { padding: 3px 8px; font-size: 9px; }
+
+.actions { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.actions .btn { flex: 1; min-width: 50px; text-align: center; }
+
+.status-box {
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    padding: 6px;
+    font-size: 10px;
+    color: #aaa;
+    max-height: 100px;
+    overflow-y: auto;
+    font-family: monospace;
+    line-height: 1.6;
+}
+.status-box .success { color: #4ade80; }
+.status-box .error { color: #f87171; }
+.status-box .info { color: #60a5fa; }
+.status-box .gold { color: #ffd700; }
+.status-box .warn { color: #fbbf24; }
+
+.file-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 120px;
+    overflow-y: auto;
+}
+.file-item {
+    background: rgba(255,255,255,0.03);
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 2px solid #8b5cf6;
+}
+.file-item .name { color: #fff; }
+.file-item .type { color: #888; font-size: 9px; }
+.file-item .coords { color: #fbbf24; font-size: 9px; }
+.file-item .size { color: #666; font-size: 9px; }
+.file-item .del-btn { background: rgba(239,68,68,0.15); color: #f87171; border: none; border-radius: 3px; padding: 1px 6px; cursor: pointer; font-size: 8px; }
+
+.hub-location {
+    background: rgba(255,215,0,0.06);
+    border: 1px solid rgba(255,215,0,0.15);
+    border-radius: 8px;
+    padding: 6px;
+    text-align: center;
+    font-size: 11px;
+    color: #ffd700;
+    margin-bottom: 8px;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📡 المربع المركزي</h1>
+    <div class="subtitle">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-text">جاري التهيئة...</span>
+        <span style="color:#666;margin:0 6px;">|</span>
+        <span id="file-count">0 ملف</span>
+        <span style="color:#666;margin:0 6px;">|</span>
+        <span id="dist-count">0 منشور</span>
+    </div>
+
+    <div class="hub-location">📍 الموقع: (<span id="current-coords">2,2</span>)</div>
+
+    <!-- المصادر -->
+    <div class="section">
+        <div class="section-title">📥 مصادر الاستلام</div>
+        <div class="grid-4">
+            <label><input type="checkbox" id="src-local" checked onchange="updateSources()"> 💻 محلي</label>
+            <label><input type="checkbox" id="src-telegram" checked onchange="updateSources()"> 📡 تلجرام</label>
+            <label><input type="checkbox" id="src-clipboard" onchange="updateSources()"> 📋 حافظة</label>
+            <label><input type="checkbox" id="src-folder" onchange="updateSources()"> 📂 مجلد</label>
+        </div>
+        <div class="actions">
+            <button class="btn btn-primary btn-sm" onclick="receiveAll()">📥 استقبال الكل</button>
+            <button class="btn btn-warning btn-sm" onclick="syncTelegram()">🔄 مزامنة تلجرام</button>
+        </div>
+        <div id="tg-status" style="color:#888;font-size:9px;margin-top:4px;">⏳ غير متصل</div>
+    </div>
+
+    <!-- إضافة ملف -->
+    <div class="section">
+        <div class="section-title">📤 إضافة ملف</div>
+        <div class="grid-2">
+            <div><label>📁 ملف</label><input type="file" id="file-upload" onchange="handleFile(event)"></div>
+            <div><label>🏷️ الاسم</label><input type="text" id="file-name" placeholder="اسم الملف"></div>
+        </div>
+        <div class="grid-3">
+            <div><label>📍 الصف</label><input type="number" id="target-row" value="3" min="0" max="11"></div>
+            <div><label>📍 العمود</label><input type="number" id="target-col" value="5" min="0" max="11"></div>
+            <div><label>📂 النوع</label>
+                <select id="file-type">
+                    <option value="image">🖼️ صورة</option>
+                    <option value="video">🎬 فيديو</option>
+                    <option value="pdf">📄 PDF</option>
+                    <option value="audio">🎵 صوت</option>
+                    <option value="text">📝 نص</option>
+                    <option value="html">🌐 HTML</option>
+                    <option value="json">📊 JSON</option>
+                    <option value="other">📦 أخرى</option>
+                </select>
+            </div>
+        </div>
+        <div class="actions">
+            <button class="btn btn-success" onclick="publishFile()">📤 نشر</button>
+            <button class="btn btn-secondary" onclick="clearFile()">🗑️ مسح</button>
+        </div>
+        <div id="file-preview" style="display:none;margin-top:4px;background:rgba(0,0,0,0.3);border-radius:4px;padding:6px;font-size:10px;color:#aaa;"></div>
+    </div>
+
+    <!-- المعالم المستقبلة -->
+    <div class="section">
+        <div class="section-title">📍 المعالم المستقبلة</div>
+        <div id="receivers-list"></div>
+        <div class="actions">
+            <button class="btn btn-secondary btn-sm" onclick="addReceiver()">➕ إضافة</button>
+            <button class="btn btn-danger btn-sm" onclick="clearReceivers()">🗑️ مسح الكل</button>
+        </div>
+    </div>
+
+    <!-- أيقونات الكرة -->
+    <div class="section">
+        <div class="section-title">🌐 أيقونات الكرة</div>
+        <div id="sphere-icons-list"></div>
+        <div class="actions">
+            <button class="btn btn-secondary btn-sm" onclick="addSphereIcon()">➕ إضافة أيقونة</button>
+            <button class="btn btn-warning btn-sm" onclick="syncSphereIcons()">🔄 مزامنة مع الكرة</button>
+        </div>
+    </div>
+
+    <!-- التوزيع -->
+    <div class="section">
+        <div class="section-title">📤 التوزيع</div>
+        <div class="actions">
+            <button class="btn btn-primary" onclick="distributeToReceivers()">📤 توزيع على المعالم</button>
+            <button class="btn btn-warning" onclick="distributeToWorlds()">🌍 توزيع على العوالم</button>
+            <button class="btn btn-success" onclick="distributeAll()">📤 توزيع الكل</button>
+        </div>
+        <div class="actions">
+            <button class="btn btn-secondary btn-sm" onclick="loadFromGame()">🔄 جلب من اللعبة</button>
+            <button class="btn btn-secondary btn-sm" onclick="syncToGame()">📤 حفظ في اللعبة</button>
+            <button class="btn btn-danger btn-sm" onclick="resetHub()">🗑️ إعادة تعيين</button>
+        </div>
+    </div>
+
+    <!-- الملفات -->
+    <div class="section">
+        <div class="section-title">📂 الملفات (<span id="file-count2">0</span>)</div>
+        <div class="file-list" id="file-list"><div style="color:#666;text-align:center;padding:8px;font-size:10px;">لا توجد ملفات</div></div>
+    </div>
+
+    <!-- المنشورات -->
+    <div class="section">
+        <div class="section-title">📍 المنشورات (<span id="pub-count2">0</span>)</div>
+        <div class="file-list" id="published-list"><div style="color:#666;text-align:center;padding:8px;font-size:10px;">لا توجد منشورات</div></div>
+    </div>
+
+    <!-- الحالة -->
+    <div class="section">
+        <div class="section-title">📊 الحالة</div>
+        <div class="status-box" id="status-box">⏳ جاري التحميل...</div>
+    </div>
+</div>
+
+<script>
+// ============================================================
+//  النظام الكامل - استقبال محلي + تلجرام + توزيع
+// ============================================================
+
+let parentGame = null;
+let isConnected = false;
+let fileCounter = 0;
+let pendingFile = null;
+
+const DEFAULT_RECEIVERS = [
+    { id: 'images', name: '📸 معرض الصور', type: 'image', row: 3, col: 5 },
+    { id: 'videos', name: '🎬 معرض الفيديوهات', type: 'video', row: 3, col: 6 },
+    { id: 'pdfs', name: '📄 معرض PDF', type: 'pdf', row: 4, col: 5 },
+    { id: 'audio', name: '🎵 معرض الصوتيات', type: 'audio', row: 4, col: 6 },
+    { id: 'texts', name: '📝 معرض النصوص', type: 'text', row: 5, col: 5 },
+    { id: 'htmls', name: '🌐 معرض HTML', type: 'html', row: 5, col: 6 }
+];
+
+const DEFAULT_SPHERE_ICONS = [
+    { id: 'icon_0', name: '⚔️ القتال', emoji: '⚔️', color: '#ef4444', world: 'world_fight' },
+    { id: 'icon_1', name: '🌐 360', emoji: '🌐', color: '#00f2ff', world: 'world_360' },
+    { id: 'icon_2', name: '🖼️ المعرض', emoji: '🖼️', color: '#a78bfa', world: 'world_gallery' },
+    { id: 'icon_3', name: '🌲 الغابة', emoji: '🌲', color: '#4ade80', world: 'world_forest' }
+];
+
+let hubData = {
+    row: 2,
+    col: 2,
+    files: [],
+    published: [],
+    receivers: JSON.parse(JSON.stringify(DEFAULT_RECEIVERS)),
+    sphereIcons: JSON.parse(JSON.stringify(DEFAULT_SPHERE_ICONS)),
+    worldReceivers: [
+        { id: 'world_fight', name: '⚔️ عالم القتال' },
+        { id: 'world_360', name: '🌐 عالم 360' },
+        { id: 'world_gallery', name: '🖼️ عالم المعرض' }
+    ],
+    sources: { local: true, telegram: true, clipboard: false, folder: false }
+};
+
+// ============================================================
+//  الاتصال باللعبة الأم
+// ============================================================
+
+function connectToGame() {
+    try {
+        const parent = window.parent || window.opener;
+        if (!parent) { setStatus('offline', '⚠️ لا يوجد اتصال'); return; }
+        if (parent.getWorld && parent.buildWorld) {
+            parentGame = parent;
+            isConnected = true;
+            setStatus('online', '✅ متصل');
+            loadFromGame();
+            return;
+        }
+        setStatus('offline', '⚠️ غير مدعوم');
+    } catch(e) { setStatus('offline', '❌ فشل'); }
+}
+
+function setStatus(state, text) {
+    document.getElementById('status-dot').className = 'status-dot ' + state;
+    document.getElementById('status-text').textContent = text;
+}
+
+// ============================================================
+//  التحميل والحفظ
+// ============================================================
+
+function loadFromGame() {
+    if (!parentGame) return;
+    try {
+        const world = parentGame.getWorld('main');
+        if (!world || !world.items) return;
+        const hub = world.items.find(item => item.isHub === true);
+        if (hub) {
+            hubData.files = hub.files || [];
+            hubData.published = hub.published || [];
+            hubData.receivers = hub.receivers || hubData.receivers;
+            hubData.worldReceivers = hub.worldReceivers || hubData.worldReceivers;
+            hubData.sphereIcons = hub.sphereIcons || hubData.sphereIcons;
+            hubData.row = hub.row || 2;
+            hubData.col = hub.col || 2;
+            document.getElementById('current-coords').textContent = hubData.row + ',' + hubData.col;
+            updateUI();
+            addStatus('📡 تم تحميل البيانات', 'success');
+        } else { createHub(); }
+    } catch(e) { addStatus('⚠️ فشل التحميل', 'warn'); }
+}
+
+function createHub() {
+    if (!parentGame) return;
+    try {
+        const world = parentGame.getWorld('main');
+        if (!world) return;
+        const hub = {
+            id: 'hub_' + Date.now(),
+            type: 'hub', isHub: true,
+            title: '📡 مركز التوزيع',
+            emoji: '📡',
+            row: hubData.row, col: hubData.col,
+            files: [], published: [],
+            receivers: hubData.receivers,
+            worldReceivers: hubData.worldReceivers,
+            sphereIcons: hubData.sphereIcons,
+            lastUpdate: Date.now()
+        };
+        world.items.push(hub);
+        if (parentGame.buildWorld) parentGame.buildWorld('main');
+        addStatus('✅ تم إنشاء مربع مركزي', 'success');
+        loadFromGame();
+    } catch(e) { addStatus('❌ فشل الإنشاء', 'error'); }
+}
+
+function syncToGame() {
+    if (!parentGame) { addStatus('⚠️ لا يوجد اتصال', 'warn'); return; }
+    try {
+        const world = parentGame.getWorld('main');
+        if (!world) return;
+        let hub = world.items.find(item => item.isHub === true);
+        if (!hub) { createHub(); return; }
+        hub.files = hubData.files;
+        hub.published = hubData.published;
+        hub.receivers = hubData.receivers;
+        hub.worldReceivers = hubData.worldReceivers;
+        hub.sphereIcons = hubData.sphereIcons;
+        hub.lastUpdate = Date.now();
+        hub.title = '📡 مركز التوزيع (' + hubData.files.length + ' ملف)';
+        if (parentGame.buildWorld) parentGame.buildWorld('main');
+        saveLocal();
+        addStatus('🔄 تم الحفظ في اللعبة', 'success');
+    } catch(e) { addStatus('❌ فشل الحفظ', 'error'); }
+}
+
+function saveLocal() {
+    try { localStorage.setItem('hub_data_local', JSON.stringify(hubData)); } catch(e) {}
+}
+
+function loadLocal() {
+    try {
+        const data = JSON.parse(localStorage.getItem('hub_data_local'));
+        if (data) { hubData = data; updateUI(); }
+    } catch(e) {}
+}
+
+// ============================================================
+//  استقبال من المصادر
+// ============================================================
+
+function updateSources() {
+    hubData.sources.local = document.getElementById('src-local').checked;
+    hubData.sources.telegram = document.getElementById('src-telegram').checked;
+    hubData.sources.clipboard = document.getElementById('src-clipboard').checked;
+    hubData.sources.folder = document.getElementById('src-folder').checked;
+    saveLocal();
+}
+
+async function receiveAll() {
+    addStatus('📥 بدء الاستقبال...', 'info');
+    let allFiles = [];
+    
+    // 1. محلي
+    if (hubData.sources.local) {
+        try {
+            const local = JSON.parse(localStorage.getItem('local_files') || '[]');
+            if (local.length > 0) {
+                local.forEach(f => { if (!f.type) f.type = detectType(f.name); });
+                allFiles = allFiles.concat(local);
+                addStatus('💻 محلي: ' + local.length + ' ملف', 'success');
+            }
+        } catch(e) {}
+    }
+    
+    // 2. تلجرام
+    if (hubData.sources.telegram && parentGame && parentGame.TelegramManager) {
+        try {
+            const tg = await parentGame.TelegramManager.syncChannelFiles();
+            if (tg && tg.length > 0) {
+                tg.forEach(f => { if (!f.type) f.type = detectType(f.filename || f.name); });
+                allFiles = allFiles.concat(tg);
+                addStatus('📡 تلجرام: ' + tg.length + ' ملف', 'success');
+            }
+        } catch(e) { addStatus('⚠️ تلجرام: ' + e.message, 'warn'); }
+    }
+    
+    // 3. حافظة
+    if (hubData.sources.clipboard) {
+        try {
+            const clip = JSON.parse(localStorage.getItem('clipboard_files') || '[]');
+            if (clip.length > 0) {
+                clip.forEach(f => { if (!f.type) f.type = detectType(f.name); });
+                allFiles = allFiles.concat(clip);
+                addStatus('📋 حافظة: ' + clip.length + ' ملف', 'success');
+            }
+        } catch(e) {}
+    }
+    
+    // 4. إزالة التكرار
+    const unique = [];
+    const seen = new Set();
+    for (const f of allFiles) {
+        const id = f.file_id || f.id || f.name;
+        if (!seen.has(id)) { seen.add(id); unique.push(f); }
+    }
+    
+    if (unique.length > 0) {
+        hubData.files = unique;
+        saveLocal();
+        syncToGame();
+        updateUI();
+        addStatus('✅ تم استقبال ' + unique.length + ' ملف', 'success');
+    } else {
+        addStatus('ℹ️ لا توجد ملفات جديدة', 'info');
+    }
+}
+
+function detectType(name) {
+    const ext = (name || '').split('.').pop().toLowerCase();
+    const map = {
+        'jpg': 'image', 'jpeg': 'image', 'png': 'image', 'gif': 'image', 'webp': 'image', 'svg': 'image',
+        'mp4': 'video', 'webm': 'video', 'mov': 'video', 'avi': 'video',
+        'mp3': 'audio', 'wav': 'audio', 'ogg': 'audio',
+        'pdf': 'pdf',
+        'txt': 'text', 'md': 'text', 'html': 'html', 'htm': 'html',
+        'json': 'json'
+    };
+    return map[ext] || 'other';
+}
+
+async function syncTelegram() {
+    if (!parentGame || !parentGame.TelegramManager) {
+        addStatus('⚠️ لا يوجد تلجرام', 'warn');
+        return;
+    }
+    addStatus('🔄 مزامنة تلجرام...', 'info');
+    try {
+        const files = await parentGame.TelegramManager.syncChannelFiles();
+        if (files && files.length > 0) {
+            let added = 0;
+            for (const f of files) {
+                if (!f.type) f.type = detectType(f.filename || f.name);
+                const exists = hubData.files.some(e => (e.file_id || e.id) === (f.file_id || f.id));
+                if (!exists) { hubData.files.push(f); added++; }
+            }
+            if (added > 0) { saveLocal(); syncToGame(); updateUI(); }
+            addStatus('📡 تم استلام ' + added + ' ملف جديد', 'success');
+        } else { addStatus('ℹ️ لا توجد ملفات جديدة', 'info'); }
+    } catch(e) { addStatus('❌ فشل: ' + e.message, 'error'); }
+}
+
+// ============================================================
+//  إدارة الملفات
+// ============================================================
+
+function handleFile(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    pendingFile = file;
+    const type = detectType(file.name);
+    document.getElementById('file-type').value = type;
+    document.getElementById('file-name').value = file.name;
+    document.getElementById('file-preview').style.display = 'block';
+    document.getElementById('file-preview').innerHTML = '📁 ' + file.name + ' (' + (file.size/1024).toFixed(1) + ' KB)';
+    addStatus('📁 اختيار: ' + file.name, 'info');
+}
+
+function clearFile() {
+    document.getElementById('file-upload').value = '';
+    document.getElementById('file-name').value = '';
+    document.getElementById('file-preview').style.display = 'none';
+    pendingFile = null;
+}
+
+function publishFile() {
+    if (!pendingFile) { addStatus('⚠️ اختر ملفاً', 'warn'); return; }
+    const name = document.getElementById('file-name').value.trim() || pendingFile.name;
+    const row = parseInt(document.getElementById('target-row').value) || 3;
+    const col = parseInt(document.getElementById('target-col').value) || 5;
+    const type = document.getElementById('file-type').value;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const fileEntry = {
+            id: 'file_' + Date.now() + '_' + fileCounter++,
+            name: name, type: type, size: pendingFile.size,
+            content: e.target.result, originalName: pendingFile.name,
+            uploadedAt: Date.now()
+        };
+        hubData.files.push(fileEntry);
+        hubData.published.push({
+            id: 'pub_' + Date.now(),
+            fileId: fileEntry.id, name: name, type: type,
+            row: row, col: col, content: e.target.result,
+            publishedAt: Date.now()
+        });
+        saveLocal(); syncToGame(); updateUI(); clearFile();
+        addStatus('✅ نشر "' + name + '" في (' + row + ',' + col + ')', 'success');
+    };
+    reader.readAsDataURL(pendingFile);
+}
+
+// ============================================================
+//  إدارة المعالم
+// ============================================================
+
+function renderReceivers() {
+    const list = document.getElementById('receivers-list');
+    list.innerHTML = '';
+    hubData.receivers.forEach((r, i) => {
+        const div = document.createElement('div');
+        div.className = 'receiver-item';
+        div.innerHTML = `<span>${r.name}</span><span style="color:#666;font-size:9px;">${r.type}</span><span class="coords">(${r.row},${r.col})</span><button class="del-btn" onclick="removeReceiver(${i})">✖</button>`;
+        list.appendChild(div);
+    });
+}
+
+function addReceiver() {
+    const types = ['image', 'video', 'pdf', 'audio', 'text', 'html'];
+    const emojis = ['📸', '🎬', '📄', '🎵', '📝', '🌐'];
+    const names = ['معرض الصور', 'معرض الفيديوهات', 'معرض PDF', 'معرض الصوتيات', 'معرض النصوص', 'معرض HTML'];
+    const idx = hubData.receivers.length % types.length;
+    hubData.receivers.push({
+        id: 'rec_' + Date.now(),
+        name: emojis[idx] + ' ' + names[idx],
+        type: types[idx],
+        row: 1 + Math.floor(Math.random() * 9),
+        col: 1 + Math.floor(Math.random() * 9)
+    });
+    renderReceivers(); saveLocal(); syncToGame();
+    addStatus('➕ تم إضافة معلم', 'success');
+}
+
+function removeReceiver(i) { hubData.receivers.splice(i, 1); renderReceivers(); saveLocal(); syncToGame(); }
+function clearReceivers() { if (!confirm('مسح الكل؟')) return; hubData.receivers = []; renderReceivers(); saveLocal(); syncToGame(); }
+
+// ============================================================
+//  أيقونات الكرة
+// ============================================================
+
+function renderSphereIcons() {
+    const list = document.getElementById('sphere-icons-list');
+    list.innerHTML = '';
+    hubData.sphereIcons.forEach((r, i) => {
+        const div = document.createElement('div');
+        div.className = 'receiver-item';
+        div.innerHTML = `<span>${r.emoji} ${r.name}</span><span style="color:#666;font-size:9px;">${r.world || 'لا يوجد'}</span><span style="color:#888;font-size:9px;">${r.color}</span><button class="del-btn" onclick="removeSphereIcon(${i})">✖</button>`;
+        list.appendChild(div);
+    });
+}
+
+function addSphereIcon() {
+    const emojis = ['🌈', '⭐', '🔥', '🌊', '🌺', '⚡', '💎', '🚀'];
+    const names = ['قوس قزح', 'نجمة', 'نار', 'محيط', 'زهرة', 'برق', 'ماس', 'صاروخ'];
+    const colors = ['#ff6b6b', '#ffd700', '#f97316', '#60a5fa', '#f472b6', '#fde047', '#22d3ee', '#a78bfa'];
+    const idx = hubData.sphereIcons.length % emojis.length;
+    const worldId = 'world_icon_' + Date.now();
+    hubData.sphereIcons.push({
+        id: 'icon_' + Date.now(),
+        name: emojis[idx] + ' ' + names[idx],
+        emoji: emojis[idx],
+        color: colors[idx],
+        world: worldId
+    });
+    // إضافة العالم
+    if (!hubData.worldReceivers.find(w => w.id === worldId)) {
+        hubData.worldReceivers.push({ id: worldId, name: '🌍 ' + names[idx] });
+    }
+    renderSphereIcons(); saveLocal(); syncToGame();
+    addStatus('➕ تم إضافة أيقونة', 'success');
+}
+
+function removeSphereIcon(i) {
+    const icon = hubData.sphereIcons[i];
+    if (icon && icon.world) {
+        hubData.worldReceivers = hubData.worldReceivers.filter(w => w.id !== icon.world);
+    }
+    hubData.sphereIcons.splice(i, 1);
+    renderSphereIcons(); saveLocal(); syncToGame();
+}
+
+function syncSphereIcons() {
+    if (!parentGame) { addStatus('⚠️ لا يوجد اتصال', 'warn'); return; }
+    try {
+        const world = parentGame.getWorld('main');
+        if (!world) return;
+        // إضافة أيقونات إلى الكرة
+        for (const icon of hubData.sphereIcons) {
+            const existing = world.items.find(item => item.isSphereIcon && item.id === icon.id);
+            if (!existing) {
+                world.items.push({
+                    id: icon.id,
+                    isSphereIcon: true,
+                    type: 'sphere_icon',
+                    title: icon.name,
+                    emoji: icon.emoji,
+                    color: icon.color,
+                    targetWorld: icon.world,
+                    row: 0, col: 0
+                });
+            }
+        }
+        if (parentGame.buildWorld) parentGame.buildWorld('main');
+        addStatus('🔄 تم مزامنة الأيقونات مع الكرة', 'success');
+    } catch(e) { addStatus('❌ فشل المزامنة', 'error'); }
+}
+
+// ============================================================
+//  التوزيع
+// ============================================================
+
+function distributeToReceivers() {
+    if (hubData.files.length === 0) { addStatus('⚠️ لا توجد ملفات', 'warn'); return; }
+    if (!parentGame) { addStatus('⚠️ لا يوجد اتصال', 'warn'); return; }
+    const world = parentGame.getWorld('main');
+    if (!world) return;
+    let total = 0;
+    for (const receiver of hubData.receivers) {
+        const filtered = hubData.files.filter(f => f.type === receiver.type);
+        if (filtered.length === 0) continue;
+        world.items = world.items.filter(item => !(item.row === receiver.row && item.col === receiver.col));
+        world.items.push({
+            id: 'tile_' + receiver.type + '_' + Date.now(),
+            type: 'gallery',
+            title: receiver.name + ' (' + filtered.length + ' ملف)',
+            emoji: receiver.type === 'image' ? '📸' : receiver.type === 'video' ? '🎬' : receiver.type === 'pdf' ? '📄' : receiver.type === 'audio' ? '🎵' : receiver.type === 'html' ? '🌐' : '📝',
+            row: receiver.row, col: receiver.col,
+            files: filtered.map(f => ({ file_id: f.file_id || f.id, filename: f.filename || f.name || 'ملف', type: f.type })),
+            source: 'hub', lastUpdate: Date.now()
+        });
+        total += filtered.length;
+        addStatus('📦 ' + filtered.length + ' → ' + receiver.name, 'success');
+    }
+    if (parentGame.buildWorld) parentGame.buildWorld('main');
+    addStatus('✅ تم توزيع ' + total + ' ملف', 'success');
+}
+
+function distributeToWorlds() {
+    if (hubData.files.length === 0) { addStatus('⚠️ لا توجد ملفات', 'warn'); return; }
+    if (!parentGame) { addStatus('⚠️ لا يوجد اتصال', 'warn'); return; }
+    let total = 0;
+    for (const receiver of hubData.worldReceivers) {
+        const world = parentGame.getWorld(receiver.id);
+        if (!world) continue;
+        let count = 0;
+        for (const file of hubData.files) {
+            let found = false;
+            for (let r = 0; r < 12 && !found; r++) {
+                for (let c = 0; c < 12 && !found; c++) {
+                    if (!world.items.find(item => item.row === r && item.col === c)) {
+                        world.items.push({
+                            id: 'dist_' + (file.file_id || file.id || 'file_' + Date.now() + '_' + count),
+                            type: 'telegram_file',
+                            title: file.filename || file.name || 'ملف',
+                            emoji: file.type === 'image' ? '🖼️' : file.type === 'video' ? '🎬' : file.type === 'pdf' ? '📄' : file.type === 'audio' ? '🎵' : file.type === 'html' ? '🌐' : '📄',
+                            row: r, col: c,
+                            file_id: file.file_id || file.id,
+                            filename: file.filename || file.name || 'ملف',
+                            source: 'hub_distribution'
+                        });
+                        found = true; count++;
+                    }
+                }
+            }
+        }
+        total += count;
+        if (count > 0) addStatus('🌍 ' + count + ' → ' + receiver.name, 'success');
+    }
+    addStatus('✅ تم توزيع ' + total + ' ملف على العوالم', 'success');
+}
+
+function distributeAll() {
+    distributeToReceivers();
+    distributeToWorlds();
+    addStatus('✅ تم التوزيع الكامل', 'success');
+}
+
+// ============================================================
+//  تحديث الواجهة
+// ============================================================
+
+function updateUI() {
+    document.getElementById('file-count').textContent = hubData.files.length + ' ملف';
+    document.getElementById('dist-count').textContent = hubData.published.length + ' منشور';
+    document.getElementById('file-count2').textContent = hubData.files.length;
+    document.getElementById('pub-count2').textContent = hubData.published.length;
+    
+    // الملفات
+    const fl = document.getElementById('file-list');
+    if (hubData.files.length === 0) {
+        fl.innerHTML = '<div style="color:#666;text-align:center;padding:8px;font-size:10px;">لا توجد ملفات</div>';
+    } else {
+        fl.innerHTML = '';
+        hubData.files.forEach((f, i) => {
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.innerHTML = `<span class="name">${f.name || f.filename || 'ملف'}</span><span><span class="type">${f.type || 'file'}</span><button class="del-btn" onclick="removeFile(${i})">✖</button></span>`;
+            fl.appendChild(div);
+        });
+    }
+    
+    // المنشورات
+    const pl = document.getElementById('published-list');
+    if (hubData.published.length === 0) {
+        pl.innerHTML = '<div style="color:#666;text-align:center;padding:8px;font-size:10px;">لا توجد منشورات</div>';
+    } else {
+        pl.innerHTML = '';
+        hubData.published.forEach((p, i) => {
+            const div = document.createElement('div');
+            div.className = 'file-item';
+            div.innerHTML = `<span class="name">${p.name}</span><span><span class="coords">(${p.row},${p.col})</span><span class="type">${p.type}</span><button class="del-btn" onclick="removePublished(${i})">✖</button></span>`;
+            pl.appendChild(div);
+        });
+    }
+    
+    renderReceivers();
+    renderSphereIcons();
+}
+
+function removeFile(i) { hubData.files.splice(i, 1); saveLocal(); syncToGame(); updateUI(); }
+function removePublished(i) { hubData.published.splice(i, 1); saveLocal(); syncToGame(); updateUI(); addStatus('🗑️ تم حذف المنشور', 'info'); }
+function resetHub() { if (!confirm('إعادة تعيين الكل؟')) return; hubData.files = []; hubData.published = []; saveLocal(); syncToGame(); updateUI(); addStatus('🗑️ تم إعادة التعيين', 'info'); }
+
+function addStatus(msg, type) {
+    const box = document.getElementById('status-box');
+    const div = document.createElement('div');
+    div.className = type || 'info';
+    div.textContent = '• ' + msg;
+    box.appendChild(div);
+    box.scrollTop = box.scrollHeight;
+    while (box.children.length > 30) box.removeChild(box.firstChild);
+}
+
+// ============================================================
+//  التهيئة
+// ============================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadLocal();
+    renderReceivers();
+    renderSphereIcons();
+    updateUI();
+    setTimeout(connectToGame, 500);
+    setInterval(() => { if (!isConnected) connectToGame(); }, 10000);
+    // استقبال تلقائي كل 30 ثانية
+    setInterval(() => { if (isConnected) receiveAll(); }, 30000);
+    addStatus('📡 المربع المركزي جاهز', 'success');
+    addStatus('📍 (' + hubData.row + ',' + hubData.col + ')', 'info');
+    addStatus('📂 ' + hubData.files.length + ' ملف', 'info');
+});
+
+console.log('📡 المربع المركزي جاهز!');
+console.log('📂 الملفات:', hubData.files.length);
+console.log('📍 المنشورات:', hubData.published.length);
+</script>
+
+</body>
+</html>
+
