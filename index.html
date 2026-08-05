@@ -1085,6 +1085,35 @@ function loadProfileData() {
   updateProfilePanel();
 }
 
+
+
+/* ═══════════════════════════════════════════════════════════════
+   تحميل الأيقونات المخصصة من المدير
+   ═══════════════════════════════════════════════════════════════ */
+function loadCustomIcons() {
+  try {
+    const saveData = JSON.parse(localStorage.getItem('battle_worlds_save') || '{}');
+    if (saveData.customIcons && Array.isArray(saveData.customIcons)) {
+      let added = 0;
+      saveData.customIcons.forEach(function(icon) {
+        const exists = WORLD_ICONS.find(function(i) {
+          return i.name === icon.name && i.emoji === icon.emoji;
+        });
+        if (!exists) {
+          WORLD_ICONS.push(icon);
+          added++;
+        }
+      });
+      if (added > 0) {
+        console.log('✅ تم تحميل ' + added + ' أيقونة مخصصة من المدير');
+        if (sphereGroup) buildSphere();
+      }
+    }
+  } catch(e) {
+    console.error('❌ فشل تحميل الأيقونات المخصصة:', e);
+  }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    الإعدادات
    ═══════════════════════════════════════════════════════════════ */
@@ -4936,6 +4965,7 @@ function startGame() {
 
   initGame();
   initFileSystem();
+  loadCustomIcons();
   playerGroup.visible = false;
 
   if (sphereGroup) sphereGroup.visible = true;
@@ -5086,114 +5116,11 @@ document.addEventListener('click', function(e) {
     }
   }
 });
+  
+// ================================================================
+// 📡 مستمع تغييرات المدير عبر localStorage
+// ================================================================
 
-setupControls();
-
-console.log('🌐 العوالم الكروية v80.0 - كل مربع = عالم');
-console.log('📌 التغييرات:');
-console.log('  ✅ كل مربع في الشبكة = بوابة لعالم فريد');
-console.log('  ✅ إنشاء عوالم عند الطلب (توفير للذاكرة)');
-console.log('  ✅ زر دخول يظهر عند الوقوف على أي مربع');
-console.log('  ✅ عودة ذكية للعالم الأم (طبقة طبقة)');
-console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة');
-</script>
-<div id="tile-content-viewer">
-  <div class="viewer-header">
-    <span class="viewer-title" id="viewer-title">📂 ملف</span>
-    <button class="viewer-close" onclick="closeTileContent()">✖ إغلاق</button>
-  </div>
-  <div class="viewer-body" id="viewer-body"></div>
-</div>
-
-<!-- ====== نظام الحسابات ====== -->
-<div id="auth-screen">
-  <div class="start-logo" style="margin-bottom:8px;">🌐 العوالم الكروية</div>
-  <div class="start-subtitle" style="margin-bottom:20px;">منصة العوالم الافتراضية</div>
-
-  <div class="auth-box" id="login-box">
-    <h2>🔐 تسجيل الدخول</h2>
-    <div class="auth-field"><label>👤 اسم المستخدم</label><input type="text" id="login-username" placeholder="اسم المستخدم"></div>
-    <div class="auth-field"><label>🔑 كلمة المرور</label><input type="password" id="login-password" placeholder="كلمة المرور"></div>
-    <div class="auth-error" id="login-error"></div>
-    <button class="auth-btn primary" onclick="AccountManager.login()">🚀 دخول</button>
-    <button class="auth-btn" style="background: linear-gradient(135deg, #ffd700, #f59e0b); color: #111; margin-top: 8px;" onclick="AccountManager.adminLogin()">👑 دخول كمدير</button>
-    <div class="auth-toggle">ليس لديك حساب؟ <span onclick="AccountManager.showRegister()">سجّل الآن</span></div>
-  </div>
-
-  <div class="auth-box" id="register-box" style="display:none;">
-    <h2>✨ إنشاء حساب</h2>
-    <div class="auth-field"><label>👤 اسم المستخدم</label><input type="text" id="reg-username" placeholder="3-20 حرف"></div>
-    <div class="auth-field"><label>📧 البريد (اختياري)</label><input type="email" id="reg-email" placeholder="email@example.com"></div>
-    <div class="auth-field"><label>🔑 كلمة المرور</label><input type="password" id="reg-password" placeholder="6 أحرف على الأقل"></div>
-    <div class="auth-field"><label>🔑 تأكيد كلمة المرور</label><input type="password" id="reg-password2" placeholder="أعد الإدخال"></div>
-    <div class="auth-error" id="reg-error"></div>
-    <button class="auth-btn primary" onclick="AccountManager.register()">✨ إنشاء الحساب</button>
-    <div class="auth-toggle">لديك حساب؟ <span onclick="AccountManager.showLogin()">سجّل دخول</span></div>
-  </div>
-</div>
-
-<!-- ====== Chat ====== -->
-<div id="chat-panel">
-  <div id="chat-header"><span>💬 الدردشة</span><div style="display:flex;align-items:center;gap:8px;"><span class="online-count" id="online-count">🟢 0 متصل</span><button onclick="ChatManager.toggle()" style="background:rgba(239,68,68,0.2);color:#f87171;border:none;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;">✖</button></div></div>
-  <div id="chat-messages"></div>
-  <div id="chat-input-row">
-    <input type="text" id="chat-input" placeholder="اكتب رسالة..." onkeydown="if(event.key==='Enter')ChatManager.send()">
-    <button id="chat-send" onclick="ChatManager.send()">📤</button>
-  </div>
-</div>
-
-<!-- ====== محرر العوالم ====== -->
-<div id="editor-panel">
-  <h3>🛠️ محرر العوالم</h3>
-  <div class="editor-tools">
-    <button class="editor-tool active" data-tool="brush" onclick="WorldEditor.setTool('brush')">🖌️ طلاء</button>
-    <button class="editor-tool" data-tool="eraser" onclick="WorldEditor.setTool('eraser')">🧽 مسح</button>
-    <button class="editor-tool" data-tool="item" onclick="WorldEditor.setTool('item')">📦 عنصر</button>
-    <button class="editor-tool" data-tool="portal" onclick="WorldEditor.setTool('portal')">🚪 بوابة</button>
-  </div>
-  <div style="color:#888;font-size:11px;text-align:center;margin-bottom:8px;">🎨 اختر لون الأرضية</div>
-  <div class="editor-colors" id="editor-colors"></div>
-  <div style="color:#888;font-size:11px;text-align:center;margin-bottom:8px;">📦 اختر عنصراً</div>
-  <div class="editor-colors" id="editor-items" style="gap:8px;"></div>
-  <div class="editor-actions">
-    <button class="btn-save" onclick="WorldEditor.save()">💾 حفظ التصميم</button>
-    <button class="btn-cancel" onclick="WorldEditor.close()">✖ إغلاق</button>
-  </div>
-  <div style="color:#666;font-size:10px;text-align:center;margin-top:10px;">
-    💡 انقر على أي مربع في العالم لتطبيق الأداة المختارة
-  </div>
-</div>
-
-<!-- ====== سوق الأصول ====== -->
-<div id="market-panel">
-  <h3>🛒 سوق الأصول</h3>
-  <div class="market-balance">🪙 <span id="market-balance">0</span> ذهبة</div>
-  <div class="market-grid" id="market-grid"></div>
-  <div style="display:flex;gap:8px;margin-top:16px;">
-    <button class="btn-cancel" style="flex:1;" onclick="document.getElementById('market-panel').style.display='none'">✖ إغلاق</button>
-  </div>
-</div>
-
-<!-- ====== مكافأة يومية ====== -->
-<div id="daily-reward">
-  <div class="reward-icon">🎁</div>
-  <div class="reward-title">مكافأتك اليومية!</div>
-  <div class="reward-amount">+<span id="reward-amount">50</span> 🪙</div>
-  <button class="reward-btn" onclick="EconomySystem.claimDaily()">🎉 استلام</button>
-</div>
-
-<!-- ====== شريط المنصة ====== -->
-<div id="platform-bar">
-  <button class="platform-btn" onclick="ChatManager.toggle()">💬 شات <span class="badge" id="chat-badge" style="display:none;">0</span></button>
-  <button class="platform-btn" onclick="WorldEditor.toggle()">🛠️ بناء</button>
-  <button class="platform-btn" onclick="AssetMarket.open()">🛒 سوق</button>
-  <button class="platform-btn" onclick="EconomySystem.showDaily()">🎁 يومي</button>
-  <button class="platform-btn" onclick="AccountManager.logout()">🚪 خروج</button>
-</div>
-<div id="drag-indicator"><div class="drag-joystick"><div class="drag-knob"></div></div></div>
-/* ═══════════════════════════════════════════════════════════════
-   📡 مستمع تغييرات المدير عبر localStorage
-   ═══════════════════════════════════════════════════════════════ */
 window.addEventListener('storage', function(e) {
     if (e.key === 'battle_worlds_save' && e.newValue) {
         try {
@@ -5205,7 +5132,7 @@ window.addEventListener('storage', function(e) {
                 landmarks = data.landmarks;
                 nextLandmarkId = 1 + Math.max(0, ...landmarks.map(function(l) { return l.id || 0; }));
                 changed = true;
-                if (renderLandmarks) renderLandmarks();
+                if (typeof renderLandmarks === 'function') renderLandmarks();
             }
 
             // تحديث العوالم
@@ -5230,22 +5157,21 @@ window.addEventListener('storage', function(e) {
                     }
                 });
                 changed = true;
-                if (buildSphere) buildSphere();
+                if (typeof buildSphere === 'function') buildSphere();
             }
 
             // تحديث بيانات اللاعب
-            if (data.playerName) playerName = data.playerName;
-            if (data.level) level = data.level;
+            if (data.playerName !== undefined) playerName = data.playerName;
+            if (data.level !== undefined) level = data.level;
             if (data.coins !== undefined) coins = data.coins;
             if (data.score !== undefined) score = data.score;
 
-            // إعادة بناء العالم الحالي إذا تغيرت البيانات
-            if (changed && currentWorldId && buildWorld) {
+            if (changed && currentWorldId && typeof buildWorld === 'function') {
                 buildWorld(currentWorldId);
                 showToast('🔄 تم تحديث البيانات من المدير', 'success');
             }
 
-            if (updateHUD) updateHUD();
+            if (typeof updateHUD === 'function') updateHUD();
         } catch(err) {
             console.log('❌ فشل تحديث من المدير:', err);
         }
@@ -5256,12 +5182,11 @@ window.addEventListener('storage', function(e) {
 window.addEventListener('message', function(event) {
     if (event.data && event.data.type === 'manager_update') {
         if (event.data.data && event.data.data.action === 'force_sync') {
-            // إجبار اللعبة على إعادة تحميل كل البيانات
             try {
                 const saveData = JSON.parse(localStorage.getItem('battle_worlds_save') || '{}');
                 if (saveData.landmarks) {
                     landmarks = saveData.landmarks;
-                    if (renderLandmarks) renderLandmarks();
+                    if (typeof renderLandmarks === 'function') renderLandmarks();
                 }
                 if (saveData.worlds) {
                     worlds = saveData.worlds;
@@ -5271,32 +5196,14 @@ window.addEventListener('message', function(event) {
                         const exists = WORLD_ICONS.find(function(i) { return i.name === icon.name && i.emoji === icon.emoji; });
                         if (!exists) WORLD_ICONS.push(icon);
                     });
-                    if (buildSphere) buildSphere();
+                    if (typeof buildSphere === 'function') buildSphere();
                 }
-                if (currentWorldId && buildWorld) buildWorld(currentWorldId);
+                if (currentWorldId && typeof buildWorld === 'function') buildWorld(currentWorldId);
                 showToast('🔄 تم التزامن مع المدير', 'success');
-                if (updateHUD) updateHUD();
+                if (typeof updateHUD === 'function') updateHUD();
             } catch(e) {}
         }
     }
-});
-
-// دالة فتح المدير في iframe
-function openManager() {
-    // إزالة أي iframe سابق
-    const old = document.getElementById('manager-iframe');
-    if (old) old.remove();
-
-    const iframe = document.createElement('iframe');
-    iframe.id = 'manager-iframe';
-    iframe.src = 'manager.html';
-    iframe.style.cssText = 'position:fixed;inset:0;z-index:5000;width:100%;height:100%;border:none;background:#0a0a1a;';
-    document.body.appendChild(iframe);
-    showToast('👑 تم فتح مدير النظام', 'success');
-}
-
-// دالة إغلاق المدير (يُستدعى من المدير عبر postMessage)
-window.addEventListener('message', function(event) {
     if (event.data && event.data.type === 'close_manager') {
         const iframe = document.getElementById('manager-iframe');
         if (iframe) {
@@ -5306,10 +5213,50 @@ window.addEventListener('message', function(event) {
     }
 });
 
+// دالة فتح المدير في iframe
+function openManager() {
+    const old = document.getElementById('manager-iframe');
+    if (old) old.remove();
+    const iframe = document.createElement('iframe');
+    iframe.id = 'manager-iframe';
+    iframe.src = 'manager.html';
+    iframe.style.cssText = 'position:fixed;inset:0;z-index:5000;width:100%;height:100%;border:none;background:#0a0a1a;';
+    document.body.appendChild(iframe);
+    showToast('👑 تم فتح مدير النظام', 'success');
+}
+
+// دالة إرسال تحديث إلى المدير
+function notifyManager() {
+    try {
+        const saveData = localStorage.getItem('battle_worlds_save');
+        localStorage.setItem('spherical_manager_sync', JSON.stringify({
+            time: Date.now(),
+            action: 'game_update',
+            data: JSON.parse(saveData || '{}')
+        }));
+        const iframe = document.getElementById('manager-iframe');
+        if (iframe && iframe.contentWindow) {
+            iframe.contentWindow.postMessage({
+                type: 'game_update',
+                data: JSON.parse(saveData || '{}')
+            }, '*');
+        }
+    } catch(e) {}
+}
+
+// ================================================================
+// نهاية كود المدير
+// ================================================================
+
+setupControls();
+
+console.log('🌐 العوالم الكروية v80.0 - كل مربع = عالم');
+console.log('📌 التغييرات:');
+console.log('  ✅ كل مربع في الشبكة = بوابة لعالم فريد');
+console.log('  ✅ إنشاء عوالم عند الطلب (توفير للذاكرة)');
+console.log('  ✅ زر دخول يظهر عند الوقوف على أي مربع');
+console.log('  ✅ عودة ذكية للعالم الأم (طبقة طبقة)');
+console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة');
+</script>   <!-- ← هنا تنتهي علامة <script> -->
 </body>
 </html>
-
-
-        
-
-  
