@@ -761,6 +761,7 @@ function handleFile(e) {
 }
 
 // ─── إرسال إلى القناة ───
+
 async function publishFile() {
     const worldId = document.getElementById('target-world').value;
     const row = parseInt(document.getElementById('target-row').value);
@@ -775,44 +776,86 @@ async function publishFile() {
     if (!title) { showToast('❌ أدخل عنواناً للمربع', 'error'); return; }
     if (!config.botToken || !config.chatId) { showToast('❌ أكمل إعدادات البوت', 'error'); return; }
 
-    const cmd = {
+    // تحضير البيانات الوصفية
+    const metadata = {
         action: 'add_file',
         worldId: worldId,
         row: row,
         col: col,
         title: title,
         fileType: type,
-        emoji: EMOJIS[type] || '📦',
-        content: pendingFileBase64
+        emoji: EMOJIS[type] || '📦'
     };
 
-    addStatus('⏳ جاري الإرسال إلى Telegram...', 'info');
+    // إذا كان هناك ملف، نرسله بطريقة مختلفة
+    if (pendingFileBase64 && pendingFileName) {
+        addStatus('⏳ جاري رفع الملف إلى Telegram...', 'info');
+        
+        try {
+            // تحويل base64 إلى Blob
+            const response = await fetch(pendingFileBase64);
+            const blob = await response.blob();
+            
+            // إنشاء FormData للإرسال
+            const formData = new FormData();
+            formData.append('chat_id', config.chatId);
+            formData.append('document', blob, pendingFileName);
+            formData.append('caption', '📡 SPHERICAL|CMD|' + JSON.stringify(metadata));
+            formData.append('disable_notification', 'true');
 
-    try {
-        const res = await fetch('https://api.telegram.org/bot' + config.botToken + '/sendMessage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: config.chatId,
-                text: '📡 SPHERICAL|CMD|' + JSON.stringify(cmd),
-                disable_notification: true
-            })
-        });
-        const data = await res.json();
+            // إرسال باستخدام sendDocument
+            const res = await fetch('https://api.telegram.org/bot' + config.botToken + '/sendDocument', {
+                method: 'POST',
+                body: formData
+            });
 
-        if (data.ok) {
-            showToast('✅ تم الإرسال! اللعبة ستستقبله خلال 5 ثوانٍ', 'success');
-            addStatus('✅ تم الإرسال: ' + title, 'success');
-            addStatus('📍 الموقع: ' + worldId + ' [' + row + ',' + col + ']', 'gold');
-        } else {
-            showToast('❌ فشل: ' + data.description, 'error');
-            addStatus('❌ فشل الإرسال: ' + data.description, 'error');
+            const data = await res.json();
+
+            if (data.ok) {
+                showToast('✅ تم رفع الملف بنجاح!', 'success');
+                addStatus('✅ تم رفع: ' + pendingFileName + ' (' + (blob.size / 1024).toFixed(1) + ' KB)', 'success');
+                addStatus('📍 الموقع: ' + worldId + ' [' + row + ',' + col + ']', 'gold');
+                // تفريغ الحقل بعد الإرسال
+                clearForm();
+            } else {
+                showToast('❌ فشل: ' + data.description, 'error');
+                addStatus('❌ فشل الرفع: ' + data.description, 'error');
+            }
+        } catch(e) {
+            showToast('❌ خطأ في الاتصال', 'error');
+            addStatus('❌ خطأ: ' + e.message, 'error');
         }
-    } catch(e) {
-        showToast('❌ خطأ في الاتصال', 'error');
-        addStatus('❌ خطأ: ' + e.message, 'error');
+    } else {
+        // إذا لم يكن هناك ملف، نرسل فقط البيانات الوصفية
+        try {
+            const res = await fetch('https://api.telegram.org/bot' + config.botToken + '/sendMessage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: config.chatId,
+                    text: '📡 SPHERICAL|CMD|' + JSON.stringify(metadata),
+                    disable_notification: true
+                })
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+                showToast('✅ تم الإرسال!', 'success');
+                addStatus('✅ تم إرسال البيانات: ' + title, 'success');
+                clearForm();
+            } else {
+                showToast('❌ فشل: ' + data.description, 'error');
+                addStatus('❌ فشل الإرسال: ' + data.description, 'error');
+            }
+        } catch(e) {
+            showToast('❌ خطأ في الاتصال', 'error');
+            addStatus('❌ خطأ: ' + e.message, 'error');
+        }
     }
 }
+
+
+
 
 function clearForm() {
     document.getElementById('file-upload').value = '';
@@ -829,4 +872,6 @@ function clearForm() {
 </script>
 </body>
 </html>
+
+
 
