@@ -5296,6 +5296,72 @@ console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة')
 })();
 
 
+
+
+// ============================================================
+// 📡 نشر العوالم إلى القناة (SPHERICAL|WORLDS|)
+// ============================================================
+
+async function publishWorldsToChannel() {
+    if (!TelegramManager.hasConfig()) {
+        console.log('⚠️ إعدادات Telegram غير مكتملة');
+        return;
+    }
+
+    const payload = {
+        worlds: worlds.map(w => ({
+            id: w.id,
+            name: w.name || w.id,
+            grid: w.grid || 12,
+            tileSize: w.tileSize || 3,
+            background: w.background || '#0a0a1a'
+        })),
+        time: Date.now()
+    };
+
+    try {
+        const response = await fetch('https://api.telegram.org/bot' + TelegramManager.botToken + '/sendMessage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: TelegramManager.chatId,
+                text: '📡 SPHERICAL|WORLDS|' + JSON.stringify(payload),
+                disable_notification: true
+            })
+        });
+
+        const data = await response.json();
+        if (data.ok) {
+            console.log('✅ تم نشر العوالم (' + worlds.length + ' عالم)');
+        } else {
+            console.warn('⚠️ فشل النشر:', data.description);
+        }
+    } catch(e) {
+        console.error('❌ خطأ في النشر:', e);
+    }
+}
+
+// ✅ نشر العوالم كل 30 ثانية
+setInterval(publishWorldsToChannel, 30000);
+
+// ✅ نشر فوري عند بدء اللعبة
+setTimeout(publishWorldsToChannel, 3000);
+
+// ✅ نشر فوري عند تغيير العوالم
+const originalBuildWorld = buildWorld;
+buildWorld = function(id) {
+    originalBuildWorld(id);
+    setTimeout(publishWorldsToChannel, 500);
+};
+
+console.log('📡 نظام نشر العوالم يعمل!');
+
+
+
+
+
+
+
 // فتح المركز - نسخة مبسطة
 window.openDistributionHub = function() {
     // فتح أداة التوزيع مباشرة
