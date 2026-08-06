@@ -2,1475 +2,2655 @@
 <html dir="rtl" lang="ar">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-select=no">
-<title>🌐 العوالم الكروية</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🏪 المدينة التجارية - نظام الكاشير المتقدم</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
-    *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:#050510;color:#fff;overflow:hidden;user-select:none;-webkit-tap-highlight-color:transparent}
-    canvas{display:block;width:100%;height:100%}
-    #hud{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:100;background:rgba(0,0,0,.75);backdrop-filter:blur(16px);border:1px solid rgba(255,215,0,.15);border-radius:20px;padding:8px 20px;display:flex;gap:16px;align-items:center;font-size:12px;flex-wrap:wrap;justify-content:center}
-    #hud .title{font-weight:900;background:linear-gradient(135deg,#ffd700,#ff8c00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;font-size:14px}
-    #hud .count{color:#fbbf24;font-weight:700}
-    #hud .sync-badge{color:#4ade80;font-size:10px;background:rgba(74,222,128,.12);padding:2px 8px;border-radius:8px;display:none}
-    #hud .sync-badge.active{display:inline-block}
-    #side{position:fixed;top:50%;right:12px;transform:translateY(-50%);z-index:101;display:flex;flex-direction:column;gap:8px}
-    .sbtn{width:48px;height:48px;border-radius:14px;background:rgba(0,0,0,.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
-    .sbtn:hover{background:rgba(139,92,246,.25);border-color:rgba(139,92,246,.4);transform:scale(1.1)}
-    .sbtn.active-sync{animation:pulse 2s infinite;border-color:#4ade80;color:#4ade80}
-    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.4)}50%{box-shadow:0 0 0 8px rgba(74,222,128,0)}}
-    #grid-panel{position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(8,8,20,.97);border-top:1px solid rgba(255,215,0,.2);border-radius:20px 20px 0 0;padding:16px;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:65vh;overflow-y:auto;backdrop-filter:blur(20px)}
-    #grid-panel.open{transform:translateY(0)}
-    #grid-panel .gp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.06)}
-    #grid-panel .gp-title{color:#ffd700;font-size:15px;font-weight:900}
-    #grid-panel .gp-close{background:rgba(239,68,68,.2);color:#f87171;border:none;width:32px;height:32px;border-radius:10px;cursor:pointer;font-size:16px}
-    #grid-panel .gp-hint{color:#666;font-size:11px;text-align:center;margin-bottom:12px}
-    .grid-container{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;padding-bottom:20px}
-    @media(min-width:768px){.grid-container{grid-template-columns:repeat(12,1fr)}}
-    .grid-cell{aspect-ratio:1;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:.2s;position:relative;overflow:hidden;min-height:70px}
-    .grid-cell:hover{border-color:rgba(139,92,246,.4);background:rgba(139,92,246,.08);transform:translateY(-2px)}
-    .grid-cell.occupied{background:rgba(74,222,128,.08);border-color:rgba(74,222,128,.25)}
-    .grid-cell.occupied:hover{background:rgba(74,222,128,.15)}
-    .grid-cell .cell-pos{position:absolute;top:3px;left:5px;font-size:9px;color:#555;font-weight:700}
-    .grid-cell .cell-icon{font-size:22px;margin-bottom:2px}
-    .grid-cell .cell-name{font-size:9px;color:#aaa;text-align:center;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;padding:0 2px}
-    .grid-cell .cell-type{font-size:8px;color:#666;margin-top:2px}
-    .grid-cell .cell-upload{display:none;position:absolute;inset:0;background:rgba(139,92,246,.9);align-items:center;justify-content:center;font-size:20px;color:#fff}
-    .grid-cell:hover .cell-upload{display:flex}
-    .grid-cell .cell-actions{position:absolute;top:2px;right:2px;display:none;gap:2px}
-    .grid-cell:hover .cell-actions{display:flex}
-    .grid-cell .cell-actions button{width:18px;height:18px;border:none;border-radius:4px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-    #panel{position:fixed;top:50%;right:66px;transform:translateY(-50%);z-index:102;background:rgba(8,8,20,.96);border:1px solid rgba(255,215,0,.15);border-radius:16px;padding:16px;min-width:260px;max-width:340px;max-height:80vh;overflow-y:auto;display:none;backdrop-filter:blur(20px);box-shadow:0 16px 48px rgba(0,0,0,.5)}
-    #panel h3{color:#ffd700;font-size:15px;margin-bottom:12px;text-align:center}
-    .lm-item{padding:10px 12px;border-radius:10px;margin-bottom:6px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);cursor:pointer;transition:.2s;font-size:12px}
-    .lm-item:hover{background:rgba(139,92,246,.15);border-color:rgba(139,92,246,.3)}
-    .lm-item .lm-name{font-weight:700;color:#fff;margin-bottom:2px}
-    .lm-item .lm-meta{color:#888;font-size:10px}
-    .lm-item .lm-file{color:#4ade80;font-size:11px;margin-top:4px}
-    .lm-item .lm-world{color:#60a5fa;font-size:10px;margin-top:2px}
-    .empty{color:#666;text-align:center;padding:20px;font-size:12px}
-    #viewer{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.92);display:none;flex-direction:column;align-items:center;justify-content:center;backdrop-filter:blur(15px);padding:20px}
-    #viewer .vh{position:absolute;top:16px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center}
-    #viewer .vt{color:#ffd700;font-size:16px;font-weight:700}
-    #viewer .vc{background:rgba(239,68,68,.9);color:#fff;border:none;padding:8px 20px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit}
-    #viewer .vb{width:100%;height:100%;display:flex;align-items:center;justify-content:center;margin-top:40px}
-    #viewer iframe{width:100%;height:100%;border:none;border-radius:12px;background:#000}
-    #cell-viewer{position:fixed;inset:0;z-index:2500;background:rgba(0,0,0,.95);display:none;flex-direction:column;backdrop-filter:blur(20px)}
-    #cell-viewer .cv-header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:rgba(8,8,20,.9);border-bottom:1px solid rgba(255,255,255,.08)}
-    #cell-viewer .cv-title{color:#ffd700;font-size:14px;font-weight:700}
-    #cell-viewer .cv-close{background:rgba(239,68,68,.9);color:#fff;border:none;padding:6px 16px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer}
-    #cell-viewer .cv-body{flex:1;padding:0;overflow:hidden}
-    #cell-viewer iframe{width:100%;height:100%;border:none;background:#0a0a1a}
-    #add-modal{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
-    #add-modal .box{background:rgba(10,10,30,.97);border:1px solid rgba(139,92,246,.25);border-radius:18px;padding:24px;width:90%;max-width:380px}
-    #add-modal h3{color:#ffd700;text-align:center;margin-bottom:16px;font-size:17px}
-    #add-modal label{display:block;color:#888;font-size:11px;margin-bottom:4px;font-weight:600}
-    #add-modal input,#add-modal select{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-size:13px;font-family:inherit;margin-bottom:12px}
-    #add-modal input:focus,#add-modal select:focus{outline:none;border-color:rgba(139,92,246,.4)}
-    .mactions{display:flex;gap:10px;margin-top:8px}
-    .mactions button{flex:1;padding:11px;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit}
-    .btn-ok{background:linear-gradient(135deg,#ffd700,#f59e0b);color:#111}
-    .btn-no{background:rgba(255,255,255,.06);color:#888}
-    .file-hint{color:#4ade80;font-size:11px;text-align:center;margin-bottom:8px;display:none}
-    #upload-modal{position:fixed;inset:0;z-index:2200;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
-    #upload-modal .box{background:rgba(10,10,30,.97);border:1px solid rgba(74,222,128,.25);border-radius:18px;padding:24px;width:90%;max-width:360px;text-align:center}
-    #upload-modal h3{color:#4ade80;margin-bottom:12px;font-size:16px}
-    #upload-modal .up-cell-info{color:#888;font-size:12px;margin-bottom:16px}
-    #upload-modal input[type="file"]{display:none}
-    #upload-modal .file-drop{border:2px dashed rgba(255,255,255,.15);border-radius:14px;padding:30px 20px;margin-bottom:16px;cursor:pointer;transition:.2s}
-    #upload-modal .file-drop:hover{border-color:rgba(139,92,246,.5);background:rgba(139,92,246,.05)}
-    #upload-modal .file-drop .drop-icon{font-size:32px;margin-bottom:8px}
-    #upload-modal .file-drop .drop-text{font-size:12px;color:#aaa}
-    #upload-modal .file-name{color:#4ade80;font-size:12px;margin-bottom:16px;display:none}
-    #settings-modal{position:fixed;inset:0;z-index:2001;background:rgba(0,0,0,.85);display:none;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
-    #settings-modal .box{background:rgba(10,10,30,.97);border:1px solid rgba(0,242,255,.25);border-radius:18px;padding:24px;width:90%;max-width:400px}
-    #settings-modal h3{color:#00f2ff;text-align:center;margin-bottom:16px;font-size:17px}
-    #settings-modal label{display:block;color:#888;font-size:11px;margin-bottom:4px;font-weight:600}
-    #settings-modal input{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-size:13px;font-family:inherit;margin-bottom:12px}
-    #settings-modal input:focus{outline:none;border-color:rgba(0,242,255,.4)}
-    #settings-modal .hint{color:#666;font-size:11px;margin-top:-8px;margin-bottom:12px}
-    #settings-modal .status{color:#888;font-size:12px;text-align:center;margin-top:8px;min-height:20px}
-    #settings-modal .status.ok{color:#4ade80}
-    #settings-modal .status.err{color:#f87171}
-    #msg{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);z-index:100;background:rgba(0,0,0,.8);color:#ffd700;padding:8px 22px;border-radius:30px;font-size:13px;font-weight:700;opacity:0;transition:.3s;pointer-events:none;border:1px solid rgba(255,215,0,.15)}
-    #msg.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
-    #toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:4000;background:rgba(8,8,20,.95);padding:10px 20px;border-radius:14px;font-size:12px;font-weight:600;border:1px solid rgba(255,255,255,.1);opacity:0;transition:.3s;pointer-events:none;max-width:90%;text-align:center}
-    #toast.show{opacity:1}
-    #toast.ok{border-color:#4ade80;color:#4ade80}
-    #toast.err{border-color:#f87171;color:#f87171}
-    #toast.info{border-color:#60a5fa;color:#60a5fa}
-    #toast.gold{border-color:#ffd700;color:#ffd700}
-    #info-card{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:90;background:rgba(8,8,20,.9);border:1px solid rgba(255,215,0,.2);border-radius:14px;padding:12px 20px;text-align:center;display:none;backdrop-filter:blur(12px);min-width:220px;max-width:90%}
-    #info-card .iname{color:#ffd700;font-weight:700;font-size:14px}
-    #info-card .idesc{color:#888;font-size:11px;margin-top:2px}
-    #info-card .ifile{color:#4ade80;font-size:11px;margin-top:4px}
-    #info-card .iworld{color:#60a5fa;font-size:10px;margin-top:2px}
-    #info-card .download-link{display:block;margin-top:8px;padding:8px 18px;border-radius:10px;border:1px solid rgba(0,242,255,.3);background:rgba(0,242,255,.1);color:#00f2ff;font-size:12px;font-weight:700;cursor:pointer;text-decoration:none;font-family:inherit;word-break:break-all}
-    #info-card .download-link:hover{background:rgba(0,242,255,.2)}
-    #info-card .open-btn{margin-top:8px;padding:6px 18px;border-radius:10px;border:1px solid rgba(74,222,128,.3);background:rgba(74,222,128,.1);color:#4ade80;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit}
-    #info-card .open-btn:hover{background:rgba(74,222,128,.2)}
-    #hint{position:fixed;bottom:20px;left:20px;z-index:80;color:#555;font-size:11px;line-height:1.6;max-width:180px}
-    .filter-bar{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
-    .filter-bar button{padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#aaa;font-size:11px;cursor:pointer;font-family:inherit}
-    .filter-bar button.active{background:rgba(139,92,246,.25);color:#c4b5fd;border-color:rgba(139,92,246,.4)}
-    .btn-secondary{flex:1;padding:11px;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;font-family:inherit;background:rgba(139,92,246,.2);color:#c4b5fd}
+/* ====== الأنماط العامة ====== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+canvas { display: block; width: 100%; height: 100%; }
+body { 
+    font-family: 'Cairo', sans-serif; 
+    background: #050510; 
+    color: #fff; 
+    overflow: hidden; 
+    -webkit-tap-highlight-color: transparent; 
+    user-select: none; 
+}
+
+/* ====== شاشة البداية ====== */
+#start-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: linear-gradient(135deg, #0a0a2a 0%, #000 50%, #0a0a1a 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+}
+.start-logo {
+    font-size: 52px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: float 3s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
+}
+@keyframes glow {
+    from { filter: drop-shadow(0 0 20px rgba(255,215,0,0.3)); }
+    to { filter: drop-shadow(0 0 40px rgba(255,215,0,0.6)); }
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+.start-subtitle {
+    font-size: 15px;
+    color: #888;
+    text-align: center;
+    max-width: 420px;
+    line-height: 2;
+}
+.start-btn {
+    border: 2px solid #00f2ff;
+    color: #00f2ff;
+    padding: 18px 60px;
+    background: rgba(0,242,255,0.08);
+    border-radius: 60px;
+    font-size: 22px;
+    cursor: pointer;
+    transition: all .3s;
+    font-weight: 700;
+    font-family: inherit;
+}
+.start-btn:hover {
+    transform: scale(1.08);
+    background: #00f2ff;
+    color: #000;
+    box-shadow: 0 0 60px rgba(0,242,255,0.5);
+}
+.version-tag {
+    position: absolute;
+    bottom: 20px;
+    font-size: 12px;
+    color: #555;
+}
+
+/* ====== واجهة المدينة التجارية ====== */
+#city-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    z-index: 1500;
+    background: rgba(8,8,20,0.97);
+    border: 2px solid rgba(255,215,0,0.15);
+    border-radius: 24px;
+    padding: 20px;
+    width: 96%;
+    max-width: 1000px;
+    max-height: 92vh;
+    overflow-y: auto;
+    display: none;
+    backdrop-filter: blur(24px);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.8);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#city-panel.show {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.city-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.city-header h2 {
+    color: #ffd700;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.city-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #888;
+    flex-wrap: wrap;
+}
+.city-stats span {
+    background: rgba(255,255,255,0.04);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.04);
+}
+.city-stats .num {
+    color: #ffd700;
+    font-weight: 700;
+}
+.close-btn {
+    background: rgba(239,68,68,0.15);
+    color: #f87171;
+    border: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.3s;
+    font-family: inherit;
+}
+.close-btn:hover {
+    background: rgba(239,68,68,0.3);
+    transform: scale(1.05);
+}
+
+/* ====== قائمة المتاجر ====== */
+.stores-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 8px 4px 16px;
+    margin-bottom: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,215,0,0.2) transparent;
+}
+.stores-scroll::-webkit-scrollbar {
+    height: 4px;
+}
+.stores-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255,215,0,0.2);
+    border-radius: 4px;
+}
+
+.store-card {
+    min-width: 80px;
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.03);
+    border: 2px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    flex-shrink: 0;
+}
+.store-card:hover {
+    background: rgba(255,255,255,0.06);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+.store-card.active {
+    border-color: #ffd700;
+    background: rgba(255,215,0,0.08);
+    box-shadow: 0 0 30px rgba(255,215,0,0.05);
+}
+.store-card .icon {
+    font-size: 32px;
+    display: block;
+}
+.store-card .name {
+    font-size: 10px;
+    color: #aaa;
+    margin-top: 4px;
+    font-weight: 600;
+}
+.store-card .count {
+    font-size: 8px;
+    color: #666;
+}
+
+/* ====== شبكة المربعات ====== */
+.tiles-grid-container {
+    background: rgba(255,255,255,0.02);
+    border-radius: 16px;
+    padding: 8px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255,255,255,0.04);
+}
+.tiles-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 3px;
+}
+.tile-cell {
+    aspect-ratio: 1;
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255,255,255,0.04);
+    position: relative;
+    padding: 2px;
+    min-height: 50px;
+}
+.tile-cell:hover {
+    background: rgba(139,92,246,0.15);
+    transform: scale(1.04);
+    z-index: 2;
+    border-color: rgba(139,92,246,0.2);
+}
+.tile-cell.has-product {
+    background: rgba(74,222,128,0.04);
+    border-color: rgba(74,222,128,0.06);
+}
+.tile-cell.has-product:hover {
+    background: rgba(74,222,128,0.12);
+    border-color: rgba(74,222,128,0.2);
+}
+.tile-cell.in-cart {
+    border-color: #ffd700;
+    background: rgba(255,215,0,0.06);
+}
+.tile-cell.selected {
+    border-color: #ffd700;
+    box-shadow: 0 0 20px rgba(255,215,0,0.15);
+}
+.tile-cell .coords {
+    position: absolute;
+    top: 1px;
+    left: 2px;
+    font-size: 5px;
+    color: rgba(255,255,255,0.1);
+}
+.tile-cell .product-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+.tile-cell .product-name {
+    font-size: 7px;
+    color: #ccc;
+    text-align: center;
+    line-height: 1.1;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tile-cell .product-price {
+    font-size: 8px;
+    color: #ffd700;
+    font-weight: 700;
+}
+.tile-cell .product-stock {
+    font-size: 7px;
+    color: #4ade80;
+}
+.tile-cell .product-stock.low {
+    color: #f87171;
+}
+.tile-cell .badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 6px;
+    padding: 1px 4px;
+    border-radius: 8px;
+}
+.tile-cell .badge.discount {
+    background: #ef4444;
+    color: #fff;
+}
+.tile-cell .badge.cart {
+    background: #ffd700;
+    color: #111;
+}
+.tile-cell.empty {
+    opacity: 0.3;
+}
+
+/* ====== تفاصيل المنتج ====== */
+.product-details {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: none;
+}
+.product-details.show {
+    display: block;
+}
+.product-details .p-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.product-details .p-icon {
+    font-size: 36px;
+}
+.product-details .p-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+}
+.product-details .p-store {
+    font-size: 10px;
+    color: #888;
+}
+.product-details .p-info {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 6px 0;
+}
+.product-details .p-info span {
+    font-size: 12px;
+    color: #aaa;
+}
+.product-details .p-info .price {
+    color: #ffd700;
+    font-weight: 700;
+}
+.product-details .p-info .stock {
+    color: #4ade80;
+}
+.product-details .p-info .stock.low {
+    color: #f87171;
+}
+.product-details .p-desc {
+    font-size: 12px;
+    color: #888;
+    line-height: 1.6;
+    margin: 6px 0;
+}
+.product-details .p-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.product-details .p-actions button {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.product-details .p-actions .btn-add {
+    background: linear-gradient(135deg, #ffd700, #f59e0b);
+    color: #111;
+}
+.product-details .p-actions .btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(255,215,0,0.3);
+}
+.product-details .p-actions .btn-remove {
+    background: rgba(239,68,68,0.15);
+    color: #f87171;
+    border: 1px solid rgba(239,68,68,0.2);
+}
+.product-details .p-actions .btn-remove:hover {
+    background: rgba(239,68,68,0.25);
+}
+
+/* ====== السلة ====== */
+.cart-panel {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 12px 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    margin-top: 10px;
+}
+.cart-panel .cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.cart-panel .cart-header h4 {
+    color: #a78bfa;
+    font-size: 14px;
+}
+.cart-panel .cart-items {
+    max-height: 120px;
+    overflow-y: auto;
+}
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 11px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.cart-item .name {
+    color: #ccc;
+}
+.cart-item .qty {
+    color: #888;
+}
+.cart-item .total {
+    color: #ffd700;
+    font-weight: 700;
+}
+.cart-item .remove-btn {
+    background: rgba(239,68,68,0.15);
+    color: #f87171;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    padding: 2px 6px;
+}
+.cart-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0 4px;
+    font-size: 14px;
+    font-weight: 700;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    margin-top: 4px;
+}
+.cart-total .total-label {
+    color: #888;
+}
+.cart-total .total-value {
+    color: #ffd700;
+}
+.cart-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+.cart-actions button {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.cart-actions .btn-checkout {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: #111;
+}
+.cart-actions .btn-checkout:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(74,222,128,0.3);
+}
+.cart-actions .btn-clear {
+    background: rgba(239,68,68,0.12);
+    color: #f87171;
+}
+.cart-actions .btn-clear:hover {
+    background: rgba(239,68,68,0.2);
+}
+.cart-empty {
+    color: #666;
+    font-size: 12px;
+    text-align: center;
+    padding: 12px 0;
+}
+
+/* ====== البحث ====== */
+.search-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.search-bar input {
+    flex: 1;
+    padding: 8px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+}
+.search-bar input:focus {
+    outline: none;
+    border-color: rgba(139,92,246,0.3);
+}
+.search-bar input::placeholder {
+    color: #555;
+}
+.search-bar select {
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: #aaa;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+.search-bar select:focus {
+    outline: none;
+    border-color: rgba(139,92,246,0.3);
+}
+.search-bar select option {
+    background: #1a1a2e;
+    color: #fff;
+}
+
+/* ====== الفاتورة ====== */
+.receipt-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(16px);
+}
+.receipt-content {
+    background: rgba(10,10,30,0.97);
+    border: 2px solid rgba(255,215,0,0.15);
+    border-radius: 20px;
+    padding: 28px 32px;
+    max-width: 420px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.receipt-content .r-header {
+    text-align: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px dashed rgba(255,255,255,0.06);
+}
+.receipt-content .r-header h3 {
+    color: #ffd700;
+    font-size: 20px;
+}
+.receipt-content .r-header .r-store {
+    color: #888;
+    font-size: 12px;
+}
+.receipt-content .r-items {
+    margin-bottom: 12px;
+}
+.receipt-content .r-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.receipt-content .r-item .r-name {
+    color: #ccc;
+}
+.receipt-content .r-item .r-price {
+    color: #ffd700;
+}
+.receipt-content .r-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 16px;
+    font-weight: 700;
+    border-top: 2px solid rgba(255,215,0,0.1);
+    margin-top: 4px;
+}
+.receipt-content .r-total .r-label {
+    color: #888;
+}
+.receipt-content .r-total .r-value {
+    color: #ffd700;
+}
+.receipt-content .r-footer {
+    text-align: center;
+    color: #666;
+    font-size: 11px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+}
+.receipt-content .r-close {
+    width: 100%;
+    padding: 10px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    color: #aaa;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.receipt-content .r-close:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+/* ====== تنبيهات ====== */
+#toast-container {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    pointer-events: none;
+}
+.toast {
+    background: rgba(8,8,20,0.95);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 16px;
+    font-size: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    animation: toastIn 0.3s ease;
+    backdrop-filter: blur(16px);
+    font-weight: 600;
+    max-width: 280px;
+    text-align: center;
+}
+.toast.success { border-color: #4ade80; color: #4ade80; }
+.toast.error { border-color: #f87171; color: #f87171; }
+.toast.info { border-color: #60a5fa; color: #60a5fa; }
+.toast.warn { border-color: #fbbf24; color: #fbbf24; }
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ====== المشهد ثلاثي الأبعاد ====== */
+#scene-container {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+}
+#scene-container canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* ====== شريط التحكم السفلي ====== */
+#bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 6px 12px;
+    display: none;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.bottom-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: #aaa;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    font-weight: 600;
+}
+.bottom-btn:hover {
+    background: rgba(139,92,246,0.15);
+    color: #fff;
+    border-color: rgba(139,92,246,0.3);
+}
+.bottom-btn .badge {
+    background: #ef4444;
+    color: #fff;
+    font-size: 8px;
+    padding: 1px 5px;
+    border-radius: 8px;
+    margin-right: 4px;
+}
+
+/* ====== شاشة الدخول ====== */
+#auth-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    background: linear-gradient(135deg, #0a0a2a 0%, #000 50%, #0a0a1a 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 20px;
+}
+.auth-box {
+    background: rgba(10,10,30,0.95);
+    border: 1px solid rgba(139,92,246,0.2);
+    border-radius: 20px;
+    padding: 32px;
+    width: 90%;
+    max-width: 380px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.auth-box h2 { color: #ffd700; text-align: center; font-size: 22px; margin-bottom: 20px; }
+.auth-field { margin-bottom: 14px; }
+.auth-field label { color: #888; font-size: 11px; display: block; margin-bottom: 4px; font-weight: 600; }
+.auth-field input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: #fff;
+    font-size: 14px;
+    font-family: inherit;
+}
+.auth-field input:focus {
+    outline: none;
+    border-color: rgba(139,92,246,0.4);
+}
+.auth-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s;
+    margin-top: 4px;
+}
+.auth-btn.primary {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: #fff;
+}
+.auth-btn.admin {
+    background: linear-gradient(135deg, #ffd700, #f59e0b);
+    color: #111;
+}
+.auth-toggle {
+    text-align: center;
+    color: #666;
+    font-size: 12px;
+    margin-top: 12px;
+}
+.auth-toggle span {
+    color: #8b5cf6;
+    cursor: pointer;
+    font-weight: 600;
+}
+.auth-error {
+    color: #ef4444;
+    font-size: 11px;
+    text-align: center;
+    margin-top: 8px;
+    display: none;
+}
+
+/* ====== استجابة ====== */
+@media (max-width: 768px) {
+    .tiles-grid {
+        grid-template-columns: repeat(8, 1fr);
+    }
+    .store-card {
+        min-width: 60px;
+        padding: 6px 10px;
+    }
+    .store-card .icon { font-size: 24px; }
+    .tile-cell .product-icon { font-size: 16px; }
+    .tile-cell .product-name { font-size: 6px; }
+    .city-header h2 { font-size: 16px; }
+    .city-stats { font-size: 10px; gap: 6px; }
+    .product-details .p-icon { font-size: 28px; }
+    .product-details .p-name { font-size: 14px; }
+}
+@media (max-width: 480px) {
+    .tiles-grid {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 2px;
+    }
+    .tile-cell {
+        min-height: 40px;
+        padding: 1px;
+    }
+    .tile-cell .product-icon { font-size: 14px; }
+    .tile-cell .product-name { font-size: 5px; }
+    .tile-cell .product-price { font-size: 7px; }
+    #city-panel { padding: 12px; }
+    .receipt-content { padding: 20px; }
+}
 </style>
 </head>
 <body>
+
+<!-- ====== شاشة البداية ====== -->
+<div id="start-screen">
+    <div class="start-logo">🏪 المدينة التجارية</div>
+    <div class="start-subtitle">
+        <span>📦 10 متاجر</span> · <span>🎨 أيقونات</span> · <span>🔄 مربعات لانهائية</span><br>
+        نظام كاشير متقدم في عالم ثلاثي الأبعاد
+    </div>
+    <button class="start-btn" onclick="startGame()">🚀 ابدأ التسوق</button>
+    <div class="version-tag">v3.0 | نظام الكاشير المتقدم</div>
+</div>
+
+<!-- ====== شاشة الدخول ====== -->
+<div id="auth-screen">
+    <div class="start-logo" style="font-size:36px;">🏪 المدينة التجارية</div>
+    <div class="auth-box" id="login-box">
+        <h2>🔐 تسجيل الدخول</h2>
+        <div class="auth-field"><label>👤 اسم المستخدم</label><input type="text" id="login-username" placeholder="admin" value="admin"></div>
+        <div class="auth-field"><label>🔑 كلمة المرور</label><input type="password" id="login-password" placeholder="123456" value="123456"></div>
+        <div class="auth-error" id="login-error"></div>
+        <button class="auth-btn primary" onclick="AccountManager.login()">🚀 دخول</button>
+        <button class="auth-btn admin" onclick="AccountManager.adminLogin()">👑 دخول كمدير</button>
+        <div class="auth-toggle">ليس لديك حساب؟ <span onclick="AccountManager.showRegister()">سجّل الآن</span></div>
+    </div>
+    <div class="auth-box" id="register-box" style="display:none;">
+        <h2>✨ إنشاء حساب</h2>
+        <div class="auth-field"><label>👤 اسم المستخدم</label><input type="text" id="reg-username" placeholder="3-20 حرف"></div>
+        <div class="auth-field"><label>🔑 كلمة المرور</label><input type="password" id="reg-password" placeholder="6 أحرف على الأقل"></div>
+        <div class="auth-field"><label>🔑 تأكيد كلمة المرور</label><input type="password" id="reg-password2" placeholder="أعد الإدخال"></div>
+        <div class="auth-error" id="reg-error"></div>
+        <button class="auth-btn primary" onclick="AccountManager.register()">✨ إنشاء الحساب</button>
+        <div class="auth-toggle">لديك حساب؟ <span onclick="AccountManager.showLogin()">سجّل دخول</span></div>
+    </div>
+</div>
+
+<!-- ====== واجهة المدينة التجارية ====== -->
+<div id="city-panel">
+    <div class="city-header">
+        <h2>🏪 المدينة التجارية</h2>
+        <div class="city-stats">
+            <span>📦 <span class="num" id="total-products">0</span> منتج</span>
+            <span>🛒 <span class="num" id="cart-count">0</span></span>
+            <span>💰 <span class="num" id="total-value">0</span>$</span>
+            <button class="close-btn" onclick="toggleCity()">✖</button>
+        </div>
+    </div>
+
+    <!-- البحث -->
+    <div class="search-bar">
+        <input type="text" id="search-input" placeholder="🔍 ابحث عن منتج..." oninput="searchProducts(this.value)">
+        <select id="category-filter" onchange="filterByCategory(this.value)">
+            <option value="all">جميع المتاجر</option>
+            <option value="electronics">📱 إلكترونيات</option>
+            <option value="clothing">👕 ملابس</option>
+            <option value="food">🍕 طعام</option>
+            <option value="gaming">🎮 ألعاب</option>
+            <option value="books">📚 كتب</option>
+            <option value="furniture">🪑 أثاث</option>
+            <option value="beauty">💄 جمال</option>
+            <option value="sports">⚽ رياضة</option>
+            <option value="toys">🧸 أطفال</option>
+            <option value="automotive">🚗 سيارات</option>
+        </select>
+    </div>
+
+    <!-- المتاجر -->
+    <div class="stores-scroll" id="stores-scroll"></div>
+
+    <!-- شبكة المربعات -->
+    <div class="tiles-grid-container">
+        <div class="tiles-grid" id="tiles-grid"></div>
+    </div>
+
+    <!-- تفاصيل المنتج -->
+    <div class="product-details" id="product-details">
+        <div class="p-header">
+            <span class="p-icon" id="p-icon">📱</span>
+            <div>
+                <div class="p-name" id="p-name">اسم المنتج</div>
+                <div class="p-store" id="p-store">المتجر</div>
+            </div>
+        </div>
+        <div class="p-info">
+            <span class="price" id="p-price">💰 0$</span>
+            <span class="stock" id="p-stock">📦 0</span>
+            <span id="p-rating">⭐ 0.0</span>
+        </div>
+        <div class="p-desc" id="p-desc">وصف المنتج</div>
+        <div class="p-actions">
+            <button class="btn-add" onclick="addCurrentToCart()">🛒 إضافة إلى السلة</button>
+            <button class="btn-remove" onclick="removeCurrentFromCart()">🗑️ إزالة</button>
+        </div>
+    </div>
+
+    <!-- السلة -->
+    <div class="cart-panel">
+        <div class="cart-header">
+            <h4>🛒 سلتي</h4>
+            <span style="font-size:12px;color:#888;" id="cart-count-label">0 منتج</span>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <div class="cart-empty">🛒 السلة فارغة</div>
+        </div>
+        <div class="cart-total">
+            <span class="total-label">💰 الإجمالي</span>
+            <span class="total-value" id="cart-total">0.00$</span>
+        </div>
+        <div class="cart-actions">
+            <button class="btn-checkout" onclick="checkout()">💳 إتمام الشراء</button>
+            <button class="btn-clear" onclick="clearCart()">🗑️ تفريغ</button>
+        </div>
+    </div>
+</div>
+
+<!-- ====== الفاتورة ====== -->
+<div class="receipt-modal" id="receipt-modal">
+    <div class="receipt-content">
+        <div class="r-header">
+            <h3>🧾 فاتورة الشراء</h3>
+            <div class="r-store" id="r-store">المدينة التجارية</div>
+        </div>
+        <div class="r-items" id="r-items"></div>
+        <div class="r-total">
+            <span class="r-label">💰 الإجمالي</span>
+            <span class="r-value" id="r-total">0.00$</span>
+        </div>
+        <div class="r-footer" id="r-footer">شكراً لتسوقك معنا</div>
+        <button class="r-close" onclick="closeReceipt()">✅ تم</button>
+    </div>
+</div>
+
+<!-- ====== تنبيهات ====== -->
+<div id="toast-container"></div>
+
+<!-- ====== المشهد ثلاثي الأبعاد ====== -->
+<div id="scene-container">
     <canvas id="canvas"></canvas>
-    <div id="hud">
-        <span class="title">🌐 العوالم الكروية</span>
-        <span class="count" id="lm-count">0 معلم</span>
-        <span class="sync-badge" id="sync-badge">🔄 متزامن</span>
-    </div>
-    <div id="side">
-        <button class="sbtn" title="المربعات" onclick="toggleGrid()">🗂️</button>
-        <button class="sbtn" title="قائمة المعالم" onclick="toggleList()">📍</button>
-        <button class="sbtn" title="إضافة معلم" onclick="openAdd()">➕</button>
-        <button class="sbtn" title="إعدادات" onclick="openSettings()">⚙️</button>
-        <button class="sbtn" title="مزامنة الآن" onclick="syncNow()" id="btn-sync">🔄</button>
-        <button class="sbtn" title="حفظ" onclick="saveData()">💾</button>
-        <button class="sbtn" title="فتح مركز التوزيع" onclick="openDistributionHub()" style="background:rgba(74,222,128,.2);border-color:#4ade80;">📡</button>
-    </div>
-    <div id="grid-panel">
-        <div class="gp-header">
-            <span class="gp-title">🗂️ شبكة المربعات (12×12)</span>
-            <button class="gp-close" onclick="toggleGrid()">✖</button>
-        </div>
-        <div class="gp-hint">📎 انقر على مربع فارغ لرفع ملف • 🖱️ انقر على مربع ممتلئ لفتحه</div>
-        <div class="grid-container" id="grid-container"></div>
-    </div>
-    <div id="panel">
-        <h3>📍 المعالم</h3>
-        <div class="filter-bar" id="world-filters">
-            <button class="active" onclick="filterWorld('all')">الكل</button>
-        </div>
-        <div id="lm-list"><div class="empty">لا توجد معالم بعد</div></div>
-    </div>
-    <div id="msg"></div>
-    <div id="toast"></div>
-    <div id="info-card">
-        <div class="iname" id="ic-name">—</div>
-        <div class="idesc" id="ic-desc"></div>
-        <div class="ifile" id="ic-file"></div>
-        <div class="iworld" id="ic-world"></div>
-        <a class="download-link" id="ic-download-link" href="#" target="_blank" style="display:none;">🔗 رابط التحميل المباشر</a>
-        <button class="open-btn" onclick="openSelected()">📂 فتح الملف</button>
-    </div>
-    <div id="hint">🖱️ اسحب لتدوير الكرة<br>👆 انقر على معلم لفتحه<br>🗂️ افتح المربعات لرفع ملفات<br>📡 زر التوزيع يفتح مركز التوزيع</div>
-    <div id="add-modal">
-        <div class="box">
-            <h3>➕ إضافة معلم</h3>
-            <label>اسم المعلم</label>
-            <input type="text" id="add-name" placeholder="مثال: مكتبة المعرفة">
-            <label>الوصف (اختياري)</label>
-            <input type="text" id="add-desc" placeholder="وصف قصير">
-            <label>إيموجي</label>
-            <select id="add-emoji">
-                <option>📍</option><option>🏛️</option><option>📚</option><option>🎬</option>
-                <option>🖼️</option><option>🎵</option><option>🎮</option><option>📄</option>
-                <option>⚔️</option><option>🌲</option><option>🏰</option><option>💎</option>
-                <option>🌙</option><option>⭐</option><option>🔥</option><option>🌊</option>
-            </select>
-            <label>ملف مرتبط</label>
-            <input type="file" id="add-file" accept="image/*,video/*,audio/*,.html,.htm,.pdf,.txt">
-            <div class="file-hint" id="file-hint"></div>
-            <div class="mactions">
-                <button class="btn-ok" onclick="confirmAdd()">✅ إضافة</button>
-                <button class="btn-no" onclick="closeAdd()">✖ إلغاء</button>
-            </div>
-        </div>
-    </div>
-    <div id="upload-modal">
-        <div class="box">
-            <h3>📤 رفع ملف للمربع</h3>
-            <div class="up-cell-info" id="up-cell-info">المربع [0,0]</div>
-            <input type="file" id="grid-file-input" accept=".html,.htm,.txt,.pdf,image/*,video/*,audio/*">
-            <div class="file-drop" onclick="document.getElementById('grid-file-input').click()" id="file-drop-zone">
-                <div class="drop-icon">📁</div>
-                <div class="drop-text">انقر هنا أو اسحب الملف<br>HTML / PDF / صورة / فيديو</div>
-            </div>
-            <div class="file-name" id="up-file-name"></div>
-            <div class="mactions">
-                <button class="btn-ok" onclick="confirmGridUpload()">✅ رفع</button>
-                <button class="btn-no" onclick="closeUploadModal()">✖ إلغاء</button>
-            </div>
-        </div>
-    </div>
-    <div id="settings-modal">
-        <div class="box">
-            <h3>⚙️ إعدادات التوزيع</h3>
-            <label>🤖 توكن البوت</label>
-            <input type="text" id="set-token" placeholder="123456789:ABC...">
-            <div class="hint">انسخ التوكن من @BotFather</div>
-            <label>💬 معرف القناة</label>
-            <input type="text" id="set-chat" placeholder="-100123456789 أو @channel">
-            <div class="hint">أرسل رسالة للقناة ثم استخدم "اكتشاف"</div>
-            <div class="mactions">
-                <button class="btn-ok" onclick="saveSettings()">💾 حفظ</button>
-                <button class="btn-secondary" onclick="testBot()">🧪 اختبار</button>
-                <button class="btn-secondary" onclick="discoverChat()">🔍 اكتشاف</button>
-            </div>
-            <div class="mactions" style="margin-top:8px">
-                <button class="btn-no" onclick="closeSettings()">✖ إغلاق</button>
-            </div>
-            <div class="status" id="set-status"></div>
-        </div>
-    </div>
-    <div id="cell-viewer">
-        <div class="cv-header">
-            <span class="cv-title" id="cv-title">📂 ملف المربع</span>
-            <button class="cv-close" onclick="closeCellViewer()">✖ إغلاق</button>
-        </div>
-        <div class="cv-body">
-            <iframe id="cell-iframe" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
-        </div>
-    </div>
-    <div id="viewer">
-        <div class="vh">
-            <span class="vt" id="viewer-title">📂 ملف</span>
-            <button class="vc" onclick="closeViewer()">✖ إغلاق</button>
-        </div>
-        <div class="vb" id="viewer-body"></div>
-    </div>
-
-    <!-- ===== iframe لمركز التوزيع ===== -->
-    <div id="hub-container" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;display:none;background:rgba(0,0,0,.95);">
-        <div style="position:absolute;top:10px;right:20px;z-index:10000;">
-            <button onclick="closeHub()" style="background:rgba(239,68,68,.9);color:#fff;border:none;padding:8px 20px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">✖ إغلاق</button>
-        </div>
-        <iframe id="hub-iframe" src="distribution_hub.html" style="width:100%;height:100%;border:none;margin-top:50px;"></iframe>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
-    </script>
-    <script>
-        // ============================================================
-        //  الكود الرئيسي
-        // ============================================================
-
-        let scene, camera, renderer, sphereGroup, raycaster, mouse;
-        let landmarks = [];
-        let selectedLandmark = null;
-        let pendingFile = null;
-        let isDragging = false,
-            prevX = 0,
-            prevY = 0;
-        let autoRotate = true;
-        let currentFilter = 'all';
-        const STORAGE_KEY = 'spherical_main_v3';
-        const GRID_KEY = 'spherical_grid_v3';
-        const TELEGRAM_CONFIG_KEY = 'spherical_telegram_config';
-        const LAST_UPDATE_KEY = 'spherical_last_update_id';
-        let telegramConfig = { botToken: '', chatId: '' };
-        let lastUpdateId = parseInt(localStorage.getItem(LAST_UPDATE_KEY) || '0');
-        let syncInterval = null;
-        let knownWorlds = new Set();
-        let gridCells = [];
-        let selectedCell = null;
-        let fileLinkCache = {};
-
-        // ============================================================
-        //  فتح وإغلاق مركز التوزيع
-        // ============================================================
-
-        function openDistributionHub() {
-            const container = document.getElementById('hub-container');
-            const iframe = document.getElementById('hub-iframe');
-            // إعادة تحميل iframe
-            iframe.src = iframe.src;
-            container.style.display = 'block';
-            document.body.style.overflow = 'hidden';
-            toast('📡 تم فتح مركز التوزيع', 'info');
-        }
-
-        function closeHub() {
-            document.getElementById('hub-container').style.display = 'none';
-            document.body.style.overflow = '';
-            toast('📡 تم إغلاق مركز التوزيع', 'info');
-            // مزامنة تلقائية بعد الإغلاق
-            setTimeout(() => { if (telegramConfig.botToken && telegramConfig.chatId) fetchTelegramUpdates(); }, 1000);
-        }
-
-        // استقبال رسائل من iframe (مركز التوزيع)
-        window.addEventListener('message', function(e) {
-            console.log('📩 استقبلنا من مركز التوزيع:', e.data);
-
-            // معالجة رسالة SPHERICAL_ADD_FILE
-            if (e.data && typeof e.data === 'object') {
-                if (e.data.type === 'SPHERICAL_ADD_FILE' || e.data.action === 'add_file') {
-                    processAddFile(e.data);
-                    toast('📡 تم استقبال ملف من مركز التوزيع: ' + (e.data.title || 'ملف'), 'ok');
-                    return;
-                }
-            }
-
-            // معالجة الرسائل النصية
-            if (typeof e.data === 'string' && e.data.includes('SPHERICAL|CMD|')) {
-                try {
-                    const json = e.data.split('SPHERICAL|CMD|')[1];
-                    const cmd = JSON.parse(json);
-                    if (cmd.action === 'add_file') {
-                        processAddFile(cmd);
-                        toast('📡 تم استقبال ملف من مركز التوزيع', 'ok');
-                    }
-                } catch (err) {
-                    console.warn('⚠️ فشل parsing:', err);
-                }
-            }
-        });
-
-        // ============================================================
-        //  تهيئة
-        // ============================================================
-
-        function init() {
-            const canvas = document.getElementById('canvas');
-            if (!canvas) {
-                console.error('❌ canvas غير موجود');
-                return;
-            }
-
-            try {
-                initThreeJS();
-            } catch (e) {
-                console.error('❌ فشل Three.js:', e);
-                document.body.innerHTML =
-                    '<h1 style="color:red;text-align:center;margin-top:40px">⚠️ فشل تحميل المكتبة</h1><p style="text-align:center;color:#888">تأكد من اتصال الإنترنت</p>';
-                return;
-            }
-
-            setupControls();
-            loadTelegramConfig();
-            loadData();
-            loadGrid();
-            if (landmarks.length === 0) seedDefaults();
-            renderLandmarks();
-            renderGrid();
-            updateUI();
-            updateWorldFilters();
-            animate();
-            setupDragDrop();
-            showMsg('🌐 انقر على 📡 لفتح مركز التوزيع', 3500);
-            if (telegramConfig.botToken && telegramConfig.chatId) startAutoSync();
-
-            setInterval(function() {
-                if (telegramConfig.botToken && telegramConfig.chatId) {
-                    fetchTelegramUpdates();
-                }
-            }, 15000);
-        }
-
-        // ============================================================
-        //  Three.js
-        // ============================================================
-
-        function initThreeJS() {
-            const canvas = document.getElementById('canvas');
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x050510);
-            camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
-            camera.position.set(0, 1.5, 12);
-            camera.lookAt(0, 0, 0);
-            renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-
-            scene.add(new THREE.AmbientLight(0x4466ff, 0.55));
-            const d1 = new THREE.DirectionalLight(0xfff0dd, 1.2);
-            d1.position.set(8, 15, 6);
-            scene.add(d1);
-            const d2 = new THREE.DirectionalLight(0x6688ff, 0.5);
-            d2.position.set(-8, 4, -8);
-            scene.add(d2);
-
-            sphereGroup = new THREE.Group();
-            scene.add(sphereGroup);
-            const geo = new THREE.SphereGeometry(4, 48, 48);
-            const mat = new THREE.MeshStandardMaterial({ color: 0x1a1a3a, roughness: 0.65, metalness: 0.15 });
-            sphereGroup.add(new THREE.Mesh(geo, mat));
-
-            const wire = new THREE.Mesh(
-                new THREE.SphereGeometry(4.02, 24, 16),
-                new THREE.MeshBasicMaterial({ color: 0x3a3a6a, wireframe: true, transparent: true, opacity: 0.15 })
-            );
-            sphereGroup.add(wire);
-
-            const starGeo = new THREE.BufferGeometry();
-            const starPos = [];
-            for (let i = 0; i < 600; i++) {
-                const r = 30 + Math.random() * 40;
-                const theta = Math.random() * Math.PI * 2;
-                const phi = Math.acos(2 * Math.random() - 1);
-                starPos.push(
-                    r * Math.sin(phi) * Math.cos(theta),
-                    r * Math.sin(phi) * Math.sin(theta),
-                    r * Math.cos(phi)
-                );
-            }
-            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
-            scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.08, transparent: true,
-                opacity: 0.7 })));
-
-            raycaster = new THREE.Raycaster();
-            mouse = new THREE.Vector2();
-        }
-
-        // ============================================================
-        //  بيانات افتراضية
-        // ============================================================
-
-        function seedDefaults() {
-            const defaults = [
-                { name: 'مكتبة المعرفة', desc: 'معلم تعليمي', emoji: '📚', lat: 20, lon: 30 },
-                { name: 'قاعة السينما', desc: 'فيديوهات ومحتوى مرئي', emoji: '🎬', lat: -15, lon: 120 },
-                { name: 'معرض الصور', desc: 'صور ورسومات', emoji: '🖼️', lat: 40, lon: -60 },
-                { name: 'برج الألعاب', desc: 'ملفات HTML تفاعلية', emoji: '🎮', lat: -30, lon: -140 },
-                { name: 'أرشيف المستندات', desc: 'PDF ونصوص', emoji: '📄', lat: 10, lon: 200 }
-            ];
-            defaults.forEach((d, i) => {
-                landmarks.push({
-                    id: 'lm_' + (i + 1),
-                    name: d.name,
-                    desc: d.desc,
-                    emoji: d.emoji,
-                    lat: d.lat,
-                    lon: d.lon,
-                    file: null,
-                    fileName: null,
-                    fileType: null,
-                    dataUrl: null,
-                    fileId: null,
-                    downloadUrl: null,
-                    worldId: 'local',
-                    row: null,
-                    col: null,
-                    source: 'local'
-                });
-            });
-        }
-
-        // ============================================================
-        //  نظام المربعات (Grid)
-        // ============================================================
-
-        function loadGrid() {
-            const raw = localStorage.getItem(GRID_KEY);
-            if (raw) {
-                try { gridCells = JSON.parse(raw); } catch (e) { gridCells = []; }
-            }
-            while (gridCells.length < 144) {
-                gridCells.push({ occupied: false, name: null, type: null, data: null, emoji: null });
-            }
-        }
-
-        function saveGrid() {
-            localStorage.setItem(GRID_KEY, JSON.stringify(gridCells));
-        }
-
-        function renderGrid() {
-            const container = document.getElementById('grid-container');
-            if (!container) return;
-            container.innerHTML = '';
-            for (let row = 0; row < 12; row++) {
-                for (let col = 0; col < 12; col++) {
-                    const idx = row * 12 + col;
-                    const cell = gridCells[idx] || { occupied: false };
-                    const div = document.createElement('div');
-                    div.className = 'grid-cell' + (cell.occupied ? ' occupied' : '');
-                    div.dataset.row = row;
-                    div.dataset.col = col;
-                    div.dataset.index = idx;
-
-                    if (cell.occupied) {
-                        const typeEmoji = getTypeEmoji(cell.type);
-                        div.innerHTML = `
-                            <span class="cell-pos">${row},${col}</span>
-                            <span class="cell-icon">${cell.emoji || typeEmoji}</span>
-                            <span class="cell-name">${cell.name || 'ملف'}</span>
-                            <span class="cell-type">${cell.type || ''}</span>
-                            <div class="cell-actions">
-                                <button onclick="event.stopPropagation();openCellFile(${row},${col})" title="فتح">👁</button>
-                                <button onclick="event.stopPropagation();deleteCellFile(${row},${col})" title="حذف" style="background:rgba(239,68,68,.3);color:#f87171">🗑</button>
-                            </div>
-                        `;
-                        div.onclick = () => openCellFile(row, col);
-                    } else {
-                        div.innerHTML = `
-                            <span class="cell-pos">${row},${col}</span>
-                            <span class="cell-icon" style="opacity:.3;font-size:18px">⬜</span>
-                            <span class="cell-name" style="opacity:.4">فارغ</span>
-                            <div class="cell-upload">📁</div>
-                        `;
-                        div.onclick = () => openUploadModal(row, col);
-                    }
-                    container.appendChild(div);
-                }
-            }
-        }
-
-        function getTypeEmoji(type) {
-            if (!type) return '📄';
-            if (type.includes('html')) return '🌐';
-            if (type.includes('pdf')) return '📄';
-            if (type.includes('image')) return '🖼️';
-            if (type.includes('video')) return '🎬';
-            if (type.includes('audio')) return '🎵';
-            return '📄';
-        }
-
-        function toggleGrid() {
-            const p = document.getElementById('grid-panel');
-            if (p) p.classList.toggle('open');
-        }
-
-        // ============================================================
-        //  رفع ملف للمربع
-        // ============================================================
-
-        function openUploadModal(row, col) {
-            selectedCell = { row, col };
-            const info = document.getElementById('up-cell-info');
-            if (info) info.textContent = 'المربع [' + row + ', ' + col + ']';
-            const fileInput = document.getElementById('grid-file-input');
-            if (fileInput) fileInput.value = '';
-            const fileName = document.getElementById('up-file-name');
-            if (fileName) { fileName.style.display = 'none';
-                fileName.textContent = ''; }
-            pendingFile = null;
-            const modal = document.getElementById('upload-modal');
-            if (modal) modal.style.display = 'flex';
-        }
-
-        function closeUploadModal() {
-            const modal = document.getElementById('upload-modal');
-            if (modal) modal.style.display = 'none';
-            selectedCell = null;
-            pendingFile = null;
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const input = document.getElementById('grid-file-input');
-            if (input) {
-                input.addEventListener('change', function(e) {
-                    const f = e.target.files[0];
-                    if (!f) return;
-                    if (f.size > 5 * 1024 * 1024) {
-                        toast('الملف كبير جداً (الحد 5 ميجا للمربعات)', 'err');
-                        return;
-                    }
-                    pendingFile = f;
-                    const nameEl = document.getElementById('up-file-name');
-                    if (nameEl) {
-                        nameEl.textContent = '✅ ' + f.name + ' (' + (f.size / 1024).toFixed(1) + ' KB)';
-                        nameEl.style.display = 'block';
-                    }
-                });
-            }
-        });
-
-        function confirmGridUpload() {
-            if (!selectedCell || !pendingFile) {
-                toast('اختر ملفاً أولاً', 'err');
-                return;
-            }
-            const reader = new FileReader();
-            reader.onload = function() {
-                const idx = selectedCell.row * 12 + selectedCell.col;
-                const ext = pendingFile.name.split('.').pop().toLowerCase();
-                let type = pendingFile.type;
-                if (!type && ext === 'html') type = 'text/html';
-                gridCells[idx] = {
-                    occupied: true,
-                    name: pendingFile.name,
-                    type: type,
-                    data: reader.result,
-                    emoji: getTypeEmoji(type)
-                };
-                saveGrid();
-                renderGrid();
-                closeUploadModal();
-                toast('✅ تم رفع الملف في المربع [' + selectedCell.row + ',' + selectedCell.col + ']', 'ok');
-                if (type && type.includes('html')) {
-                    setTimeout(() => openCellFile(selectedCell.row, selectedCell.col), 300);
-                }
-            };
-            reader.readAsDataURL(pendingFile);
-        }
-
-        function deleteCellFile(row, col) {
-            if (!confirm('حذف الملف من المربع [' + row + ',' + col + ']؟')) return;
-            const idx = row * 12 + col;
-            gridCells[idx] = { occupied: false, name: null, type: null, data: null, emoji: null };
-            saveGrid();
-            renderGrid();
-            toast('🗑 تم الحذف', 'info');
-        }
-
-        function openCellFile(row, col) {
-            const idx = row * 12 + col;
-            const cell = gridCells[idx];
-            if (!cell || !cell.occupied) return;
-            if (cell.type && cell.type.includes('html')) {
-                const title = document.getElementById('cv-title');
-                if (title) title.textContent = '🌐 ' + (cell.name || 'ملف HTML');
-                const iframe = document.getElementById('cell-iframe');
-                if (iframe) {
-                    iframe.src = cell.data;
-                    document.getElementById('cell-viewer').style.display = 'flex';
-                    toast('🌐 تم فتح الملف في المربع [' + row + ',' + col + ']', 'info');
-                }
-            } else {
-                const a = document.createElement('a');
-                a.href = cell.data;
-                a.download = cell.name;
-                a.target = '_blank';
-                a.click();
-            }
-        }
-
-        function closeCellViewer() {
-            const iframe = document.getElementById('cell-iframe');
-            if (iframe) iframe.src = 'about:blank';
-            document.getElementById('cell-viewer').style.display = 'none';
-        }
-
-        // ============================================================
-        //  سحب وإفلات
-        // ============================================================
-
-        function setupDragDrop() {
-            const dropZone = document.getElementById('file-drop-zone');
-            if (!dropZone) return;
-            dropZone.addEventListener('dragover', e => { e.preventDefault();
-                dropZone.style.borderColor = '#ffd700'; });
-            dropZone.addEventListener('dragleave', () => { dropZone.style.borderColor = ''; });
-            dropZone.addEventListener('drop', e => {
-                e.preventDefault();
-                dropZone.style.borderColor = '';
-                if (e.dataTransfer.files.length > 0) {
-                    const input = document.getElementById('grid-file-input');
-                    if (input) {
-                        input.files = e.dataTransfer.files;
-                        input.dispatchEvent(new Event('change'));
-                    }
-                }
-            });
-        }
-
-        // ============================================================
-        //  معالجة إضافة ملف
-        // ============================================================
-
-        function processAddFile(cmd) {
-            const row = parseInt(cmd.row) || 0;
-            const col = parseInt(cmd.col) || 0;
-            const lat = 90 - (row / 11) * 180;
-            const lon = (col / 11) * 360 - 180;
-
-            // تخزين رابط التحميل
-            const downloadUrl = cmd.downloadUrl || fileLinkCache[cmd.fileId] || null;
-
-            // التحقق من وجود المعلم مسبقاً
-            const existing = landmarks.find(l =>
-                l.worldId === cmd.worldId && l.row === row && l.col === col
-            );
-
-            if (existing) {
-                existing.name = cmd.title || existing.name;
-                existing.fileId = cmd.fileId || existing.fileId;
-                existing.fileName = cmd.fileName || existing.fileName;
-                existing.fileType = cmd.mime_type || existing.fileType;
-                existing.emoji = cmd.emoji || existing.emoji || '📍';
-                existing.desc = 'من مركز التوزيع';
-                existing.downloadUrl = downloadUrl || existing.downloadUrl;
-                toast('🔄 تم تحديث المعلم: ' + existing.name, 'info');
-            } else {
-                const newLm = {
-                    id: 'dist_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-                    name: cmd.title || ('ملف ' + (cmd.fileType || '')),
-                    desc: 'من مركز التوزيع',
-                    emoji: cmd.emoji || '📍',
-                    lat: lat,
-                    lon: lon,
-                    file: null,
-                    fileName: cmd.fileName || null,
-                    fileType: cmd.mime_type || null,
-                    dataUrl: null,
-                    fileId: cmd.fileId || null,
-                    downloadUrl: downloadUrl,
-                    worldId: cmd.worldId || 'main',
-                    row: row,
-                    col: col,
-                    source: 'telegram'
-                };
-                landmarks.push(newLm);
-                toast('📡 تم استقبال ملف جديد: ' + newLm.name, 'ok');
-                console.log('✅ تم إضافة معلم جديد:', newLm);
-            }
-
-            renderLandmarks();
-            updateUI();
-            updateWorldFilters();
-            saveData();
-        }
-
-        // ============================================================
-        //  عرض المعالم على الكرة
-        // ============================================================
-
-        function latLonToVec(lat, lon, radius) {
-            const phi = (90 - lat) * (Math.PI / 180);
-            const theta = (lon + 180) * (Math.PI / 180);
-            return new THREE.Vector3(
-                -radius * Math.sin(phi) * Math.cos(theta),
-                radius * Math.cos(phi),
-                radius * Math.sin(phi) * Math.sin(theta)
-            );
-        }
-
-        function renderLandmarks() {
-            if (!sphereGroup) return;
-            const toRemove = [];
-            sphereGroup.children.forEach(c => {
-                if (c.userData && c.userData.isLandmark) toRemove.push(c);
-            });
-            toRemove.forEach(c => {
-                sphereGroup.remove(c);
-                if (c.geometry) c.geometry.dispose();
-                if (c.material) {
-                    if (Array.isArray(c.material)) c.material.forEach(m => m.dispose());
-                    else c.material.dispose();
-                }
-            });
-
-            function roundRect(ctx, x, y, w, h, r) {
-                ctx.beginPath();
-                ctx.moveTo(x + r, y);
-                ctx.lineTo(x + w - r, y);
-                ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-                ctx.lineTo(x + w, y + h - r);
-                ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-                ctx.lineTo(x + r, y + h);
-                ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-                ctx.lineTo(x, y + r);
-                ctx.quadraticCurveTo(x, y, x + r, y);
-                ctx.closePath();
-            }
-
-            const visible = currentFilter === 'all' ? landmarks : landmarks.filter(l => l.worldId === currentFilter);
-
-            visible.forEach(lm => {
-                const pos = latLonToVec(lm.lat, lm.lon, 4.15);
-                const hasFile = lm.dataUrl || lm.fileId || lm.downloadUrl;
-                const isTelegram = lm.source === 'telegram';
-
-                let color = 0xffaa00,
-                    emissive = 0xaa6600;
-                if (isTelegram) { color = 0x4ade80;
-                    emissive = 0x22c55e; } else if (hasFile) { color = 0xffd700;
-                    emissive = 0xaa8800; }
-
-                const dot = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.12, 12, 12),
-                    new THREE.MeshStandardMaterial({ color, emissive, emissiveIntensity: 0.6, roughness: 0.3 })
-                );
-                dot.position.copy(pos);
-                dot.userData = { isLandmark: true, landmarkId: lm.id };
-                sphereGroup.add(dot);
-
-                const dir = pos.clone().normalize();
-                const pillar = new THREE.Mesh(
-                    new THREE.CylinderGeometry(0.02, 0.02, 0.35, 6),
-                    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5 })
-                );
-                pillar.position.copy(pos.clone().add(dir.clone().multiplyScalar(0.2)));
-                pillar.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), pos.clone().normalize());
-                pillar.userData = { isLandmark: true, landmarkId: lm.id };
-                sphereGroup.add(pillar);
-
-                const canvas = document.createElement('canvas');
-                canvas.width = 320;
-                canvas.height = 72;
-                const ctx = canvas.getContext('2d');
-
-                ctx.fillStyle = 'rgba(0,0,0,0.75)';
-                roundRect(ctx, 0, 10, 320, 52, 14);
-                ctx.fill();
-
-                ctx.font = 'bold 26px Cairo, sans-serif';
-                ctx.fillStyle = isTelegram ? '#4ade80' : '#ffd700';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText((lm.emoji || '📍') + ' ' + lm.name.substring(0, 16), 160, 38);
-
-                if (isTelegram) {
-                    ctx.font = '18px Cairo, sans-serif';
-                    ctx.fillStyle = '#60a5fa';
-                    ctx.fillText('🌐 ' + (lm.worldId || ''), 160, 62);
-                }
-
-                const tex = new THREE.CanvasTexture(canvas);
-                const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true,
-                    depthTest: false }));
-                sprite.scale.set(2, 0.45, 1);
-                sprite.position.copy(pos.clone().add(pos.clone().normalize().multiplyScalar(0.6)));
-                sprite.userData = { isLandmark: true, landmarkId: lm.id };
-                sphereGroup.add(sprite);
-            });
-        }
-
-        // ============================================================
-        //  تحكمات الفأرة واللمس
-        // ============================================================
-
-        function setupControls() {
-            const canvas = document.getElementById('canvas');
-            if (!canvas) return;
-
-            canvas.addEventListener('mousedown', e => {
-                isDragging = true;
-                autoRotate = false;
-                prevX = e.clientX;
-                prevY = e.clientY;
-            });
-            window.addEventListener('mouseup', () => { isDragging = false; });
-            window.addEventListener('mousemove', e => {
-                if (!isDragging) return;
-                sphereGroup.rotation.y += (e.clientX - prevX) * 0.005;
-                sphereGroup.rotation.x += (e.clientY - prevY) * 0.005;
-                sphereGroup.rotation.x = Math.max(-1.2, Math.min(1.2, sphereGroup.rotation.x));
-                prevX = e.clientX;
-                prevY = e.clientY;
-            });
-
-            canvas.addEventListener('touchstart', e => {
-                if (e.touches.length === 1) {
-                    isDragging = true;
-                    autoRotate = false;
-                    prevX = e.touches[0].clientX;
-                    prevY = e.touches[0].clientY;
-                }
-            }, { passive: true });
-            canvas.addEventListener('touchmove', e => {
-                if (!isDragging || e.touches.length !== 1) return;
-                sphereGroup.rotation.y += (e.touches[0].clientX - prevX) * 0.005;
-                sphereGroup.rotation.x += (e.touches[0].clientY - prevY) * 0.005;
-                sphereGroup.rotation.x = Math.max(-1.2, Math.min(1.2, sphereGroup.rotation.x));
-                prevX = e.touches[0].clientX;
-                prevY = e.touches[0].clientY;
-            }, { passive: true });
-            canvas.addEventListener('touchend', () => { isDragging = false; });
-
-            canvas.addEventListener('click', onClick);
-            canvas.addEventListener('touchend', e => {
-                if (e.changedTouches.length === 1) {
-                    const t = e.changedTouches[0];
-                    onClick({ clientX: t.clientX, clientY: t.clientY, isTouch: true });
-                }
-            });
-
-            window.addEventListener('resize', () => {
-                camera.aspect = window.innerWidth / window.innerHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(window.innerWidth, window.innerHeight);
-            });
-        }
-
-        function onClick(e) {
-            if (isDragging && !e.isTouch) return;
-            const rect = renderer.domElement.getBoundingClientRect();
-            mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const hits = raycaster.intersectObjects(sphereGroup.children, true);
-            for (const h of hits) {
-                if (h.object.userData && h.object.userData.landmarkId) {
-                    selectLandmark(h.object.userData.landmarkId);
-                    return;
-                }
-            }
-            selectedLandmark = null;
-            document.getElementById('info-card').style.display = 'none';
-        }
-
-        function selectLandmark(id) {
-            const lm = landmarks.find(l => l.id === id);
-            if (!lm) return;
-            selectedLandmark = lm;
-            document.getElementById('ic-name').textContent = (lm.emoji || '📍') + ' ' + lm.name;
-            document.getElementById('ic-desc').textContent = lm.desc || '';
-            document.getElementById('ic-file').textContent = lm.fileName ? '📎 ' + lm.fileName : (lm.fileId ?
-                '📡 ملف من التوزيع' : '⚠️ لا يوجد ملف مرتبط');
-            document.getElementById('ic-world').textContent = lm.worldId && lm.worldId !== 'local' ? '🌍 ' + lm
-                .worldId + (lm.row != null ? ' [' + lm.row + ',' + lm.col + ']' : '') : '';
-
-            const downloadLink = document.getElementById('ic-download-link');
-            if (lm.downloadUrl) {
-                downloadLink.style.display = 'block';
-                downloadLink.href = lm.downloadUrl;
-                downloadLink.textContent = '🔗 ' + lm.downloadUrl.substring(0, 50) + '...';
-            } else {
-                downloadLink.style.display = 'none';
-            }
-
-            document.getElementById('info-card').style.display = 'block';
-            autoRotate = false;
-        }
-
-        function openSelected() {
-            if (!selectedLandmark) return;
-            openFile(selectedLandmark);
-        }
-
-        // ============================================================
-        //  فتح الملفات
-        // ============================================================
-
-        async function openFile(lm) {
-            const viewer = document.getElementById('viewer');
-            const body = document.getElementById('viewer-body');
-            document.getElementById('viewer-title').textContent = (lm.emoji || '📂') + ' ' + lm.name;
-            body.innerHTML = '<div style="color:#888;text-align:center;padding:40px">⏳ جاري التحميل...</div>';
-            viewer.style.display = 'flex';
-
-            let url = lm.dataUrl || lm.downloadUrl;
-
-            if (!url && lm.fileId && telegramConfig.botToken) {
-                try {
-                    url = await getTelegramFileUrl(lm.fileId);
-                    if (url) {
-                        lm.downloadUrl = url;
-                        saveData();
-                    }
-                } catch (e) {
-                    body.innerHTML = '<div style="text-align:center;padding:40px;color:#f87171">❌ فشل جلب الملف</div>';
-                    return;
-                }
-            }
-
-            body.innerHTML = '';
-            if (!url) {
-                body.innerHTML =
-                    '<div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:12px">📄</div><div style="color:#ffd700">لا يوجد ملف</div></div>';
-                return;
-            }
-
-            const type = lm.fileType || '';
-            if (type.startsWith('image/')) {
-                const img = document.createElement('img');
-                img.src = url;
-                img.style.maxWidth = '90%';
-                img.style.maxHeight = '80vh';
-                img.style.borderRadius = '12px';
-                img.onerror = () => { body.innerHTML =
-                    '<div style="text-align:center;color:#f87171;padding:40px">❌ فشل التحميل</div>'; };
-                body.appendChild(img);
-            } else if (type.startsWith('video/')) {
-                const vid = document.createElement('video');
-                vid.src = url;
-                vid.controls = true;
-                vid.autoplay = true;
-                vid.style.maxWidth = '90%';
-                vid.style.maxHeight = '80vh';
-                body.appendChild(vid);
-            } else if (type.startsWith('audio/')) {
-                const wrap = document.createElement('div');
-                wrap.style.textAlign = 'center';
-                wrap.innerHTML = '<div style="font-size:48px;margin-bottom:16px">🎵</div>';
-                const aud = document.createElement('audio');
-                aud.src = url;
-                aud.controls = true;
-                aud.autoplay = true;
-                aud.style.width = '280px';
-                wrap.appendChild(aud);
-                body.appendChild(wrap);
-            } else if (type.includes('html') || (lm.fileName && /\.html?$/i.test(lm.fileName))) {
-                const iframe = document.createElement('iframe');
-                iframe.src = url;
-                iframe.style.width = '90%';
-                iframe.style.height = '80vh';
-                iframe.style.border = 'none';
-                iframe.style.borderRadius = '12px';
-                iframe.style.background = '#000';
-                body.appendChild(iframe);
-            } else if (type.includes('pdf') || (lm.fileName && /\.pdf$/i.test(lm.fileName))) {
-                const iframe = document.createElement('iframe');
-                iframe.src = url;
-                iframe.style.width = '90%';
-                iframe.style.height = '80vh';
-                body.appendChild(iframe);
-            } else {
-                body.innerHTML =
-                    '<div style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:12px">📄</div><div style="color:#ffd700;margin-bottom:8px">' +
-                    (lm.fileName || 'ملف') + '</div><a href="' + url +
-                    '" download target="_blank" style="color:#00f2ff;font-size:16px;">⬇️ تحميل</a></div>';
-            }
-        }
-
-        function closeViewer() {
-            document.getElementById('viewer').style.display = 'none';
-            const body = document.getElementById('viewer-body');
-            body.querySelectorAll('video,audio').forEach(el => { el.pause();
-                el.src = ''; });
-            body.innerHTML = '';
-        }
-
-        // ============================================================
-        //  تيليجرام - الحصول على رابط التحميل المباشر
-        // ============================================================
-
-        async function getTelegramFileUrl(fileId) {
-            if (!telegramConfig.botToken || !fileId) return null;
-
-            if (fileLinkCache[fileId]) {
-                return fileLinkCache[fileId];
-            }
-
-            try {
-                const res = await fetch('https://api.telegram.org/bot' + telegramConfig.botToken + '/getFile?file_id=' +
-                    fileId);
-                const data = await res.json();
-
-                if (data.ok && data.result && data.result.file_path) {
-                    const downloadUrl = 'https://api.telegram.org/file/bot' + telegramConfig.botToken + '/' + data
-                        .result.file_path;
-                    fileLinkCache[fileId] = downloadUrl;
-                    localStorage.setItem('file_link_cache', JSON.stringify(fileLinkCache));
-                    return downloadUrl;
-                }
-                return null;
-            } catch (e) {
-                console.warn('⚠️ فشل الحصول على رابط الملف:', e);
-                return null;
-            }
-        }
-
-        function loadFileLinkCache() {
-            try {
-                const raw = localStorage.getItem('file_link_cache');
-                if (raw) {
-                    fileLinkCache = JSON.parse(raw);
-                }
-            } catch (e) {}
-        }
-        loadFileLinkCache();
-
-        // ============================================================
-        //  تيليجرام - الإعدادات والمزامنة
-        // ============================================================
-
-        function loadTelegramConfig() {
-            const raw = localStorage.getItem(TELEGRAM_CONFIG_KEY);
-            if (raw) {
-                try {
-                    telegramConfig = JSON.parse(raw);
-                    document.getElementById('set-token').value = telegramConfig.botToken || '';
-                    document.getElementById('set-chat').value = telegramConfig.chatId || '';
-                } catch (e) {}
-            }
-        }
-
-        function saveSettings() {
-            telegramConfig.botToken = document.getElementById('set-token').value.trim();
-            telegramConfig.chatId = document.getElementById('set-chat').value.trim();
-            localStorage.setItem(TELEGRAM_CONFIG_KEY, JSON.stringify(telegramConfig));
-            const st = document.getElementById('set-status');
-            st.textContent = '✅ تم الحفظ';
-            st.className = 'status ok';
-            toast('💾 تم حفظ الإعدادات', 'ok');
-            startAutoSync();
-        }
-
-        function openSettings() {
-            document.getElementById('settings-modal').style.display = 'flex';
-            document.getElementById('set-status').textContent = '';
-        }
-
-        function closeSettings() {
-            document.getElementById('settings-modal').style.display = 'none';
-        }
-
-        async function testBot() {
-            const token = document.getElementById('set-token').value.trim();
-            const st = document.getElementById('set-status');
-            if (!token) { st.textContent = '❌ أدخل التوكن';
-                st.className = 'status err'; return; }
-            st.textContent = '⏳ جاري الاختبار...';
-            st.className = 'status';
-            try {
-                const res = await fetch('https://api.telegram.org/bot' + token + '/getMe');
-                const data = await res.json();
-                if (data.ok) { st.textContent = '✅ البوت: @' + data.result.username;
-                    st.className = 'status ok'; } else { st.textContent = '❌ ' + data.description;
-                    st.className = 'status err'; }
-            } catch (e) { st.textContent = '❌ فشل الاتصال';
-                st.className = 'status err'; }
-        }
-
-        async function discoverChat() {
-            const token = document.getElementById('set-token').value.trim();
-            const st = document.getElementById('set-status');
-            if (!token) { st.textContent = '❌ أدخل التوكن';
-                st.className = 'status err'; return; }
-            st.textContent = '⏳ جاري البحث...';
-            st.className = 'status';
-            try {
-                const res = await fetch('https://api.telegram.org/bot' + token + '/getUpdates?limit=100');
-                const data = await res.json();
-                if (!data.ok) { st.textContent = '❌ ' + data.description;
-                    st.className = 'status err'; return; }
-                const channels = {};
-                data.result.forEach(function(upd) {
-                    const msg = upd.channel_post || upd.message;
-                    if (!msg || !msg.chat) return;
-                    const c = msg.chat;
-                    if (c.type === 'channel' || c.type === 'group' || c.type === 'supergroup')
-                        channels[c.id] = { id: c.id, title: c.title || 'بدون اسم' };
-                });
-                const keys = Object.keys(channels);
-                if (keys.length === 0) { st.textContent = '⚠️ لم يُعثر على قنوات';
-                    st.className = 'status err'; return; }
-                document.getElementById('set-chat').value = channels[keys[0]].id;
-                st.textContent = '✅ تم اكتشاف: ' + channels[keys[0]].title;
-                st.className = 'status ok';
-            } catch (e) { st.textContent = '❌ خطأ: ' + e.message;
-                st.className = 'status err'; }
-        }
-
-        async function syncNow() {
-            if (!telegramConfig.botToken || !telegramConfig.chatId) {
-                toast('⚙️ أكمل إعدادات البوت', 'err');
-                openSettings();
-                return;
-            }
-            document.getElementById('btn-sync').classList.add('active-sync');
-            toast('🔄 جاري المزامنة...', 'info');
-            await fetchTelegramUpdates();
-            document.getElementById('btn-sync').classList.remove('active-sync');
-        }
-
-        function startAutoSync() {
-            if (syncInterval) clearInterval(syncInterval);
-            if (telegramConfig.botToken && telegramConfig.chatId) {
-                document.getElementById('sync-badge').classList.add('active');
-                fetchTelegramUpdates();
-                syncInterval = setInterval(fetchTelegramUpdates, 20000);
-            } else {
-                document.getElementById('sync-badge').classList.remove('active');
-            }
-        }
-
-        async function fetchTelegramUpdates() {
-            if (!telegramConfig.botToken || !telegramConfig.chatId) return;
-            try {
-                const res = await fetch('https://api.telegram.org/bot' + telegramConfig.botToken +
-                    '/getUpdates?offset=' + (lastUpdateId + 1) + '&limit=100');
-                const data = await res.json();
-                if (!data.ok) return;
-                let newCmds = 0,
-                    newWorlds = 0;
-                data.result.forEach(function(upd) {
-                    if (upd.update_id > lastUpdateId) {
-                        lastUpdateId = upd.update_id;
-                        localStorage.setItem(LAST_UPDATE_KEY, lastUpdateId);
-                    }
-                    const msg = upd.channel_post || upd.message;
-                    if (!msg || !msg.text) return;
-                    const text = msg.text;
-                    if (text.includes('SPHERICAL|WORLDS|')) {
-                        try {
-                            const json = text.split('SPHERICAL|WORLDS|')[1];
-                            const payload = JSON.parse(json);
-                            if (payload.worlds) {
-                                payload.worlds.forEach(function(w) {
-                                    const wid = w.worldId || w.id;
-                                    if (wid) { knownWorlds.add(wid);
-                                        newWorlds++; }
-                                });
-                            }
-                        } catch (e) {}
-                    }
-                    if (text.includes('SPHERICAL|CMD|')) {
-                        try {
-                            const json = text.split('SPHERICAL|CMD|')[1];
-                            const cmd = JSON.parse(json);
-                            if (cmd.action === 'add_file' && cmd.worldId) {
-                                processAddFile(cmd);
-                                knownWorlds.add(cmd.worldId);
-                                newCmds++;
-                            }
-                        } catch (e) {}
-                    }
-                });
-                if (newCmds > 0 || newWorlds > 0) {
-                    renderLandmarks();
-                    updateUI();
-                    updateWorldFilters();
-                    toast('📡 تم استقبال ' + newCmds + ' ملف / ' + newWorlds + ' عالم', 'ok');
-                }
-            } catch (e) { console.warn('Sync error', e); }
-        }
-
-        // ============================================================
-        //  إضافة معلم
-        // ============================================================
-
-        function openAdd() {
-            document.getElementById('add-name').value = '';
-            document.getElementById('add-desc').value = '';
-            document.getElementById('add-emoji').value = '📍';
-            document.getElementById('add-file').value = '';
-            document.getElementById('file-hint').style.display = 'none';
-            pendingFile = null;
-            document.getElementById('add-modal').style.display = 'flex';
-        }
-
-        function closeAdd() {
-            document.getElementById('add-modal').style.display = 'none';
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const fileInput = document.getElementById('add-file');
-            if (fileInput) {
-                fileInput.addEventListener('change', function(e) {
-                    const f = e.target.files[0];
-                    if (!f) { pendingFile = null; return; }
-                    if (f.size > 15 * 1024 * 1024) {
-                        toast('الملف كبير جداً (الحد 15 ميجا)', 'err');
-                        e.target.value = '';
-                        return;
-                    }
-                    const reader = new FileReader();
-                    reader.onload = function() {
-                        pendingFile = { name: f.name, type: f.type, dataUrl: reader.result };
-                        const hint = document.getElementById('file-hint');
-                        hint.textContent = '✅ ' + f.name + ' (' + (f.size / 1024).toFixed(0) + ' KB)';
-                        hint.style.display = 'block';
-                    };
-                    reader.readAsDataURL(f);
-                });
-            }
-        });
-
-        function confirmAdd() {
-            const name = document.getElementById('add-name').value.trim();
-            if (!name) { toast('أدخل اسم المعلم', 'err'); return; }
-            const desc = document.getElementById('add-desc').value.trim();
-            const emoji = document.getElementById('add-emoji').value;
-            let lat, lon, tries = 0;
-            do {
-                lat = -60 + Math.random() * 120;
-                lon = Math.random() * 360 - 180;
-                tries++;
-            } while (tries < 30 && landmarks.some(l => Math.abs(l.lat - lat) < 12 && Math.abs(l.lon - lon) < 20));
-            const lm = {
-                id: 'lm_' + Date.now(),
-                name,
-                desc,
-                emoji,
-                lat,
-                lon,
-                file: pendingFile ? pendingFile.name : null,
-                fileName: pendingFile ? pendingFile.name : null,
-                fileType: pendingFile ? pendingFile.type : null,
-                dataUrl: pendingFile ? pendingFile.dataUrl : null,
-                fileId: null,
-                worldId: 'local',
-                row: null,
-                col: null,
-                source: 'local'
-            };
-            landmarks.push(lm);
-            renderLandmarks();
-            updateUI();
-            saveData();
-            closeAdd();
-            toast('✅ تمت إضافة: ' + name, 'ok');
-            selectLandmark(lm.id);
-        }
-
-        function attachFileTo(id) {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*,video/*,audio/*,.html,.htm,.pdf,.txt';
-            input.onchange = function() {
-                const f = input.files[0];
-                if (!f) return;
-                if (f.size > 15 * 1024 * 1024) { toast('الملف كبير (حد 15 ميجا)', 'err'); return; }
-                const reader = new FileReader();
-                reader.onload = function() {
-                    const lm = landmarks.find(l => l.id === id);
-                    if (!lm) return;
-                    lm.fileName = f.name;
-                    lm.fileType = f.type;
-                    lm.dataUrl = reader.result;
-                    lm.source = 'local';
-                    renderLandmarks();
-                    updateUI();
-                    saveData();
-                    toast('📎 تم ربط الملف: ' + f.name, 'ok');
-                    if (selectedLandmark && selectedLandmark.id === id) selectLandmark(id);
-                };
-                reader.readAsDataURL(f);
-            };
-            input.click();
-        }
-
-        function deleteLandmark(id) {
-            if (!confirm('حذف هذا المعلم؟')) return;
-            landmarks = landmarks.filter(l => l.id !== id);
-            if (selectedLandmark && selectedLandmark.id === id) {
-                selectedLandmark = null;
-                document.getElementById('info-card').style.display = 'none';
-            }
-            renderLandmarks();
-            updateUI();
-            saveData();
-            toast('تم الحذف', 'info');
-        }
-
-        // ============================================================
-        //  واجهة المستخدم
-        // ============================================================
-
-        function toggleList() {
-            const p = document.getElementById('panel');
-            p.style.display = p.style.display === 'block' ? 'none' : 'block';
-            if (p.style.display === 'block') updateUI();
-        }
-
-        function updateWorldFilters() {
-            const bar = document.getElementById('world-filters');
-            const worlds = [...new Set(landmarks.map(l => l.worldId || 'local'))];
-            let html =
-                `<button class="${currentFilter === 'all' ? 'active' : ''}" onclick="filterWorld('all')">الكل</button>`;
-            worlds.forEach(w => {
-                const label = w === 'local' ? '📍 محلي' : '🌍 ' + w;
-                html +=
-                    `<button class="${currentFilter === w ? 'active' : ''}" onclick="filterWorld('${w}')">${label}</button>`;
-            });
-            bar.innerHTML = html;
-        }
-
-        function filterWorld(wid) {
-            currentFilter = wid;
-            updateWorldFilters();
-            renderLandmarks();
-            updateUI();
-        }
-
-        function updateUI() {
-            document.getElementById('lm-count').textContent = landmarks.length + ' معلم';
-            const visible = currentFilter === 'all' ? landmarks : landmarks.filter(l => l.worldId === currentFilter);
-            const list = document.getElementById('lm-list');
-            if (visible.length === 0) {
-                list.innerHTML = '<div class="empty">لا توجد معالم بعد</div>';
-                return;
-            }
-            list.innerHTML = visible.map(lm => `
-                <div class="lm-item" onclick="selectLandmark('${lm.id}')">
-                    <div class="lm-name">${lm.emoji || '📍'} ${lm.name}</div>
-                    <div class="lm-meta">${lm.desc || 'بدون وصف'} · ${lm.lat.toFixed(0)}°, ${lm.lon.toFixed(0)}°</div>
-                    ${lm.worldId && lm.worldId !== 'local' ? `<div class="lm-world">🌍 ${lm.worldId}${lm.row != null ? ' ['+lm.row+','+lm.col+']' : ''}</div>` : ''}
-                    <div class="lm-file">
-                        ${lm.fileName ? '📎 ' + lm.fileName : (lm.fileId ? '📡 Telegram' : '⚠️ بدون ملف')}
-                        ${lm.downloadUrl ? ' 🔗 متاح' : ''}
-                        <span style="float:left;display:flex;gap:4px">
-                            <button onclick="event.stopPropagation();attachFileTo('${lm.id}')" style="background:rgba(139,92,246,.2);border:none;color:#c4b5fd;padding:2px 8px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit">📎 ربط</button>
-                            <button onclick="event.stopPropagation();deleteLandmark('${lm.id}')" style="background:rgba(239,68,68,.15);border:none;color:#f87171;padding:2px 8px;border-radius:6px;font-size:10px;cursor:pointer;font-family:inherit">🗑</button>
-                        </span>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        // ============================================================
-        //  حفظ وتحميل
-        // ============================================================
-
-        function saveData() {
-            try {
-                const data = landmarks.map(lm => ({
-                    id: lm.id,
-                    name: lm.name,
-                    desc: lm.desc,
-                    emoji: lm.emoji,
-                    lat: lm.lat,
-                    lon: lm.lon,
-                    fileName: lm.fileName,
-                    fileType: lm.fileType,
-                    dataUrl: lm.dataUrl,
-                    fileId: lm.fileId,
-                    downloadUrl: lm.downloadUrl,
-                    worldId: lm.worldId,
-                    row: lm.row,
-                    col: lm.col,
-                    source: lm.source
-                }));
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-                toast('💾 تم الحفظ', 'ok');
-            } catch (e) {
-                toast('فشل الحفظ — الملفات كبيرة جداً', 'err');
-            }
-        }
-
-        function loadData() {
-            try {
-                const raw = localStorage.getItem(STORAGE_KEY);
-                if (!raw) return;
-                const data = JSON.parse(raw);
-                if (Array.isArray(data) && data.length) {
-                    landmarks = data;
-                    landmarks.forEach(l => {
-                        if (!l.source) l.source = 'local';
-                        if (!l.worldId) l.worldId = 'local';
-                        if (l.fileId && l.downloadUrl) {
-                            fileLinkCache[l.fileId] = l.downloadUrl;
-                        }
-                    });
-                    toast('📂 تم التحميل (' + landmarks.length + ' معلم)', 'ok');
-                }
-            } catch (e) { console.warn('load error', e); }
-        }
-
-        // ============================================================
-        //  رسائل
-        // ============================================================
-
-        function showMsg(text, ms) {
-            const el = document.getElementById('msg');
-            el.textContent = text;
-            el.classList.add('show');
-            setTimeout(() => el.classList.remove('show'), ms || 2000);
-        }
-
-        function toast(text, type) {
-            const el = document.getElementById('toast');
-            el.textContent = text;
-            el.className = 'show ' + (type || '');
-            setTimeout(() => el.classList.remove('show'), 2800);
-        }
-
-        // ============================================================
-        //  حلقة الأنيميشن
-        // ============================================================
-
-        function animate() {
-            requestAnimationFrame(animate);
-            if (autoRotate && sphereGroup) sphereGroup.rotation.y += 0.0015;
-            renderer.render(scene, camera);
-        }
-
-        // ============================================================
-        //  بدء التشغيل
-        // ============================================================
-
-        if (document.readyState === 'complete') {
-            init();
+</div>
+
+<!-- ====== شريط التحكم السفلي ====== -->
+<div id="bottom-bar">
+    <button class="bottom-btn" onclick="toggleCity()">🏪 المدينة التجارية</button>
+    <button class="bottom-btn" onclick="toggleCamera()">🎥 تغيير المنظور</button>
+    <button class="bottom-btn" onclick="resetView()">🔄 إعادة تعيين</button>
+    <button class="bottom-btn" onclick="AccountManager.logout()">🚪 خروج</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   🏪 المدينة التجارية - نظام الكاشير المتقدم v3.0
+   ═══════════════════════════════════════════════════════════════ */
+
+// ====== 1. نظام الحسابات ======
+const AccountManager = {
+    currentUser: null,
+    users: [],
+
+    init() {
+        this.load();
+        if (this.currentUser) {
+            this.onLogin();
         } else {
-            window.addEventListener('load', init);
+            document.getElementById('auth-screen').style.display = 'flex';
         }
-    </script>
+    },
+
+    load() {
+        try {
+            const data = JSON.parse(localStorage.getItem('city_accounts'));
+            if (data) {
+                this.users = data.users || [];
+                this.currentUser = data.currentUser || null;
+            }
+        } catch(e) {}
+    },
+
+    save() {
+        localStorage.setItem('city_accounts', JSON.stringify({
+            users: this.users,
+            currentUser: this.currentUser
+        }));
+    },
+
+    showLogin() {
+        document.getElementById('login-box').style.display = 'block';
+        document.getElementById('register-box').style.display = 'none';
+        document.getElementById('login-error').style.display = 'none';
+    },
+
+    showRegister() {
+        document.getElementById('login-box').style.display = 'none';
+        document.getElementById('register-box').style.display = 'block';
+        document.getElementById('reg-error').style.display = 'none';
+    },
+
+    register() {
+        const username = document.getElementById('reg-username').value.trim();
+        const password = document.getElementById('reg-password').value;
+        const password2 = document.getElementById('reg-password2').value;
+        const err = document.getElementById('reg-error');
+
+        if (!username || username.length < 3) { err.textContent = '⚠️ اسم المستخدم قصير جداً'; err.style.display = 'block'; return; }
+        if (this.users.find(u => u.username === username)) { err.textContent = '⚠️ اسم المستخدم مستخدم'; err.style.display = 'block'; return; }
+        if (password.length < 6) { err.textContent = '⚠️ كلمة المرور قصيرة'; err.style.display = 'block'; return; }
+        if (password !== password2) { err.textContent = '⚠️ كلمتا المرور غير متطابقتين'; err.style.display = 'block'; return; }
+
+        const user = {
+            id: 'user_' + Date.now(),
+            username,
+            password,
+            createdAt: Date.now(),
+            coins: 100,
+            isAdmin: username === 'admin'
+        };
+        this.users.push(user);
+        this.currentUser = user;
+        this.save();
+        this.onLogin();
+        showToast('✨ مرحباً ' + username + '!', 'success');
+    },
+
+    login() {
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+        const err = document.getElementById('login-error');
+
+        const user = this.users.find(u => u.username === username && u.password === password);
+        if (!user) { err.textContent = '❌ بيانات غير صحيحة'; err.style.display = 'block'; return; }
+
+        this.currentUser = user;
+        this.save();
+        this.onLogin();
+        showToast('🎉 مرحباً بعودتك ' + username + '!', 'success');
+    },
+
+    adminLogin() {
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+        const err = document.getElementById('login-error');
+
+        if (username !== 'admin' || password !== '123456') {
+            err.textContent = '❌ بيانات المدير غير صحيحة';
+            err.style.display = 'block';
+            return;
+        }
+
+        let admin = this.users.find(u => u.username === 'admin');
+        if (!admin) {
+            admin = {
+                id: 'user_admin',
+                username: 'admin',
+                password: '123456',
+                createdAt: Date.now(),
+                coins: 99999,
+                isAdmin: true
+            };
+            this.users.push(admin);
+        }
+        admin.isAdmin = true;
+        this.currentUser = admin;
+        this.save();
+        this.onLogin();
+        showToast('👑 مرحباً أيها المدير!', 'success');
+    },
+
+    logout() {
+        this.currentUser = null;
+        this.save();
+        location.reload();
+    },
+
+    onLogin() {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('bottom-bar').style.display = 'flex';
+        showToast('👋 مرحباً ' + this.currentUser.username, 'success');
+        initGame();
+    },
+
+    isAdmin() {
+        return this.currentUser && this.currentUser.isAdmin === true;
+    }
+};
+
+// ====== 2. قاعدة بيانات المتاجر ======
+const STORES = {
+    'electronics': {
+        id: 'electronics',
+        icon: '📱',
+        name: 'العالم الإلكتروني',
+        description: 'أحدث الأجهزة والتقنيات',
+        color: '#1a2a4a',
+        products: [],
+        manager: 'أحمد',
+        workingHours: '9:00 - 22:00',
+        rating: 4.7
+    },
+    'clothing': {
+        id: 'clothing',
+        icon: '👕',
+        name: 'موضة وأناقة',
+        description: 'أجمل الملابس والأزياء',
+        color: '#2a1a3a',
+        products: [],
+        manager: 'سارة',
+        workingHours: '10:00 - 23:00',
+        rating: 4.5
+    },
+    'food': {
+        id: 'food',
+        icon: '🍕',
+        name: 'طعام شهي',
+        description: 'أشهى المأكولات والمشروبات',
+        color: '#2a1a1a',
+        products: [],
+        manager: 'خالد',
+        workingHours: '8:00 - 00:00',
+        rating: 4.8
+    },
+    'gaming': {
+        id: 'gaming',
+        icon: '🎮',
+        name: 'عالم الألعاب',
+        description: 'أحدث أجهزة وألعاب الفيديو',
+        color: '#0a2a2a',
+        products: [],
+        manager: 'ليلى',
+        workingHours: '10:00 - 02:00',
+        rating: 4.9
+    },
+    'books': {
+        id: 'books',
+        icon: '📚',
+        name: 'مكتبة المعرفة',
+        description: 'أفضل الكتب والمؤلفات',
+        color: '#1a2a1a',
+        products: [],
+        manager: 'نور',
+        workingHours: '8:00 - 20:00',
+        rating: 4.6
+    },
+    'furniture': {
+        id: 'furniture',
+        icon: '🪑',
+        name: 'أثاث منزلي',
+        description: 'أثاث عصري وأنيق',
+        color: '#3a2a1a',
+        products: [],
+        manager: 'عمر',
+        workingHours: '9:00 - 21:00',
+        rating: 4.3
+    },
+    'beauty': {
+        id: 'beauty',
+        icon: '💄',
+        name: 'الجمال والعناية',
+        description: 'مستحضرات تجميل وعناية',
+        color: '#2a1a2a',
+        products: [],
+        manager: 'هند',
+        workingHours: '10:00 - 22:00',
+        rating: 4.4
+    },
+    'sports': {
+        id: 'sports',
+        icon: '⚽',
+        name: 'رياضة ولياقة',
+        description: 'معدات رياضية وملابس',
+        color: '#1a2a2a',
+        products: [],
+        manager: 'سامي',
+        workingHours: '6:00 - 23:00',
+        rating: 4.2
+    },
+    'toys': {
+        id: 'toys',
+        icon: '🧸',
+        name: 'عالم الأطفال',
+        description: 'ألعاب وهدايا للأطفال',
+        color: '#2a1a3a',
+        products: [],
+        manager: 'منى',
+        workingHours: '9:00 - 21:00',
+        rating: 4.1
+    },
+    'automotive': {
+        id: 'automotive',
+        icon: '🚗',
+        name: 'قطع السيارات',
+        description: 'إكسسوارات وقطع غيار',
+        color: '#1a1a2a',
+        products: [],
+        manager: 'فيصل',
+        workingHours: '8:00 - 20:00',
+        rating: 4.0
+    }
+};
+
+// ====== 3. السلسلة اللانهائية للمربعات ======
+class InfiniteTileChain {
+    constructor() {
+        this.head = null;
+        this.tail = null;
+        this.size = 0;
+        this.maxSize = 144;
+        this.tileMap = new Map();
+    }
+
+    createNode(data) {
+        return {
+            id: Date.now() + '_' + Math.random().toString(36).substring(2, 8),
+            data: data,
+            next: null,
+            prev: null,
+            row: null,
+            col: null
+        };
+    }
+
+    addTile(data) {
+        if (this.size >= this.maxSize) {
+            return this.replaceOldest(data);
+        }
+
+        const node = this.createNode(data);
+        if (!this.head) {
+            this.head = node;
+            this.tail = node;
+        } else {
+            this.tail.next = node;
+            node.prev = this.tail;
+            this.tail = node;
+        }
+        this.size++;
+        this.assignCoordinates(node);
+        this.tileMap.set(node.id, node);
+        return node;
+    }
+
+    replaceOldest(data) {
+        const oldest = this.head;
+        if (!oldest) return this.addTile(data);
+        
+        const oldRow = oldest.row;
+        const oldCol = oldest.col;
+        this.removeTile(oldest.id);
+        const newNode = this.addTile(data);
+        newNode.row = oldRow;
+        newNode.col = oldCol;
+        return newNode;
+    }
+
+    removeTile(id) {
+        const node = this.tileMap.get(id);
+        if (!node) return null;
+
+        if (node.prev) {
+            node.prev.next = node.next;
+        } else {
+            this.head = node.next;
+        }
+        if (node.next) {
+            node.next.prev = node.prev;
+        } else {
+            this.tail = node.prev;
+        }
+        this.tileMap.delete(id);
+        this.size--;
+        return node;
+    }
+
+    assignCoordinates(node) {
+        const index = this.size - 1;
+        node.row = Math.floor(index / 12);
+        node.col = index % 12;
+    }
+
+    getTileByCoords(row, col) {
+        for (const [id, node] of this.tileMap) {
+            if (node.row === row && node.col === col) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    getAllTiles() {
+        const tiles = [];
+        let current = this.head;
+        while (current) {
+            tiles.push(current);
+            current = current.next;
+        }
+        return tiles;
+    }
+
+    getTilesByStore(storeId) {
+        const results = [];
+        let current = this.head;
+        while (current) {
+            if (current.data.storeId === storeId) {
+                results.push(current);
+            }
+            current = current.next;
+        }
+        return results;
+    }
+
+    getGrid() {
+        const grid = [];
+        for (let r = 0; r < 12; r++) {
+            grid[r] = [];
+            for (let c = 0; c < 12; c++) {
+                const tile = this.getTileByCoords(r, c);
+                grid[r][c] = tile || null;
+            }
+        }
+        return grid;
+    }
+
+    exportChain() {
+        const data = [];
+        let current = this.head;
+        while (current) {
+            data.push({
+                id: current.id,
+                data: current.data,
+                row: current.row,
+                col: current.col
+            });
+            current = current.next;
+        }
+        return data;
+    }
+
+    importChain(data) {
+        this.head = null;
+        this.tail = null;
+        this.size = 0;
+        this.tileMap = new Map();
+        data.forEach(item => {
+            const node = this.createNode(item.data);
+            node.id = item.id;
+            node.row = item.row;
+            node.col = item.col;
+            if (!this.head) {
+                this.head = node;
+                this.tail = node;
+            } else {
+                this.tail.next = node;
+                node.prev = this.tail;
+                this.tail = node;
+            }
+            this.size++;
+            this.tileMap.set(node.id, node);
+        });
+    }
+}
+
+// ====== 4. إدارة المتاجر ======
+class StoreManager {
+    constructor() {
+        this.stores = STORES;
+        this.tileChain = new InfiniteTileChain();
+        this.cart = [];
+        this.transactions = [];
+        this.currentStore = null;
+        this.selectedTile = null;
+        this.loadFromStorage();
+        this.initProducts();
+    }
+
+    initProducts() {
+        // إلكترونيات
+        this.addProduct('electronics', {
+            id: 'prod_e001',
+            name: 'هاتف ذكي',
+            price: 599,
+            icon: '📱',
+            description: 'شاشة 6.5 بوصة، كاميرا 108MP، بطارية 5000mAh',
+            stock: 15,
+            rating: 4.5,
+            discount: 0
+        });
+        this.addProduct('electronics', {
+            id: 'prod_e002',
+            name: 'لابتوب',
+            price: 899,
+            icon: '💻',
+            description: '16GB RAM، 512GB SSD، شاشة 15.6 بوصة',
+            stock: 8,
+            rating: 4.8,
+            discount: 5
+        });
+        this.addProduct('electronics', {
+            id: 'prod_e003',
+            name: 'سماعة لاسلكية',
+            price: 49,
+            icon: '🎧',
+            description: 'بلوتوث 5.0، عزل ضوضاء، بطارية 20 ساعة',
+            stock: 25,
+            rating: 4.2,
+            discount: 10
+        });
+        this.addProduct('electronics', {
+            id: 'prod_e004',
+            name: 'ساعة ذكية',
+            price: 199,
+            icon: '⌚',
+            description: 'مراقبة الصحة، GPS، شاشة AMOLED',
+            stock: 12,
+            rating: 4.6,
+            discount: 0
+        });
+
+        // ملابس
+        this.addProduct('clothing', {
+            id: 'prod_c001',
+            name: 'تي شيرت',
+            price: 25,
+            icon: '👕',
+            description: 'قطن 100%، مقاسات S-XXL، ألوان متعددة',
+            stock: 40,
+            rating: 4.0,
+            discount: 0
+        });
+        this.addProduct('clothing', {
+            id: 'prod_c002',
+            name: 'فستان',
+            price: 45,
+            icon: '👗',
+            description: 'تصميم عصري، مقاسات XS-L، ألوان فاخرة',
+            stock: 12,
+            rating: 4.6,
+            discount: 15
+        });
+        this.addProduct('clothing', {
+            id: 'prod_c003',
+            name: 'حذاء رياضي',
+            price: 75,
+            icon: '👟',
+            description: 'مريح للجري، نعل مطاطي، مقاسات 36-44',
+            stock: 18,
+            rating: 4.3,
+            discount: 0
+        });
+        this.addProduct('clothing', {
+            id: 'prod_c004',
+            name: 'جاكيت',
+            price: 120,
+            icon: '🧥',
+            description: 'مقاوم للماء، بطانة دافئة، مقاسات S-XXL',
+            stock: 10,
+            rating: 4.4,
+            discount: 20
+        });
+
+        // طعام
+        this.addProduct('food', {
+            id: 'prod_f001',
+            name: 'بيتزا',
+            price: 12,
+            icon: '🍕',
+            description: 'مارغيريتا، حجم عائلي، جبنة موزاريلا',
+            stock: 30,
+            rating: 4.3,
+            discount: 0
+        });
+        this.addProduct('food', {
+            id: 'prod_f002',
+            name: 'برجر',
+            price: 8,
+            icon: '🍔',
+            description: 'لحم أنجوس، خضار طازجة، صلصة سرية',
+            stock: 20,
+            rating: 4.7,
+            discount: 5
+        });
+        this.addProduct('food', {
+            id: 'prod_f003',
+            name: 'سوشي',
+            price: 18,
+            icon: '🍣',
+            description: 'سمك طازج، أرز ياباني، 8 قطع',
+            stock: 15,
+            rating: 4.8,
+            discount: 0
+        });
+        this.addProduct('food', {
+            id: 'prod_f004',
+            name: 'آيس كريم',
+            price: 3,
+            icon: '🍦',
+            description: 'فانيليا، شوكولاتة، فراولة',
+            stock: 50,
+            rating: 4.2,
+            discount: 0
+        });
+
+        // ألعاب
+        this.addProduct('gaming', {
+            id: 'prod_g001',
+            name: 'بلاي ستيشن 5',
+            price: 499,
+            icon: '🎮',
+            description: 'أحدث جيل، 825GB SSD، تحكم DualSense',
+            stock: 5,
+            rating: 4.9,
+            discount: 0
+        });
+        this.addProduct('gaming', {
+            id: 'prod_g002',
+            name: 'جهاز ألعاب محمول',
+            price: 199,
+            icon: '🕹️',
+            description: 'شاشة OLED، بطارية 8 ساعات، ألعاب مدمجة',
+            stock: 10,
+            rating: 4.4,
+            discount: 8
+        });
+        this.addProduct('gaming', {
+            id: 'prod_g003',
+            name: 'لعبة استراتيجية',
+            price: 29,
+            icon: '🎯',
+            description: 'لعبة لوحية لعائلة، عمر 8+',
+            stock: 22,
+            rating: 4.1,
+            discount: 0
+        });
+        this.addProduct('gaming', {
+            id: 'prod_g004',
+            name: 'سماعة ألعاب',
+            price: 89,
+            icon: '🎧',
+            description: 'صوت محيطي، ميكروفون، RGB إضاءة',
+            stock: 16,
+            rating: 4.5,
+            discount: 10
+        });
+
+        // كتب
+        this.addProduct('books', {
+            id: 'prod_b001',
+            name: 'رواية مغامرات',
+            price: 15,
+            icon: '📚',
+            description: 'أفضل روايات المغامرات، 350 صفحة',
+            stock: 35,
+            rating: 4.5,
+            discount: 10
+        });
+        this.addProduct('books', {
+            id: 'prod_b002',
+            name: 'كتاب طبخ',
+            price: 20,
+            icon: '📖',
+            description: '100 وصفة عالمية، صور ملونة',
+            stock: 18,
+            rating: 4.3,
+            discount: 0
+        });
+        this.addProduct('books', {
+            id: 'prod_b003',
+            name: 'موسوعة علمية',
+            price: 45,
+            icon: '📕',
+            description: 'علوم الفضاء، التاريخ، والطبيعة',
+            stock: 8,
+            rating: 4.7,
+            discount: 5
+        });
+
+        // أثاث
+        this.addProduct('furniture', {
+            id: 'prod_fu001',
+            name: 'كرسي مكتب',
+            price: 89,
+            icon: '🪑',
+            description: 'مريح، قابل للتعديل، شبكي',
+            stock: 12,
+            rating: 4.2,
+            discount: 0
+        });
+        this.addProduct('furniture', {
+            id: 'prod_fu002',
+            name: 'طاولة طعام',
+            price: 199,
+            icon: '🍽️',
+            description: 'زجاجية، 6 مقاعد، تصميم عصري',
+            stock: 6,
+            rating: 4.4,
+            discount: 12
+        });
+        this.addProduct('furniture', {
+            id: 'prod_fu003',
+            name: 'خزانة',
+            price: 249,
+            icon: '🗄️',
+            description: '4 أدراج، خشب متين، ألوان متعددة',
+            stock: 4,
+            rating: 4.1,
+            discount: 8
+        });
+
+        // جمال
+        this.addProduct('beauty', {
+            id: 'prod_be001',
+            name: 'مجموعة مكياج',
+            price: 59,
+            icon: '💄',
+            description: '12 لون، فرش، مرآة مضيئة',
+            stock: 20,
+            rating: 4.3,
+            discount: 0
+        });
+        this.addProduct('beauty', {
+            id: 'prod_be002',
+            name: 'عطر فاخر',
+            price: 89,
+            icon: '🧴',
+            description: 'رائحة خشبية وزهرية، 100ml',
+            stock: 15,
+            rating: 4.6,
+            discount: 15
+        });
+
+        // رياضة
+        this.addProduct('sports', {
+            id: 'prod_s001',
+            name: 'كرة قدم',
+            price: 29,
+            icon: '⚽',
+            description: 'قياس 5، جلد صناعي، مقاوم للماء',
+            stock: 25,
+            rating: 4.0,
+            discount: 0
+        });
+        this.addProduct('sports', {
+            id: 'prod_s002',
+            name: 'حقيبة رياضية',
+            price: 39,
+            icon: '🎒',
+            description: 'سعة 30L، جيوب متعددة، مقاوم للماء',
+            stock: 18,
+            rating: 4.2,
+            discount: 5
+        });
+
+        // أطفال
+        this.addProduct('toys', {
+            id: 'prod_t001',
+            name: 'دمية محشوة',
+            price: 19,
+            icon: '🧸',
+            description: 'ناعمة، آمنة، حجم 40 سم',
+            stock: 30,
+            rating: 4.1,
+            discount: 0
+        });
+        this.addProduct('toys', {
+            id: 'prod_t002',
+            name: 'مجموعة ليغو',
+            price: 49,
+            icon: '🧱',
+            description: '500 قطعة، بناء مدينة',
+            stock: 12,
+            rating: 4.5,
+            discount: 10
+        });
+
+        // سيارات
+        this.addProduct('automotive', {
+            id: 'prod_a001',
+            name: 'إطار سيارة',
+            price: 89,
+            icon: '🚗',
+            description: 'مقاس 16، مقاوم للحرارة، عمر طويل',
+            stock: 20,
+            rating: 4.0,
+            discount: 0
+        });
+        this.addProduct('automotive', {
+            id: 'prod_a002',
+            name: 'شاحن سيارة',
+            price: 15,
+            icon: '🔌',
+            description: 'شحن سريع، USB-C و USB-A',
+            stock: 35,
+            rating: 4.3,
+            discount: 0
+        });
+
+        this.initializeTiles();
+    }
+
+    addProduct(storeId, product) {
+        if (this.stores[storeId]) {
+            this.stores[storeId].products.push({
+                ...product,
+                storeId: storeId
+            });
+            this.saveToStorage();
+        }
+    }
+
+    initializeTiles() {
+        this.tileChain = new InfiniteTileChain();
+        let productIndex = 0;
+        const storeIds = Object.keys(this.stores);
+        const allProducts = [];
+        storeIds.forEach(id => {
+            this.stores[id].products.forEach(p => {
+                allProducts.push({ ...p, storeId: id });
+            });
+        });
+
+        for (let r = 0; r < 12; r++) {
+            for (let c = 0; c < 12; c++) {
+                if (allProducts.length > 0) {
+                    const product = allProducts[productIndex % allProducts.length];
+                    this.tileChain.addTile({
+                        storeId: product.storeId,
+                        product: { ...product },
+                        position: { row: r, col: c }
+                    });
+                    productIndex++;
+                } else {
+                    const storeId = storeIds[productIndex % storeIds.length];
+                    this.tileChain.addTile({
+                        storeId: storeId,
+                        product: null,
+                        position: { row: r, col: c }
+                    });
+                }
+            }
+        }
+        this.saveToStorage();
+    }
+
+    getTileProduct(row, col) {
+        const tile = this.tileChain.getTileByCoords(row, col);
+        return tile ? tile.data.product : null;
+    }
+
+    getStoreProducts(storeId) {
+        const tiles = this.tileChain.getTilesByStore(storeId);
+        return tiles.filter(t => t.data.product !== null).map(t => t.data.product);
+    }
+
+    addToCart(row, col, quantity = 1) {
+        const product = this.getTileProduct(row, col);
+        if (!product) {
+            return { success: false, error: 'لا يوجد منتج هنا' };
+        }
+        if (product.stock < quantity) {
+            return { success: false, error: 'الكمية غير متوفرة' };
+        }
+
+        const existing = this.cart.find(item => item.id === product.id);
+        if (existing) {
+            existing.quantity += quantity;
+        } else {
+            this.cart.push({
+                ...product,
+                quantity: quantity,
+                tileCoords: { row, col }
+            });
+        }
+
+        this.updateProductStock(product.id, -quantity);
+        this.saveToStorage();
+        return { success: true, product: product, cartTotal: this.getCartTotal() };
+    }
+
+    removeFromCart(productId, quantity = 1) {
+        const index = this.cart.findIndex(item => item.id === productId);
+        if (index === -1) {
+            return { success: false, error: 'المنتج غير موجود في السلة' };
+        }
+
+        const item = this.cart[index];
+        this.updateProductStock(productId, quantity);
+
+        if (item.quantity <= quantity) {
+            this.cart.splice(index, 1);
+        } else {
+            item.quantity -= quantity;
+        }
+
+        this.saveToStorage();
+        return { success: true, cartTotal: this.getCartTotal() };
+    }
+
+    updateProductStock(productId, delta) {
+        for (const storeId in this.stores) {
+            const products = this.stores[storeId].products;
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                product.stock += delta;
+                let current = this.tileChain.head;
+                while (current) {
+                    if (current.data.product && current.data.product.id === productId) {
+                        current.data.product.stock = product.stock;
+                    }
+                    current = current.next;
+                }
+                break;
+            }
+        }
+        this.saveToStorage();
+    }
+
+    getCartTotal() {
+        let total = 0;
+        this.cart.forEach(item => {
+            const price = item.price * (1 - (item.discount || 0) / 100);
+            total += price * item.quantity;
+        });
+        return Math.round(total * 100) / 100;
+    }
+
+    checkout() {
+        if (this.cart.length === 0) {
+            return { success: false, error: 'السلة فارغة' };
+        }
+
+        const transaction = {
+            id: 'TXN_' + Date.now(),
+            items: this.cart.map(item => ({
+                name: item.name,
+                icon: item.icon,
+                quantity: item.quantity,
+                price: item.price,
+                discount: item.discount || 0,
+                total: Math.round(item.price * (1 - (item.discount || 0) / 100) * item.quantity * 100) / 100,
+                store: item.storeId
+            })),
+            total: this.getCartTotal(),
+            timestamp: Date.now(),
+            itemsCount: this.cart.reduce((sum, item) => sum + item.quantity, 0)
+        };
+
+        this.transactions.push(transaction);
+        this.cart = [];
+        this.saveToStorage();
+        return { success: true, transaction: transaction };
+    }
+
+    getStoreStats(storeId) {
+        const store = this.stores[storeId];
+        if (!store) return null;
+        const products = store.products;
+        const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
+        const totalValue = products.reduce((sum, p) => sum + p.price * p.stock, 0);
+        const avgRating = products.reduce((sum, p) => sum + p.rating, 0) / (products.length || 1);
+        return {
+            storeName: store.name,
+            totalProducts: products.length,
+            totalStock: totalStock,
+            totalValue: totalValue,
+            avgRating: avgRating,
+            manager: store.manager,
+            workingHours: store.workingHours
+        };
+    }
+
+    searchProducts(query) {
+        const results = [];
+        const q = query.toLowerCase();
+        for (const storeId in this.stores) {
+            this.stores[storeId].products.forEach(product => {
+                if (product.name.toLowerCase().includes(q) || 
+                    product.description.toLowerCase().includes(q) ||
+                    storeId.includes(q)) {
+                    results.push({ ...product, storeId: storeId });
+                }
+            });
+        }
+        return results;
+    }
+
+    exportData() {
+        return {
+            stores: this.stores,
+            tileChain: this.tileChain.exportChain(),
+            cart: this.cart,
+            transactions: this.transactions,
+            exportedAt: Date.now()
+        };
+    }
+
+    importData(data) {
+        this.stores = data.stores;
+        this.tileChain.importChain(data.tileChain);
+        this.cart = data.cart || [];
+        this.transactions = data.transactions || [];
+        this.saveToStorage();
+    }
+
+    saveToStorage() {
+        try {
+            const data = this.exportData();
+            localStorage.setItem('city_manager_data', JSON.stringify(data));
+        } catch(e) {}
+    }
+
+    loadFromStorage() {
+        try {
+            const raw = localStorage.getItem('city_manager_data');
+            if (raw) {
+                const data = JSON.parse(raw);
+                this.stores = data.stores;
+                this.tileChain.importChain(data.tileChain);
+                this.cart = data.cart || [];
+                this.transactions = data.transactions || [];
+                return true;
+            }
+        } catch(e) {}
+        return false;
+    }
+}
+
+// ====== 5. المشهد ثلاثي الأبعاد ======
+let scene, camera, renderer;
+let tileMeshes = [];
+let tileGroup;
+let playerGroup;
+let isCityOpen = false;
+let cameraMode = 'top';
+let GRID = 12;
+let TILE_SIZE = 2.8;
+let WORLD_SIZE = GRID * TILE_SIZE;
+let HALF = WORLD_SIZE / 2;
+
+function initGame() {
+    const canvas = document.getElementById('canvas');
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050510);
+
+    camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
+    camera.position.set(0, 14, 18);
+    camera.lookAt(0, 0, 0);
+
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+
+    // إضاءة
+    const ambient = new THREE.AmbientLight(0x4466ff, 0.5);
+    scene.add(ambient);
+
+    const dirLight = new THREE.DirectionalLight(0xfff0dd, 1.2);
+    dirLight.position.set(10, 20, 8);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    const dirLight2 = new THREE.DirectionalLight(0x8888ff, 0.5);
+    dirLight2.position.set(-10, 5, -10);
+    scene.add(dirLight2);
+
+    // مجموعة المربعات
+    tileGroup = new THREE.Group();
+    scene.add(tileGroup);
+
+    // مجموعة اللاعب
+    playerGroup = new THREE.Group();
+    scene.add(playerGroup);
+
+    // إنشاء نظام المدينة
+    storeManager = new StoreManager();
+    buildCity();
+
+    // تفاعل المربعات
+    setupTileInteraction();
+
+    // حلقة الرسم
+    function loop() {
+        requestAnimationFrame(loop);
+        updateCamera();
+        renderer.render(scene, camera);
+    }
+    loop();
+
+    showToast('🏪 مرحباً في المدينة التجارية!', 'success');
+}
+
+function buildCity() {
+    clearTiles();
+    
+    // بناء المربعات من قاعدة البيانات
+    const grid = storeManager.tileChain.getGrid();
+    for (let r = 0; r < GRID; r++) {
+        for (let c = 0; c < GRID; c++) {
+            const tile = grid[r][c];
+            const mesh = createTileMesh(r, c, tile);
+            tileGroup.add(mesh);
+            tileMeshes.push(mesh);
+        }
+    }
+
+    // شبكة أرضية
+    const gridHelper = new THREE.GridHelper(WORLD_SIZE, GRID, 0x8b5cf6, 0x2a2a4a);
+    gridHelper.position.y = 0.02;
+    gridHelper.material.transparent = true;
+    gridHelper.material.opacity = 0.1;
+    tileGroup.add(gridHelper);
+}
+
+function createTileMesh(row, col, tile) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+
+    const product = tile ? tile.data.product : null;
+    const storeId = tile ? tile.data.storeId : null;
+    const store = storeId ? storeManager.stores[storeId] : null;
+
+    // خلفية
+    const colors = ['#1a1a2e', '#16213e', '#0f3460', '#1e293b', '#2d1b3d'];
+    ctx.fillStyle = product ? colors[(row + col) % colors.length] : '#0a0a1a';
+    ctx.fillRect(0, 0, 256, 256);
+
+    // إطار
+    ctx.strokeStyle = product ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.02)';
+    ctx.lineWidth = product ? 3 : 1;
+    ctx.strokeRect(4, 4, 248, 248);
+
+    // أيقونة المنتج أو المتجر
+    const icon = product ? product.icon : (store ? store.icon : '⬜');
+    ctx.font = '70px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = product ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.05)';
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = product ? '#fff' : 'rgba(255,255,255,0.15)';
+    ctx.fillText(icon, 128, 110);
+    ctx.shadowBlur = 0;
+
+    // اسم المنتج
+    if (product) {
+        ctx.font = 'bold 16px Cairo, Arial';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(product.name.substring(0, 14), 128, 175);
+        
+        // السعر
+        const price = product.discount > 0 ? 
+            product.price * (1 - product.discount/100) : product.price;
+        ctx.font = 'bold 18px Cairo, Arial';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(price + '$', 128, 215);
+        
+        // المخزون
+        ctx.font = '12px Cairo, Arial';
+        ctx.fillStyle = product.stock > 5 ? '#4ade80' : '#f87171';
+        ctx.fillText('📦 ' + product.stock, 128, 245);
+        
+        // خصم
+        if (product.discount > 0) {
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 12px Cairo, Arial';
+            ctx.fillText('-' + product.discount + '%', 215, 25);
+        }
+    } else if (store) {
+        ctx.font = '14px Cairo, Arial';
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillText(store.name.substring(0, 12), 128, 175);
+        ctx.font = '10px Cairo, Arial';
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillText('فارغ', 128, 215);
+    }
+
+    // إحداثيات
+    ctx.font = '10px Cairo, Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillText(row + ',' + col, 20, 235);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.magFilter = THREE.LinearFilter;
+
+    const geo = new THREE.PlaneGeometry(TILE_SIZE * 0.95, TILE_SIZE * 0.95);
+    const mat = new THREE.MeshStandardMaterial({
+        map: tex,
+        side: THREE.DoubleSide,
+        roughness: 0.3,
+        metalness: 0.1
+    });
+
+    const mesh = new THREE.Mesh(geo, mat);
+    const posX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
+    const posZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
+    mesh.position.set(posX, 0, posZ);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.userData = { row, col, tile };
+
+    return mesh;
+}
+
+function clearTiles() {
+    tileMeshes.forEach(m => {
+        if (m.parent) m.parent.remove(m);
+        if (m.material?.map) m.material.map.dispose();
+        if (m.material) m.material.dispose();
+        if (m.geometry) m.geometry.dispose();
+    });
+    tileMeshes = [];
+    while (tileGroup.children.length) {
+        const child = tileGroup.children[0];
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+        tileGroup.remove(child);
+    }
+}
+
+function updateTile(row, col) {
+    const tile = storeManager.tileChain.getTileByCoords(row, col);
+    const mesh = tileMeshes.find(m => m.userData.row === row && m.userData.col === col);
+    if (!mesh) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+
+    const product = tile ? tile.data.product : null;
+    const storeId = tile ? tile.data.storeId : null;
+    const store = storeId ? storeManager.stores[storeId] : null;
+
+    const colors = ['#1a1a2e', '#16213e', '#0f3460', '#1e293b', '#2d1b3d'];
+    ctx.fillStyle = product ? colors[(row + col) % colors.length] : '#0a0a1a';
+    ctx.fillRect(0, 0, 256, 256);
+
+    ctx.strokeStyle = product ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.02)';
+    ctx.lineWidth = product ? 3 : 1;
+    ctx.strokeRect(4, 4, 248, 248);
+
+    const icon = product ? product.icon : (store ? store.icon : '⬜');
+    ctx.font = '70px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = product ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.05)';
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = product ? '#fff' : 'rgba(255,255,255,0.15)';
+    ctx.fillText(icon, 128, 110);
+    ctx.shadowBlur = 0;
+
+    if (product) {
+        ctx.font = 'bold 16px Cairo, Arial';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(product.name.substring(0, 14), 128, 175);
+        const price = product.discount > 0 ? product.price * (1 - product.discount/100) : product.price;
+        ctx.font = 'bold 18px Cairo, Arial';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(price + '$', 128, 215);
+        ctx.font = '12px Cairo, Arial';
+        ctx.fillStyle = product.stock > 5 ? '#4ade80' : '#f87171';
+        ctx.fillText('📦 ' + product.stock, 128, 245);
+        if (product.discount > 0) {
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 12px Cairo, Arial';
+            ctx.fillText('-' + product.discount + '%', 215, 25);
+        }
+    } else if (store) {
+        ctx.font = '14px Cairo, Arial';
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillText(store.name.substring(0, 12), 128, 175);
+    }
+
+    ctx.font = '10px Cairo, Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillText(row + ',' + col, 20, 235);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    mesh.material.map = tex;
+    mesh.material.needsUpdate = true;
+    mesh.userData.tile = tile;
+}
+
+function setupTileInteraction() {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    renderer.domElement.addEventListener('click', function(event) {
+        if (document.getElementById('city-panel').style.display === 'block') return;
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(tileMeshes);
+
+        if (intersects.length > 0) {
+            const mesh = intersects[0].object;
+            const { row, col } = mesh.userData;
+            const tile = storeManager.tileChain.getTileByCoords(row, col);
+            
+            if (tile && tile.data.product) {
+                selectProduct(tile);
+                toggleCity();
+            } else {
+                showToast('⚠️ هذا المربع فارغ', 'warn');
+            }
+        }
+    });
+}
+
+function updateCamera() {
+    if (cameraMode === 'top') {
+        camera.position.lerp(new THREE.Vector3(0, 14, 18), 0.05);
+        camera.lookAt(0, 0, 0);
+    } else if (cameraMode === 'angle') {
+        camera.position.lerp(new THREE.Vector3(12, 10, 12), 0.05);
+        camera.lookAt(0, 0, 0);
+    } else {
+        camera.position.lerp(new THREE.Vector3(0, 4, 12), 0.05);
+        camera.lookAt(0, -1, 0);
+    }
+}
+
+function toggleCamera() {
+    const modes = ['top', 'angle', 'close'];
+    const currentIndex = modes.indexOf(cameraMode);
+    cameraMode = modes[(currentIndex + 1) % modes.length];
+    showToast('🎥 المنظور: ' + cameraMode, 'info');
+}
+
+function resetView() {
+    cameraMode = 'top';
+    camera.position.set(0, 14, 18);
+    camera.lookAt(0, 0, 0);
+    showToast('🔄 تم إعادة تعيين المنظور', 'info');
+}
+
+// ====== 6. واجهة المستخدم ======
+let storeManager = null;
+let selectedTile = null;
+
+function toggleCity() {
+    const panel = document.getElementById('city-panel');
+    if (panel.style.display === 'block') {
+        panel.style.display = 'none';
+        panel.classList.remove('show');
+        isCityOpen = false;
+    } else {
+        panel.style.display = 'block';
+        setTimeout(() => panel.classList.add('show'), 50);
+        isCityOpen = true;
+        renderStores();
+        if (storeManager.currentStore) {
+            renderTiles(storeManager.currentStore);
+        } else {
+            const firstStore = Object.keys(storeManager.stores)[0];
+            storeManager.currentStore = firstStore;
+            renderTiles(firstStore);
+        }
+        updateStats();
+        updateCartDisplay();
+    }
+}
+
+function renderStores() {
+    const scroll = document.getElementById('stores-scroll');
+    scroll.innerHTML = '';
+    
+    Object.values(storeManager.stores).forEach(store => {
+        const card = document.createElement('div');
+        card.className = 'store-card';
+        if (storeManager.currentStore === store.id) card.classList.add('active');
+        card.style.borderColor = store.color;
+        const productCount = store.products.length;
+        card.innerHTML = `
+            <span class="icon">${store.icon}</span>
+            <div class="name">${store.name}</div>
+            <div class="count">📦 ${productCount}</div>
+        `;
+        card.onclick = () => {
+            storeManager.currentStore = store.id;
+            renderStores();
+            renderTiles(store.id);
+            updateStoreStats(store.id);
+        };
+        scroll.appendChild(card);
+    });
+}
+
+function renderTiles(storeId) {
+    const grid = document.getElementById('tiles-grid');
+    grid.innerHTML = '';
+    
+    const tiles = storeManager.tileChain.getTilesByStore(storeId);
+    const displayTiles = tiles.length > 0 ? tiles : 
+        storeManager.tileChain.getAllTiles().slice(0, 24);
+    
+    displayTiles.forEach(tile => {
+        const product = tile.data.product;
+        const cell = document.createElement('div');
+        cell.className = 'tile-cell';
+        
+        if (product) {
+            cell.classList.add('has-product');
+            const inCart = storeManager.cart.some(item => item.id === product.id);
+            if (inCart) cell.classList.add('in-cart');
+            if (selectedTile && selectedTile.id === tile.id) cell.classList.add('selected');
+            
+            const price = product.discount > 0 ? 
+                product.price * (1 - product.discount/100) : product.price;
+            
+            cell.innerHTML = `
+                <span class="coords">${tile.row},${tile.col}</span>
+                <span class="product-icon">${product.icon}</span>
+                <span class="product-name">${product.name.substring(0, 12)}</span>
+                <span class="product-price">💰 ${price}$</span>
+                <span class="product-stock ${product.stock <= 3 ? 'low' : ''}">📦 ${product.stock}</span>
+                ${product.discount > 0 ? `<span class="badge discount">-${product.discount}%</span>` : ''}
+                ${inCart ? `<span class="badge cart">🛒</span>` : ''}
+            `;
+            cell.onclick = () => selectProduct(tile);
+        } else {
+            cell.classList.add('empty');
+            const store = storeManager.stores[storeId];
+            cell.innerHTML = `
+                <span class="coords">${tile.row},${tile.col}</span>
+                <span style="font-size:20px;opacity:0.3;">${store ? store.icon : '⬜'}</span>
+                <span style="font-size:7px;color:#444;">فارغ</span>
+            `;
+        }
+        grid.appendChild(cell);
+    });
+}
+
+function selectProduct(tile) {
+    selectedTile = tile;
+    const product = tile.data.product;
+    if (!product) return;
+
+    const details = document.getElementById('product-details');
+    details.classList.add('show');
+    
+    document.getElementById('p-icon').textContent = product.icon;
+    document.getElementById('p-name').textContent = product.name;
+    
+    const store = storeManager.stores[product.storeId];
+    document.getElementById('p-store').textContent = store ? '🏪 ' + store.name : '';
+    
+    const price = product.discount > 0 ? 
+        product.price * (1 - product.discount/100) : product.price;
+    document.getElementById('p-price').textContent = '💰 ' + price + '$' + 
+        (product.discount > 0 ? ` (خصم ${product.discount}%)` : '');
+    
+    document.getElementById('p-stock').textContent = '📦 ' + product.stock;
+    document.getElementById('p-stock').className = 'stock' + (product.stock <= 3 ? ' low' : '');
+    document.getElementById('p-rating').textContent = '⭐ ' + product.rating;
+    document.getElementById('p-desc').textContent = product.description || 'لا يوجد وصف';
+    
+    renderTiles(storeManager.currentStore);
+}
+
+function addCurrentToCart() {
+    if (!selectedTile) {
+        showToast('⚠️ اختر منتجاً أولاً', 'warn');
+        return;
+    }
+    
+    const result = storeManager.addToCart(selectedTile.row, selectedTile.col, 1);
+    if (result.success) {
+        showToast(`✅ تم إضافة ${result.product.name} إلى السلة`, 'success');
+        renderTiles(storeManager.currentStore);
+        updateCartDisplay();
+        updateStats();
+    } else {
+        showToast(`❌ ${result.error}`, 'error');
+    }
+}
+
+function removeCurrentFromCart() {
+    if (!selectedTile) {
+        showToast('⚠️ اختر منتجاً أولاً', 'warn');
+        return;
+    }
+    const product = selectedTile.data.product;
+    if (!product) return;
+    
+    const result = storeManager.removeFromCart(product.id, 1);
+    if (result.success) {
+        showToast('🗑️ تم إزالة المنتج من السلة', 'info');
+        renderTiles(storeManager.currentStore);
+        updateCartDisplay();
+        updateStats();
+    } else {
+        showToast(`❌ ${result.error}`, 'error');
+    }
+}
+
+function updateCartDisplay() {
+    const cart = storeManager.cart;
+    const container = document.getElementById('cart-items');
+    const total = document.getElementById('cart-total');
+    const count = document.getElementById('cart-count-label');
+    
+    container.innerHTML = '';
+    if (cart.length === 0) {
+        container.innerHTML = '<div class="cart-empty">🛒 السلة فارغة</div>';
+    } else {
+        cart.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'cart-item';
+            const price = item.discount > 0 ? 
+                item.price * (1 - item.discount/100) : item.price;
+            div.innerHTML = `
+                <span class="name">${item.icon} ${item.name}</span>
+                <span class="qty">${item.quantity} × ${price}$</span>
+                <span class="total">${Math.round(price * item.quantity * 100) / 100}$</span>
+                <button class="remove-btn" onclick="removeFromCart('${item.id}')">✖</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+    
+    total.textContent = storeManager.getCartTotal() + '$';
+    count.textContent = cart.reduce((sum, i) => sum + i.quantity, 0) + ' منتج';
+    document.getElementById('cart-count').textContent = cart.length;
+}
+
+function removeFromCart(productId) {
+    const result = storeManager.removeFromCart(productId, 1);
+    if (result.success) {
+        showToast('🗑️ تم إزالة المنتج', 'info');
+        renderTiles(storeManager.currentStore);
+        updateCartDisplay();
+        updateStats();
+    }
+}
+
+function clearCart() {
+    if (storeManager.cart.length === 0) {
+        showToast('🛒 السلة فارغة', 'warn');
+        return;
+    }
+    if (!confirm('⚠️ هل تريد تفريغ السلة بالكامل؟')) return;
+    
+    storeManager.cart.forEach(item => {
+        storeManager.updateProductStock(item.id, item.quantity);
+    });
+    storeManager.cart = [];
+    storeManager.saveToStorage();
+    showToast('🗑️ تم تفريغ السلة', 'info');
+    renderTiles(storeManager.currentStore);
+    updateCartDisplay();
+    updateStats();
+}
+
+function checkout() {
+    const result = storeManager.checkout();
+    if (result.success) {
+        showToast(`💳 تمت عملية الشراء! الإجمالي: ${result.transaction.total}$`, 'success');
+        showReceipt(result.transaction);
+        renderTiles(storeManager.currentStore);
+        updateCartDisplay();
+        updateStats();
+    } else {
+        showToast(`❌ ${result.error}`, 'error');
+    }
+}
+
+function showReceipt(transaction) {
+    const modal = document.getElementById('receipt-modal');
+    const items = document.getElementById('r-items');
+    const total = document.getElementById('r-total');
+    const store = document.getElementById('r-store');
+    const footer = document.getElementById('r-footer');
+    
+    const storeName = storeManager.stores[storeManager.currentStore]?.name || 'المدينة التجارية';
+    store.textContent = '🏪 ' + storeName;
+    
+    items.innerHTML = '';
+    transaction.items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'r-item';
+        div.innerHTML = `
+            <span class="r-name">${item.icon} ${item.name} (${item.quantity})</span>
+            <span class="r-price">${item.total}$</span>
+        `;
+        items.appendChild(div);
+    });
+    
+    total.textContent = transaction.total + '$';
+    footer.textContent = `📅 ${new Date(transaction.timestamp).toLocaleString('ar-SA')} · 🧾 ${transaction.id}`;
+    
+    modal.style.display = 'flex';
+}
+
+function closeReceipt() {
+    document.getElementById('receipt-modal').style.display = 'none';
+}
+
+function updateStats() {
+    let totalProducts = 0;
+    let totalValue = 0;
+    for (const id in storeManager.stores) {
+        const store = storeManager.stores[id];
+        totalProducts += store.products.length;
+        store.products.forEach(p => {
+            totalValue += p.price * p.stock;
+        });
+    }
+    document.getElementById('total-products').textContent = totalProducts;
+    document.getElementById('total-value').textContent = totalValue;
+    document.getElementById('cart-count').textContent = storeManager.cart.length;
+}
+
+function updateStoreStats(storeId) {
+    const stats = storeManager.getStoreStats(storeId);
+    if (stats) {
+        // تحديث معلومات المتجر المختار
+    }
+}
+
+function searchProducts(query) {
+    if (!query || query.length < 2) {
+        if (storeManager.currentStore) {
+            renderTiles(storeManager.currentStore);
+        }
+        return;
+    }
+    
+    const results = storeManager.searchProducts(query);
+    const grid = document.getElementById('tiles-grid');
+    grid.innerHTML = '';
+    
+    if (results.length === 0) {
+        grid.innerHTML = '<div style="grid-column:span 12;text-align:center;color:#666;padding:20px;">🔍 لا توجد نتائج</div>';
+        return;
+    }
+    
+    results.forEach(product => {
+        const cell = document.createElement('div');
+        cell.className = 'tile-cell has-product';
+        const price = product.discount > 0 ? 
+            product.price * (1 - product.discount/100) : product.price;
+        cell.innerHTML = `
+            <span class="product-icon">${product.icon}</span>
+            <span class="product-name">${product.name}</span>
+            <span class="product-price">💰 ${price}$</span>
+            <span class="product-stock">📦 ${product.stock}</span>
+            ${product.discount > 0 ? `<span class="badge discount">-${product.discount}%</span>` : ''}
+        `;
+        cell.onclick = () => {
+            const tiles = storeManager.tileChain.getAllTiles();
+            const tile = tiles.find(t => t.data.product && t.data.product.id === product.id);
+            if (tile) {
+                selectProduct(tile);
+                // اختيار المتجر تلقائياً
+                storeManager.currentStore = product.storeId;
+                renderStores();
+                renderTiles(product.storeId);
+            }
+        };
+        grid.appendChild(cell);
+    });
+}
+
+function filterByCategory(category) {
+    if (category === 'all') {
+        if (storeManager.currentStore) {
+            renderTiles(storeManager.currentStore);
+        }
+        return;
+    }
+    
+    storeManager.currentStore = category;
+    renderStores();
+    renderTiles(category);
+    updateStoreStats(category);
+}
+
+// ====== 7. دوال مساعدة ======
+function showToast(msg, type) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + (type || 'info');
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 2500);
+}
+
+// ====== 8. بدء التشغيل ======
+function startGame() {
+    document.getElementById('start-screen').style.display = 'none';
+    AccountManager.init();
+}
+
+// معالجة تغيير الحجم
+window.addEventListener('resize', function() {
+    if (camera) {
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(innerWidth, innerHeight);
+    }
+});
+
+console.log('🏪 المدينة التجارية v3.0');
+console.log('📦 10 متاجر | 144 مربع | سلسلة لانهائية');
+console.log('🛒 نظام كاشير متكامل مع منتجات وأسعار');
+
+</script>
 </body>
+   
 </html>
