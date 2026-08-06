@@ -41,6 +41,46 @@ input:focus,select:focus{outline:none;border-color:#8b5cf6}
 @keyframes fadeInUp{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
 .auto-sync-badge{display:inline-block;background:rgba(74,222,128,0.15);color:#4ade80;padding:2px 8px;border-radius:10px;font-size:10px;margin-right:6px}
 .parent-badge{display:inline-block;background:rgba(0,242,255,0.15);color:#00f2ff;padding:2px 8px;border-radius:10px;font-size:10px;margin-right:6px}
+
+/* ===== قسم اختيار الوجهة السريعة ===== */
+.quick-dest-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+    margin-bottom: 10px;
+}
+.quick-dest-btn {
+    padding: 10px 6px;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.04);
+    color: #aaa;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all .2s;
+    text-align: center;
+    font-family: inherit;
+}
+.quick-dest-btn:hover {
+    background: rgba(139,92,246,0.15);
+    border-color: rgba(139,92,246,0.3);
+    color: #fff;
+}
+.quick-dest-btn.active {
+    background: rgba(139,92,246,0.25);
+    border-color: #8b5cf6;
+    color: #c4b5fd;
+}
+.dest-display {
+    background: rgba(0,0,0,0.3);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #4ade80;
+    text-align: center;
+    border: 1px solid rgba(74,222,128,0.15);
+}
 </style>
 </head>
 <body>
@@ -48,6 +88,7 @@ input:focus,select:focus{outline:none;border-color:#8b5cf6}
 <div class="container">
   <h1>📡 مركز التوزيع <span class="auto-sync-badge">🔄 تلقائي</span><span class="parent-badge" id="parent-badge" style="display:none">🌐 متصل</span></h1>
 
+  <!-- ===== إعدادات البوت ===== -->
   <div class="section">
     <div class="section-title">⚙️ إعدادات البوت</div>
     <label>🤖 توكن البوت</label>
@@ -62,19 +103,35 @@ input:focus,select:focus{outline:none;border-color:#8b5cf6}
     <div id="settings-status" style="color:#888;font-size:11px;margin-top:8px;text-align:center;"></div>
   </div>
 
+  <!-- ===== اختيار الوجهة ===== -->
   <div class="section">
     <div class="section-title">🎯 اختيار الوجهة</div>
+    
+    <!-- ✅ أزرار سريعة للوجهات الشائعة -->
+    <div class="quick-dest-grid" id="quick-dest-grid">
+      <button class="quick-dest-btn" onclick="setQuickDestination('main',3,5,'🗺️')">🗺️ مركز</button>
+      <button class="quick-dest-btn" onclick="setQuickDestination('world_360',2,3,'🌐')">🌐 360</button>
+      <button class="quick-dest-btn" onclick="setQuickDestination('world_gallery',5,7,'🖼️')">🖼️ معرض</button>
+      <button class="quick-dest-btn" onclick="setQuickDestination('world_forest',8,2,'🌲')">🌲 غابة</button>
+    </div>
+
+    <div class="dest-display" id="dest-display">📍 الوجهة: main [3,5]</div>
+
     <label>🌍 العالم الهدف</label>
     <select id="target-world" class="world-select"></select>
+
     <label>🎨 اختيار الأيقونة (للعوالم الجديدة)</label>
     <div class="icon-grid" id="icon-grid"></div>
     <input type="hidden" id="selected-icon-index" value="">
+
     <div class="grid-2">
       <div><label>📍 الصف (0-11)</label><input type="number" id="target-row" value="3" min="0" max="11"></div>
       <div><label>📍 العمود (0-11)</label><input type="number" id="target-col" value="5" min="0" max="11"></div>
     </div>
+
     <label>🏷️ عنوان المربع</label>
     <input type="text" id="file-title" placeholder="مثال: فيديو تعليمي">
+
     <div class="grid-2">
       <div>
         <label>📂 نوع المحتوى</label>
@@ -92,7 +149,9 @@ input:focus,select:focus{outline:none;border-color:#8b5cf6}
         <input type="file" id="file-upload" onchange="handleFile(event)">
       </div>
     </div>
+
     <div class="file-preview" id="file-preview">⏳ لم يتم اختيار ملف</div>
+
     <div class="actions" style="margin-top:12px;">
       <button class="btn btn-success" onclick="publishFile()">📤 إرسال إلى القناة</button>
       <button class="btn btn-secondary" onclick="clearForm()">🗑️ مسح</button>
@@ -100,6 +159,7 @@ input:focus,select:focus{outline:none;border-color:#8b5cf6}
     </div>
   </div>
 
+  <!-- ===== سجل العمليات ===== -->
   <div class="section">
     <div class="section-title">📊 سجل العمليات <span id="sync-status" style="color:#666;font-size:10px;"></span></div>
     <div class="status-box" id="status-box">
@@ -145,7 +205,6 @@ let pendingFileName = null;
 let knownWorlds = [];
 let lastUpdateId = parseInt(localStorage.getItem('hub_last_id') || '0');
 
-// Detect if running inside parent iframe
 const isEmbedded = (window.self !== window.top);
 if (isEmbedded) {
   document.getElementById('parent-badge').style.display = 'inline-block';
@@ -165,6 +224,7 @@ function loadSettings() {
   }
   renderIconGrid();
   initWorldSelect();
+  updateDestDisplay();
 }
 
 // ─── عرض شبكة الأيقونات ───
@@ -184,6 +244,7 @@ function renderIconGrid() {
       addWorldOption(worldId, icon.emoji + ' ' + icon.name);
       document.getElementById('target-world').value = worldId;
       addStatus('🎨 تم اختيار: ' + icon.name + ' [' + worldId + ']', 'info');
+      updateDestDisplay();
     };
     grid.appendChild(btn);
   });
@@ -194,7 +255,7 @@ function initWorldSelect() {
   const select = document.getElementById('target-world');
   select.innerHTML = '';
   const defaults = [
-    {id:'main', name:'🌐 الخريطة الرئيسية'},
+    {id:'main', name:'🗺️ الخريطة الرئيسية'},
     {id:'world_fight', name:'⚔️ ساحة القتال'},
     {id:'world_360', name:'🌐 فيديو 360'},
     {id:'world_gallery', name:'🖼️ معرض الصور'},
@@ -213,6 +274,62 @@ function addWorldOption(id, name) {
   opt.textContent = name;
   select.appendChild(opt);
 }
+
+// ─── تحديث عرض الوجهة ───
+function updateDestDisplay() {
+  const world = document.getElementById('target-world').value || 'main';
+  const row = document.getElementById('target-row').value || '3';
+  const col = document.getElementById('target-col').value || '5';
+  const display = document.getElementById('dest-display');
+  if (display) {
+    display.textContent = '📍 الوجهة: ' + world + ' [' + row + ',' + col + ']';
+  }
+}
+
+// ─── اختيار وجهة سريعة ───
+function setQuickDestination(worldId, row, col, label) {
+  // تحديث القائمة
+  const select = document.getElementById('target-world');
+  const opt = document.createElement('option');
+  opt.value = worldId;
+  opt.textContent = label + ' ' + worldId;
+  // أضف إذا لم يكن موجوداً
+  let exists = false;
+  for (let i = 0; i < select.options.length; i++) {
+    if (select.options[i].value === worldId) { exists = true; break; }
+  }
+  if (!exists) select.appendChild(opt);
+  
+  // اختره
+  select.value = worldId;
+  document.getElementById('target-row').value = row;
+  document.getElementById('target-col').value = col;
+  
+  // حدد الزر
+  document.querySelectorAll('.quick-dest-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelectorAll('.quick-dest-btn').forEach(function(b){
+    if (b.textContent.includes(label)) b.classList.add('active');
+  });
+  
+  updateDestDisplay();
+  addStatus('🎯 تم اختيار: ' + label + ' [' + row + ',' + col + ']', 'gold');
+  showToast('📍 تم اختيار الوجهة: ' + label, 'success');
+}
+
+// ─── أحداث تغيير الإحداثيات ───
+document.addEventListener('DOMContentLoaded', function() {
+  const rowInput = document.getElementById('target-row');
+  const colInput = document.getElementById('target-col');
+  const worldSelect = document.getElementById('target-world');
+  
+  if (rowInput) rowInput.addEventListener('input', updateDestDisplay);
+  if (colInput) colInput.addEventListener('input', updateDestDisplay);
+  if (worldSelect) worldSelect.addEventListener('change', function() {
+    updateDestDisplay();
+    // إزالة التحديد من الأزرار السريعة عند تغيير العالم يدوياً
+    document.querySelectorAll('.quick-dest-btn').forEach(function(b){ b.classList.remove('active'); });
+  });
+});
 
 // ─── حفظ الإعدادات ───
 function saveSettings() {
@@ -338,7 +455,6 @@ async function publishFile() {
   addStatus('⏳ جاري الإرسال...', 'info');
 
   try {
-    // ✅ الخطوة 1: sendDocument
     const formData = new FormData();
     formData.append('chat_id', config.chatId);
     formData.append('document', pendingFile, pendingFileName);
@@ -359,7 +475,6 @@ async function publishFile() {
     showToast('✅ تم رفع الملف! (' + fileSize + ' KB)', 'success');
     addStatus('✅ تم رفع: ' + pendingFileName, 'success');
 
-    // ✅ الخطوة 2: إرسال البيانات الوصفية + file_id
     if (data.result && data.result.document) {
       const doc = data.result.document;
       const fileCmd = {
@@ -391,8 +506,6 @@ async function publishFile() {
       if (msgData.ok) {
         addStatus('📤 تم إرسال file_id للمزامنة', 'success');
         addStatus('📍 الموقع: ' + worldId + ' [' + row + ',' + col + ']', 'gold');
-
-        // ✅ إشعار الملف الرئيسي عبر postMessage
         notifyParent(fileCmd);
       } else {
         addStatus('⚠️ فشل إرسال البيانات: ' + msgData.description, 'warn');
@@ -405,14 +518,13 @@ async function publishFile() {
   }
 }
 
-// ─── إشعار الملف الرئيسي (عبر postMessage) ───
+// ─── إشعار الملف الرئيسي ───
 function notifyParent(cmd) {
   if (!isEmbedded) {
     addStatus('ℹ️ يعمل بشكل مستقل (لا يوجد ملف رئيسي)', 'info');
     return;
   }
   try {
-    // Send structured object
     window.parent.postMessage({
       type: 'SPHERICAL_ADD_FILE',
       worldId: cmd.worldId,
@@ -427,9 +539,7 @@ function notifyParent(cmd) {
       file_size: cmd.file_size
     }, '*');
 
-    // Also send string format for backward compatibility
     window.parent.postMessage('📡 SPHERICAL|CMD|' + JSON.stringify(cmd), '*');
-
     addStatus('🌐 تم إشعار الملف الرئيسي بالملف الجديد', 'success');
   } catch (e) {
     addStatus('⚠️ فشل إشعار الملف الرئيسي', 'warn');
@@ -440,21 +550,15 @@ function notifyParent(cmd) {
 function clearForm() {
   document.getElementById('file-upload').value = '';
   document.getElementById('file-title').value = '';
-  document.getElementById('target-row').value = '3';
-  document.getElementById('target-col').value = '5';
-  document.getElementById('file-type').value = 'video';
-  document.getElementById('file-preview').classList.remove('show');
   document.querySelectorAll('.icon-btn').forEach(function(b){ b.classList.remove('active'); });
   document.getElementById('selected-icon-index').value = '';
+  document.getElementById('file-preview').classList.remove('show');
   pendingFile = null;
   pendingFileName = null;
   showToast('🗑️ تم المسح', 'info');
 }
 
-// ============================================================
-//  🔄 التحديث الدوري - جلب العوالم من القناة
-// ============================================================
-
+// ─── جلب العوالم من القناة ───
 async function fetchWorldsFromChannel() {
   if (!config.botToken || !config.chatId) return;
   document.getElementById('sync-status').textContent = '⏳ جاري المزامنة...';
@@ -481,7 +585,6 @@ async function fetchWorldsFromChannel() {
       if (!msg || !msg.text) return;
       const text = msg.text;
 
-      // ✅ جلب العوالم (SPHERICAL|WORLDS|)
       if (text.includes('SPHERICAL|WORLDS|')) {
         try {
           const json = text.split('SPHERICAL|WORLDS|')[1];
@@ -498,7 +601,6 @@ async function fetchWorldsFromChannel() {
         } catch(e) {}
       }
 
-      // ✅ جلب الملفات (SPHERICAL|CMD|)
       if (text.includes('SPHERICAL|CMD|')) {
         try {
           const json = text.split('SPHERICAL|CMD|')[1];
@@ -506,7 +608,6 @@ async function fetchWorldsFromChannel() {
           if (cmd.action === 'add_file' && cmd.worldId) {
             addWorldOption(cmd.worldId, cmd.worldId);
             newFiles++;
-            // Notify parent about synced files too
             if (isEmbedded) notifyParent(cmd);
           }
         } catch(e) {}
@@ -525,7 +626,7 @@ async function fetchWorldsFromChannel() {
   }
 }
 
-// ✅ تشغيل التحديث الدوري كل 15 ثانية
+// ─── تحديث دوري ───
 setInterval(function() {
   if (config.botToken && config.chatId) {
     fetchWorldsFromChannel();
@@ -542,3 +643,4 @@ console.log('🔄 المزامنة التلقائية: كل 15 ثانية');
 
 </body>
 </html>
+
