@@ -1,1 +1,2657 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🏪 المدينة التجارية - نظام الكاشير المتقدم</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+/* ====== الأنماط العامة ====== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+canvas { display: block; width: 100%; height: 100%; }
+body { 
+    font-family: 'Cairo', sans-serif; 
+    background: #050510; 
+    color: #fff; 
+    overflow: hidden; 
+    -webkit-tap-highlight-color: transparent; 
+    user-select: none; 
+}
 
+/* ====== شاشة البداية ====== */
+#start-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    background: linear-gradient(135deg, #0a0a2a 0%, #000 50%, #0a0a1a 100%);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+}
+.start-logo {
+    font-size: 52px;
+    font-weight: 900;
+    background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: float 3s ease-in-out infinite, glow 2s ease-in-out infinite alternate;
+}
+@keyframes glow {
+    from { filter: drop-shadow(0 0 20px rgba(255,215,0,0.3)); }
+    to { filter: drop-shadow(0 0 40px rgba(255,215,0,0.6)); }
+}
+@keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+.start-subtitle {
+    font-size: 15px;
+    color: #888;
+    text-align: center;
+    max-width: 420px;
+    line-height: 2;
+}
+.start-btn {
+    border: 2px solid #00f2ff;
+    color: #00f2ff;
+    padding: 18px 60px;
+    background: rgba(0,242,255,0.08);
+    border-radius: 60px;
+    font-size: 22px;
+    cursor: pointer;
+    transition: all .3s;
+    font-weight: 700;
+    font-family: inherit;
+}
+.start-btn:hover {
+    transform: scale(1.08);
+    background: #00f2ff;
+    color: #000;
+    box-shadow: 0 0 60px rgba(0,242,255,0.5);
+}
+.version-tag {
+    position: absolute;
+    bottom: 20px;
+    font-size: 12px;
+    color: #555;
+}
+
+/* ====== واجهة المدينة التجارية ====== */
+#city-panel {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.95);
+    z-index: 1500;
+    background: rgba(8,8,20,0.97);
+    border: 2px solid rgba(255,215,0,0.15);
+    border-radius: 24px;
+    padding: 20px;
+    width: 96%;
+    max-width: 1000px;
+    max-height: 92vh;
+    overflow-y: auto;
+    display: none;
+    backdrop-filter: blur(24px);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.8);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+#city-panel.show {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.city-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.city-header h2 {
+    color: #ffd700;
+    font-size: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.city-stats {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #888;
+    flex-wrap: wrap;
+}
+.city-stats span {
+    background: rgba(255,255,255,0.04);
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.04);
+}
+.city-stats .num {
+    color: #ffd700;
+    font-weight: 700;
+}
+.close-btn {
+    background: rgba(239,68,68,0.15);
+    color: #f87171;
+    border: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 18px;
+    transition: all 0.3s;
+    font-family: inherit;
+}
+.close-btn:hover {
+    background: rgba(239,68,68,0.3);
+    transform: scale(1.05);
+}
+
+/* ====== قائمة المتاجر ====== */
+.stores-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding: 8px 4px 16px;
+    margin-bottom: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,215,0,0.2) transparent;
+}
+.stores-scroll::-webkit-scrollbar {
+    height: 4px;
+}
+.stores-scroll::-webkit-scrollbar-thumb {
+    background: rgba(255,215,0,0.2);
+    border-radius: 4px;
+}
+
+.store-card {
+    min-width: 80px;
+    padding: 10px 12px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.03);
+    border: 2px solid rgba(255,255,255,0.06);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+    flex-shrink: 0;
+}
+.store-card:hover {
+    background: rgba(255,255,255,0.06);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+.store-card.active {
+    border-color: #ffd700;
+    background: rgba(255,215,0,0.08);
+    box-shadow: 0 0 30px rgba(255,215,0,0.05);
+}
+.store-card .icon {
+    font-size: 32px;
+    display: block;
+}
+.store-card .name {
+    font-size: 10px;
+    color: #aaa;
+    margin-top: 4px;
+    font-weight: 600;
+}
+.store-card .count {
+    font-size: 8px;
+    color: #666;
+}
+
+/* ====== شبكة المربعات ====== */
+.tiles-grid-container {
+    background: rgba(255,255,255,0.02);
+    border-radius: 16px;
+    padding: 8px;
+    margin-bottom: 12px;
+    border: 1px solid rgba(255,255,255,0.04);
+}
+.tiles-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    gap: 3px;
+}
+.tile-cell {
+    aspect-ratio: 1;
+    background: rgba(255,255,255,0.04);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid rgba(255,255,255,0.04);
+    position: relative;
+    padding: 2px;
+    min-height: 50px;
+}
+.tile-cell:hover {
+    background: rgba(139,92,246,0.15);
+    transform: scale(1.04);
+    z-index: 2;
+    border-color: rgba(139,92,246,0.2);
+}
+.tile-cell.has-product {
+    background: rgba(74,222,128,0.04);
+    border-color: rgba(74,222,128,0.06);
+}
+.tile-cell.has-product:hover {
+    background: rgba(74,222,128,0.12);
+    border-color: rgba(74,222,128,0.2);
+}
+.tile-cell.in-cart {
+    border-color: #ffd700;
+    background: rgba(255,215,0,0.06);
+}
+.tile-cell.selected {
+    border-color: #ffd700;
+    box-shadow: 0 0 20px rgba(255,215,0,0.15);
+}
+.tile-cell .coords {
+    position: absolute;
+    top: 1px;
+    left: 2px;
+    font-size: 5px;
+    color: rgba(255,255,255,0.1);
+}
+.tile-cell .product-icon {
+    font-size: 20px;
+    line-height: 1;
+}
+.tile-cell .product-name {
+    font-size: 7px;
+    color: #ccc;
+    text-align: center;
+    line-height: 1.1;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.tile-cell .product-price {
+    font-size: 8px;
+    color: #ffd700;
+    font-weight: 700;
+}
+.tile-cell .product-stock {
+    font-size: 7px;
+    color: #4ade80;
+}
+.tile-cell .product-stock.low {
+    color: #f87171;
+}
+.tile-cell .badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    font-size: 6px;
+    padding: 1px 4px;
+    border-radius: 8px;
+}
+.tile-cell .badge.discount {
+    background: #ef4444;
+    color: #fff;
+}
+.tile-cell .badge.cart {
+    background: #ffd700;
+    color: #111;
+}
+.tile-cell.empty {
+    opacity: 0.3;
+}
+
+/* ====== تفاصيل المنتج ====== */
+.product-details {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 14px 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: none;
+}
+.product-details.show {
+    display: block;
+}
+.product-details .p-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.product-details .p-icon {
+    font-size: 36px;
+}
+.product-details .p-name {
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+}
+.product-details .p-store {
+    font-size: 10px;
+    color: #888;
+}
+.product-details .p-info {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 6px 0;
+}
+.product-details .p-info span {
+    font-size: 12px;
+    color: #aaa;
+}
+.product-details .p-info .price {
+    color: #ffd700;
+    font-weight: 700;
+}
+.product-details .p-info .stock {
+    color: #4ade80;
+}
+.product-details .p-info .stock.low {
+    color: #f87171;
+}
+.product-details .p-desc {
+    font-size: 12px;
+    color: #888;
+    line-height: 1.6;
+    margin: 6px 0;
+}
+.product-details .p-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+.product-details .p-actions button {
+    padding: 8px 18px;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.product-details .p-actions .btn-add {
+    background: linear-gradient(135deg, #ffd700, #f59e0b);
+    color: #111;
+}
+.product-details .p-actions .btn-add:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(255,215,0,0.3);
+}
+.product-details .p-actions .btn-remove {
+    background: rgba(239,68,68,0.15);
+    color: #f87171;
+    border: 1px solid rgba(239,68,68,0.2);
+}
+.product-details .p-actions .btn-remove:hover {
+    background: rgba(239,68,68,0.25);
+}
+
+/* ====== السلة ====== */
+.cart-panel {
+    background: rgba(255,255,255,0.03);
+    border-radius: 12px;
+    padding: 12px 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    margin-top: 10px;
+}
+.cart-panel .cart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.cart-panel .cart-header h4 {
+    color: #a78bfa;
+    font-size: 14px;
+}
+.cart-panel .cart-items {
+    max-height: 120px;
+    overflow-y: auto;
+}
+.cart-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    font-size: 11px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.cart-item .name {
+    color: #ccc;
+}
+.cart-item .qty {
+    color: #888;
+}
+.cart-item .total {
+    color: #ffd700;
+    font-weight: 700;
+}
+.cart-item .remove-btn {
+    background: rgba(239,68,68,0.15);
+    color: #f87171;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 10px;
+    padding: 2px 6px;
+}
+.cart-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0 4px;
+    font-size: 14px;
+    font-weight: 700;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    margin-top: 4px;
+}
+.cart-total .total-label {
+    color: #888;
+}
+.cart-total .total-value {
+    color: #ffd700;
+}
+.cart-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+.cart-actions button {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 10px;
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.cart-actions .btn-checkout {
+    background: linear-gradient(135deg, #4ade80, #22c55e);
+    color: #111;
+}
+.cart-actions .btn-checkout:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(74,222,128,0.3);
+}
+.cart-actions .btn-clear {
+    background: rgba(239,68,68,0.12);
+    color: #f87171;
+}
+.cart-actions .btn-clear:hover {
+    background: rgba(239,68,68,0.2);
+}
+.cart-empty {
+    color: #666;
+    font-size: 12px;
+    text-align: center;
+    padding: 12px 0;
+}
+
+/* ====== البحث ====== */
+.search-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.search-bar input {
+    flex: 1;
+    padding: 8px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+}
+.search-bar input:focus {
+    outline: none;
+    border-color: rgba(139,92,246,0.3);
+}
+.search-bar input::placeholder {
+    color: #555;
+}
+.search-bar select {
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: #aaa;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+}
+.search-bar select:focus {
+    outline: none;
+    border-color: rgba(139,92,246,0.3);
+}
+.search-bar select option {
+    background: #1a1a2e;
+    color: #fff;
+}
+
+/* ====== الفاتورة ====== */
+.receipt-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    background: rgba(0,0,0,0.85);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(16px);
+}
+.receipt-content {
+    background: rgba(10,10,30,0.97);
+    border: 2px solid rgba(255,215,0,0.15);
+    border-radius: 20px;
+    padding: 28px 32px;
+    max-width: 420px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+.receipt-content .r-header {
+    text-align: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 2px dashed rgba(255,255,255,0.06);
+}
+.receipt-content .r-header h3 {
+    color: #ffd700;
+    font-size: 20px;
+}
+.receipt-content .r-header .r-store {
+    color: #888;
+    font-size: 12px;
+}
+.receipt-content .r-items {
+    margin-bottom: 12px;
+}
+.receipt-content .r-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.receipt-content .r-item .r-name {
+    color: #ccc;
+}
+.receipt-content .r-item .r-price {
+    color: #ffd700;
+}
+.receipt-content .r-total {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 16px;
+    font-weight: 700;
+    border-top: 2px solid rgba(255,215,0,0.1);
+    margin-top: 4px;
+}
+.receipt-content .r-total .r-label {
+    color: #888;
+}
+.receipt-content .r-total .r-value {
+    color: #ffd700;
+}
+.receipt-content .r-footer {
+    text-align: center;
+    color: #666;
+    font-size: 11px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.04);
+}
+.receipt-content .r-close {
+    width: 100%;
+    padding: 10px;
+    margin-top: 12px;
+    border: none;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.06);
+    color: #aaa;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.receipt-content .r-close:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+}
+
+/* ====== تنبيهات ====== */
+#toast-container {
+    position: fixed;
+    bottom: 90px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+    pointer-events: none;
+}
+.toast {
+    background: rgba(8,8,20,0.95);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 16px;
+    font-size: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+    animation: toastIn 0.3s ease;
+    backdrop-filter: blur(16px);
+    font-weight: 600;
+    max-width: 280px;
+    text-align: center;
+}
+.toast.success { border-color: #4ade80; color: #4ade80; }
+.toast.error { border-color: #f87171; color: #f87171; }
+.toast.info { border-color: #60a5fa; color: #60a5fa; }
+.toast.warn { border-color: #fbbf24; color: #fbbf24; }
+@keyframes toastIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.9); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ====== المشهد ثلاثي الأبعاد ====== */
+#scene-container {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+}
+#scene-container canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* ====== شريط التحكم السفلي ====== */
+#bottom-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(16px);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 6px 12px;
+    display: none;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.bottom-btn {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: #aaa;
+    font-size: 12px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+    font-weight: 600;
+}
+.bottom-btn:hover {
+    background: rgba(139,92,246,0.15);
+    color: #fff;
+    border-color: rgba(139,92,246,0.3);
+}
+.bottom-btn .badge {
+    background: #ef4444;
+    color: #fff;
+    font-size: 8px;
+    padding: 1px 5px;
+    border-radius: 8px;
+    margin-right: 4px;
+}
+
+/* ====== شاشة الدخول ====== */
+#auth-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 5000;
+    background: linear-gradient(135deg, #0a0a2a 0%, #000 50%, #0a0a1a 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 20px;
+}
+.auth-box {
+    background: rgba(10,10,30,0.95);
+    border: 1px solid rgba(139,92,246,0.2);
+    border-radius: 20px;
+    padding: 32px;
+    width: 90%;
+    max-width: 380px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.auth-box h2 { color: #ffd700; text-align: center; font-size: 22px; margin-bottom: 20px; }
+.auth-field { margin-bottom: 14px; }
+.auth-field label { color: #888; font-size: 11px; display: block; margin-bottom: 4px; font-weight: 600; }
+.auth-field input {
+    width: 100%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.04);
+    color: #fff;
+    font-size: 14px;
+    font-family: inherit;
+}
+.auth-field input:focus {
+    outline: none;
+    border-color: rgba(139,92,246,0.4);
+}
+.auth-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.3s;
+    margin-top: 4px;
+}
+.auth-btn.primary {
+    background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+    color: #fff;
+}
+.auth-btn.admin {
+    background: linear-gradient(135deg, #ffd700, #f59e0b);
+    color: #111;
+}
+.auth-toggle {
+    text-align: center;
+    color: #666;
+    font-size: 12px;
+    margin-top: 12px;
+}
+.auth-toggle span {
+    color: #8b5cf6;
+    cursor: pointer;
+    font-weight: 600;
+}
+.auth-error {
+    color: #ef4444;
+    font-size: 11px;
+    text-align: center;
+    margin-top: 8px;
+    display: none;
+}
+
+/* ====== استجابة ====== */
+@media (max-width: 768px) {
+    .tiles-grid {
+        grid-template-columns: repeat(8, 1fr);
+    }
+    .store-card {
+        min-width: 60px;
+        padding: 6px 10px;
+    }
+    .store-card .icon { font-size: 24px; }
+    .tile-cell .product-icon { font-size: 16px; }
+    .tile-cell .product-name { font-size: 6px; }
+    .city-header h2 { font-size: 16px; }
+    .city-stats { font-size: 10px; gap: 6px; }
+    .product-details .p-icon { font-size: 28px; }
+    .product-details .p-name { font-size: 14px; }
+}
+@media (max-width: 480px) {
+    .tiles-grid {
+        grid-template-columns: repeat(6, 1fr);
+        gap: 2px;
+    }
+    .tile-cell {
+        min-height: 40px;
+        padding: 1px;
+    }
+    .tile-cell .product-icon { font-size: 14px; }
+    .tile-cell .product-name { font-size: 5px; }
+    .tile-cell .product-price { font-size: 7px; }
+    #city-panel { padding: 12px; }
+    .receipt-content { padding: 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ====== شاشة البداية ====== -->
+<div id="start-screen">
+    <div class="start-logo">🏪 المدينة التجارية</div>
+    <div class="start-subtitle">
+        <span>📦 10 متاجر</span> · <span>🎨 أيقونات</span> · <span>🔄 مربعات لانهائية</span><br>
+        نظام كاشير متقدم في عالم ثلاثي الأبعاد
+    </div>
+    <button class="start-btn" onclick="startGame()">🚀 ابدأ التسوق</button>
+    <div class="version-tag">v3.0 | نظام الكاشير المتقدم</div>
+</div>
+
+<!-- ====== شاشة الدخول ====== -->
+<div id="auth-screen">
+    <div class="start-logo" style="font-size:36px;">🏪 المدينة التجارية</div>
+    <div class="auth-box" id="login-box">
+        <h2>🔐 تسجيل الدخول</h2>
+        <div class="auth-field"><label>👤 اسم المستخدم</label><input type="text" id="login-username" placeholder="admin" value="admin"></div>
+        <div class="auth-field"><label>🔑 كلمة المرور</label><input type="password" id="login-password" placeholder="123456" value="123456"></div>
+        <div class="auth-error" id="login-error"></div>
+        <button class="auth-btn primary" onclick="AccountManager.login()">🚀 دخول</button>
+        <button class="auth-btn admin" onclick="AccountManager.adminLogin()">👑 دخول كمدير</button>
+        <div class="auth-toggle">ليس لديك حساب؟ <span onclick="AccountManager.showRegister()">سجّل الآن</span></div>
+    </div>
+    <div class="auth-box" id="register-box" style="display:none;">
+        <h2>✨ إنشاء حساب</h2>
+        <div class="auth-field"><label>👤 اسم المستخدم</label><input type="text" id="reg-username" placeholder="3-20 حرف"></div>
+        <div class="auth-field"><label>🔑 كلمة المرور</label><input type="password" id="reg-password" placeholder="6 أحرف على الأقل"></div>
+        <div class="auth-field"><label>🔑 تأكيد كلمة المرور</label><input type="password" id="reg-password2" placeholder="أعد الإدخال"></div>
+        <div class="auth-error" id="reg-error"></div>
+        <button class="auth-btn primary" onclick="AccountManager.register()">✨ إنشاء الحساب</button>
+        <div class="auth-toggle">لديك حساب؟ <span onclick="AccountManager.showLogin()">سجّل دخول</span></div>
+    </div>
+</div>
+
+<!-- ====== واجهة المدينة التجارية ====== -->
+<div id="city-panel">
+    <div class="city-header">
+        <h2>🏪 المدينة التجارية</h2>
+        <div class="city-stats">
+            <span>📦 <span class="num" id="total-products">0</span> منتج</span>
+            <span>🛒 <span class="num" id="cart-count">0</span></span>
+            <span>💰 <span class="num" id="total-value">0</span>$</span>
+            <button class="close-btn" onclick="toggleCity()">✖</button>
+        </div>
+    </div>
+
+    <!-- البحث -->
+    <div class="search-bar">
+        <input type="text" id="search-input" placeholder="🔍 ابحث عن منتج..." oninput="searchProducts(this.value)">
+        <select id="category-filter" onchange="filterByCategory(this.value)">
+            <option value="all">جميع المتاجر</option>
+            <option value="electronics">📱 إلكترونيات</option>
+            <option value="clothing">👕 ملابس</option>
+            <option value="food">🍕 طعام</option>
+            <option value="gaming">🎮 ألعاب</option>
+            <option value="books">📚 كتب</option>
+            <option value="furniture">🪑 أثاث</option>
+            <option value="beauty">💄 جمال</option>
+            <option value="sports">⚽ رياضة</option>
+            <option value="toys">🧸 أطفال</option>
+            <option value="automotive">🚗 سيارات</option>
+        </select>
+    </div>
+
+    <!-- المتاجر -->
+    <div class="stores-scroll" id="stores-scroll"></div>
+
+    <!-- شبكة المربعات -->
+    <div class="tiles-grid-container">
+        <div class="tiles-grid" id="tiles-grid"></div>
+    </div>
+
+    <!-- تفاصيل المنتج -->
+    <div class="product-details" id="product-details">
+        <div class="p-header">
+            <span class="p-icon" id="p-icon">📱</span>
+            <div>
+                <div class="p-name" id="p-name">اسم المنتج</div>
+                <div class="p-store" id="p-store">المتجر</div>
+            </div>
+        </div>
+        <div class="p-info">
+            <span class="price" id="p-price">💰 0$</span>
+            <span class="stock" id="p-stock">📦 0</span>
+            <span id="p-rating">⭐ 0.0</span>
+        </div>
+        <div class="p-desc" id="p-desc">وصف المنتج</div>
+        <div class="p-actions">
+            <button class="btn-add" onclick="addCurrentToCart()">🛒 إضافة إلى السلة</button>
+            <button class="btn-remove" onclick="removeCurrentFromCart()">🗑️ إزالة</button>
+        </div>
+    </div>
+
+    <!-- السلة -->
+    <div class="cart-panel">
+        <div class="cart-header">
+            <h4>🛒 سلتي</h4>
+            <span style="font-size:12px;color:#888;" id="cart-count-label">0 منتج</span>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <div class="cart-empty">🛒 السلة فارغة</div>
+        </div>
+        <div class="cart-total">
+            <span class="total-label">💰 الإجمالي</span>
+            <span class="total-value" id="cart-total">0.00$</span>
+        </div>
+        <div class="cart-actions">
+            <button class="btn-checkout" onclick="checkout()">💳 إتمام الشراء</button>
+            <button class="btn-clear" onclick="clearCart()">🗑️ تفريغ</button>
+        </div>
+    </div>
+</div>
+
+<!-- ====== الفاتورة ====== -->
+<div class="receipt-modal" id="receipt-modal">
+    <div class="receipt-content">
+        <div class="r-header">
+            <h3>🧾 فاتورة الشراء</h3>
+            <div class="r-store" id="r-store">المدينة التجارية</div>
+        </div>
+        <div class="r-items" id="r-items"></div>
+        <div class="r-total">
+            <span class="r-label">💰 الإجمالي</span>
+            <span class="r-value" id="r-total">0.00$</span>
+        </div>
+        <div class="r-footer" id="r-footer">شكراً لتسوقك معنا</div>
+        <button class="r-close" onclick="closeReceipt()">✅ تم</button>
+    </div>
+</div>
+
+<!-- ====== تنبيهات ====== -->
+<div id="toast-container"></div>
+
+<!-- ====== المشهد ثلاثي الأبعاد ====== -->
+<div id="scene-container">
+    <canvas id="canvas"></canvas>
+</div>
+
+<!-- ====== شريط التحكم السفلي ====== -->
+<div id="bottom-bar">
+    <button class="bottom-btn" onclick="toggleCity()">🏪 المدينة التجارية</button>
+    <button class="bottom-btn" onclick="toggleCamera()">🎥 تغيير المنظور</button>
+    <button class="bottom-btn" onclick="resetView()">🔄 إعادة تعيين</button>
+    <button class="bottom-btn" onclick="AccountManager.logout()">🚪 خروج</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════
+   🏪 المدينة التجارية - نظام الكاشير المتقدم v3.0
+   ═══════════════════════════════════════════════════════════════ */
+
+// ====== 1. نظام الحسابات ======
+const AccountManager = {
+    currentUser: null,
+    users: [],
+
+    init() {
+        this.load();
+        if (this.currentUser) {
+            this.onLogin();
+        } else {
+            document.getElementById('auth-screen').style.display = 'flex';
+        }
+    },
+
+    load() {
+        try {
+            const data = JSON.parse(localStorage.getItem('city_accounts'));
+            if (data) {
+                this.users = data.users || [];
+                this.currentUser = data.currentUser || null;
+            }
+        } catch(e) {}
+    },
+
+    save() {
+        localStorage.setItem('city_accounts', JSON.stringify({
+            users: this.users,
+            currentUser: this.currentUser
+        }));
+    },
+
+    showLogin() {
+        document.getElementById('login-box').style.display = 'block';
+        document.getElementById('register-box').style.display = 'none';
+        document.getElementById('login-error').style.display = 'none';
+    },
+
+    showRegister() {
+        document.getElementById('login-box').style.display = 'none';
+        document.getElementById('register-box').style.display = 'block';
+        document.getElementById('reg-error').style.display = 'none';
+    },
+
+    register() {
+        const username = document.getElementById('reg-username').value.trim();
+        const password = document.getElementById('reg-password').value;
+        const password2 = document.getElementById('reg-password2').value;
+        const err = document.getElementById('reg-error');
+
+        if (!username || username.length < 3) { err.textContent = '⚠️ اسم المستخدم قصير جداً'; err.style.display = 'block'; return; }
+        if (this.users.find(u => u.username === username)) { err.textContent = '⚠️ اسم المستخدم مستخدم'; err.style.display = 'block'; return; }
+        if (password.length < 6) { err.textContent = '⚠️ كلمة المرور قصيرة'; err.style.display = 'block'; return; }
+        if (password !== password2) { err.textContent = '⚠️ كلمتا المرور غير متطابقتين'; err.style.display = 'block'; return; }
+
+        const user = {
+            id: 'user_' + Date.now(),
+            username,
+            password,
+            createdAt: Date.now(),
+            coins: 100,
+            isAdmin: username === 'admin'
+        };
+        this.users.push(user);
+        this.currentUser = user;
+        this.save();
+        this.onLogin();
+        showToast('✨ مرحباً ' + username + '!', 'success');
+    },
+
+    login() {
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+        const err = document.getElementById('login-error');
+
+        const user = this.users.find(u => u.username === username && u.password === password);
+        if (!user) { err.textContent = '❌ بيانات غير صحيحة'; err.style.display = 'block'; return; }
+
+        this.currentUser = user;
+        this.save();
+        this.onLogin();
+        showToast('🎉 مرحباً بعودتك ' + username + '!', 'success');
+    },
+
+    adminLogin() {
+        const username = document.getElementById('login-username').value.trim();
+        const password = document.getElementById('login-password').value;
+        const err = document.getElementById('login-error');
+
+        if (username !== 'admin' || password !== '123456') {
+            err.textContent = '❌ بيانات المدير غير صحيحة';
+            err.style.display = 'block';
+            return;
+        }
+
+        let admin = this.users.find(u => u.username === 'admin');
+        if (!admin) {
+            admin = {
+                id: 'user_admin',
+                username: 'admin',
+                password: '123456',
+                createdAt: Date.now(),
+                coins: 99999,
+                isAdmin: true
+            };
+            this.users.push(admin);
+        }
+        admin.isAdmin = true;
+        this.currentUser = admin;
+        this.save();
+        this.onLogin();
+        showToast('👑 مرحباً أيها المدير!', 'success');
+    },
+
+    logout() {
+        this.currentUser = null;
+        this.save();
+        location.reload();
+    },
+
+    onLogin() {
+        document.getElementById('auth-screen').style.display = 'none';
+        document.getElementById('start-screen').style.display = 'none';
+        document.getElementById('bottom-bar').style.display = 'flex';
+        showToast('👋 مرحباً ' + this.currentUser.username, 'success');
+        initGame();
+    },
+
+    isAdmin() {
+        return this.currentUser && this.currentUser.isAdmin === true;
+    }
+};
+
+// ====== 2. قاعدة بيانات المتاجر ======
+const STORES = {
+    'electronics': {
+        id: 'electronics',
+        icon: '📱',
+        name: 'العالم الإلكتروني',
+        description: 'أحدث الأجهزة والتقنيات',
+        color: '#1a2a4a',
+        products: [],
+        manager: 'أحمد',
+        workingHours: '9:00 - 22:00',
+        rating: 4.7
+    },
+    'clothing': {
+        id: 'clothing',
+        icon: '👕',
+        name: 'موضة وأناقة',
+        description: 'أجمل الملابس والأزياء',
+        color: '#2a1a3a',
+        products: [],
+        manager: 'سارة',
+        workingHours: '10:00 - 23:00',
+        rating: 4.5
+    },
+    'food': {
+        id: 'food',
+        icon: '🍕',
+        name: 'طعام شهي',
+        description: 'أشهى المأكولات والمشروبات',
+        color: '#2a1a1a',
+        products: [],
+        manager: 'خالد',
+        workingHours: '8:00 - 00:00',
+        rating: 4.8
+    },
+    'gaming': {
+        id: 'gaming',
+        icon: '🎮',
+        name: 'عالم الألعاب',
+        description: 'أحدث أجهزة وألعاب الفيديو',
+        color: '#0a2a2a',
+        products: [],
+        manager: 'ليلى',
+        workingHours: '10:00 - 02:00',
+        rating: 4.9
+    },
+    'books': {
+        id: 'books',
+        icon: '📚',
+        name: 'مكتبة المعرفة',
+        description: 'أفضل الكتب والمؤلفات',
+        color: '#1a2a1a',
+        products: [],
+        manager: 'نور',
+        workingHours: '8:00 - 20:00',
+        rating: 4.6
+    },
+    'furniture': {
+        id: 'furniture',
+        icon: '🪑',
+        name: 'أثاث منزلي',
+        description: 'أثاث عصري وأنيق',
+        color: '#3a2a1a',
+        products: [],
+        manager: 'عمر',
+        workingHours: '9:00 - 21:00',
+        rating: 4.3
+    },
+    'beauty': {
+        id: 'beauty',
+        icon: '💄',
+        name: 'الجمال والعناية',
+        description: 'مستحضرات تجميل وعناية',
+        color: '#2a1a2a',
+        products: [],
+        manager: 'هند',
+        workingHours: '10:00 - 22:00',
+        rating: 4.4
+    },
+    'sports': {
+        id: 'sports',
+        icon: '⚽',
+        name: 'رياضة ولياقة',
+        description: 'معدات رياضية وملابس',
+        color: '#1a2a2a',
+        products: [],
+        manager: 'سامي',
+        workingHours: '6:00 - 23:00',
+        rating: 4.2
+    },
+    'toys': {
+        id: 'toys',
+        icon: '🧸',
+        name: 'عالم الأطفال',
+        description: 'ألعاب وهدايا للأطفال',
+        color: '#2a1a3a',
+        products: [],
+        manager: 'منى',
+        workingHours: '9:00 - 21:00',
+        rating: 4.1
+    },
+    'automotive': {
+        id: 'automotive',
+        icon: '🚗',
+        name: 'قطع السيارات',
+        description: 'إكسسوارات وقطع غيار',
+        color: '#1a1a2a',
+        products: [],
+        manager: 'فيصل',
+        workingHours: '8:00 - 20:00',
+        rating: 4.0
+    }
+};
+
+// ====== 3. السلسلة اللانهائية للمربعات ======
+class InfiniteTileChain {
+    constructor() {
+        this.head = null;
+        this.tail = null;
+        this.size = 0;
+        this.maxSize = 144;
+        this.tileMap = new Map();
+    }
+
+    createNode(data) {
+        return {
+            id: Date.now() + '_' + Math.random().toString(36).substring(2, 8),
+            data: data,
+            next: null,
+            prev: null,
+            row: null,
+            col: null
+        };
+    }
+
+    addTile(data) {
+        if (this.size >= this.maxSize) {
+            return this.replaceOldest(data);
+        }
+
+        const node = this.createNode(data);
+        if (!this.head) {
+            this.head = node;
+            this.tail = node;
+        } else {
+            this.tail.next = node;
+            node.prev = this.tail;
+            this.tail = node;
+        }
+        this.size++;
+        this.assignCoordinates(node);
+        this.tileMap.set(node.id, node);
+        return node;
+    }
+
+    replaceOldest(data) {
+        const oldest = this.head;
+        if (!oldest) return this.addTile(data);
+        
+        const oldRow = oldest.row;
+        const oldCol = oldest.col;
+        this.removeTile(oldest.id);
+        const newNode = this.addTile(data);
+        newNode.row = oldRow;
+        newNode.col = oldCol;
+        return newNode;
+    }
+
+    removeTile(id) {
+        const node = this.tileMap.get(id);
+        if (!node) return null;
+
+        if (node.prev) {
+            node.prev.next = node.next;
+        } else {
+            this.head = node.next;
+        }
+        if (node.next) {
+            node.next.prev = node.prev;
+        } else {
+            this.tail = node.prev;
+        }
+        this.tileMap.delete(id);
+        this.size--;
+        return node;
+    }
+
+    assignCoordinates(node) {
+        const index = this.size - 1;
+        node.row = Math.floor(index / 12);
+        node.col = index % 12;
+    }
+
+    getTileByCoords(row, col) {
+        for (const [id, node] of this.tileMap) {
+            if (node.row === row && node.col === col) {
+                return node;
+            }
+        }
+        return null;
+    }
+
+    getAllTiles() {
+        const tiles = [];
+        let current = this.head;
+        while (current) {
+            tiles.push(current);
+            current = current.next;
+        }
+        return tiles;
+    }
+
+    getTilesByStore(storeId) {
+        const results = [];
+        let current = this.head;
+        while (current) {
+            if (current.data.storeId === storeId) {
+                results.push(current);
+            }
+            current = current.next;
+        }
+        return results;
+    }
+
+    getGrid() {
+        const grid = [];
+        for (let r = 0; r < 12; r++) {
+            grid[r] = [];
+            for (let c = 0; c < 12; c++) {
+                const tile = this.getTileByCoords(r, c);
+                grid[r][c] = tile || null;
+            }
+        }
+        return grid;
+    }
+
+    exportChain() {
+        const data = [];
+        let current = this.head;
+        while (current) {
+            data.push({
+                id: current.id,
+                data: current.data,
+                row: current.row,
+                col: current.col
+            });
+            current = current.next;
+        }
+        return data;
+    }
+
+    importChain(data) {
+        this.head = null;
+        this.tail = null;
+        this.size = 0;
+        this.tileMap = new Map();
+        data.forEach(item => {
+            const node = this.createNode(item.data);
+            node.id = item.id;
+            node.row = item.row;
+            node.col = item.col;
+            if (!this.head) {
+                this.head = node;
+                this.tail = node;
+            } else {
+                this.tail.next = node;
+                node.prev = this.tail;
+                this.tail = node;
+            }
+            this.size++;
+            this.tileMap.set(node.id, node);
+        });
+    }
+}
+
+// ====== 4. إدارة المتاجر ======
+class StoreManager {
+    constructor() {
+        this.stores = STORES;
+        this.tileChain = new InfiniteTileChain();
+        this.cart = [];
+        this.transactions = [];
+        this.currentStore = null;
+        this.selectedTile = null;
+        this.loadFromStorage();
+        this.initProducts();
+    }
+
+    initProducts() {
+        // إلكترونيات
+        this.addProduct('electronics', {
+            id: 'prod_e001',
+            name: 'هاتف ذكي',
+            price: 599,
+            icon: '📱',
+            description: 'شاشة 6.5 بوصة، كاميرا 108MP، بطارية 5000mAh',
+            stock: 15,
+            rating: 4.5,
+            discount: 0
+        });
+        this.addProduct('electronics', {
+            id: 'prod_e002',
+            name: 'لابتوب',
+            price: 899,
+            icon: '💻',
+            description: '16GB RAM، 512GB SSD، شاشة 15.6 بوصة',
+            stock: 8,
+            rating: 4.8,
+            discount: 5
+        });
+        this.addProduct('electronics', {
+            id: 'prod_e003',
+            name: 'سماعة لاسلكية',
+            price: 49,
+            icon: '🎧',
+            description: 'بلوتوث 5.0، عزل ضوضاء، بطارية 20 ساعة',
+            stock: 25,
+            rating: 4.2,
+            discount: 10
+        });
+        this.addProduct('electronics', {
+            id: 'prod_e004',
+            name: 'ساعة ذكية',
+            price: 199,
+            icon: '⌚',
+            description: 'مراقبة الصحة، GPS، شاشة AMOLED',
+            stock: 12,
+            rating: 4.6,
+            discount: 0
+        });
+
+        // ملابس
+        this.addProduct('clothing', {
+            id: 'prod_c001',
+            name: 'تي شيرت',
+            price: 25,
+            icon: '👕',
+            description: 'قطن 100%، مقاسات S-XXL، ألوان متعددة',
+            stock: 40,
+            rating: 4.0,
+            discount: 0
+        });
+        this.addProduct('clothing', {
+            id: 'prod_c002',
+            name: 'فستان',
+            price: 45,
+            icon: '👗',
+            description: 'تصميم عصري، مقاسات XS-L، ألوان فاخرة',
+            stock: 12,
+            rating: 4.6,
+            discount: 15
+        });
+        this.addProduct('clothing', {
+            id: 'prod_c003',
+            name: 'حذاء رياضي',
+            price: 75,
+            icon: '👟',
+            description: 'مريح للجري، نعل مطاطي، مقاسات 36-44',
+            stock: 18,
+            rating: 4.3,
+            discount: 0
+        });
+        this.addProduct('clothing', {
+            id: 'prod_c004',
+            name: 'جاكيت',
+            price: 120,
+            icon: '🧥',
+            description: 'مقاوم للماء، بطانة دافئة، مقاسات S-XXL',
+            stock: 10,
+            rating: 4.4,
+            discount: 20
+        });
+
+        // طعام
+        this.addProduct('food', {
+            id: 'prod_f001',
+            name: 'بيتزا',
+            price: 12,
+            icon: '🍕',
+            description: 'مارغيريتا، حجم عائلي، جبنة موزاريلا',
+            stock: 30,
+            rating: 4.3,
+            discount: 0
+        });
+        this.addProduct('food', {
+            id: 'prod_f002',
+            name: 'برجر',
+            price: 8,
+            icon: '🍔',
+            description: 'لحم أنجوس، خضار طازجة، صلصة سرية',
+            stock: 20,
+            rating: 4.7,
+            discount: 5
+        });
+        this.addProduct('food', {
+            id: 'prod_f003',
+            name: 'سوشي',
+            price: 18,
+            icon: '🍣',
+            description: 'سمك طازج، أرز ياباني، 8 قطع',
+            stock: 15,
+            rating: 4.8,
+            discount: 0
+        });
+        this.addProduct('food', {
+            id: 'prod_f004',
+            name: 'آيس كريم',
+            price: 3,
+            icon: '🍦',
+            description: 'فانيليا، شوكولاتة، فراولة',
+            stock: 50,
+            rating: 4.2,
+            discount: 0
+        });
+
+        // ألعاب
+        this.addProduct('gaming', {
+            id: 'prod_g001',
+            name: 'بلاي ستيشن 5',
+            price: 499,
+            icon: '🎮',
+            description: 'أحدث جيل، 825GB SSD، تحكم DualSense',
+            stock: 5,
+            rating: 4.9,
+            discount: 0
+        });
+        this.addProduct('gaming', {
+            id: 'prod_g002',
+            name: 'جهاز ألعاب محمول',
+            price: 199,
+            icon: '🕹️',
+            description: 'شاشة OLED، بطارية 8 ساعات، ألعاب مدمجة',
+            stock: 10,
+            rating: 4.4,
+            discount: 8
+        });
+        this.addProduct('gaming', {
+            id: 'prod_g003',
+            name: 'لعبة استراتيجية',
+            price: 29,
+            icon: '🎯',
+            description: 'لعبة لوحية لعائلة، عمر 8+',
+            stock: 22,
+            rating: 4.1,
+            discount: 0
+        });
+        this.addProduct('gaming', {
+            id: 'prod_g004',
+            name: 'سماعة ألعاب',
+            price: 89,
+            icon: '🎧',
+            description: 'صوت محيطي، ميكروفون، RGB إضاءة',
+            stock: 16,
+            rating: 4.5,
+            discount: 10
+        });
+
+        // كتب
+        this.addProduct('books', {
+            id: 'prod_b001',
+            name: 'رواية مغامرات',
+            price: 15,
+            icon: '📚',
+            description: 'أفضل روايات المغامرات، 350 صفحة',
+            stock: 35,
+            rating: 4.5,
+            discount: 10
+        });
+        this.addProduct('books', {
+            id: 'prod_b002',
+            name: 'كتاب طبخ',
+            price: 20,
+            icon: '📖',
+            description: '100 وصفة عالمية، صور ملونة',
+            stock: 18,
+            rating: 4.3,
+            discount: 0
+        });
+        this.addProduct('books', {
+            id: 'prod_b003',
+            name: 'موسوعة علمية',
+            price: 45,
+            icon: '📕',
+            description: 'علوم الفضاء، التاريخ، والطبيعة',
+            stock: 8,
+            rating: 4.7,
+            discount: 5
+        });
+
+        // أثاث
+        this.addProduct('furniture', {
+            id: 'prod_fu001',
+            name: 'كرسي مكتب',
+            price: 89,
+            icon: '🪑',
+            description: 'مريح، قابل للتعديل، شبكي',
+            stock: 12,
+            rating: 4.2,
+            discount: 0
+        });
+        this.addProduct('furniture', {
+            id: 'prod_fu002',
+            name: 'طاولة طعام',
+            price: 199,
+            icon: '🍽️',
+            description: 'زجاجية، 6 مقاعد، تصميم عصري',
+            stock: 6,
+            rating: 4.4,
+            discount: 12
+        });
+        this.addProduct('furniture', {
+            id: 'prod_fu003',
+            name: 'خزانة',
+            price: 249,
+            icon: '🗄️',
+            description: '4 أدراج، خشب متين، ألوان متعددة',
+            stock: 4,
+            rating: 4.1,
+            discount: 8
+        });
+
+        // جمال
+        this.addProduct('beauty', {
+            id: 'prod_be001',
+            name: 'مجموعة مكياج',
+            price: 59,
+            icon: '💄',
+            description: '12 لون، فرش، مرآة مضيئة',
+            stock: 20,
+            rating: 4.3,
+            discount: 0
+        });
+        this.addProduct('beauty', {
+            id: 'prod_be002',
+            name: 'عطر فاخر',
+            price: 89,
+            icon: '🧴',
+            description: 'رائحة خشبية وزهرية، 100ml',
+            stock: 15,
+            rating: 4.6,
+            discount: 15
+        });
+
+        // رياضة
+        this.addProduct('sports', {
+            id: 'prod_s001',
+            name: 'كرة قدم',
+            price: 29,
+            icon: '⚽',
+            description: 'قياس 5، جلد صناعي، مقاوم للماء',
+            stock: 25,
+            rating: 4.0,
+            discount: 0
+        });
+        this.addProduct('sports', {
+            id: 'prod_s002',
+            name: 'حقيبة رياضية',
+            price: 39,
+            icon: '🎒',
+            description: 'سعة 30L، جيوب متعددة، مقاوم للماء',
+            stock: 18,
+            rating: 4.2,
+            discount: 5
+        });
+
+        // أطفال
+        this.addProduct('toys', {
+            id: 'prod_t001',
+            name: 'دمية محشوة',
+            price: 19,
+            icon: '🧸',
+            description: 'ناعمة، آمنة، حجم 40 سم',
+            stock: 30,
+            rating: 4.1,
+            discount: 0
+        });
+        this.addProduct('toys', {
+            id: 'prod_t002',
+            name: 'مجموعة ليغو',
+            price: 49,
+            icon: '🧱',
+            description: '500 قطعة، بناء مدينة',
+            stock: 12,
+            rating: 4.5,
+            discount: 10
+        });
+
+        // سيارات
+        this.addProduct('automotive', {
+            id: 'prod_a001',
+            name: 'إطار سيارة',
+            price: 89,
+            icon: '🚗',
+            description: 'مقاس 16، مقاوم للحرارة، عمر طويل',
+            stock: 20,
+            rating: 4.0,
+            discount: 0
+        });
+        this.addProduct('automotive', {
+            id: 'prod_a002',
+            name: 'شاحن سيارة',
+            price: 15,
+            icon: '🔌',
+            description: 'شحن سريع، USB-C و USB-A',
+            stock: 35,
+            rating: 4.3,
+            discount: 0
+        });
+
+        this.initializeTiles();
+    }
+
+    addProduct(storeId, product) {
+        if (this.stores[storeId]) {
+            this.stores[storeId].products.push({
+                ...product,
+                storeId: storeId
+            });
+            this.saveToStorage();
+        }
+    }
+
+    initializeTiles() {
+        this.tileChain = new InfiniteTileChain();
+        let productIndex = 0;
+        const storeIds = Object.keys(this.stores);
+        const allProducts = [];
+        storeIds.forEach(id => {
+            this.stores[id].products.forEach(p => {
+                allProducts.push({ ...p, storeId: id });
+            });
+        });
+
+        for (let r = 0; r < 12; r++) {
+            for (let c = 0; c < 12; c++) {
+                if (allProducts.length > 0) {
+                    const product = allProducts[productIndex % allProducts.length];
+                    this.tileChain.addTile({
+                        storeId: product.storeId,
+                        product: { ...product },
+                        position: { row: r, col: c }
+                    });
+                    productIndex++;
+                } else {
+                    const storeId = storeIds[productIndex % storeIds.length];
+                    this.tileChain.addTile({
+                        storeId: storeId,
+                        product: null,
+                        position: { row: r, col: c }
+                    });
+                }
+            }
+        }
+        this.saveToStorage();
+    }
+
+    getTileProduct(row, col) {
+        const tile = this.tileChain.getTileByCoords(row, col);
+        return tile ? tile.data.product : null;
+    }
+
+    getStoreProducts(storeId) {
+        const tiles = this.tileChain.getTilesByStore(storeId);
+        return tiles.filter(t => t.data.product !== null).map(t => t.data.product);
+    }
+
+    addToCart(row, col, quantity = 1) {
+        const product = this.getTileProduct(row, col);
+        if (!product) {
+            return { success: false, error: 'لا يوجد منتج هنا' };
+        }
+        if (product.stock < quantity) {
+            return { success: false, error: 'الكمية غير متوفرة' };
+        }
+
+        const existing = this.cart.find(item => item.id === product.id);
+        if (existing) {
+            existing.quantity += quantity;
+        } else {
+            this.cart.push({
+                ...product,
+                quantity: quantity,
+                tileCoords: { row, col }
+            });
+        }
+
+        this.updateProductStock(product.id, -quantity);
+        this.saveToStorage();
+        return { success: true, product: product, cartTotal: this.getCartTotal() };
+    }
+
+    removeFromCart(productId, quantity = 1) {
+        const index = this.cart.findIndex(item => item.id === productId);
+        if (index === -1) {
+            return { success: false, error: 'المنتج غير موجود في السلة' };
+        }
+
+        const item = this.cart[index];
+        this.updateProductStock(productId, quantity);
+
+        if (item.quantity <= quantity) {
+            this.cart.splice(index, 1);
+        } else {
+            item.quantity -= quantity;
+        }
+
+        this.saveToStorage();
+        return { success: true, cartTotal: this.getCartTotal() };
+    }
+
+    updateProductStock(productId, delta) {
+        for (const storeId in this.stores) {
+            const products = this.stores[storeId].products;
+            const product = products.find(p => p.id === productId);
+            if (product) {
+                product.stock += delta;
+                let current = this.tileChain.head;
+                while (current) {
+                    if (current.data.product && current.data.product.id === productId) {
+                        current.data.product.stock = product.stock;
+                    }
+                    current = current.next;
+                }
+                break;
+            }
+        }
+        this.saveToStorage();
+    }
+
+    getCartTotal() {
+        let total = 0;
+        this.cart.forEach(item => {
+            const price = item.price * (1 - (item.discount || 0) / 100);
+            total += price * item.quantity;
+        });
+        return Math.round(total * 100) / 100;
+    }
+
+    checkout() {
+        if (this.cart.length === 0) {
+            return { success: false, error: 'السلة فارغة' };
+        }
+
+        const transaction = {
+            id: 'TXN_' + Date.now(),
+            items: this.cart.map(item => ({
+                name: item.name,
+                icon: item.icon,
+                quantity: item.quantity,
+                price: item.price,
+                discount: item.discount || 0,
+                total: Math.round(item.price * (1 - (item.discount || 0) / 100) * item.quantity * 100) / 100,
+                store: item.storeId
+            })),
+            total: this.getCartTotal(),
+            timestamp: Date.now(),
+            itemsCount: this.cart.reduce((sum, item) => sum + item.quantity, 0)
+        };
+
+        this.transactions.push(transaction);
+        this.cart = [];
+        this.saveToStorage();
+        return { success: true, transaction: transaction };
+    }
+
+    getStoreStats(storeId) {
+        const store = this.stores[storeId];
+        if (!store) return null;
+        const products = store.products;
+        const totalStock = products.reduce((sum, p) => sum + p.stock, 0);
+        const totalValue = products.reduce((sum, p) => sum + p.price * p.stock, 0);
+        const avgRating = products.reduce((sum, p) => sum + p.rating, 0) / (products.length || 1);
+        return {
+            storeName: store.name,
+            totalProducts: products.length,
+            totalStock: totalStock,
+            totalValue: totalValue,
+            avgRating: avgRating,
+            manager: store.manager,
+            workingHours: store.workingHours
+        };
+    }
+
+    searchProducts(query) {
+        const results = [];
+        const q = query.toLowerCase();
+        for (const storeId in this.stores) {
+            this.stores[storeId].products.forEach(product => {
+                if (product.name.toLowerCase().includes(q) || 
+                    product.description.toLowerCase().includes(q) ||
+                    storeId.includes(q)) {
+                    results.push({ ...product, storeId: storeId });
+                }
+            });
+        }
+        return results;
+    }
+
+    exportData() {
+        return {
+            stores: this.stores,
+            tileChain: this.tileChain.exportChain(),
+            cart: this.cart,
+            transactions: this.transactions,
+            exportedAt: Date.now()
+        };
+    }
+
+    importData(data) {
+        this.stores = data.stores;
+        this.tileChain.importChain(data.tileChain);
+        this.cart = data.cart || [];
+        this.transactions = data.transactions || [];
+        this.saveToStorage();
+    }
+
+    saveToStorage() {
+        try {
+            const data = this.exportData();
+            localStorage.setItem('city_manager_data', JSON.stringify(data));
+        } catch(e) {}
+    }
+
+    loadFromStorage() {
+        try {
+            const raw = localStorage.getItem('city_manager_data');
+            if (raw) {
+                const data = JSON.parse(raw);
+                this.stores = data.stores;
+                this.tileChain.importChain(data.tileChain);
+                this.cart = data.cart || [];
+                this.transactions = data.transactions || [];
+                return true;
+            }
+        } catch(e) {}
+        return false;
+    }
+}
+
+// ====== 5. المشهد ثلاثي الأبعاد ======
+let scene, camera, renderer;
+let tileMeshes = [];
+let tileGroup;
+let playerGroup;
+let isCityOpen = false;
+let cameraMode = 'top';
+let GRID = 12;
+let TILE_SIZE = 2.8;
+let WORLD_SIZE = GRID * TILE_SIZE;
+let HALF = WORLD_SIZE / 2;
+
+function initGame() {
+    const canvas = document.getElementById('canvas');
+
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050510);
+
+    camera = new THREE.PerspectiveCamera(50, innerWidth / innerHeight, 0.1, 100);
+    camera.position.set(0, 14, 18);
+    camera.lookAt(0, 0, 0);
+
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+
+    // إضاءة
+    const ambient = new THREE.AmbientLight(0x4466ff, 0.5);
+    scene.add(ambient);
+
+    const dirLight = new THREE.DirectionalLight(0xfff0dd, 1.2);
+    dirLight.position.set(10, 20, 8);
+    dirLight.castShadow = true;
+    scene.add(dirLight);
+
+    const dirLight2 = new THREE.DirectionalLight(0x8888ff, 0.5);
+    dirLight2.position.set(-10, 5, -10);
+    scene.add(dirLight2);
+
+    // مجموعة المربعات
+    tileGroup = new THREE.Group();
+    scene.add(tileGroup);
+
+    // مجموعة اللاعب
+    playerGroup = new THREE.Group();
+    scene.add(playerGroup);
+
+    // إنشاء نظام المدينة
+    storeManager = new StoreManager();
+    buildCity();
+
+    // تفاعل المربعات
+    setupTileInteraction();
+
+    // حلقة الرسم
+    function loop() {
+        requestAnimationFrame(loop);
+        updateCamera();
+        renderer.render(scene, camera);
+    }
+    loop();
+
+    showToast('🏪 مرحباً في المدينة التجارية!', 'success');
+}
+
+function buildCity() {
+    clearTiles();
+    
+    // بناء المربعات من قاعدة البيانات
+    const grid = storeManager.tileChain.getGrid();
+    for (let r = 0; r < GRID; r++) {
+        for (let c = 0; c < GRID; c++) {
+            const tile = grid[r][c];
+            const mesh = createTileMesh(r, c, tile);
+            tileGroup.add(mesh);
+            tileMeshes.push(mesh);
+        }
+    }
+
+    // شبكة أرضية
+    const gridHelper = new THREE.GridHelper(WORLD_SIZE, GRID, 0x8b5cf6, 0x2a2a4a);
+    gridHelper.position.y = 0.02;
+    gridHelper.material.transparent = true;
+    gridHelper.material.opacity = 0.1;
+    tileGroup.add(gridHelper);
+}
+
+function createTileMesh(row, col, tile) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+
+    const product = tile ? tile.data.product : null;
+    const storeId = tile ? tile.data.storeId : null;
+    const store = storeId ? storeManager.stores[storeId] : null;
+
+    // خلفية
+    const colors = ['#1a1a2e', '#16213e', '#0f3460', '#1e293b', '#2d1b3d'];
+    ctx.fillStyle = product ? colors[(row + col) % colors.length] : '#0a0a1a';
+    ctx.fillRect(0, 0, 256, 256);
+
+    // إطار
+    ctx.strokeStyle = product ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.02)';
+    ctx.lineWidth = product ? 3 : 1;
+    ctx.strokeRect(4, 4, 248, 248);
+
+    // أيقونة المنتج أو المتجر
+    const icon = product ? product.icon : (store ? store.icon : '⬜');
+    ctx.font = '70px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = product ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.05)';
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = product ? '#fff' : 'rgba(255,255,255,0.15)';
+    ctx.fillText(icon, 128, 110);
+    ctx.shadowBlur = 0;
+
+    // اسم المنتج
+    if (product) {
+        ctx.font = 'bold 16px Cairo, Arial';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(product.name.substring(0, 14), 128, 175);
+        
+        // السعر
+        const price = product.discount > 0 ? 
+            product.price * (1 - product.discount/100) : product.price;
+        ctx.font = 'bold 18px Cairo, Arial';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(price + '$', 128, 215);
+        
+        // المخزون
+        ctx.font = '12px Cairo, Arial';
+        ctx.fillStyle = product.stock > 5 ? '#4ade80' : '#f87171';
+        ctx.fillText('📦 ' + product.stock, 128, 245);
+        
+        // خصم
+        if (product.discount > 0) {
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 12px Cairo, Arial';
+            ctx.fillText('-' + product.discount + '%', 215, 25);
+        }
+    } else if (store) {
+        ctx.font = '14px Cairo, Arial';
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillText(store.name.substring(0, 12), 128, 175);
+        ctx.font = '10px Cairo, Arial';
+        ctx.fillStyle = 'rgba(255,255,255,0.1)';
+        ctx.fillText('فارغ', 128, 215);
+    }
+
+    // إحداثيات
+    ctx.font = '10px Cairo, Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillText(row + ',' + col, 20, 235);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.magFilter = THREE.LinearFilter;
+
+    const geo = new THREE.PlaneGeometry(TILE_SIZE * 0.95, TILE_SIZE * 0.95);
+    const mat = new THREE.MeshStandardMaterial({
+        map: tex,
+        side: THREE.DoubleSide,
+        roughness: 0.3,
+        metalness: 0.1
+    });
+
+    const mesh = new THREE.Mesh(geo, mat);
+    const posX = col * TILE_SIZE - HALF + TILE_SIZE / 2;
+    const posZ = row * TILE_SIZE - HALF + TILE_SIZE / 2;
+    mesh.position.set(posX, 0, posZ);
+    mesh.rotation.x = -Math.PI / 2;
+    mesh.userData = { row, col, tile };
+
+    return mesh;
+}
+
+function clearTiles() {
+    tileMeshes.forEach(m => {
+        if (m.parent) m.parent.remove(m);
+        if (m.material?.map) m.material.map.dispose();
+        if (m.material) m.material.dispose();
+        if (m.geometry) m.geometry.dispose();
+    });
+    tileMeshes = [];
+    while (tileGroup.children.length) {
+        const child = tileGroup.children[0];
+        if (child.geometry) child.geometry.dispose();
+        if (child.material) child.material.dispose();
+        tileGroup.remove(child);
+    }
+}
+
+function updateTile(row, col) {
+    const tile = storeManager.tileChain.getTileByCoords(row, col);
+    const mesh = tileMeshes.find(m => m.userData.row === row && m.userData.col === col);
+    if (!mesh) return;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+
+    const product = tile ? tile.data.product : null;
+    const storeId = tile ? tile.data.storeId : null;
+    const store = storeId ? storeManager.stores[storeId] : null;
+
+    const colors = ['#1a1a2e', '#16213e', '#0f3460', '#1e293b', '#2d1b3d'];
+    ctx.fillStyle = product ? colors[(row + col) % colors.length] : '#0a0a1a';
+    ctx.fillRect(0, 0, 256, 256);
+
+    ctx.strokeStyle = product ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.02)';
+    ctx.lineWidth = product ? 3 : 1;
+    ctx.strokeRect(4, 4, 248, 248);
+
+    const icon = product ? product.icon : (store ? store.icon : '⬜');
+    ctx.font = '70px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = product ? 'rgba(74,222,128,0.2)' : 'rgba(255,255,255,0.05)';
+    ctx.shadowBlur = 15;
+    ctx.fillStyle = product ? '#fff' : 'rgba(255,255,255,0.15)';
+    ctx.fillText(icon, 128, 110);
+    ctx.shadowBlur = 0;
+
+    if (product) {
+        ctx.font = 'bold 16px Cairo, Arial';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(product.name.substring(0, 14), 128, 175);
+        const price = product.discount > 0 ? product.price * (1 - product.discount/100) : product.price;
+        ctx.font = 'bold 18px Cairo, Arial';
+        ctx.fillStyle = '#ffd700';
+        ctx.fillText(price + '$', 128, 215);
+        ctx.font = '12px Cairo, Arial';
+        ctx.fillStyle = product.stock > 5 ? '#4ade80' : '#f87171';
+        ctx.fillText('📦 ' + product.stock, 128, 245);
+        if (product.discount > 0) {
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'bold 12px Cairo, Arial';
+            ctx.fillText('-' + product.discount + '%', 215, 25);
+        }
+    } else if (store) {
+        ctx.font = '14px Cairo, Arial';
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
+        ctx.fillText(store.name.substring(0, 12), 128, 175);
+    }
+
+    ctx.font = '10px Cairo, Arial';
+    ctx.fillStyle = 'rgba(255,255,255,0.05)';
+    ctx.fillText(row + ',' + col, 20, 235);
+
+    const tex = new THREE.CanvasTexture(canvas);
+    mesh.material.map = tex;
+    mesh.material.needsUpdate = true;
+    mesh.userData.tile = tile;
+}
+
+function setupTileInteraction() {
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    renderer.domElement.addEventListener('click', function(event) {
+        if (document.getElementById('city-panel').style.display === 'block') return;
+
+        const rect = renderer.domElement.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(tileMeshes);
+
+        if (intersects.length > 0) {
+            const mesh = intersects[0].object;
+            const { row, col } = mesh.userData;
+            const tile = storeManager.tileChain.getTileByCoords(row, col);
+            
+            if (tile && tile.data.product) {
+                selectProduct(tile);
+                toggleCity();
+            } else {
+                showToast('⚠️ هذا المربع فارغ', 'warn');
+            }
+        }
+    });
+}
+
+function updateCamera() {
+    if (cameraMode === 'top') {
+        camera.position.lerp(new THREE.Vector3(0, 14, 18), 0.05);
+        camera.lookAt(0, 0, 0);
+    } else if (cameraMode === 'angle') {
+        camera.position.lerp(new THREE.Vector3(12, 10, 12), 0.05);
+        camera.lookAt(0, 0, 0);
+    } else {
+        camera.position.lerp(new THREE.Vector3(0, 4, 12), 0.05);
+        camera.lookAt(0, -1, 0);
+    }
+}
+
+function toggleCamera() {
+    const modes = ['top', 'angle', 'close'];
+    const currentIndex = modes.indexOf(cameraMode);
+    cameraMode = modes[(currentIndex + 1) % modes.length];
+    showToast('🎥 المنظور: ' + cameraMode, 'info');
+}
+
+function resetView() {
+    cameraMode = 'top';
+    camera.position.set(0, 14, 18);
+    camera.lookAt(0, 0, 0);
+    showToast('🔄 تم إعادة تعيين المنظور', 'info');
+}
+
+// ====== 6. واجهة المستخدم ======
+let storeManager = null;
+let selectedTile = null;
+
+function toggleCity() {
+    const panel = document.getElementById('city-panel');
+    if (panel.style.display === 'block') {
+        panel.style.display = 'none';
+        panel.classList.remove('show');
+        isCityOpen = false;
+    } else {
+        panel.style.display = 'block';
+        setTimeout(() => panel.classList.add('show'), 50);
+        isCityOpen = true;
+        renderStores();
+        if (storeManager.currentStore) {
+            renderTiles(storeManager.currentStore);
+        } else {
+            const firstStore = Object.keys(storeManager.stores)[0];
+            storeManager.currentStore = firstStore;
+            renderTiles(firstStore);
+        }
+        updateStats();
+        updateCartDisplay();
+    }
+}
+
+function renderStores() {
+    const scroll = document.getElementById('stores-scroll');
+    scroll.innerHTML = '';
+    
+    Object.values(storeManager.stores).forEach(store => {
+        const card = document.createElement('div');
+        card.className = 'store-card';
+        if (storeManager.currentStore === store.id) card.classList.add('active');
+        card.style.borderColor = store.color;
+        const productCount = store.products.length;
+        card.innerHTML = `
+            <span class="icon">${store.icon}</span>
+            <div class="name">${store.name}</div>
+            <div class="count">📦 ${productCount}</div>
+        `;
+        card.onclick = () => {
+            storeManager.currentStore = store.id;
+            renderStores();
+            renderTiles(store.id);
+            updateStoreStats(store.id);
+        };
+        scroll.appendChild(card);
+    });
+}
+
+function renderTiles(storeId) {
+    const grid = document.getElementById('tiles-grid');
+    grid.innerHTML = '';
+    
+    const tiles = storeManager.tileChain.getTilesByStore(storeId);
+    const displayTiles = tiles.length > 0 ? tiles : 
+        storeManager.tileChain.getAllTiles().slice(0, 24);
+    
+    displayTiles.forEach(tile => {
+        const product = tile.data.product;
+        const cell = document.createElement('div');
+        cell.className = 'tile-cell';
+        
+        if (product) {
+            cell.classList.add('has-product');
+            const inCart = storeManager.cart.some(item => item.id === product.id);
+            if (inCart) cell.classList.add('in-cart');
+            if (selectedTile && selectedTile.id === tile.id) cell.classList.add('selected');
+            
+            const price = product.discount > 0 ? 
+                product.price * (1 - product.discount/100) : product.price;
+            
+            cell.innerHTML = `
+                <span class="coords">${tile.row},${tile.col}</span>
+                <span class="product-icon">${product.icon}</span>
+                <span class="product-name">${product.name.substring(0, 12)}</span>
+                <span class="product-price">💰 ${price}$</span>
+                <span class="product-stock ${product.stock <= 3 ? 'low' : ''}">📦 ${product.stock}</span>
+                ${product.discount > 0 ? `<span class="badge discount">-${product.discount}%</span>` : ''}
+                ${inCart ? `<span class="badge cart">🛒</span>` : ''}
+            `;
+            cell.onclick = () => selectProduct(tile);
+        } else {
+            cell.classList.add('empty');
+            const store = storeManager.stores[storeId];
+            cell.innerHTML = `
+                <span class="coords">${tile.row},${tile.col}</span>
+                <span style="font-size:20px;opacity:0.3;">${store ? store.icon : '⬜'}</span>
+                <span style="font-size:7px;color:#444;">فارغ</span>
+            `;
+        }
+        grid.appendChild(cell);
+    });
+}
+
+function selectProduct(tile) {
+    selectedTile = tile;
+    const product = tile.data.product;
+    if (!product) return;
+
+    const details = document.getElementById('product-details');
+    details.classList.add('show');
+    
+    document.getElementById('p-icon').textContent = product.icon;
+    document.getElementById('p-name').textContent = product.name;
+    
+    const store = storeManager.stores[product.storeId];
+    document.getElementById('p-store').textContent = store ? '🏪 ' + store.name : '';
+    
+    const price = product.discount > 0 ? 
+        product.price * (1 - product.discount/100) : product.price;
+    document.getElementById('p-price').textContent = '💰 ' + price + '$' + 
+        (product.discount > 0 ? ` (خصم ${product.discount}%)` : '');
+    
+    document.getElementById('p-stock').textContent = '📦 ' + product.stock;
+    document.getElementById('p-stock').className = 'stock' + (product.stock <= 3 ? ' low' : '');
+    document.getElementById('p-rating').textContent = '⭐ ' + product.rating;
+    document.getElementById('p-desc').textContent = product.description || 'لا يوجد وصف';
+    
+    renderTiles(storeManager.currentStore);
+}
+
+function addCurrentToCart() {
+    if (!selectedTile) {
+        showToast('⚠️ اختر منتجاً أولاً', 'warn');
+        return;
+    }
+    
+    const result = storeManager.addToCart(selectedTile.row, selectedTile.col, 1);
+    if (result.success) {
+        showToast(`✅ تم إضافة ${result.product.name} إلى السلة`, 'success');
+        renderTiles(storeManager.currentStore);
+        updateCartDisplay();
+        updateStats();
+    } else {
+        showToast(`❌ ${result.error}`, 'error');
+    }
+}
+
+function removeCurrentFromCart() {
+    if (!selectedTile) {
+        showToast('⚠️ اختر منتجاً أولاً', 'warn');
+        return;
+    }
+    const product = selectedTile.data.product;
+    if (!product) return;
+    
+    const result = storeManager.removeFromCart(product.id, 1);
+    if (result.success) {
+        showToast('🗑️ تم إزالة المنتج من السلة', 'info');
+        renderTiles(storeManager.currentStore);
+        updateCartDisplay();
+        updateStats();
+    } else {
+        showToast(`❌ ${result.error}`, 'error');
+    }
+}
+
+function updateCartDisplay() {
+    const cart = storeManager.cart;
+    const container = document.getElementById('cart-items');
+    const total = document.getElementById('cart-total');
+    const count = document.getElementById('cart-count-label');
+    
+    container.innerHTML = '';
+    if (cart.length === 0) {
+        container.innerHTML = '<div class="cart-empty">🛒 السلة فارغة</div>';
+    } else {
+        cart.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'cart-item';
+            const price = item.discount > 0 ? 
+                item.price * (1 - item.discount/100) : item.price;
+            div.innerHTML = `
+                <span class="name">${item.icon} ${item.name}</span>
+                <span class="qty">${item.quantity} × ${price}$</span>
+                <span class="total">${Math.round(price * item.quantity * 100) / 100}$</span>
+                <button class="remove-btn" onclick="removeFromCart('${item.id}')">✖</button>
+            `;
+            container.appendChild(div);
+        });
+    }
+    
+    total.textContent = storeManager.getCartTotal() + '$';
+    count.textContent = cart.reduce((sum, i) => sum + i.quantity, 0) + ' منتج';
+    document.getElementById('cart-count').textContent = cart.length;
+}
+
+function removeFromCart(productId) {
+    const result = storeManager.removeFromCart(productId, 1);
+    if (result.success) {
+        showToast('🗑️ تم إزالة المنتج', 'info');
+        renderTiles(storeManager.currentStore);
+        updateCartDisplay();
+        updateStats();
+    }
+}
+
+function clearCart() {
+    if (storeManager.cart.length === 0) {
+        showToast('🛒 السلة فارغة', 'warn');
+        return;
+    }
+    if (!confirm('⚠️ هل تريد تفريغ السلة بالكامل؟')) return;
+    
+    storeManager.cart.forEach(item => {
+        storeManager.updateProductStock(item.id, item.quantity);
+    });
+    storeManager.cart = [];
+    storeManager.saveToStorage();
+    showToast('🗑️ تم تفريغ السلة', 'info');
+    renderTiles(storeManager.currentStore);
+    updateCartDisplay();
+    updateStats();
+}
+
+function checkout() {
+    const result = storeManager.checkout();
+    if (result.success) {
+        showToast(`💳 تمت عملية الشراء! الإجمالي: ${result.transaction.total}$`, 'success');
+        showReceipt(result.transaction);
+        renderTiles(storeManager.currentStore);
+        updateCartDisplay();
+        updateStats();
+    } else {
+        showToast(`❌ ${result.error}`, 'error');
+    }
+}
+
+function showReceipt(transaction) {
+    const modal = document.getElementById('receipt-modal');
+    const items = document.getElementById('r-items');
+    const total = document.getElementById('r-total');
+    const store = document.getElementById('r-store');
+    const footer = document.getElementById('r-footer');
+    
+    const storeName = storeManager.stores[storeManager.currentStore]?.name || 'المدينة التجارية';
+    store.textContent = '🏪 ' + storeName;
+    
+    items.innerHTML = '';
+    transaction.items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'r-item';
+        div.innerHTML = `
+            <span class="r-name">${item.icon} ${item.name} (${item.quantity})</span>
+            <span class="r-price">${item.total}$</span>
+        `;
+        items.appendChild(div);
+    });
+    
+    total.textContent = transaction.total + '$';
+    footer.textContent = `📅 ${new Date(transaction.timestamp).toLocaleString('ar-SA')} · 🧾 ${transaction.id}`;
+    
+    modal.style.display = 'flex';
+}
+
+function closeReceipt() {
+    document.getElementById('receipt-modal').style.display = 'none';
+}
+
+function updateStats() {
+    let totalProducts = 0;
+    let totalValue = 0;
+    for (const id in storeManager.stores) {
+        const store = storeManager.stores[id];
+        totalProducts += store.products.length;
+        store.products.forEach(p => {
+            totalValue += p.price * p.stock;
+        });
+    }
+    document.getElementById('total-products').textContent = totalProducts;
+    document.getElementById('total-value').textContent = totalValue;
+    document.getElementById('cart-count').textContent = storeManager.cart.length;
+}
+
+function updateStoreStats(storeId) {
+    const stats = storeManager.getStoreStats(storeId);
+    if (stats) {
+        // تحديث معلومات المتجر المختار
+    }
+}
+
+function searchProducts(query) {
+    if (!query || query.length < 2) {
+        if (storeManager.currentStore) {
+            renderTiles(storeManager.currentStore);
+        }
+        return;
+    }
+    
+    const results = storeManager.searchProducts(query);
+    const grid = document.getElementById('tiles-grid');
+    grid.innerHTML = '';
+    
+    if (results.length === 0) {
+        grid.innerHTML = '<div style="grid-column:span 12;text-align:center;color:#666;padding:20px;">🔍 لا توجد نتائج</div>';
+        return;
+    }
+    
+    results.forEach(product => {
+        const cell = document.createElement('div');
+        cell.className = 'tile-cell has-product';
+        const price = product.discount > 0 ? 
+            product.price * (1 - product.discount/100) : product.price;
+        cell.innerHTML = `
+            <span class="product-icon">${product.icon}</span>
+            <span class="product-name">${product.name}</span>
+            <span class="product-price">💰 ${price}$</span>
+            <span class="product-stock">📦 ${product.stock}</span>
+            ${product.discount > 0 ? `<span class="badge discount">-${product.discount}%</span>` : ''}
+        `;
+        cell.onclick = () => {
+            const tiles = storeManager.tileChain.getAllTiles();
+            const tile = tiles.find(t => t.data.product && t.data.product.id === product.id);
+            if (tile) {
+                selectProduct(tile);
+                // اختيار المتجر تلقائياً
+                storeManager.currentStore = product.storeId;
+                renderStores();
+                renderTiles(product.storeId);
+            }
+        };
+        grid.appendChild(cell);
+    });
+}
+
+function filterByCategory(category) {
+    if (category === 'all') {
+        if (storeManager.currentStore) {
+            renderTiles(storeManager.currentStore);
+        }
+        return;
+    }
+    
+    storeManager.currentStore = category;
+    renderStores();
+    renderTiles(category);
+    updateStoreStats(category);
+}
+
+// ====== 7. دوال مساعدة ======
+function showToast(msg, type) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast ' + (type || 'info');
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        setTimeout(() => toast.remove(), 300);
+    }, 2500);
+}
+
+// ====== 8. بدء التشغيل ======
+function startGame() {
+    document.getElementById('start-screen').style.display = 'none';
+    AccountManager.init();
+}
+
+// معالجة تغيير الحجم
+window.addEventListener('resize', function() {
+    if (camera) {
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(innerWidth, innerHeight);
+    }
+});
+
+console.log('🏪 المدينة التجارية v3.0');
+console.log('📦 10 متاجر | 144 مربع | سلسلة لانهائية');
+console.log('🛒 نظام كاشير متكامل مع منتجات وأسعار');
+
+</script>
+</body>
+</html>
+
+  
