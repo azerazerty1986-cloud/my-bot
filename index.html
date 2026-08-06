@@ -16,6 +16,8 @@
     #side{position:fixed;top:50%;right:12px;transform:translateY(-50%);z-index:101;display:flex;flex-direction:column;gap:8px}
     .sbtn{width:48px;height:48px;border-radius:14px;background:rgba(0,0,0,.6);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08);color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
     .sbtn:hover{background:rgba(139,92,246,.25);border-color:rgba(139,92,246,.4);transform:scale(1.1)}
+    .sbtn.active-sync{animation:pulse 2s infinite;border-color:#4ade80;color:#4ade80}
+    @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.4)}50%{box-shadow:0 0 0 8px rgba(74,222,128,0)}}
     #grid-panel{position:fixed;bottom:0;left:0;right:0;z-index:200;background:rgba(8,8,20,.97);border-top:1px solid rgba(255,215,0,.2);border-radius:20px 20px 0 0;padding:16px;transform:translateY(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);max-height:65vh;overflow-y:auto;backdrop-filter:blur(20px)}
     #grid-panel.open{transform:translateY(0)}
     #grid-panel .gp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.06)}
@@ -127,6 +129,7 @@
         <button class="sbtn" title="إعدادات" onclick="openSettings()">⚙️</button>
         <button class="sbtn" title="مزامنة الآن" onclick="syncNow()" id="btn-sync">🔄</button>
         <button class="sbtn" title="حفظ" onclick="saveData()">💾</button>
+        <button class="sbtn" title="فتح مركز التوزيع" onclick="openDistributionHub()" style="background:rgba(74,222,128,.2);border-color:#4ade80;">📡</button>
     </div>
     <div id="grid-panel">
         <div class="gp-header">
@@ -153,7 +156,7 @@
         <a class="download-link" id="ic-download-link" href="#" target="_blank" style="display:none;">🔗 رابط التحميل المباشر</a>
         <button class="open-btn" onclick="openSelected()">📂 فتح الملف</button>
     </div>
-    <div id="hint">🖱️ اسحب لتدوير الكرة<br>👆 انقر على معلم لفتحه<br>🗂️ افتح المربعات لرفع ملفات</div>
+    <div id="hint">🖱️ اسحب لتدوير الكرة<br>👆 انقر على معلم لفتحه<br>🗂️ افتح المربعات لرفع ملفات<br>📡 زر التوزيع يفتح مركز التوزيع</div>
     <div id="add-modal">
         <div class="box">
             <h3>➕ إضافة معلم</h3>
@@ -229,6 +232,15 @@
         </div>
         <div class="vb" id="viewer-body"></div>
     </div>
+
+    <!-- ===== iframe لمركز التوزيع ===== -->
+    <div id="hub-container" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;display:none;background:rgba(0,0,0,.95);">
+        <div style="position:absolute;top:10px;right:20px;z-index:10000;">
+            <button onclick="closeHub()" style="background:rgba(239,68,68,.9);color:#fff;border:none;padding:8px 20px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">✖ إغلاق</button>
+        </div>
+        <iframe id="hub-iframe" src="distribution_hub.html" style="width:100%;height:100%;border:none;margin-top:50px;"></iframe>
+    </div>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js">
     </script>
     <script>
@@ -256,6 +268,56 @@
         let gridCells = [];
         let selectedCell = null;
         let fileLinkCache = {};
+
+        // ============================================================
+        //  فتح وإغلاق مركز التوزيع
+        // ============================================================
+
+        function openDistributionHub() {
+            const container = document.getElementById('hub-container');
+            const iframe = document.getElementById('hub-iframe');
+            // إعادة تحميل iframe
+            iframe.src = iframe.src;
+            container.style.display = 'block';
+            document.body.style.overflow = 'hidden';
+            toast('📡 تم فتح مركز التوزيع', 'info');
+        }
+
+        function closeHub() {
+            document.getElementById('hub-container').style.display = 'none';
+            document.body.style.overflow = '';
+            toast('📡 تم إغلاق مركز التوزيع', 'info');
+            // مزامنة تلقائية بعد الإغلاق
+            setTimeout(() => { if (telegramConfig.botToken && telegramConfig.chatId) fetchTelegramUpdates(); }, 1000);
+        }
+
+        // استقبال رسائل من iframe (مركز التوزيع)
+        window.addEventListener('message', function(e) {
+            console.log('📩 استقبلنا من مركز التوزيع:', e.data);
+
+            // معالجة رسالة SPHERICAL_ADD_FILE
+            if (e.data && typeof e.data === 'object') {
+                if (e.data.type === 'SPHERICAL_ADD_FILE' || e.data.action === 'add_file') {
+                    processAddFile(e.data);
+                    toast('📡 تم استقبال ملف من مركز التوزيع: ' + (e.data.title || 'ملف'), 'ok');
+                    return;
+                }
+            }
+
+            // معالجة الرسائل النصية
+            if (typeof e.data === 'string' && e.data.includes('SPHERICAL|CMD|')) {
+                try {
+                    const json = e.data.split('SPHERICAL|CMD|')[1];
+                    const cmd = JSON.parse(json);
+                    if (cmd.action === 'add_file') {
+                        processAddFile(cmd);
+                        toast('📡 تم استقبال ملف من مركز التوزيع', 'ok');
+                    }
+                } catch (err) {
+                    console.warn('⚠️ فشل parsing:', err);
+                }
+            }
+        });
 
         // ============================================================
         //  تهيئة
@@ -287,9 +349,8 @@
             updateUI();
             updateWorldFilters();
             animate();
-            setupPostMessage();
             setupDragDrop();
-            showMsg('🌐 انقر على 🗂️ لفتح شبكة المربعات ورفع الملفات', 3500);
+            showMsg('🌐 انقر على 📡 لفتح مركز التوزيع', 3500);
             if (telegramConfig.botToken && telegramConfig.chatId) startAutoSync();
 
             setInterval(function() {
@@ -597,82 +658,27 @@
         }
 
         // ============================================================
-        //  استقبال رسائل postMessage من مركز التوزيع
+        //  معالجة إضافة ملف
         // ============================================================
 
-        function setupPostMessage() {
-            window.addEventListener('message', function(e) {
-                console.log('📩 استقبلنا رسالة:', e.data);
-
-                if (e.data && typeof e.data === 'object') {
-                    if (e.data.type === 'SPHERICAL_ADD_FILE' || e.data.action === 'add_file') {
-                        if (e.data.downloadUrl) {
-                            fileLinkCache[e.data.fileId] = e.data.downloadUrl;
-                        }
-                        processAddFile(e.data);
-                        return;
-                    }
-                    if (e.data.type === 'ADD_LANDMARK') {
-                        landmarks.push({
-                            id: 'child_' + Date.now(),
-                            name: e.data.name || 'معلم جديد',
-                            desc: e.data.desc || 'من ملف فرعي',
-                            emoji: e.data.emoji || '📍',
-                            lat: e.data.lat || 0,
-                            lon: e.data.lon || 0,
-                            fileName: e.data.fileName || null,
-                            fileType: e.data.fileType || null,
-                            dataUrl: e.data.dataUrl || null,
-                            fileId: e.data.fileId || null,
-                            downloadUrl: e.data.downloadUrl || null,
-                            worldId: e.data.worldId || 'child',
-                            row: e.data.row || null,
-                            col: e.data.col || null,
-                            source: 'child'
-                        });
-                        renderLandmarks();
-                        updateUI();
-                        saveData();
-                        toast('✅ تمت إضافة معلم من الملف الفرعي', 'ok');
-                        return;
-                    }
-                }
-
-                if (typeof e.data === 'string' && e.data.includes('SPHERICAL|CMD|')) {
-                    try {
-                        const json = e.data.split('SPHERICAL|CMD|')[1];
-                        const cmd = JSON.parse(json);
-                        if (cmd.action === 'add_file') {
-                            if (cmd.downloadUrl) {
-                                fileLinkCache[cmd.file_id] = cmd.downloadUrl;
-                            }
-                            processAddFile(cmd);
-                            toast('📡 استقبلنا أمراً من مركز التوزيع', 'ok');
-                        }
-                    } catch (err) {
-                        console.warn('⚠️ فشل parsing الرسالة:', err);
-                    }
-                }
-            });
-        }
-
-        // ─── دالة معالجة إضافة ملف ───
         function processAddFile(cmd) {
             const row = parseInt(cmd.row) || 0;
             const col = parseInt(cmd.col) || 0;
             const lat = 90 - (row / 11) * 180;
             const lon = (col / 11) * 360 - 180;
 
+            // تخزين رابط التحميل
+            const downloadUrl = cmd.downloadUrl || fileLinkCache[cmd.fileId] || null;
+
+            // التحقق من وجود المعلم مسبقاً
             const existing = landmarks.find(l =>
                 l.worldId === cmd.worldId && l.row === row && l.col === col
             );
 
-            const downloadUrl = cmd.downloadUrl || fileLinkCache[cmd.file_id] || null;
-
             if (existing) {
                 existing.name = cmd.title || existing.name;
-                existing.fileId = cmd.file_id || existing.fileId;
-                existing.fileName = cmd.filename || existing.fileName;
+                existing.fileId = cmd.fileId || existing.fileId;
+                existing.fileName = cmd.fileName || existing.fileName;
                 existing.fileType = cmd.mime_type || existing.fileType;
                 existing.emoji = cmd.emoji || existing.emoji || '📍';
                 existing.desc = 'من مركز التوزيع';
@@ -687,10 +693,10 @@
                     lat: lat,
                     lon: lon,
                     file: null,
-                    fileName: cmd.filename || null,
+                    fileName: cmd.fileName || null,
                     fileType: cmd.mime_type || null,
                     dataUrl: null,
-                    fileId: cmd.file_id || null,
+                    fileId: cmd.fileId || null,
                     downloadUrl: downloadUrl,
                     worldId: cmd.worldId || 'main',
                     row: row,
@@ -899,7 +905,6 @@
             document.getElementById('ic-world').textContent = lm.worldId && lm.worldId !== 'local' ? '🌍 ' + lm
                 .worldId + (lm.row != null ? ' [' + lm.row + ',' + lm.col + ']' : '') : '';
 
-            // عرض رابط التحميل المباشر
             const downloadLink = document.getElementById('ic-download-link');
             if (lm.downloadUrl) {
                 downloadLink.style.display = 'block';
