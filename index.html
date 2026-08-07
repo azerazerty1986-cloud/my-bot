@@ -5190,7 +5190,109 @@ console.log('  ✅ 8 مواضيع عشوائية للعوالم الجديدة')
   <button class="platform-btn" onclick="EconomySystem.showDaily()">🎁 يومي</button>
   <button class="platform-btn" onclick="AccountManager.logout()">🚪 خروج</button>
 </div>
-<div id="drag-indicator"><div class="drag-joystick"><div class="drag-knob"></div></div></div></body>
+<div id="drag-indicator"><div class="drag-joystick"><div class="drag-knob"></div></div></div>
+// ============================================================
+// 🧩 دوال ثابتة لجميع الخوادم (لا تتغير)
+// ============================================================
+
+// ====== دالة الاتصال العامة ======
+function callServer(tileId, funcName, ...args) {
+    const server = window.servers && window.servers[tileId];
+    if (server && typeof server[funcName] === 'function') {
+        return server[funcName](...args);
+    }
+    return null;
+}
+
+// ====== دوال ثابتة تعمل مع أي خادم في أي مربع ======
+
+function getData(tileId) {
+    return callServer(tileId, 'getData') || 
+           callServer(tileId, 'getPlayers') || 
+           callServer(tileId, 'getInfo') || 
+           callServer(tileId, 'getBanner') || 
+           callServer(tileId, 'getWorlds') || 
+           null;
+}
+
+function getPlayers(tileId) {
+    return callServer(tileId, 'getPlayers') || 
+           callServer(tileId, 'getUsers') || 
+           callServer(tileId, 'getMembers') || 
+           null;
+}
+
+function getBanner(tileId) {
+    return callServer(tileId, 'getBanner') || 
+           callServer(tileId, 'getCurrentBanner') || 
+           callServer(tileId, 'getMessage') || 
+           null;
+}
+
+function getWorlds(tileId) {
+    return callServer(tileId, 'getWorlds') || 
+           callServer(tileId, 'getLevels') || 
+           callServer(tileId, 'getMaps') || 
+           null;
+}
+
+function getSettings(tileId) {
+    return callServer(tileId, 'getSettings') || 
+           callServer(tileId, 'getConfig') || 
+           null;
+}
+
+function addItem(tileId, name, data) {
+    return callServer(tileId, 'addPlayer', name) || 
+           callServer(tileId, 'addBanner', name, data) || 
+           callServer(tileId, 'addWorld', name) || 
+           callServer(tileId, 'addUser', name) || 
+           null;
+}
+
+function updateItem(tileId, id, value) {
+    return callServer(tileId, 'updateScore', id, value) || 
+           callServer(tileId, 'updateData', id, value) || 
+           callServer(tileId, 'updatePlayer', id, value) || 
+           null;
+}
+
+function deleteItem(tileId, id) {
+    return callServer(tileId, 'deletePlayer', id) || 
+           callServer(tileId, 'deleteUser', id) || 
+           callServer(tileId, 'deleteData', id) || 
+           null;
+}
+
+function pingServer(tileId) {
+    return callServer(tileId, 'ping') || 
+           callServer(tileId, 'test') || 
+           { status: 'unknown' };
+}
+
+function getServerInfo(tileId) {
+    return callServer(tileId, 'info') || 
+           callServer(tileId, 'getInfo') || 
+           { name: 'غير معروف', status: 'غير متصل' };
+}
+
+function execute(tileId, funcName, ...args) {
+    return callServer(tileId, funcName, ...args);
+}
+
+// ====== دوال مساعدة ======
+function isServerConnected(tileId) {
+    return !!(window.servers && window.servers[tileId]);
+}
+
+function getConnectedServers() {
+    return window.servers ? Object.keys(window.servers) : [];
+}
+
+// ====== تشغيل تلقائي ======
+console.log('🧩 دوال ثابتة جاهزة');
+console.log('📌 استخدم: getData("5_3") أو getPlayers("0_0")');  
+</body>
 </html>
 
 
