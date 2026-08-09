@@ -1,0 +1,1344 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🎮 نظام الجلب والتوزيع - GitHub-like v5</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, system-ui, sans-serif;
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    min-height: 100vh;
+    color: #e0e0e0;
+    padding: 16px;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+
+  .header {
+    text-align: center;
+    padding: 24px 16px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 20px;
+    margin-bottom: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+  }
+  .header h1 { font-size: 26px; color: #00d4aa; margin-bottom: 8px; }
+  .header p { font-size: 13px; color: #888; }
+  .status-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-top: 10px;
+  }
+  .status-online { background: rgba(0,212,170,0.2); color: #00d4aa; border: 1px solid #00d4aa; }
+  .status-offline { background: rgba(255,70,70,0.2); color: #ff4646; border: 1px solid #ff4646; }
+  .status-warning { background: rgba(255,170,0,0.2); color: #ffaa00; border: 1px solid #ffaa00; }
+
+  .card {
+    background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 16px;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+  }
+  .card-title {
+    font-size: 16px;
+    color: #00d4aa;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .input-group { margin-bottom: 12px; }
+  .input-group label {
+    display: block;
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 6px;
+  }
+  .input-group input,
+  .input-group textarea,
+  .input-group select {
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 14px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-group input:focus,
+  .input-group textarea:focus {
+    border-color: #00d4aa;
+  }
+  .input-group textarea {
+    min-height: 140px;
+    resize: vertical;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #00ff88;
+  }
+  .input-group input::placeholder,
+  .input-group textarea::placeholder { color: #555; }
+
+  .btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 4px;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #00d4aa, #00a884);
+    color: #fff;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,212,170,0.3); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn-secondary { background: #1a3a5c; color: #aac; }
+  .btn-secondary:hover { background: #2a4a7c; color: #fff; }
+  .btn-danger { background: #5c1a1a; color: #faa; }
+  .btn-danger:hover { background: #7c2a2a; color: #fff; }
+  .btn-success { background: #1a5c3a; color: #afa; }
+  .btn-success:hover { background: #2a7c4a; color: #fff; }
+  .btn-warning { background: #5c4a1a; color: #ffa; }
+  .btn-warning:hover { background: #7c6a2a; color: #fff; }
+
+  .result-box {
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.8;
+    display: none;
+  }
+  .result-success { background: rgba(0,212,170,0.1); border: 1px solid #00d4aa; color: #00d4aa; display: block; }
+  .result-error { background: rgba(255,70,70,0.1); border: 1px solid #ff4646; color: #ff4646; display: block; }
+  .result-info { background: rgba(70,130,255,0.1); border: 1px solid #4682ff; color: #4682ff; display: block; }
+  .result-warning { background: rgba(255,170,0,0.1); border: 1px solid #ffaa00; color: #ffaa00; display: block; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .stat-item {
+    background: rgba(0,0,0,0.3);
+    padding: 14px;
+    border-radius: 10px;
+    text-align: center;
+  }
+  .stat-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: #00d4aa;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: #888;
+    margin-top: 4px;
+  }
+
+  .file-list {
+    max-height: 300px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.2);
+    border-radius: 10px;
+    padding: 10px;
+    margin-top: 10px;
+  }
+  .file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  .file-item:hover { background: rgba(255,255,255,0.06); }
+  .file-name { color: #ccc; font-family: monospace; }
+  .file-size { color: #888; font-size: 11px; }
+  .file-actions { display: flex; gap: 6px; }
+  .file-actions button {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 6px;
+  }
+  .file-actions button:hover { color: #ff4646; }
+
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+  .tab {
+    padding: 10px 18px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #888;
+    cursor: pointer;
+    font-size: 13px;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: rgba(0,212,170,0.15);
+    color: #00d4aa;
+    border-color: #00d4aa;
+  }
+  .tab:hover:not(.active) { background: rgba(255,255,255,0.1); color: #ccc; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .console-log {
+    background: #0a0a1a;
+    border-radius: 10px;
+    padding: 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 11px;
+    color: #00ff88;
+    max-height: 200px;
+    overflow-y: auto;
+    margin-top: 10px;
+    line-height: 1.6;
+  }
+  .console-log .log-time { color: #666; }
+  .console-log .log-info { color: #4682ff; }
+  .console-log .log-success { color: #00d4aa; }
+  .console-log .log-error { color: #ff4646; }
+  .console-log .log-warn { color: #ffaa00; }
+
+  .progress-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 3px;
+    margin-top: 10px;
+    overflow: hidden;
+    display: none;
+  }
+  .progress-bar.active { display: block; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00d4aa, #00a884);
+    border-radius: 3px;
+    transition: width 0.3s;
+    width: 0%;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label { font-size: 13px; color: #ccc; }
+  .toggle-desc { font-size: 11px; color: #666; }
+  .toggle-switch {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background: #333;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle-switch.on { background: #00d4aa; }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: #fff;
+    border-radius: 50%;
+    top: 2px;
+    right: 2px;
+    transition: transform 0.2s;
+  }
+  .toggle-switch.on::after { transform: translateX(-20px); }
+
+  @media (max-width: 600px) {
+    .header h1 { font-size: 20px; }
+    .btn { width: 100%; margin: 4px 0; justify-content: center; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #2a2a4a; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #3a3a6a; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <h1>🎮 نظام الجلب والتوزيع</h1>
+    <p>GitHub-like v5.0 | إدارة الملفات والمزامنة مع Telegram</p>
+    <span class="status-badge status-online" id="serverStatus">🟢 نشط</span>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📊 إحصائيات النظام</div>
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-value" id="statFiles">0</div>
+        <div class="stat-label">ملفات</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statCommits">0</div>
+        <div class="stat-label">التزامات</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statBranches">0</div>
+        <div class="stat-label">فروع</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-value" id="statSize">0</div>
+        <div class="stat-label">الحجم</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('sync')">🔄 المزامنة</div>
+    <div class="tab" onclick="switchTab('files')">📁 الملفات</div>
+    <div class="tab" onclick="switchTab('repo')">📦 المستودع</div>
+    <div class="tab" onclick="switchTab('config')">⚙️ الإعدادات</div>
+    <div class="tab" onclick="switchTab('logs')">📝 السجل</div>
+  </div>
+
+  <div class="tab-content active" id="tab-sync">
+    <div class="card">
+      <div class="card-title">📥 جلب يدوي من Telegram</div>
+
+      <div style="margin-bottom: 16px; padding: 12px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+        <div style="font-size: 12px; color: #888; margin-bottom: 8px;">⚙️ خيارات الجلب:</div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">تخطي التكرار (حسب file_id)</div>
+            <div class="toggle-desc">لا تعالج نفس الملف أكثر من مرة</div>
+          </div>
+          <div class="toggle-switch on" id="toggleDedup" onclick="toggleSwitch('toggleDedup')"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">وضع بدون تحميل (Metadata Only)</div>
+            <div class="toggle-desc">إذا فشل التحميل بسبب CORS، احفظ اسم الملف والمعرف فقط</div>
+          </div>
+          <div class="toggle-switch on" id="toggleMetadataFallback" onclick="toggleSwitch('toggleMetadataFallback')"></div>
+        </div>
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">الكتابة فوق الملفات الموجودة</div>
+            <div class="toggle-desc">استبدل الملفات حتى لو كانت موجودة مسبقاً</div>
+          </div>
+          <div class="toggle-switch" id="toggleOverwrite" onclick="toggleSwitch('toggleOverwrite')"></div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label>📋 نتيجة getUpdates (JSON):</label>
+        <textarea id="jsonInput" placeholder='{"ok":true,"result":[{"update_id":123,"channel_post":{"message_id":1,"document":{"file_name":"tile_5_3_index.html"}}}]}'></textarea>
+      </div>
+
+      <div class="progress-bar" id="syncProgress">
+        <div class="progress-fill" id="syncProgressFill"></div>
+      </div>
+
+      <div>
+        <button class="btn btn-primary" id="btnSync" onclick="doManualSync()">🚀 جلب الملفات</button>
+        <button class="btn btn-secondary" onclick="pasteExample()">📄 مثال</button>
+        <button class="btn btn-secondary" onclick="clearInput()">🗑️ مسح</button>
+        <button class="btn btn-success" onclick="openTelegramApi()">🔗 فتح Telegram API</button>
+        <button class="btn btn-warning" onclick="extractFileList()">📋 استخراج قائمة الملفات فقط</button>
+      </div>
+      <div class="result-box" id="syncResult"></div>
+
+      <div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1);">
+        <div class="card-title">📤 رفع إلى القناة</div>
+        <button class="btn btn-primary" onclick="doPush()">📤 رفع جميع الملفات</button>
+        <div class="result-box" id="pushResult"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🧪 اختبار الاتصال</div>
+      <button class="btn btn-secondary" onclick="runDiagnostics()">🔍 فحص الاتصال</button>
+      <button class="btn btn-secondary" onclick="testServer()">⚡ اختبار الخادم</button>
+      <div class="result-box" id="diagResult"></div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-files">
+    <div class="card">
+      <div class="card-title">📁 الملفات في المستودع</div>
+      <div style="display:flex;gap:8px;margin-bottom:12px;">
+        <input type="text" id="newFileName" placeholder="اسم الملف (مثال: index.html)" style="flex:1;">
+        <button class="btn btn-primary" onclick="addNewFile()">➕ إضافة</button>
+      </div>
+      <div class="file-list" id="fileList">
+        <div style="text-align:center;color:#666;padding:20px;">لا توجد ملفات</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-repo">
+    <div class="card">
+      <div class="card-title">📦 إدارة المستودع</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="repoExport()">📥 تصدير</button>
+        <button class="btn btn-secondary" onclick="repoImport()">📤 استيراد</button>
+        <button class="btn btn-danger" onclick="repoReset()">🗑️ إعادة تعيين</button>
+      </div>
+      <div class="input-group" style="margin-top:14px;">
+        <label>📋 بيانات JSON للاستيراد:</label>
+        <textarea id="importData" placeholder='{"files":{},"history":[],"branches":{}}'></textarea>
+      </div>
+      <div class="result-box" id="repoResult"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📝 سجل التغييرات</div>
+      <div class="file-list" id="historyList">
+        <div style="text-align:center;color:#666;padding:20px;">لا توجد تغييرات</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-config">
+    <div class="card">
+      <div class="card-title">⚙️ إعدادات Telegram</div>
+      <div class="input-group">
+        <label>🤖 Bot Token:</label>
+        <input type="text" id="botToken" placeholder="123456:ABC-DEF...">
+      </div>
+      <div class="input-group">
+        <label>💬 Chat ID:</label>
+        <input type="text" id="chatId" placeholder="-1001234567890">
+      </div>
+      <div>
+        <button class="btn btn-primary" onclick="saveConfig()">💾 حفظ الإعدادات</button>
+        <button class="btn btn-secondary" onclick="loadConfig()">🔄 تحميل الإعدادات</button>
+        <button class="btn btn-danger" onclick="clearConfig()">🗑️ حذف الإعدادات</button>
+      </div>
+      <div class="result-box" id="configResult"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📖 دليل الاستخدام</div>
+      <div style="font-size:13px;line-height:2;color:#aaa;">
+        <strong style="color:#00d4aa;">الجلب اليدوي:</strong><br>
+        1. احفظ Bot Token و Chat ID في الإعدادات<br>
+        2. اضغط "🔗 فتح Telegram API"<br>
+        3. انسخ نتيجة JSON من المتصفح<br>
+        4. الصقها في مربع "جلب يدوي"<br>
+        5. اضغط "🚀 جلب الملفات"<br><br>
+
+        <strong style="color:#ffaa00;">⚠️ مشكلة CORS:</strong><br>
+        إذا كان التطبيق يعمل على WebView (Android)، قد يفشل تحميل محتوى الملفات بسبب CORS.<br>
+        ✅ الحل: فعّل "وضع بدون تحميل" لحفظ أسماء الملفات ومعرفاتها حتى لو لم يُحمل المحتوى.<br><br>
+
+        <strong style="color:#00d4aa;">الرفع:</strong><br>
+        أضف ملفات في تبويب "الملفات" ثم اضغط "📤 رفع جميع الملفات"<br><br>
+
+        <strong style="color:#00d4aa;">استخراج قائمة الملفات:</strong><br>
+        إذا لم يكن Bot Token متوفراً، استخدم "📋 استخراج قائمة الملفات فقط" لرؤية أسماء الملفات الموجودة في JSON.
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content" id="tab-logs">
+    <div class="card">
+      <div class="card-title">📝 سجل العمليات</div>
+      <div class="console-log" id="consoleLog"></div>
+      <button class="btn btn-secondary" onclick="clearLogs()" style="margin-top:10px;">🗑️ مسح السجل</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  let TILE_ID = '5_3';
+  if (window.__currentTileId) TILE_ID = window.__currentTileId;
+  else if (window.ServerManager && window.ServerManager.currentTile) TILE_ID = window.ServerManager.currentTile;
+  else if (window.ServerManager && window.ServerManager.tiles) {
+    for (const [id, tile] of Object.entries(window.ServerManager.tiles)) {
+      if (tile && tile.files && tile.files['main.js']) { TILE_ID = id; break; }
+    }
+  }
+
+  const Utils = {
+    uid: () => `${Date.now().toString(36)}_${Math.random().toString(36).substr(2, 9)}`,
+    deepClone: (obj) => JSON.parse(JSON.stringify(obj)),
+    formatSize: (bytes) => {
+      if (bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    },
+    encrypt: (text, key = 'gitlike_default_key') => {
+      if (!text) return '';
+      let result = '';
+      for (let i = 0; i < text.length; i++) {
+        result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+      }
+      try { return btoa(result); } catch(e) { return result; }
+    },
+    decrypt: (encoded, key = 'gitlike_default_key') => {
+      if (!encoded) return '';
+      let text;
+      try { text = atob(encoded); } catch(e) { text = encoded; }
+      let result = '';
+      for (let i = 0; i < text.length; i++) {
+        result += String.fromCharCode(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+      }
+      return result;
+    },
+    hash: async (content) => {
+      if (window.crypto && window.crypto.subtle) {
+        try {
+          const encoder = new TextEncoder();
+          const data = encoder.encode(content);
+          const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        } catch(e) {}
+      }
+      let hash = 5381;
+      for (let i = 0; i < content.length; i++) {
+        hash = ((hash << 5) + hash) + content.charCodeAt(i);
+      }
+      return 'fb_' + Math.abs(hash).toString(16);
+    }
+  };
+
+  const Storage = {
+    get: (key) => {
+      try { const raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : null; } catch(e) { return null; }
+    },
+    set: (key, value) => {
+      try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch(e) { return false; }
+    },
+    remove: (key) => localStorage.removeItem(key)
+  };
+
+  const logs = [];
+  function log(level, msg) {
+    const time = new Date().toLocaleTimeString('ar-SA');
+    logs.push({ time, level, msg });
+    if (logs.length > 300) logs.shift();
+    updateLogDisplay();
+    console.log(`[${TILE_ID}] ${msg}`);
+  }
+
+  function updateLogDisplay() {
+    const box = document.getElementById('consoleLog');
+    if (!box) return;
+    box.innerHTML = logs.map(l => {
+      let cls = 'log-info';
+      if (l.level === 'success') cls = 'log-success';
+      if (l.level === 'error') cls = 'log-error';
+      if (l.level === 'warn') cls = 'log-warn';
+      return `<div><span class="log-time">[${l.time}]</span> <span class="${cls}">${l.msg}</span></div>`;
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+
+  const Repo = {
+    files: {},
+    history: [],
+    branches: { main: { files: {}, head: null } },
+    currentBranch: 'main',
+
+    load() {
+      const data = Storage.get('gitlike_repo_' + TILE_ID);
+      if (data) {
+        this.files = data.files || {};
+        this.history = data.history || [];
+        this.branches = data.branches || { main: { files: {}, head: null } };
+        this.currentBranch = data.currentBranch || 'main';
+      }
+    },
+
+    save() {
+      Storage.set('gitlike_repo_' + TILE_ID, {
+        files: this.files, history: this.history,
+        branches: this.branches, currentBranch: this.currentBranch,
+        savedAt: new Date().toISOString()
+      });
+    },
+
+    getFile(path) { return this.files[path] || null; },
+    getFiles() { return Object.keys(this.files); },
+
+    async addFile(path, content, msg, meta = null) {
+      if (!path) return { success: false, error: 'اسم الملف مطلوب' };
+      const hash = await Utils.hash(content || '');
+      const isUpdate = !!this.files[path];
+      this.files[path] = content || '';
+      this.history.push({
+        id: Utils.uid(), action: isUpdate ? 'update' : 'add',
+        path, message: msg || (isUpdate ? 'تحديث' : 'إضافة'),
+        hash, timestamp: new Date().toISOString(),
+        branch: this.currentBranch, size: (content || '').length,
+        meta: meta
+      });
+      this.branches[this.currentBranch].head = this.history[this.history.length - 1].id;
+      this.save();
+      updateUI();
+      log('success', `📁 ${isUpdate ? 'تحديث' : 'إضافة'}: ${path}`);
+      return { success: true, path };
+    },
+
+    async deleteFile(path, msg) {
+      if (!this.files[path]) return { success: false, error: 'الملف غير موجود' };
+      delete this.files[path];
+      this.history.push({
+        id: Utils.uid(), action: 'delete', path,
+        message: msg || 'حذف ملف',
+        timestamp: new Date().toISOString(), branch: this.currentBranch
+      });
+      this.save();
+      updateUI();
+      log('success', `🗑️ حذف: ${path}`);
+      return { success: true };
+    },
+
+    getHistory(limit) { return this.history.slice(-(limit || 50)).reverse(); },
+
+    getStats() {
+      let size = 0;
+      for (const c of Object.values(this.files)) size += c.length;
+      return {
+        files: Object.keys(this.files).length,
+        size, formattedSize: Utils.formatSize(size),
+        commits: this.history.length,
+        branch: this.currentBranch,
+        branches: Object.keys(this.branches).length
+      };
+    },
+
+    reset(hard) {
+      if (hard) {
+        this.files = {}; this.history = [];
+        this.branches = { main: { files: {}, head: null } };
+        this.currentBranch = 'main';
+      }
+      this.save();
+      updateUI();
+      log('warn', '🗑️ تم إعادة تعيين المستودع');
+      return { success: true };
+    },
+
+    export() {
+      return { files: this.files, history: this.history, branches: this.branches, currentBranch: this.currentBranch, version: '5.0' };
+    },
+
+    import(data) {
+      try {
+        const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+        this.files = parsed.files || {};
+        this.history = parsed.history || [];
+        this.branches = parsed.branches || { main: { files: {}, head: null } };
+        this.currentBranch = parsed.currentBranch || 'main';
+        this.save();
+        updateUI();
+        log('success', '📥 تم استيراد المستودع');
+        return { success: true };
+      } catch(e) {
+        return { success: false, error: e.message };
+      }
+    }
+  };
+
+  const Channel = {
+    botToken: '',
+    chatId: '',
+
+    init() {
+      const encToken = localStorage.getItem('telegram_bot_token_enc');
+      const encChatId = localStorage.getItem('telegram_chat_id_enc');
+      this.botToken = encToken ? Utils.decrypt(encToken) : (localStorage.getItem('telegram_bot_token') || '');
+      this.chatId = encChatId ? Utils.decrypt(encChatId) : (localStorage.getItem('telegram_chat_id') || '');
+    },
+
+    hasConfig() { return this.botToken.length > 10 && this.chatId.length > 0; },
+
+    fixConfig() {
+      let token = this.botToken, chatId = this.chatId, fixed = false;
+      if (token.startsWith('-')) { [token, chatId] = [chatId, token]; fixed = true; }
+      if (chatId.includes(':')) { [token, chatId] = [chatId, token]; fixed = true; }
+      if (!token.includes(':')) return { success: false, error: 'Bot Token غير صالح' };
+      if (fixed) { this.botToken = token; this.chatId = chatId; this.saveConfig(token, chatId); }
+      return { success: true, fixed };
+    },
+
+    saveConfig(token, chatId) {
+      this.botToken = token; this.chatId = chatId;
+      localStorage.setItem('telegram_bot_token_enc', Utils.encrypt(token));
+      localStorage.setItem('telegram_chat_id_enc', Utils.encrypt(chatId));
+    },
+
+    clearConfig() {
+      this.botToken = ''; this.chatId = '';
+      localStorage.removeItem('telegram_bot_token_enc');
+      localStorage.removeItem('telegram_chat_id_enc');
+      localStorage.removeItem('telegram_bot_token');
+      localStorage.removeItem('telegram_chat_id');
+    },
+
+    async safeFetch(url, options) {
+      try {
+        const resp = await fetch(url, options);
+        const text = await resp.text();
+        return { success: true, text, status: resp.status };
+      } catch(e) {
+        return { success: false, error: e.message, isCors: e.message.includes('CORS') || e.message.includes('Failed to fetch') || e.message.includes('NetworkError') };
+      }
+    },
+
+    async processUpdates(updates, options = {}) {
+      const files = [];
+      const errors = [];
+      const dedup = options.dedup !== false;
+      const metadataFallback = options.metadataFallback !== false;
+      const seenIds = new Set();
+
+      log('info', `🔍 معالجة ${updates.length} تحديث...`);
+
+      for (let i = 0; i < updates.length; i++) {
+        const update = updates[i];
+        const msg = update.channel_post || update.message || update.edited_channel_post || update.edited_message;
+        if (!msg) continue;
+
+        const progress = Math.round(((i + 1) / updates.length) * 100);
+        const progressFill = document.getElementById('syncProgressFill');
+        if (progressFill) progressFill.style.width = progress + '%';
+
+        if (msg.document) {
+          const name = msg.document.file_name || `file_${msg.message_id}`;
+          const fileId = msg.document.file_id;
+
+          if (dedup && seenIds.has(fileId)) {
+            log('info', `⏭️ تخطي تكرار: ${name}`);
+            continue;
+          }
+          seenIds.add(fileId);
+
+          let content = null;
+          let fetchError = null;
+
+          if (this.hasConfig()) {
+            try {
+              log('info', `📥 جلب محتوى: ${name}...`);
+              const fileResp = await this.safeFetch(`https://api.telegram.org/bot${this.botToken}/getFile?file_id=${fileId}`);
+              if (!fileResp.success) {
+                fetchError = fileResp.error;
+                log('warn', `⚠️ getFile فشل لـ ${name}: ${fileResp.error}`);
+              } else {
+                const fileData = JSON.parse(fileResp.text);
+                if (!fileData.ok) {
+                  fetchError = fileData.description || 'getFile returned not ok';
+                  log('warn', `⚠️ getFile خطأ لـ ${name}: ${fetchError}`);
+                } else {
+                  const contentResp = await this.safeFetch(`https://api.telegram.org/file/bot${this.botToken}/${fileData.result.file_path}`);
+                  if (!contentResp.success) {
+                    fetchError = contentResp.error;
+                    log('warn', `⚠️ تحميل فشل لـ ${name}: ${contentResp.error}`);
+                  } else {
+                    content = contentResp.text;
+                    log('success', `✅ جلب: ${name} (${content.length} بايت)`);
+                  }
+                }
+              }
+            } catch(e) {
+              fetchError = e.message;
+              log('error', `❌ استثناء لـ ${name}: ${e.message}`);
+            }
+          } else {
+            fetchError = 'Bot Token غير محفوظ';
+            log('warn', `⚠️ لا يوجد Bot Token - لا يمكن جلب ${name}`);
+          }
+
+          if (content === null && metadataFallback) {
+            const metaContent = `[METADATA]\nfile_name: ${name}\nfile_id: ${fileId}\nfile_size: ${msg.document.file_size || 'unknown'}\nmime_type: ${msg.document.mime_type || 'unknown'}\nmessage_id: ${msg.message_id || 'unknown'}\nchat_id: ${msg.chat?.id || 'unknown'}\ndate: ${msg.date || 'unknown'}\nfetch_error: ${fetchError || 'none'}\n`;
+            files.push({ 
+              name, 
+              content: metaContent, 
+              file_id: fileId, 
+              message_id: msg.message_id,
+              isMetadata: true,
+              fetchError: fetchError,
+              size: msg.document.file_size || 0
+            });
+            log('info', `💾 metadata محفوظ لـ: ${name}`);
+          } else if (content !== null) {
+            files.push({ name, content, file_id: fileId, message_id: msg.message_id, size: content.length });
+          } else {
+            errors.push({ name, error: fetchError });
+          }
+        }
+        else if (msg.photo && msg.photo.length > 0) {
+          const photo = msg.photo[msg.photo.length - 1];
+          const name = `photo_${msg.message_id}.jpg`;
+          let content = null;
+          let fetchError = null;
+
+          if (this.hasConfig()) {
+            try {
+              const fileResp = await this.safeFetch(`https://api.telegram.org/bot${this.botToken}/getFile?file_id=${photo.file_id}`);
+              if (fileResp.success) {
+                const fileData = JSON.parse(fileResp.text);
+                if (fileData.ok) {
+                  const contentResp = await this.safeFetch(`https://api.telegram.org/file/bot${this.botToken}/${fileData.result.file_path}`);
+                  if (contentResp.success) content = contentResp.text;
+                  else fetchError = contentResp.error;
+                } else fetchError = fileData.description;
+              } else fetchError = fileResp.error;
+            } catch(e) { fetchError = e.message; }
+          } else fetchError = 'Bot Token غير محفوظ';
+
+          if (content !== null) {
+            files.push({ name, content, file_id: photo.file_id, isPhoto: true });
+          } else if (metadataFallback) {
+            const metaContent = `[METADATA - PHOTO]\nfile_name: ${name}\nfile_id: ${photo.file_id}\nmessage_id: ${msg.message_id}\nfetch_error: ${fetchError || 'none'}\n`;
+            files.push({ name, content: metaContent, file_id: photo.file_id, isMetadata: true, fetchError });
+          }
+        }
+      }
+
+      return { success: true, files, total: updates.length, count: files.length, errors };
+    },
+
+    async syncManual(jsonText, options = {}) {
+      log('info', '📋 بدء الجلب اليدوي...');
+      try {
+        let json = jsonText;
+        const firstBrace = json.indexOf('{');
+        const lastBrace = json.lastIndexOf('}');
+        if (firstBrace !== -1 && lastBrace !== -1) json = json.substring(firstBrace, lastBrace + 1);
+
+        const data = JSON.parse(json);
+        if (!data.ok) return { success: false, error: data.description || 'Telegram returned not ok' };
+
+        const result = await this.processUpdates(data.result, options);
+        if (!result.success) return result;
+
+        return await this.distributeFiles(result.files, options);
+      } catch(e) {
+        return { success: false, error: 'JSON خطأ: ' + e.message };
+      }
+    },
+
+    async distributeFiles(files, options = {}) {
+      let count = 0, skipped = 0, savedToRepo = 0, overwritten = 0;
+      const overwrite = options.overwrite === true;
+
+      for (const file of files) {
+        const match = file.name.match(/tile_(\d+)_(\d+)_(.+)/);
+
+        if (!match) {
+          const path = file.name.replace('tile_', '').replace(/_/g, '/');
+          const exists = !!Repo.getFile(path);
+          if (exists && !overwrite) { skipped++; continue; }
+          await Repo.addFile(path, file.content, `جلب: ${file.name}${file.isMetadata ? ' (metadata)' : ''}`, { file_id: file.file_id, isMetadata: file.isMetadata });
+          savedToRepo++;
+          if (exists) overwritten++;
+          continue;
+        }
+
+        const row = parseInt(match[1]);
+        const col = parseInt(match[2]);
+        const tileId = `${row}_${col}`;
+        const fileName = match[3];
+
+        const sm = window.ServerManager;
+        if (!sm || !sm.tiles) {
+          const repoPath = `${tileId}/${fileName}`;
+          const exists = !!Repo.getFile(repoPath);
+          if (exists && !overwrite) { skipped++; continue; }
+          await Repo.addFile(repoPath, file.content, `جلب: ${file.name}${file.isMetadata ? ' (metadata)' : ''}`, { file_id: file.file_id, isMetadata: file.isMetadata });
+          savedToRepo++;
+          if (exists) overwritten++;
+          continue;
+        }
+
+        if (!sm.tiles[tileId]) {
+          sm.tiles[tileId] = { id: tileId, row, col, files: {}, created: Date.now() };
+        }
+
+        const tile = sm.tiles[tileId];
+        const tileHasFiles = Object.keys(tile.files || {}).length > 0;
+        const fileExists = tile.files && tile.files[fileName];
+
+        if (tileHasFiles && !overwrite) { 
+          skipped++; 
+          log('warn', `⏭️ تخطي (البلاط ${tileId} لديه ملفات): ${fileName}`);
+          continue; 
+        }
+
+        tile.files[fileName] = file.content;
+        count++;
+        if (fileExists) overwritten++;
+        if (sm.renderGrid) sm.renderGrid();
+        if (sm.updateStats) sm.updateStats();
+        if (sm.saveTiles) sm.saveTiles();
+      }
+
+      log('success', `✅ مزامنة: ${count} موزعة + ${savedToRepo} في المستودع` + (skipped > 0 ? ` | ${skipped} تخطي` : '') + (overwritten > 0 ? ` | ${overwritten} استبدال` : ''));
+      return { success: true, synced: count, skipped, savedToRepo, overwritten, total: files.length };
+    },
+
+    async pushAll() {
+      if (!this.hasConfig()) return { success: false, error: 'إعدادات غير مكتملة' };
+      const paths = Repo.getFiles();
+      let uploaded = 0;
+      for (const path of paths) {
+        const content = Repo.getFile(path);
+        const name = `tile_${path.replace(/\//g, '_')}`;
+        const blob = new Blob([content], { type: 'text/plain' });
+        const file = new File([blob], name);
+        const form = new FormData();
+        form.append('chat_id', this.chatId);
+        form.append('document', file);
+        const result = await this.safeFetch(`https://api.telegram.org/bot${this.botToken}/sendDocument`, { method: 'POST', body: form });
+        if (result.success) {
+          try { const data = JSON.parse(result.text); if (data.ok) uploaded++; } catch(e) {}
+        }
+      }
+      log('success', `📤 رفع ${uploaded} ملف إلى القناة`);
+      return { success: true, uploaded, total: paths.length };
+    },
+
+    async diagnostics() {
+      const results = { tileId: TILE_ID, hasConfig: this.hasConfig(), tests: [] };
+      if (!this.hasConfig()) { 
+        results.tests.push({ name: 'Config', status: '❌', error: 'Bot Token أو Chat ID مفقود' }); 
+        return results; 
+      }
+
+      const meResult = await this.safeFetch(`https://api.telegram.org/bot${this.botToken}/getMe`);
+      if (!meResult.success) {
+        results.tests.push({ name: 'getMe', status: '❌', error: meResult.error, isCors: meResult.isCors });
+      } else {
+        try { 
+          const data = JSON.parse(meResult.text); 
+          results.tests.push({ name: 'getMe', status: data.ok ? '✅' : '❌', bot: data.result?.username }); 
+        } catch(e) { 
+          results.tests.push({ name: 'getMe', status: '❌', error: e.message }); 
+        }
+      }
+      return results;
+    }
+  };
+
+  const TileServer = {
+    info() {
+      const stats = Repo.getStats();
+      return {
+        name: `خادم ${TILE_ID}`, version: '5.0.0', status: 'نشط',
+        files: stats.files, commits: stats.commits,
+        branches: stats.branches, currentBranch: stats.branch,
+        channel: Channel.hasConfig() ? '🟢 متصلة' : '🔴 غير متصلة',
+        tileId: TILE_ID
+      };
+    },
+
+    ping() { return { status: 'online', timestamp: Date.now(), tileId: TILE_ID }; },
+
+    repo: {
+      add: (p, c, m) => Repo.addFile(p, c, m),
+      update: (p, c, m) => Repo.addFile(p, c, m),
+      delete: (p, m) => Repo.deleteFile(p, m),
+      get: (p) => Repo.getFile(p),
+      list: () => Repo.getFiles(),
+      history: (l) => Repo.getHistory(l),
+      stats: () => Repo.getStats(),
+      reset: (h) => Repo.reset(h),
+      export: () => Repo.export(),
+      import: (d) => Repo.import(d)
+    },
+
+    channel: {
+      sync: (o) => Channel.syncManual(o),
+      push: () => Channel.pushAll(),
+      saveConfig: (t, c) => Channel.saveConfig(t, c),
+      hasConfig: () => Channel.hasConfig(),
+      diagnostics: () => Channel.diagnostics(),
+      syncManual: (json, opts) => Channel.syncManual(json, opts)
+    },
+
+    syncManual: (json, opts) => Channel.syncManual(json, opts),
+    pushAll: () => Channel.pushAll(),
+
+    getPlayers: () => [],
+    getWorlds: () => [{ name: 'العالم الرئيسي', players: 0, maxPlayers: 100 }],
+    getBanner: () => ({ title: `خادم ${TILE_ID}`, message: 'نظام الجلب والتوزيع v5.0' }),
+
+    test() { return { success: true, message: 'الخادم يعمل', tileId: TILE_ID, repo: Repo.getStats() }; }
+  };
+
+  window._startTime = Date.now();
+  window.servers = window.servers || {};
+  window.servers[TILE_ID] = TileServer;
+
+  Repo.load();
+  Channel.init();
+  log('success', `✅ خادم ${TILE_ID} جاهز!`);
+
+  window.switchTab = function(tabName) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.getElementById('tab-' + tabName).classList.add('active');
+    if (tabName === 'files') updateFileList();
+    if (tabName === 'repo') updateHistoryList();
+  };
+
+  window.toggleSwitch = function(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle('on');
+  };
+
+  function getSyncOptions() {
+    return {
+      dedup: document.getElementById('toggleDedup').classList.contains('on'),
+      metadataFallback: document.getElementById('toggleMetadataFallback').classList.contains('on'),
+      overwrite: document.getElementById('toggleOverwrite').classList.contains('on')
+    };
+  }
+
+  function updateUI() {
+    const stats = Repo.getStats();
+    document.getElementById('statFiles').textContent = stats.files;
+    document.getElementById('statCommits').textContent = stats.commits;
+    document.getElementById('statBranches').textContent = stats.branches;
+    document.getElementById('statSize').textContent = stats.formattedSize;
+    updateFileList();
+    updateHistoryList();
+  }
+
+  function updateFileList() {
+    const list = document.getElementById('fileList');
+    const files = Repo.getFiles();
+    if (files.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">لا توجد ملفات</div>';
+      return;
+    }
+    list.innerHTML = files.map(path => {
+      const content = Repo.getFile(path);
+      const isMeta = content.startsWith('[METADATA');
+      return `<div class="file-item">
+        <div>
+          <div class="file-name">${path}${isMeta ? ' <span style="color:#ffaa00;font-size:10px;">[META]</span>' : ''}</div>
+          <div class="file-size">${Utils.formatSize(content.length)}</div>
+        </div>
+        <div class="file-actions">
+          <button onclick="viewFile('${path}')" title="عرض">👁️</button>
+          <button onclick="deleteFile('${path}')" title="حذف">🗑️</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function updateHistoryList() {
+    const list = document.getElementById('historyList');
+    const history = Repo.getHistory(20);
+    if (history.length === 0) {
+      list.innerHTML = '<div style="text-align:center;color:#666;padding:20px;">لا توجد تغييرات</div>';
+      return;
+    }
+    list.innerHTML = history.map(h => `
+      <div class="file-item" style="font-size:12px;">
+        <div>
+          <span style="color:${h.action==='add'?'#00d4aa':h.action==='delete'?'#ff4646':'#ffaa00'}">[${h.action}]</span>
+          <span style="color:#ccc;">${h.path}</span>
+          ${h.meta?.isMetadata ? '<span style="color:#ffaa00;font-size:10px;">[META]</span>' : ''}
+        </div>
+        <div class="file-size">${new Date(h.timestamp).toLocaleTimeString('ar-SA')}</div>
+      </div>
+    `).join('');
+  }
+
+  window.doManualSync = async function() {
+    const input = document.getElementById('jsonInput').value.trim();
+    const resultBox = document.getElementById('syncResult');
+    const btn = document.getElementById('btnSync');
+    const progressBar = document.getElementById('syncProgress');
+
+    if (!input) { showResult('syncResult', '❌ المربع فارغ!', 'error'); return; }
+
+    btn.disabled = true;
+    progressBar.classList.add('active');
+    showResult('syncResult', '🔄 جاري المعالجة...', 'info');
+
+    const options = getSyncOptions();
+    log('info', `⚙️ خيارات: تخطي التكرار=${options.dedup}, metadata fallback=${options.metadataFallback}, overwrite=${options.overwrite}`);
+
+    const result = await Channel.syncManual(input, options);
+
+    btn.disabled = false;
+    progressBar.classList.remove('active');
+    document.getElementById('syncProgressFill').style.width = '0%';
+
+    if (result.success) {
+      const hasErrors = result.errors && result.errors.length > 0;
+
+      let msg = `✅ تمت المعالجة!<br>`;
+      msg += `📦 إجمالي في JSON: ${result.total || 0}<br>`;
+      msg += `🎯 موزعة على بلاطات: ${result.synced || 0}<br>`;
+      msg += `💾 في المستودع: ${result.savedToRepo || 0}<br>`;
+      msg += `⏭️ تخطي: ${result.skipped || 0}<br>`;
+      if (result.overwritten > 0) msg += `🔄 استبدال: ${result.overwritten}<br>`;
+      if (hasErrors) msg += `<br>⚠️ أخطاء: ${result.errors.length} ملف فشل جلبه (قد يكون بسبب CORS أو Bot Token)`;
+
+      const resultType = hasErrors ? 'warning' : 'success';
+      showResult('syncResult', msg, resultType);
+      updateUI();
+    } else {
+      showResult('syncResult', '❌ فشل: ' + (result.error || 'خطأ غير معروف'), 'error');
+    }
+  };
+
+  window.extractFileList = function() {
+    const input = document.getElementById('jsonInput').value.trim();
+    const resultBox = document.getElementById('syncResult');
+    if (!input) { showResult('syncResult', '❌ المربع فارغ!', 'error'); return; }
+
+    try {
+      let json = input;
+      const firstBrace = json.indexOf('{');
+      const lastBrace = json.lastIndexOf('}');
+      if (firstBrace !== -1 && lastBrace !== -1) json = json.substring(firstBrace, lastBrace + 1);
+
+      const data = JSON.parse(json);
+      if (!data.ok) { showResult('syncResult', '❌ Telegram error: ' + (data.description || 'unknown'), 'error'); return; }
+
+      const files = [];
+      const seen = new Set();
+      for (const update of data.result || []) {
+        const msg = update.channel_post || update.message || update.edited_channel_post || update.edited_message;
+        if (!msg) continue;
+        if (msg.document) {
+          const fid = msg.document.file_id;
+          if (seen.has(fid)) continue;
+          seen.add(fid);
+          files.push({
+            name: msg.document.file_name || `file_${msg.message_id}`,
+            file_id: fid,
+            size: msg.document.file_size,
+            mime_type: msg.document.mime_type,
+            message_id: msg.message_id
+          });
+        }
+      }
+
+      let msg = `<strong>📋 قائمة الملفات المستخرجة (${files.length} ملف فريد):</strong><br><br>`;
+      for (const f of files) {
+        msg += `📄 <strong>${f.name}</strong><br>`;
+        msg += `&nbsp;&nbsp;&nbsp;file_id: ${f.file_id}<br>`;
+        msg += `&nbsp;&nbsp;&nbsp;size: ${f.size || 'unknown'} bytes<br>`;
+        msg += `&nbsp;&nbsp;&nbsp;mime: ${f.mime_type || 'unknown'}<br><br>`;
+      }
+
+      showResult('syncResult', msg, 'info');
+      log('info', `📋 استخراج: ${files.length} ملف فريد من القائمة`);
+    } catch(e) {
+      showResult('syncResult', '❌ JSON خطأ: ' + e.message, 'error');
+    }
+  };
+
+  window.doPush = async function() {
+    const resultBox = document.getElementById('pushResult');
+    showResult('pushResult', '🔄 جاري الرفع...', 'info');
+    const result = await Channel.pushAll();
+    if (result.success) {
+      showResult('pushResult', `✅ تم رفع ${result.uploaded} من ${result.total} ملف`, 'success');
+    } else {
+      showResult('pushResult', '❌ فشل: ' + result.error, 'error');
+    }
+  };
+
+  window.saveConfig = function() {
+    const token = document.getElementById('botToken').value.trim();
+    const chatId = document.getElementById('chatId').value.trim();
+    if (!token || !chatId) { showResult('configResult', '❌ أكمل الحقول', 'error'); return; }
+    Channel.saveConfig(token, chatId);
+    showResult('configResult', '✅ تم حفظ الإعدادات', 'success');
+    log('success', '💾 إعدادات Telegram محفوظة');
+  };
+
+  window.loadConfig = function() {
+    Channel.init();
+    document.getElementById('botToken').value = Channel.botToken;
+    document.getElementById('chatId').value = Channel.chatId;
+    showResult('configResult', '✅ تم تحميل الإعدادات', 'success');
+  };
+
+  window.clearConfig = function() {
+    Channel.clearConfig();
+    document.getElementById('botToken').value = '';
+    document.getElementById('chatId').value = '';
+    showResult('configResult', '🗑️ تم حذف الإعدادات', 'warning');
+  };
+
+  window.addNewFile = async function() {
+    const name = document.getElementById('newFileName').value.trim();
+    if (!name) return;
+    await Repo.addFile(name, '// محتوى جديد', 'إضافة ملف جديد');
+    document.getElementById('newFileName').value = '';
+    updateFileList();
+  };
+
+  window.viewFile = function(path) {
+    const content = Repo.getFile(path);
+    alert(`📄 ${path}\n\n${content.substring(0, 2000)}${content.length > 2000 ? '...' : ''}`);
+  };
+
+  window.deleteFile = async function(path) {
+    if (!confirm(`حذف ${path}؟`)) return;
+    await Repo.deleteFile(path);
+    updateFileList();
+  };
+
+  window.repoExport = function() {
+    const data = Repo.export();
+    document.getElementById('importData').value = JSON.stringify(data, null, 2);
+    showResult('repoResult', '✅ تم تصدير المستودع إلى المربع أدناه', 'success');
+  };
+
+  window.repoImport = function() {
+    const data = document.getElementById('importData').value.trim();
+    if (!data) { showResult('repoResult', '❌ المربع فارغ', 'error'); return; }
+    const result = Repo.import(data);
+    if (result.success) {
+      showResult('repoResult', '✅ تم استيراد المستودع', 'success');
+      updateUI();
+    } else {
+      showResult('repoResult', '❌ فشل: ' + result.error, 'error');
+    }
+  };
+
+  window.repoReset = function() {
+    if (!confirm('حذف كل الملفات والسجل؟')) return;
+    Repo.reset(true);
+    showResult('repoResult', '🗑️ تم إعادة التعيين', 'warning');
+    updateUI();
+  };
+
+  window.runDiagnostics = async function() {
+    const resultBox = document.getElementById('diagResult');
+    showResult('diagResult', '🔄 جاري الفحص...', 'info');
+    const results = await Channel.diagnostics();
+    let html = `<strong>🔍 نتائج الفحص:</strong><br>`;
+    results.tests.forEach(t => {
+      html += `${t.status} ${t.name}${t.error ? ': ' + t.error : ''}${t.bot ? ' (@' + t.bot + ')' : ''}${t.isCors ? ' [CORS]' : ''}<br>`;
+    });
+    showResult('diagResult', html, results.tests.every(t => t.status === '✅') ? 'success' : 'warning');
+  };
+
+  window.testServer = function() {
+    const result = TileServer.test();
+    showResult('diagResult', `✅ ${result.message}\n📁 ملفات: ${result.repo.files}\n📝 التزامات: ${result.repo.commits}`, 'success');
+  };
+
+  window.pasteExample = function() {
+    const example = JSON.stringify({
+      ok: true,
+      result: [{
+        update_id: 123456789,
+        channel_post: {
+          message_id: 1,
+          chat: { id: -1003822964890, title: "قناتك" },
+          document: {
+            file_name: "tile_5_3_index.html",
+            file_id: "BQACAgQAAxkBAAExample123",
+            file_size: 1523
+          },
+          date: 1690000000
+        }
+      }, {
+        update_id: 123456790,
+        channel_post: {
+          message_id: 2,
+          chat: { id: -1003822964890 },
+          document: {
+            file_name: "tile_3_7_style.css",
+            file_id: "BQACAgQAAxkBAAExample456",
+            file_size: 890
+          }
+        }
+      }]
+    }, null, 2);
+    document.getElementById('jsonInput').value = example;
+    showResult('syncResult', '📄 تم لصق مثال تجريبي', 'info');
+  };
+
+  window.clearInput = function() {
+    document.getElementById('jsonInput').value = '';
+    document.getElementById('syncResult').className = 'result-box';
+  };
+
+  window.openTelegramApi = function() {
+    Channel.init();
+    if (!Channel.hasConfig()) {
+      showResult('syncResult', '❌ احفظ Bot Token و Chat ID في الإعدادات أولاً', 'error');
+      switchTab('config');
+      return;
+    }
+    const url = `https://api.telegram.org/bot${Channel.botToken}/getUpdates?limit=100`;
+    window.open(url, '_blank');
+    showResult('syncResult', '✅ تم فتح Telegram API في تبويب جديد. انسخ النتيجة والصقها هنا.', 'info');
+  };
+
+  window.clearLogs = function() {
+    logs.length = 0;
+    updateLogDisplay();
+  };
+
+  function showResult(id, msg, type) {
+    const box = document.getElementById(id);
+    box.innerHTML = msg.replace(/\n/g, '<br>');
+    box.className = 'result-box result-' + type;
+  }
+
+  updateUI();
+  document.getElementById('botToken').value = Channel.botToken;
+  document.getElementById('chatId').value = Channel.chatId;
+
+})();
+</script>
+
+</body>
+</html>
