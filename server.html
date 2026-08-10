@@ -2614,12 +2614,11 @@ window.showToast = showToast;
                 }
 
                 const tile = sm.tiles[tileId];
-                const tileHasFiles = Object.keys(tile.files || {}).length > 0;
                 const fileExists = tile.files && tile.files[fileName];
 
-                if (tileHasFiles && !overwrite) {
+                if (fileExists && !overwrite) {
                     skipped++;
-                    log('warn', `⏭️ تخطي (البلاط ${tileId} لديه ملفات): ${fileName}`);
+                    log('warn', `⏭️ تخطي (الملف موجود مسبقاً في ${tileId}): ${fileName}`);
                     continue;
                 }
 
@@ -2629,6 +2628,11 @@ window.showToast = showToast;
                 if (sm.renderGrid) sm.renderGrid();
                 if (sm.updateStats) sm.updateStats();
                 if (sm.saveTiles) sm.saveTiles();
+            }
+
+            // ✅ حفظ المربعات بعد التوزيع
+            if (window.ServerManager && window.ServerManager.saveTiles) {
+                window.ServerManager.saveTiles();
             }
 
             log('success', `✅ مزامنة: ${count} موزعة + ${savedToRepo} في المستودع` + (skipped > 0 ? ` | ${skipped} تخطي` : '') + (overwritten > 0 ? ` | ${overwritten} استبدال` : ''));
@@ -2817,6 +2821,16 @@ window.showToast = showToast;
         `).join('');
     }
 
+    // ✅ تحديث شبكة الإدارة بعد المزامنة
+    async function refreshAdminGrid() {
+        if (window.ServerManager) {
+            if (window.ServerManager.renderGrid) window.ServerManager.renderGrid();
+            if (window.ServerManager.updateStats) window.ServerManager.updateStats();
+            if (window.ServerManager.saveTiles) window.ServerManager.saveTiles();
+            log('success', '🔄 تم تحديث شبكة الإدارة');
+        }
+    }
+
     window.glDoManualSync = async function() {
         const input = document.getElementById('gl-jsonInput').value.trim();
         const resultBox = document.getElementById('gl-syncResult');
@@ -2850,6 +2864,9 @@ window.showToast = showToast;
 
             const resultType = hasErrors ? 'warning' : 'success';
             glShowResult('gl-syncResult', msg, resultType);
+
+            // ✅ تحديث الواجهة الرئيسية
+            await refreshAdminGrid();
             updateUI();
         } else {
             glShowResult('gl-syncResult', '❌ فشل: ' + (result.error || 'خطأ غير معروف'), 'error');
@@ -3068,3 +3085,4 @@ window.showToast = showToast;
 </script>
 </body>
 </html>
+
