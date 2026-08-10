@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html dir="rtl" lang="ar">
 <head>
@@ -69,6 +68,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:
 .tile .admin-badge-tile { position: absolute; top: -2px; left: -2px; background: #ffd700; color: #111; font-size: 4px; padding: 1px 4px; border-radius: 3px; font-weight: 800; }
 .tile .server-indicator { position: absolute; bottom: -2px; left: -2px; font-size: 6px; }
 .tile .new-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(74,222,128,0.9); color: #000; font-size: 6px; padding: 1px 4px; border-radius: 4px; font-weight: 800; animation: fadeOut 3s forwards; animation-delay: 2s; }
+.tile .pending-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(251,191,36,0.9); color: #000; font-size: 5px; padding: 1px 3px; border-radius: 3px; font-weight: 800; }
 @keyframes fadeOut { to { opacity: 0; transform: translate(-50%, -50%) scale(0.5); } }
 @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
 .tile-panel { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(10,10,30,0.97); border: 1px solid rgba(139,92,246,0.3); border-radius: 12px; padding: 16px; width: 92%; max-width: 520px; max-height: 80vh; overflow-y: auto; z-index: 9999; backdrop-filter: blur(20px); display: none; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
@@ -82,8 +82,9 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:
 .tile-panel .file-list { margin: 8px 0; max-height: 150px; overflow-y: auto; }
 .tile-panel .file-item { display: flex; justify-content: space-between; align-items: center; padding: 3px 6px; background: rgba(255,255,255,0.03); border-radius: 3px; margin-bottom: 2px; font-size: 9px; }
 .tile-panel .file-item .name { color: #a78bfa; font-weight: 600; } .tile-panel .file-item .size { color: #666; font-size: 7px; }
+.tile-panel .file-item .pending { color: #fbbf24; font-size: 7px; }
 .tile-panel .file-item .actions button { background: none; border: none; color: #888; cursor: pointer; font-size: 10px; padding: 0 2px; }
-.tile-panel .file-item .actions button:hover { color: #fff; } .tile-panel .file-item .actions .delete:hover { color: #f87171; } .tile-panel .file-item .actions .edit:hover { color: #fbbf24; } .tile-panel .file-item .actions .sync:hover { color: #4ade80; }
+.tile-panel .file-item .actions button:hover { color: #fff; } .tile-panel .file-item .actions .delete:hover { color: #f87171; } .tile-panel .file-item .actions .edit:hover { color: #fbbf24; } .tile-panel .file-item .actions .sync:hover { color: #4ade80; } .tile-panel .file-item .actions .fetch:hover { color: #60a5fa; }
 .tile-panel .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 8px; }
 .tile-panel .actions button { padding: 4px 10px; border: none; border-radius: 4px; font-size: 9px; font-weight: 600; cursor: pointer; font-family: inherit; transition: all 0.2s; }
 .tile-panel .actions button:hover { transform: scale(1.03); }
@@ -100,9 +101,11 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:
 .file-editor .editor-header h4 { color: #fbbf24; font-size: 12px; }
 .file-editor .editor-header button { background: rgba(239,68,68,0.15); color: #f87171; border: none; padding: 2px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; }
 .file-editor textarea { width: 100%; height: 200px; background: rgba(0,0,0,0.5); color: #fff; border: 1px solid rgba(255,255,255,0.08); border-radius: 4px; padding: 8px; font-family: 'Courier New', monospace; font-size: 10px; resize: vertical; direction: ltr; text-align: left; tab-size: 4; }
-.file-editor .editor-actions { display: flex; gap: 6px; margin-top: 8px; }
-.file-editor .editor-actions button { padding: 4px 12px; border: none; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; font-family: inherit; flex: 1; }
+.file-editor .editor-actions { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.file-editor .editor-actions button { padding: 4px 12px; border: none; border-radius: 4px; font-size: 10px; font-weight: 600; cursor: pointer; font-family: inherit; flex: 1; min-width: 80px; }
 .file-editor .editor-actions .btn-save { background: rgba(74,222,128,0.15); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+.file-editor .editor-actions .btn-fetch { background: rgba(96,165,250,0.15); color: #60a5fa; border: 1px solid rgba(96,165,250,0.2); }
+.file-editor .editor-actions .btn-open-link { background: rgba(139,92,246,0.15); color: #a78bfa; border: 1px solid rgba(139,92,246,0.2); }
 .file-editor .editor-actions .btn-close { background: rgba(255,255,255,0.06); color: #888; border: none; }
 .telegram-settings { background: rgba(255,255,255,0.03); border: 1px solid rgba(139,92,246,0.15); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: none; }
 .telegram-settings.open { display: block; }
@@ -244,7 +247,8 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:
             </div>
             <div style="margin-top:6px;font-size:9px;color:#666;">
                 💡 <strong>طريقة الاستقبال:</strong> أرسل ملفاً إلى القناة بصيغة الاسم: <code style="color:#a78bfa;">tile_الصف_العمود_الاسم</code> مثال: <code style="color:#a78bfa;">tile_5_3_index.html</code><br>
-                🔁 التطبيق يفحص القناة كل 30 ثانية ويوزّع الملفات تلقائياً.
+                🔁 التطبيق يفحص القناة كل 30 ثانية ويوزّع الملفات تلقائياً.<br>
+                ⚠️ <strong style="color:#fbbf24;">ملاحظة:</strong> إذا فشل تحميل المحتوى بسبب CORS، يُحفظ file_id ويُجلب لاحقاً عند فتح الملف.
             </div>
         </div>
 
@@ -304,7 +308,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:
 <div class="file-editor" id="fileEditor">
     <div class="editor-header"><h4 id="editorTitle">📝 تحرير الملف</h4><button onclick="closeEditor()">✖</button></div>
     <textarea id="editorContent" spellcheck="false"></textarea>
-    <div class="editor-actions"><button class="btn-save" onclick="saveFile()">💾 حفظ</button><button class="btn-close" onclick="closeEditor()">✖ إلغاء</button></div>
+    <div class="editor-actions"><button class="btn-save" onclick="saveFile()">💾 حفظ</button><button class="btn-fetch" id="editorFetchBtn" onclick="fetchFileFromChannel()" style="display:none;">📥 جلب من القناة</button><button class="btn-open-link" id="editorOpenBtn" onclick="openFileLink()" style="display:none;">🔗 فتح الرابط</button><button class="btn-close" onclick="closeEditor()">✖ إلغاء</button></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -315,6 +319,7 @@ body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:
 </div>
 
 <script>
+
 // ============================================================
 // 👑 نظام إدارة الخوادم المصغرة + استقبال تلقائي من القناة
 // ============================================================
@@ -326,7 +331,79 @@ let gameConnected = false;
 let gameTile = null;
 let gameServer = null;
 
+// ============================================================
+// 🔧 دالة جلب محتوى ملف Telegram (مع fallback لـ CORS)
+// ============================================================
+async function fetchTelegramFileContent(token, fileId) {
+    // محاولة 1: fetch العادي
+    try {
+        const getFileResp = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
+        const getFileData = await getFileResp.json();
+        if (getFileData.ok && getFileData.result.file_path) {
+            const filePath = getFileData.result.file_path;
+            const contentResp = await fetch(`https://api.telegram.org/file/bot${token}/${filePath}`);
+            if (contentResp.ok) {
+                return { success: true, content: await contentResp.text() };
+            }
+        }
+    } catch (e) {
+        console.warn('Fetch failed, trying XHR...', e);
+    }
+
+    // محاولة 2: XMLHttpRequest (قد يتجاوز CORS في WebView)
+    try {
+        const result = await new Promise((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open('GET', `https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`, true);
+            xhr.timeout = 10000;
+            xhr.onload = function() {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    if (data.ok && data.result.file_path) {
+                        const path = data.result.file_path;
+                        const xhr2 = new XMLHttpRequest();
+                        xhr2.open('GET', `https://api.telegram.org/file/bot${token}/${path}`, true);
+                        xhr2.timeout = 15000;
+                        xhr2.onload = function() {
+                            resolve({ success: true, content: xhr2.responseText });
+                        };
+                        xhr2.onerror = () => reject(new Error('XHR2 failed'));
+                        xhr2.ontimeout = () => reject(new Error('XHR2 timeout'));
+                        xhr2.send();
+                    } else {
+                        reject(new Error(data.description || 'getFile failed'));
+                    }
+                } catch(err) {
+                    reject(err);
+                }
+            };
+            xhr.onerror = () => reject(new Error('XHR failed'));
+            xhr.ontimeout = () => reject(new Error('XHR timeout'));
+            xhr.send();
+        });
+        return result;
+    } catch (e) {
+        return { success: false, error: e.message };
+    }
+}
+
+function isMetadataContent(content) {
+    return typeof content === 'string' && content.trim().startsWith('[METADATA]');
+}
+
+function extractFileIdFromMetadata(content) {
+    if (!isMetadataContent(content)) return null;
+    const match = content.match(/file_id:\s*(.+)/);
+    return match ? match[1].trim() : null;
+}
+
+function getFileDirectUrl(token, fileId) {
+    return `https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`;
+}
+
+// ============================================================
 // ====== نظام الاستقبال التلقائي ======
+// ============================================================
 const AutoReceiver = {
     interval: null,
     isRunning: false,
@@ -426,16 +503,16 @@ const AutoReceiver = {
                     continue;
                 }
 
+                // 🆕 محاولة جلب المحتوى بكل الطرق
                 let content = null;
-                try {
-                    const fileResp = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`);
-                    const fileData = await fileResp.json();
-                    if (fileData.ok) {
-                        const contentResp = await fetch(`https://api.telegram.org/file/bot${token}/${fileData.result.file_path}`);
-                        content = await contentResp.text();
-                    }
-                } catch(e) {
-                    this.log('warn', `تعذر جلب محتوى: ${fileName}`);
+                let fetchFailed = false;
+
+                const fetchResult = await fetchTelegramFileContent(token, fileId);
+                if (fetchResult.success) {
+                    content = fetchResult.content;
+                } else {
+                    fetchFailed = true;
+                    this.log('warn', `تعذر جلب محتوى: ${fileName} (${fetchResult.error})`);
                 }
 
                 if (!ServerManager.tiles[tileId]) {
@@ -447,15 +524,22 @@ const AutoReceiver = {
 
                 if (content !== null) {
                     tile.files[actualFileName] = content;
+                    this.log('success', `📥 استقبل: ${actualFileName} → المربع (${row},${col}) ✅ محتوى كامل`);
                 } else {
-                    tile.files[actualFileName] = `[METADATA]\nfile_name: ${fileName}\nfile_id: ${fileId}\nreceived: ${new Date().toISOString()}\n`;
+                    // 🆕 حفظ metadata مع file_id للجلب لاحقاً
+                    tile.files[actualFileName] = `[METADATA]
+file_name: ${fileName}
+file_id: ${fileId}
+received: ${new Date().toISOString()}
+fetch_error: ${fetchFailed ? 'CORS/network' : 'unknown'}
+`;
+                    this.log('warn', `📥 استقبل: ${actualFileName} → المربع (${row},${col}) ⚠️ metadata فقط (اضغط تحرير ثم "جلب من القناة")`);
                 }
 
                 ServerManager.syncedTiles.add(tileId);
                 processedTiles.add(tileId);
                 newFiles++;
                 this.receivedCount++;
-                this.log('success', `📥 استقبل: ${actualFileName} → المربع (${row},${col})`);
             }
 
             localStorage.setItem('auto_receiver_last_id', this.lastUpdateId.toString());
@@ -654,6 +738,15 @@ const ServerManager = {
                 const isAdminTile = this.adminTiles.has(id);
                 const isGameConnected = (gameTile === id && gameConnected);
                 const fileCount = tile.files ? Object.keys(tile.files).length : 0;
+
+                // 🆕 التحقق من وجود ملفات pending (metadata فقط)
+                let hasPending = false;
+                if (tile.files) {
+                    for (const content of Object.values(tile.files)) {
+                        if (isMetadataContent(content)) { hasPending = true; break; }
+                    }
+                }
+
                 const div = document.createElement('div');
                 div.className = 'tile';
                 if (fileCount > 0) div.classList.add('has-files');
@@ -668,6 +761,7 @@ const ServerManager = {
                 if (isSynced) html += `<div class="sync-badge">🔄</div>`;
                 if (isAdminTile) html += `<div class="admin-badge-tile">👑</div>`;
                 if (isGameConnected) html += `<div class="server-indicator">🎮</div>`;
+                if (hasPending) html += `<div class="pending-badge">⏳</div>`;
                 div.innerHTML = html;
                 div.onclick = () => this.openPanel(id);
                 grid.appendChild(div);
@@ -678,12 +772,16 @@ const ServerManager = {
     updateStats: function() {
         const total = Object.keys(this.tiles).length;
         const online = this.activeServers.size;
-        let files = 0, adminFiles = 0;
+        let files = 0, adminFiles = 0, pendingFiles = 0;
         Object.entries(this.tiles).forEach(([id, t]) => {
             if (t && t.files) {
                 const count = Object.keys(t.files).length;
                 files += count;
                 if (this.adminTiles.has(id)) adminFiles += count;
+                // 🆕 عدّ الملفات المعلقة
+                for (const content of Object.values(t.files)) {
+                    if (isMetadataContent(content)) pendingFiles++;
+                }
             }
         });
         document.getElementById('totalTiles').textContent = total;
@@ -734,14 +832,14 @@ const ServerManager = {
         Object.entries(tile.files).forEach(([name, content]) => {
             const div = document.createElement('div');
             div.className = 'file-item';
-            const size = new Blob([content]).size;
-            const sizeStr = size < 1024 ? size + ' B' : (size / 1024).toFixed(1) + ' KB';
+            const isPending = isMetadataContent(content);
+            const size = isPending ? '⏳ معلق' : (new Blob([content]).size < 1024 ? new Blob([content]).size + ' B' : (new Blob([content]).size / 1024).toFixed(1) + ' KB');
             div.innerHTML = `
                 <span class="name">${name}</span>
-                <span class="size">${sizeStr}</span>
+                <span class="${isPending ? 'pending' : 'size'}">${size}</span>
                 <span class="actions">
                     <button class="edit" onclick="ServerManager.editFile('${tile.id}', '${name}')" title="تحرير">✏️</button>
-                    <button class="sync" onclick="ServerManager.syncFileToChannel('${tile.id}', '${name}')" title="مزامنة">🔄</button>
+                    ${isPending ? `<button class="fetch" onclick="ServerManager.fetchFileFromPanel('${tile.id}', '${name}')" title="جلب من القناة">📥</button>` : `<button class="sync" onclick="ServerManager.syncFileToChannel('${tile.id}', '${name}')" title="مزامنة">🔄</button>`}
                     <button onclick="ServerManager.downloadFile('${tile.id}', '${name}')" title="تحميل">⬇️</button>
                     <button class="delete" onclick="ServerManager.deleteFile('${tile.id}', '${name}')" title="حذف">🗑️</button>
                 </span>`;
@@ -783,16 +881,95 @@ const ServerManager = {
         input.click();
     },
 
+    // 🆕 جلب ملف من القناة عند الطلب (من لوحة المربع)
+    fetchFileFromPanel: async function(tileId, fileName) {
+        const tile = this.tiles[tileId];
+        if (!tile || !tile.files || !tile.files[fileName]) return;
+        const content = tile.files[fileName];
+        const fileId = extractFileIdFromMetadata(content);
+        if (!fileId) {
+            showToast('❌ لا يوجد file_id في metadata', 'error');
+            return;
+        }
+        const token = localStorage.getItem('telegram_bot_token');
+        if (!token) {
+            showToast('⚠️ أدخل Bot Token أولاً', 'warning');
+            return;
+        }
+        showToast('🔄 جاري جلب المحتوى من القناة...', 'warning');
+        const result = await fetchTelegramFileContent(token, fileId);
+        if (result.success) {
+            tile.files[fileName] = result.content;
+            this.saveTiles();
+            this.renderGrid();
+            this.updateStats();
+            this.renderFiles(tile);
+            showToast(`✅ تم جلب محتوى ${fileName} بنجاح`, 'success');
+        } else {
+            showToast('❌ فشل الجلب: ' + result.error, 'error');
+        }
+    },
+
     editFile: function(tileId, fileName) {
         if (!isAdminLoggedIn) return;
         this.currentTile = tileId;
         this.currentFile = fileName;
         const tile = this.tiles[tileId];
         if (!tile || !tile.files || !tile.files[fileName]) return;
+        const content = tile.files[fileName];
+        const isPending = isMetadataContent(content);
+        const fileId = isPending ? extractFileIdFromMetadata(content) : null;
+        const token = localStorage.getItem('telegram_bot_token');
+
         const editor = document.getElementById('fileEditor');
         editor.classList.add('open');
-        document.getElementById('editorTitle').textContent = `📝 تحرير ${fileName}`;
-        document.getElementById('editorContent').value = tile.files[fileName];
+        document.getElementById('editorTitle').textContent = `📝 تحرير ${fileName}${isPending ? ' (⏳ معلق)' : ''}`;
+        document.getElementById('editorContent').value = content;
+
+        // 🆕 إظهار/إخفاء أزرار الجلب
+        const fetchBtn = document.getElementById('editorFetchBtn');
+        const openBtn = document.getElementById('editorOpenBtn');
+        if (isPending && fileId && token) {
+            fetchBtn.style.display = 'inline-block';
+            openBtn.style.display = 'inline-block';
+            openBtn.onclick = () => window.open(`https://api.telegram.org/file/bot${token}/${fileId}`, '_blank');
+        } else {
+            fetchBtn.style.display = 'none';
+            openBtn.style.display = 'none';
+        }
+    },
+
+    // 🆕 جلب ملف من القناة من داخل المحرر
+    fetchFileFromChannel: async function() {
+        if (!this.currentTile || !this.currentFile) return;
+        const tile = this.tiles[this.currentTile];
+        if (!tile || !tile.files || !tile.files[this.currentFile]) return;
+        const content = tile.files[this.currentFile];
+        const fileId = extractFileIdFromMetadata(content);
+        if (!fileId) {
+            showToast('❌ لا يوجد file_id', 'error');
+            return;
+        }
+        const token = localStorage.getItem('telegram_bot_token');
+        if (!token) {
+            showToast('⚠️ أدخل Bot Token', 'warning');
+            return;
+        }
+        showToast('🔄 جاري الجلب...', 'warning');
+        const result = await fetchTelegramFileContent(token, fileId);
+        if (result.success) {
+            tile.files[this.currentFile] = result.content;
+            this.saveTiles();
+            document.getElementById('editorContent').value = result.content;
+            document.getElementById('editorTitle').textContent = `📝 تحرير ${this.currentFile}`;
+            document.getElementById('editorFetchBtn').style.display = 'none';
+            document.getElementById('editorOpenBtn').style.display = 'none';
+            this.renderGrid();
+            this.updateStats();
+            showToast('✅ تم جلب المحتوى بنجاح', 'success');
+        } else {
+            showToast('❌ فشل: ' + result.error, 'error');
+        }
     },
 
     saveFile: function() {
@@ -814,7 +991,17 @@ const ServerManager = {
     downloadFile: function(tileId, fileName) {
         const tile = this.tiles[tileId];
         if (!tile || !tile.files || !tile.files[fileName]) return;
-        const blob = new Blob([tile.files[fileName]], { type: 'text/plain' });
+        const content = tile.files[fileName];
+        // 🆕 إذا كان metadata، نحاول فتح الرابط بدلاً من التحميل
+        if (isMetadataContent(content)) {
+            const fileId = extractFileIdFromMetadata(content);
+            const token = localStorage.getItem('telegram_bot_token');
+            if (fileId && token) {
+                window.open(`https://api.telegram.org/bot${token}/getFile?file_id=${fileId}`, '_blank');
+                return;
+            }
+        }
+        const blob = new Blob([content], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -847,6 +1034,12 @@ const ServerManager = {
             this.activeServers.add(id);
             const tile = this.tiles[id];
             if (tile && tile.files && tile.files['main.js']) {
+                // 🆕 التحقق من أن main.js ليس metadata
+                if (isMetadataContent(tile.files['main.js'])) {
+                    showToast('⚠️ main.js معلق — اضغط "جلب من القناة" أولاً', 'warning');
+                    this.activeServers.delete(id);
+                    return;
+                }
                 try {
                     eval(tile.files['main.js']);
                     showToast(`🟢 تم تشغيل خادم (${tile.row},${tile.col})`, 'success');
@@ -987,6 +1180,11 @@ const ServerManager = {
             showToast('❌ الملف غير موجود', 'error');
             return;
         }
+        // 🆕 لا ترفع metadata
+        if (isMetadataContent(tile.files[fileName])) {
+            showToast('⚠️ لا يمكن رفع ملف metadata — جلب المحتوى أولاً', 'warning');
+            return;
+        }
         try {
             const [row, col] = tileId.split('_');
             const formattedName = `tile_${row}_${col}_${fileName}`;
@@ -1043,16 +1241,24 @@ const ServerManager = {
                 const col = parseInt(match[2]);
                 const tileId = `${row}_${col}`;
                 const fileType = match[3];
-                const fileResp = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${msg.document.file_id}`);
-                const fileData = await fileResp.json();
-                if (!fileData.ok) continue;
-                const fileUrl = `https://api.telegram.org/file/bot${token}/${fileData.result.file_path}`;
-                const contentResp = await fetch(fileUrl);
-                const content = await contentResp.text();
+
+                // 🆕 استخدام الدالة الجديدة
+                const fetchResult = await fetchTelegramFileContent(token, msg.document.file_id);
+
                 if (!this.tiles[tileId]) {
                     this.tiles[tileId] = { id: tileId, row: row, col: col, files: {}, created: Date.now() };
                 }
-                this.tiles[tileId].files[fileType] = content;
+
+                if (fetchResult.success) {
+                    this.tiles[tileId].files[fileType] = fetchResult.content;
+                } else {
+                    this.tiles[tileId].files[fileType] = `[METADATA]
+file_name: ${fileName}
+file_id: ${msg.document.file_id}
+received: ${new Date().toISOString()}
+fetch_error: ${fetchResult.error}
+`;
+                }
                 this.syncedTiles.add(tileId);
                 synced++;
             }
@@ -1092,7 +1298,7 @@ const ServerManager = {
             const tile = this.tiles[tileId];
             if (!tile || !tile.files) continue;
             for (const [fileName, content] of Object.entries(tile.files)) {
-                if (adminFileMap[fileName]) {
+                if (adminFileMap[fileName] && !isMetadataContent(content)) {
                     try {
                         const data = JSON.parse(content);
                         console.log(`📂 تحميل ملف إدارة: ${fileName} (${tileId})`, data);
@@ -1120,7 +1326,7 @@ const ServerManager = {
         const data = {
             tiles: this.tiles, protected: Array.from(this.protectedTiles),
             synced: Array.from(this.syncedTiles), adminTiles: Array.from(this.adminTiles),
-            exported: Date.now(), version: '4.0-auto-receiver'
+            exported: Date.now(), version: '4.1-cors-fix'
         };
         const json = JSON.stringify(data, null, 2);
         const blob = new Blob([json], { type: 'application/json' });
@@ -1226,6 +1432,15 @@ function connectToGameServer() {
         try {
             const tile = window.ServerManager.tiles && window.ServerManager.tiles[gameTile];
             if (tile && tile.files && tile.files['main.js']) {
+                // 🆕 التحقق من أن main.js ليس metadata
+                if (isMetadataContent(tile.files['main.js'])) {
+                    document.getElementById('gameStatus').className = 'game-status offline';
+                    document.getElementById('gameStatus').textContent = `🔴 main.js معلق — اضغط على المربع ثم "جلب من القناة"`;
+                    document.getElementById('gameConnectBtn').textContent = '🔗 اتصال';
+                    document.getElementById('gameConnectBtn').disabled = false;
+                    showToast('⚠️ main.js معلق — جلب المحتوى أولاً', 'warning');
+                    return;
+                }
                 eval(tile.files['main.js']);
                 if (window.servers && window.servers[gameTile]) {
                     gameServer = window.servers[gameTile];
@@ -1490,6 +1705,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
 window.ServerManager = ServerManager;
 window.showToast = showToast;
+window.isMetadataContent = isMetadataContent;
+window.extractFileIdFromMetadata = extractFileIdFromMetadata;
+window.fetchTelegramFileContent = fetchTelegramFileContent;
 
 // ============================================================
 // 🎮 نظام الجلب والتوزيع (GitLike) - مدمج داخلياً
@@ -1769,32 +1987,16 @@ window.showToast = showToast;
                     let content = null;
                     let fetchError = null;
 
+                    // 🆕 استخدام الدالة الجديدة
                     if (this.hasConfig()) {
-                        try {
-                            log('info', `📥 جلب محتوى: ${name}...`);
-                            const fileResp = await this.safeFetch(`https://api.telegram.org/bot${this.botToken}/getFile?file_id=${fileId}`);
-                            if (!fileResp.success) {
-                                fetchError = fileResp.error;
-                                log('warn', `⚠️ getFile فشل لـ ${name}: ${fileResp.error}`);
-                            } else {
-                                const fileData = JSON.parse(fileResp.text);
-                                if (!fileData.ok) {
-                                    fetchError = fileData.description || 'getFile returned not ok';
-                                    log('warn', `⚠️ getFile خطأ لـ ${name}: ${fetchError}`);
-                                } else {
-                                    const contentResp = await this.safeFetch(`https://api.telegram.org/file/bot${this.botToken}/${fileData.result.file_path}`);
-                                    if (!contentResp.success) {
-                                        fetchError = contentResp.error;
-                                        log('warn', `⚠️ تحميل فشل لـ ${name}: ${contentResp.error}`);
-                                    } else {
-                                        content = contentResp.text;
-                                        log('success', `✅ جلب: ${name} (${content.length} بايت)`);
-                                    }
-                                }
-                            }
-                        } catch(e) {
-                            fetchError = e.message;
-                            log('error', `❌ استثناء لـ ${name}: ${e.message}`);
+                        log('info', `📥 جلب محتوى: ${name}...`);
+                        const result = await window.fetchTelegramFileContent(this.botToken, fileId);
+                        if (result.success) {
+                            content = result.content;
+                            log('success', `✅ جلب: ${name} (${content.length} بايت)`);
+                        } else {
+                            fetchError = result.error;
+                            log('warn', `⚠️ فشل جلب ${name}: ${fetchError}`);
                         }
                     } else {
                         fetchError = 'Bot Token غير محفوظ';
@@ -1802,7 +2004,16 @@ window.showToast = showToast;
                     }
 
                     if (content === null && metadataFallback) {
-                        const metaContent = `[METADATA]\nfile_name: ${name}\nfile_id: ${fileId}\nfile_size: ${msg.document.file_size || 'unknown'}\nmime_type: ${msg.document.mime_type || 'unknown'}\nmessage_id: ${msg.message_id || 'unknown'}\nchat_id: ${msg.chat?.id || 'unknown'}\ndate: ${msg.date || 'unknown'}\nfetch_error: ${fetchError || 'none'}\n`;
+                        const metaContent = `[METADATA]
+file_name: ${name}
+file_id: ${fileId}
+file_size: ${msg.document.file_size || 'unknown'}
+mime_type: ${msg.document.mime_type || 'unknown'}
+message_id: ${msg.message_id || 'unknown'}
+chat_id: ${msg.chat?.id || 'unknown'}
+date: ${msg.date || 'unknown'}
+fetch_error: ${fetchError || 'none'}
+`;
                         files.push({
                             name, content: metaContent,
                             file_id: fileId, message_id: msg.message_id,
@@ -1823,23 +2034,20 @@ window.showToast = showToast;
                     let fetchError = null;
 
                     if (this.hasConfig()) {
-                        try {
-                            const fileResp = await this.safeFetch(`https://api.telegram.org/bot${this.botToken}/getFile?file_id=${photo.file_id}`);
-                            if (fileResp.success) {
-                                const fileData = JSON.parse(fileResp.text);
-                                if (fileData.ok) {
-                                    const contentResp = await this.safeFetch(`https://api.telegram.org/file/bot${this.botToken}/${fileData.result.file_path}`);
-                                    if (contentResp.success) content = contentResp.text;
-                                    else fetchError = contentResp.error;
-                                } else fetchError = fileData.description;
-                            } else fetchError = fileResp.error;
-                        } catch(e) { fetchError = e.message; }
+                        const result = await window.fetchTelegramFileContent(this.botToken, photo.file_id);
+                        if (result.success) content = result.content;
+                        else fetchError = result.error;
                     } else fetchError = 'Bot Token غير محفوظ';
 
                     if (content !== null) {
                         files.push({ name, content, file_id: photo.file_id, isPhoto: true });
                     } else if (metadataFallback) {
-                        const metaContent = `[METADATA - PHOTO]\nfile_name: ${name}\nfile_id: ${photo.file_id}\nmessage_id: ${msg.message_id}\nfetch_error: ${fetchError || 'none'}\n`;
+                        const metaContent = `[METADATA - PHOTO]
+file_name: ${name}
+file_id: ${photo.file_id}
+message_id: ${msg.message_id}
+fetch_error: ${fetchError || 'none'}
+`;
                         files.push({ name, content: metaContent, file_id: photo.file_id, isMetadata: true, fetchError });
                     }
                 }
@@ -1945,6 +2153,11 @@ window.showToast = showToast;
             let uploaded = 0;
             for (const path of paths) {
                 const content = Repo.getFile(path);
+                // 🆕 لا ترفع metadata
+                if (window.isMetadataContent && window.isMetadataContent(content)) {
+                    log('warn', `⏭️ تخطي رفع metadata: ${path}`);
+                    continue;
+                }
                 const name = `tile_${path.replace(/\//g, '_')}`;
                 const blob = new Blob([content], { type: 'text/plain' });
                 const file = new File([blob], name);
@@ -2084,7 +2297,7 @@ window.showToast = showToast;
         }
         list.innerHTML = files.map(path => {
             const content = Repo.getFile(path);
-            const isMeta = content && content.startsWith('[METADATA');
+            const isMeta = window.isMetadataContent && window.isMetadataContent(content);
             return `<div class="gitlike-file-item">
                 <div>
                     <div class="gitlike-file-name">${path}${isMeta ? ' <span style="color:#ffaa00;font-size:10px;">[META]</span>' : ''}</div>
@@ -2258,7 +2471,9 @@ window.showToast = showToast;
 
     window.glViewFile = function(path) {
         const content = Repo.getFile(path);
-        alert(`📄 ${path}\n\n${content.substring(0, 2000)}${content.length > 2000 ? '...' : ''}`);
+        alert(`📄 ${path}
+
+${content.substring(0, 2000)}${content.length > 2000 ? '...' : ''}`);
     };
 
     window.glDeleteFile = async function(path) {
@@ -2305,7 +2520,9 @@ window.showToast = showToast;
 
     window.glTestServer = function() {
         const result = TileServer.test();
-        glShowResult('gl-diagResult', `✅ ${result.message}\n📁 ملفات: ${result.repo.files}\n📝 التزامات: ${result.repo.commits}`, 'success');
+        glShowResult('gl-diagResult', `✅ ${result.message}
+📁 ملفات: ${result.repo.files}
+📝 التزامات: ${result.repo.commits}`, 'success');
     };
 
     window.glPasteExample = function() {
@@ -2365,7 +2582,8 @@ window.showToast = showToast;
     function glShowResult(id, msg, type) {
         const box = document.getElementById(id);
         if (!box) return;
-        box.innerHTML = msg.replace(/\n/g, '<br>');
+        box.innerHTML = msg.replace(/
+/g, '<br>');
         box.className = 'gitlike-result-box gitlike-result-' + type;
     }
 
@@ -2379,4 +2597,3 @@ window.showToast = showToast;
 </script>
 </body>
 </html>
-
