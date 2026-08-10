@@ -1,5 +1,8 @@
 # سوبيرات ريان - نظام إدارة متكامل
-[![فتح في تيليجرام](https://img.shields.io/badge/🚀_فتح_داخل_تيليجرام-0088cc?style=for-the-badge&logo=telegram&logoColor=white)](https://t.me/azerazerty_bot?start=open)
+
+[![فتح في تيليجرام](https://img.shields.io/badge/🚀_فتح_داخل_تيليجرام-0088cc?style=for-the-badge&logo=telegram&logoColor=white)](https://azerazerty1986-cloud.github.io/my-bot/server.html?start=open)
+
+
 نظام متكامل لإدارة المبيعات والمشتريات والمخزون مع واجهة عربية سهلة الاستخدام.
 
 ## ✨ المميزات
