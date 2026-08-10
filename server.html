@@ -1020,6 +1020,7 @@ body {
             <span class="coord-display" id="gameCoordDisplay">(5,3)</span>
             <button onclick="connectToGameServer()" id="gameConnectBtn">🔗 اتصال</button>
             <button onclick="disconnectGameServer()" class="btn-disconnect" id="gameDisconnectBtn" style="display:none;">🔌 قطع</button>
+            <button onclick="manualMultiplayerSync()" id="gameSyncBtn" style="display:none;padding:4px 12px;border:1px solid rgba(139,92,246,0.3);border-radius:8px;background:rgba(139,92,246,0.08);color:#a78bfa;cursor:pointer;font-size:11px;font-family:inherit;">🌐 مزامنة</button>
             <span class="game-status waiting" id="gameStatus">⏳ غير متصل</span>
         </div>
 
@@ -1958,6 +1959,7 @@ function connectToGameServer() {
     document.getElementById('gameConnectBtn').textContent = '🔗 اتصال';
     document.getElementById('gameConnectBtn').disabled = false;
     document.getElementById('gameDisconnectBtn').style.display = 'none';
+    document.getElementById('gameSyncBtn').style.display = 'none';
     document.getElementById('gamePlayers').innerHTML = '<div class="empty-msg">❌ الخادم غير متصل</div>';
     document.getElementById('gameWorlds').innerHTML = '<div class="empty-msg">❌ الخادم غير متصل</div>';
     document.getElementById('gameServerInfo').innerHTML = '<div class="empty-msg">❌ الخادم غير متصل</div>';
@@ -1966,15 +1968,34 @@ function connectToGameServer() {
 }
 
 function onGameConnected(row, col) {
+    const tileId = `${row}_${col}`;
     const status = document.getElementById('gameStatus');
     status.className = 'game-status online';
     status.textContent = `🟢 متصل بـ (${row},${col})`;
     document.getElementById('gameConnectBtn').textContent = '🔗 اتصال';
     document.getElementById('gameConnectBtn').disabled = false;
     document.getElementById('gameDisconnectBtn').style.display = 'inline-block';
+    document.getElementById('gameSyncBtn').style.display = 'inline-block';
     ServerManager.renderGrid();
     loadGameData();
     showToast(`✅ متصل بالخادم (${row},${col})`, 'success');
+
+    // 🌐 بدء المزامنة المتعددة
+    if (window.MultiplayerSync) {
+        MultiplayerSync.startAutoSync(tileId, (remoteData) => {
+            if (remoteData.players) {
+                // دمج اللاعبين (بدون تكرار)
+                const existingIds = new Set(Database.players.map(p => p.id));
+                remoteData.players.forEach(p => {
+                    if (!existingIds.has(p.id)) {
+                        Database.players.push(p);
+                    }
+                });
+            }
+            if (remoteData.worlds) Database.worlds = remoteData.worlds;
+            loadGameData();
+        });
+    }
 }
 
 function loadGameData() {
@@ -2052,6 +2073,16 @@ function gamePing() {
     }
 }
 
+function manualMultiplayerSync() {
+    if (!gameConnected || !gameTile) {
+        showToast('❌ غير متصل بخادم', 'error');
+        return;
+    }
+    if (window.MultiplayerSync) {
+        MultiplayerSync.manualSync(gameTile);
+    }
+}
+
 function gameAddPlayer() {
     if (!gameServer || !gameConnected) {
         showToast('❌ الخادم غير متصل', 'error');
@@ -2078,12 +2109,16 @@ function gameAddPlayer() {
 }
 
 function disconnectGameServer() {
+    // 🌐 إيقاف المزامنة
+    if (window.MultiplayerSync) MultiplayerSync.stopAutoSync();
+
     gameServer = null;
     gameConnected = false;
     gameTile = null;
     document.getElementById('gameStatus').className = 'game-status waiting';
     document.getElementById('gameStatus').textContent = '⏳ غير متصل';
     document.getElementById('gameDisconnectBtn').style.display = 'none';
+    document.getElementById('gameSyncBtn').style.display = 'none';
     document.getElementById('gamePlayers').innerHTML = '<div class="empty-msg">⏳ غير متصل</div>';
     document.getElementById('gameWorlds').innerHTML = '<div class="empty-msg">⏳ غير متصل</div>';
     document.getElementById('gameServerInfo').innerHTML = '<div class="empty-msg">⏳ غير متصل</div>';
@@ -2622,12 +2657,23 @@ window.showToast = showToast;
                     continue;
                 }
 
+                // ✅ لا تحفظ metadata في المربعات — احفظ في Repo فقط
+                if (file.isMetadata) {
+                    const repoPath = `${tileId}/${fileName}`;
+                    const repoExists = !!Repo.getFile(repoPath);
+                    if (!repoExists || overwrite) {
+                        await Repo.addFile(repoPath, file.content, `جلب metadata: ${file.name}`, { file_id: file.file_id, isMetadata: true });
+                        savedToRepo++;
+                        if (repoExists) overwritten++;
+                    }
+                    log('warn', `⚠️ metadata فقط لـ ${tileId}/${fileName} — لم يُحفظ في المربع`);
+                    continue;
+                }
+
+                // حفظ الملف الفعلي في المربع
                 tile.files[fileName] = file.content;
                 count++;
                 if (fileExists) overwritten++;
-                if (sm.renderGrid) sm.renderGrid();
-                if (sm.updateStats) sm.updateStats();
-                if (sm.saveTiles) sm.saveTiles();
             }
 
             // ✅ حفظ المربعات بعد التوزيع
@@ -2635,7 +2681,7 @@ window.showToast = showToast;
                 window.ServerManager.saveTiles();
             }
 
-            log('success', `✅ مزامنة: ${count} موزعة + ${savedToRepo} في المستودع` + (skipped > 0 ? ` | ${skipped} تخطي` : '') + (overwritten > 0 ? ` | ${overwritten} استبدال` : ''));
+            log('success', `✅ مزامنة: ${count} في المربعات + ${savedToRepo} في المستودع` + (skipped > 0 ? ` | ${skipped} تخطي` : '') + (overwritten > 0 ? ` | ${overwritten} استبدال` : ''));
             return { success: true, synced: count, skipped, savedToRepo, overwritten, total: files.length };
         },
 
@@ -3081,8 +3127,161 @@ window.showToast = showToast;
     if (bt) bt.value = Channel.botToken;
     if (ci) ci.value = Channel.chatId;
 
+
+
+// ============================================================
+// 🌐 نظام المزامنة المتعدد اللاعبين (Multiplayer Sync via Telegram)
+// ============================================================
+
+const MultiplayerSync = {
+    syncInterval: null,
+    pushInterval: null,
+    lastStateTime: 0,
+    myPlayerId: null,
+
+    init() {
+        this.myPlayerId = 'player_' + Math.random().toString(36).substr(2, 9);
+        console.log('🌐 Multiplayer Sync initialized. My ID:', this.myPlayerId);
+    },
+
+    // رفع حالة اللعبة إلى Telegram
+    async pushGameState(tileId, state) {
+        const token = localStorage.getItem('telegram_bot_token');
+        const chatId = localStorage.getItem('telegram_chat_id');
+        if (!token || !chatId) return { success: false, error: 'no telegram config' };
+
+        const stateJson = JSON.stringify({
+            type: 'game_state',
+            tileId: tileId,
+            timestamp: Date.now(),
+            senderId: this.myPlayerId,
+            data: state
+        });
+
+        const blob = new Blob([stateJson], { type: 'application/json' });
+        const file = new File([blob], `state_${tileId}_${Date.now()}.json`);
+        const form = new FormData();
+        form.append('chat_id', chatId);
+        form.append('document', file);
+
+        try {
+            const resp = await fetch(`https://api.telegram.org/bot${token}/sendDocument`, {
+                method: 'POST', body: form
+            });
+            const data = await resp.json();
+            return { success: data.ok, message_id: data.result?.message_id };
+        } catch(e) {
+            return { success: false, error: e.message };
+        }
+    },
+
+    // جلب آخر حالة لعبة من Telegram
+    async fetchGameState(tileId) {
+        const token = localStorage.getItem('telegram_bot_token');
+        if (!token) return null;
+
+        try {
+            const resp = await fetch(`https://api.telegram.org/bot${token}/getUpdates?limit=50`);
+            const data = await resp.json();
+            if (!data.ok) return null;
+
+            let latestState = null;
+            let latestTime = 0;
+
+            for (const update of data.result) {
+                const msg = update.channel_post || update.message;
+                if (!msg?.document) continue;
+                const name = msg.document.file_name || '';
+                if (!name.startsWith(`state_${tileId}_`)) continue;
+
+                // جلب المحتوى
+                const fileResp = await fetch(`https://api.telegram.org/bot${token}/getFile?file_id=${msg.document.file_id}`);
+                const fileData = await fileResp.json();
+                if (!fileData.ok) continue;
+
+                const contentResp = await fetch(`https://api.telegram.org/file/bot${token}/${fileData.result.file_path}`);
+                const content = await contentResp.text();
+                const state = JSON.parse(content);
+
+                if (state.timestamp > latestTime && state.senderId !== this.myPlayerId) {
+                    latestTime = state.timestamp;
+                    latestState = state;
+                }
+            }
+            return latestState;
+        } catch(e) {
+            console.error('❌ فشل جلب الحالة:', e);
+            return null;
+        }
+    },
+
+    // بدء المزامنة التلقائية
+    startAutoSync(tileId, onStateUpdate) {
+        this.stopAutoSync();
+        window.currentTileId = tileId;
+
+        // جلب أولي
+        this.fetchGameState(tileId).then(state => {
+            if (state) {
+                this.lastStateTime = state.timestamp;
+                onStateUpdate(state.data);
+                showToast(`🌐 دخل لاعب آخر! ${state.data.players?.length || 0} لاعب`, 'success');
+            }
+        });
+
+        // كل 8 ثواني جلب
+        this.syncInterval = setInterval(async () => {
+            const state = await this.fetchGameState(tileId);
+            if (state && state.timestamp > this.lastStateTime) {
+                this.lastStateTime = state.timestamp;
+                onStateUpdate(state.data);
+                showToast('🔄 تحديث من لاعب آخر', 'success');
+            }
+        }, 8000);
+
+        // كل 15 ثانية رفع
+        this.pushInterval = setInterval(async () => {
+            if (gameConnected && gameServer && Database) {
+                await this.pushGameState(tileId, {
+                    players: Database.players,
+                    worlds: Database.worlds,
+                    timestamp: Date.now()
+                });
+            }
+        }, 15000);
+
+        console.log('🌐 المزامنة المتعددة بدأت للمربع:', tileId);
+    },
+
+    // إيقاف المزامنة
+    stopAutoSync() {
+        if (this.syncInterval) { clearInterval(this.syncInterval); this.syncInterval = null; }
+        if (this.pushInterval) { clearInterval(this.pushInterval); this.pushInterval = null; }
+        console.log('🌐 المزامنة المتعددة توقفت');
+    },
+
+    // مزامنة يدوية (زر)
+    async manualSync(tileId) {
+        showToast('🔄 جاري المزامنة اليدوية...', 'warning');
+        const state = await this.fetchGameState(tileId);
+        if (state) {
+            this.lastStateTime = state.timestamp;
+            if (state.data.players) Database.players = state.data.players;
+            if (state.data.worlds) Database.worlds = state.data.worlds;
+            loadGameData();
+            showToast(`✅ تمت المزامنة: ${state.data.players?.length || 0} لاعب`, 'success');
+            return true;
+        } else {
+            showToast('❌ لا توجد حالة من لاعبين آخرين', 'warning');
+            return false;
+        }
+    }
+};
+
+// Initialize
+MultiplayerSync.init();
+
 })();
 </script>
 </body>
 </html>
-
