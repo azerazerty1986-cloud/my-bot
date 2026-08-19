@@ -1126,19 +1126,22 @@ function openTileCDNUploadModal(prefillTileId,fromTileShortcut) {
     document.getElementById('tilecdn-upload-visible').checked = true;
     document.getElementById('tilecdn-upload-file-status').textContent = 'لم يتم اختيار ملفات';
     modal.style.display = 'flex';
-    if(prefillTileId){setTimeout(()=>{const iconMatch=String(ServerManager.currentWorldId||currentWorldId||'').match(/^world_icon_(\d+)$/);const iconSelect=document.getElementById('tilecdn-upload-icon');if(iconMatch&&iconSelect){iconSelect.value=iconMatch[1];tileCDNIconChanged();const tileSelect=document.getElementById('tilecdn-upload-tile');if(tileSelect){tileSelect.value=prefillTileId;tileSelect.dispatchEvent(new Event('change'));}}},30);}
+    if(prefillTileId){setTimeout(()=>{const iconMatch=String(ServerManager.currentWorldId||currentWorldId||'').match(/^world_icon_(\d+)$/);const iconSelect=document.getElementById('tilecdn-upload-icon');if(!iconMatch||!iconSelect)return;iconSelect.value=iconMatch[1];tileCDNIconChanged();const applyTile=()=>{const tileSelect=document.getElementById('tilecdn-upload-tile');if(!tileSelect)return;if(!Array.from(tileSelect.options).some(o=>o.value===prefillTileId)){tileCDNIconChanged();}tileSelect.value=prefillTileId;tileSelect.dispatchEvent(new Event('change'));};applyTile();setTimeout(applyTile,80);setTimeout(applyTile,220);},30);}
 }
 
 function tileCDNIconChanged() {
     const iconIndex = parseInt(document.getElementById('tilecdn-upload-icon').value, 10);
     const tileSelect = document.getElementById('tilecdn-upload-tile');
+    if (!tileSelect) return;
     if (isNaN(iconIndex)) { tileSelect.innerHTML = '<option value="">-- اختر الأيقونة أولاً --</option>'; return; }
     const worldId = ensureUploadWorldFromIcon(iconIndex);
-    ServerManager.switchWorld(worldId);
+    if (!worldId) { tileSelect.innerHTML = '<option value="">⚠️ تعذر إنشاء العالم</option>'; return; }
+    try { ServerManager.switchWorld(worldId); } catch(e) { console.warn('TileCDN world switch',e); }
     const world = getWorld(worldId);
-    document.getElementById('tilecdn-upload-world').textContent = '🌍 العالم المحدد: ' + (world ? world.name : worldId) + ' | المستوى ' + (world && world.level || 0);
-    tileSelect.innerHTML = '<option value="">-- اختر المربع --</option>' + Array.from({length: 12}, (_, r) => Array.from({length: 12}, (_, c) => { const id = r + '_' + c; const count = ServerManager.tiles[id] && ServerManager.tiles[id].files ? Object.keys(ServerManager.tiles[id].files).length : 0; return '<option value="' + id + '">📂 مربع (' + r + ',' + c + ')' + (count ? ' — ' + count + ' ملف' : '') + '</option>'; }).join('')).join('');
-    tileSelect.onchange = function() { document.getElementById('tilecdn-upload-selection').textContent = this.value ? '📍 سيتم الرفع إلى: ' + worldId + ' / المربع ' + this.value : ''; ServerManager.selectTile(this.value); };
+    document.getElementById('tilecdn-upload-world').textContent = '🌍 العالم المحدد: ' + (world ? world.name : worldId) + ' | المستوى 0';
+    const options = Array.from({length: 12}, (_, r) => Array.from({length: 12}, (_, c) => { const id = r + '_' + c; const count = ServerManager.tiles[id] && ServerManager.tiles[id].files ? Object.keys(ServerManager.tiles[id].files).length : 0; return '<option value="' + id + '">📂 مربع (' + r + ',' + c + ')' + (count ? ' — ' + count + ' ملف' : '') + '</option>'; }).join('')).join('');
+    tileSelect.innerHTML = '<option value="">-- اختر المربع --</option>' + options;
+    tileSelect.onchange = function() { document.getElementById('tilecdn-upload-selection').textContent = this.value ? '📍 سيتم الرفع إلى: ' + worldId + ' / المستوى 0 / المربع ' + this.value : ''; if(this.value)ServerManager.selectTile(this.value); };
 }
 
 function tileCDNFilesChanged() {
@@ -3433,7 +3436,8 @@ setTimeout(()=>{adminSystem.listenToAdminRoom();},800);
 
 
 
-    
+
+
 
 
     
